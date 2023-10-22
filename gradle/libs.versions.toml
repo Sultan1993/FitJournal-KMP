@@ -1,0 +1,21 @@
+[versions]
+min-sdk = "26"
+compile-sdk = "34"
+library-group = "kz.maestrosultan.fitjournal.kmp"
+library-version = "0.0.1"
+android = "8.1.2"
+kotlin = "1.9.10"
+kover = "0.6.1"
+ksp = "1.9.10-1.0.13"
+
+[libraries]
+kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib-common", version.ref = "kotlin" }
+android-tools-desugaring = "com.android.tools:desugar_jdk_libs:2.0.3"
+
+[plugins]
+multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+multiplatform-swiftpackage = { id = "com.chromaticnoise.multiplatform-swiftpackage", version = "2.0.3" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+android-library = { id = "com.android.library", version.ref = "android" }
+android-application = { id = "com.android.application", version.ref = "android" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
