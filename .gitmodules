@@ -1,0 +1,3 @@
+[submodule "swiftpackage/FitJournal-SPM"]
+	path = swiftpackage/FitJournal-SPM
+	url = https://github.com/Sultan1993/FitJournal-SPM

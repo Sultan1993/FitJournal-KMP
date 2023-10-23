@@ -1,49 +1,41 @@
-import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 
 plugins {
-    alias(libs.plugins.multiplatform)
+    alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.multiplatform.swiftpackage)
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kover)
+    alias(libs.plugins.kmmbridge)
     id("maven-publish")
 }
 
 group = libs.versions.library.group.get()
 version = libs.versions.library.version.get()
-
 val moduleName = "FitJournalKMP"
-var androidTarget: String = ""
 
 kotlin {
-    val android = androidTarget {
+    // Android
+    androidTarget {
         publishLibraryVariants("release")
     }
-    androidTarget = android.name
 
     // iOS
     val xcf = XCFramework()
-    val iosX64 = iosX64()
-    val iosArm64 = iosArm64()
-    val iosSim = iosSimulatorArm64()
-    configure(listOf(iosX64, iosArm64, iosSim)) {
-        binaries {
-            framework {
-                //Any dependecy you add for ios should be added here using export()
-                baseName = moduleName
-                export(libs.kotlin.stdlib)
-                xcf.add(this)
-            }
-        }
-    }
-
-    targets.withType<KotlinNativeTarget> {
-        binaries.all {
-            freeCompilerArgs += listOf("-Xgc=cms")
+    listOf(
+        iosX64(),
+        iosArm64(),
+        iosSimulatorArm64()
+    ).forEach {
+        it.binaries.framework {
+            baseName = moduleName
+            export(libs.kotlin.stdlib)
+            xcf.add(this)
         }
     }
 
     sourceSets {
+        @Suppress("OPT_IN_USAGE")
+        targetHierarchy.default()
+
         val commonMain by getting {
             dependencies {
                 api(libs.kotlin.stdlib)
@@ -61,7 +53,7 @@ kotlin {
         val iosX64Main by getting
         val iosArm64Main by getting
         val iosSimulatorArm64Main by getting
-        val iosMain by creating {
+        val iosMain by getting {
             dependsOn(commonMain)
             iosX64Main.dependsOn(this)
             iosArm64Main.dependsOn(this)
@@ -75,19 +67,20 @@ kotlin {
 
 android {
     namespace = libs.versions.library.group.get()
-    compileSdk = libs.versions.compile.sdk.get().toInt()
+    compileSdk = libs.versions.compileSDK.get().toInt()
     defaultConfig {
-        minSdk = libs.versions.min.sdk.get().toInt()
+        minSdk = libs.versions.minSDK.get().toInt()
     }
 
     sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
 
     compileOptions {
-        isCoreLibraryDesugaringEnabled = true
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
-    dependencies {
-        coreLibraryDesugaring(libs.android.tools.desugaring)
+    compileOptions {
+        isCoreLibraryDesugaringEnabled = true
     }
 
     publishing {
@@ -96,22 +89,27 @@ android {
             withJavadocJar()
         }
     }
+
+    dependencies {
+        coreLibraryDesugaring(libs.android.tools.desugaring)
+    }
 }
 
 publishing {
     repositories {
         maven {
             name = "github"
-            url = uri("https://maven.pkg.github.com/user/repo")
+            url = uri("https://maven.pkg.github.com/Sultan1993/FitJournal-KMP")
             credentials {
-                username = System.getenv()["MYUSER"]
-                password = System.getenv()["MYPAT"]
+                username = "Sultan1993"
+                password = "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"
             }
         }
     }
-    val androidPublications = listOf(androidTarget) + "kotlinMultiplatform"
+
     publications {
-        matching { it.name in androidPublications }.all {
+        // Publish only main (Android)
+        matching { it.name == "kotlinMultiplatform" }.all {
             val targetPublication = this@all
             tasks.withType<AbstractPublishToMaven>()
                 .matching { it.publication == targetPublication }
@@ -128,44 +126,11 @@ publishing {
     }
 }
 
-configurations.forEach {
-    it.attributes {
-        attribute(Attribute.of("buildIdAttribute", String::class.java), it.name)
-    }
-}
-
-val publishPlatforms by tasks.registering {
-    group = libs.versions.library.group.get()
-    dependsOn(
-        tasks.named("publishAndroidReleasePublicationToGithubRepository"),
-    )
-    doLast {
-        exec { commandLine = listOf("git", "add", "-A") }
-        exec { commandLine = listOf("git", "commit", "-m", "iOS binary lib for version ${libs.versions.library.version.get()}") }
-        exec { commandLine = listOf("git", "push", "origin", "main") }
-        exec { commandLine = listOf("git", "tag", libs.versions.library.version.get()) }
-        exec { commandLine = listOf("git", "push", "--tags") }
-        println("version ${libs.versions.library.version.get()} built and published")
-    }
-}
-
-val compilePlatforms by tasks.registering {
-    group = libs.versions.library.group.get()
-    dependsOn(
-        tasks.named("compileKotlinIosArm64"),
-        tasks.named("compileKotlinIosX64"),
-        tasks.named("compileKotlinIosSimulatorArm64"),
-        tasks.named("compileReleaseKotlinAndroid")
-    )
-    doLast {
-        println("Finished compilation")
-    }
-}
-
 multiplatformSwiftPackage {
     swiftToolsVersion("5.8")
     packageName(moduleName)
     zipFileName(moduleName)
+    outputDirectory(File(rootDir, "swiftpackage/FitJournal-SPM"))
     targetPlatforms {
         iOS { v("14") }
     }
