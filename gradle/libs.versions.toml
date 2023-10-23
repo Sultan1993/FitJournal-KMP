@@ -17,4 +17,3 @@ kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref 
 multiplatform-swiftpackage = { id = "io.github.luca992.multiplatform-swiftpackage", version = "2.2.0" }
 android-library = { id = "com.android.library", version.ref = "androidGradlePlugin" }
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
-kmmbridge = { id = "co.touchlab.kmmbridge", version = "0.5.0" }

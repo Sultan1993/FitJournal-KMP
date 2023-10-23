@@ -4,7 +4,6 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.multiplatform.swiftpackage)
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kmmbridge)
     id("maven-publish")
 }
 
