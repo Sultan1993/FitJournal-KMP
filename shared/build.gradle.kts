@@ -134,3 +134,10 @@ multiplatformSwiftPackage {
         iOS { v("14") }
     }
 }
+
+val publishPlatforms by tasks.registering {
+    dependsOn(
+        tasks.named("publish"),
+        tasks.named("createSwiftPackage")
+    )
+}
