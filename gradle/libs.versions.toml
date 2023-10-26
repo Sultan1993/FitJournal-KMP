@@ -2,7 +2,7 @@
 minSDK = "26"
 compileSDK = "34"
 library-group = "kz.maestrosultan.fitjournal.kmp"
-library-version = "0.0.1"
+library-version = "0.0.2"
 androidGradlePlugin = "8.1.2"
 kotlin = "1.9.10"
 ksp = "1.9.10-1.0.13"
