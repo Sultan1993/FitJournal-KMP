@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.multiplatform.swiftpackage)
     alias(libs.plugins.android.library)
+    alias(libs.plugins.sqldelight)
     id("maven-publish")
 }
 
@@ -37,14 +38,20 @@ kotlin {
 
         val commonMain by getting {
             dependencies {
-                api(libs.kotlin.stdlib)
+
+            }
+        }
+
+        val commonTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
             }
         }
 
         // Android
         val androidMain by getting {
             dependencies {
-                //Add your specific android dependencies here
+                implementation(libs.sqldelight.android)
             }
         }
 
@@ -53,12 +60,8 @@ kotlin {
         val iosArm64Main by getting
         val iosSimulatorArm64Main by getting
         val iosMain by getting {
-            dependsOn(commonMain)
-            iosX64Main.dependsOn(this)
-            iosArm64Main.dependsOn(this)
-            iosSimulatorArm64Main.dependsOn(this)
             dependencies {
-                //Add any ios specific dependencies here, remember to also add them to the export block
+                implementation(libs.sqldelight.native)
             }
         }
     }
@@ -132,6 +135,14 @@ multiplatformSwiftPackage {
     outputDirectory(File(rootDir, "swiftpackage/FitJournal-SPM"))
     targetPlatforms {
         iOS { v("14") }
+    }
+}
+
+sqldelight {
+    databases {
+        create("FitJournal") {
+            packageName.set("kz.maestrosultan.fitjournal.kmp")
+        }
     }
 }
 
