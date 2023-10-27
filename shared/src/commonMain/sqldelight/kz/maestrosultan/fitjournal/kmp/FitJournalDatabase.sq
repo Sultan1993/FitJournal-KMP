@@ -8,16 +8,10 @@ CREATE TABLE notes (
   isPinned INTEGER NOT NULL
 );
 
-getAllNotes:
+getNotes:
 SELECT *
 FROM notes
 WHERE userId = ?;
-
-getPinnedNotes:
-SELECT *
-FROM notes
-WHERE userId = ?
-AND isPinned = 1;
 
 getNoteById:
 SELECT *
