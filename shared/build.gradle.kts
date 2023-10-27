@@ -8,8 +8,8 @@ plugins {
     id("maven-publish")
 }
 
-group = libs.versions.library.group.get()
-version = libs.versions.library.version.get()
+group = "kz.maestrosultan.fitjournal.kmp"
+version = "0.0.3"
 val moduleName = "FitJournalKMP"
 
 kotlin {
@@ -68,7 +68,7 @@ kotlin {
 }
 
 android {
-    namespace = libs.versions.library.group.get()
+    namespace = group.toString()
     compileSdk = libs.versions.compileSDK.get().toInt()
     defaultConfig {
         minSdk = libs.versions.minSDK.get().toInt()
@@ -140,7 +140,7 @@ multiplatformSwiftPackage {
 
 sqldelight {
     databases {
-        create("FitJournal") {
+        create("FitJournalDatabase") {
             packageName.set("kz.maestrosultan.fitjournal.kmp")
         }
     }
