@@ -1,7 +1,7 @@
 ------------------------- NOTES ---------------------------------
 
 CREATE TABLE notes (
-  id INTEGER PRIMARY KEY NOT NULL,
+  uuid TEXT PRIMARY KEY NOT NULL,
   back4AppId TEXT,
   userId TEXT NOT NULL,
   text TEXT NOT NULL,
@@ -16,18 +16,18 @@ WHERE userId = ?;
 getNoteById:
 SELECT *
 FROM notes
-WHERE id = ?;
+WHERE uuid = ?;
 
 createNote:
-INSERT INTO notes(back4AppId, userId, text, isPinned)
-VALUES (?, ?, ?, ?);
+INSERT INTO notes(uuid, back4AppId, userId, text, isPinned)
+VALUES (?, ?, ?, ?, ?);
 
 updateNote:
 UPDATE notes
-SET back4AppId = ?, text = ?, isPinned = ? WHERE id = ?;
+SET back4AppId = ?, text = ?, isPinned = ? WHERE uuid = ?;
 
 deleteNote:
-DELETE FROM notes WHERE id = ?;
+DELETE FROM notes WHERE uuid = ?;
 
 deleteAllNotes:
 DELETE FROM notes;
