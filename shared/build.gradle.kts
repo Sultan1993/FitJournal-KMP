@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "kz.maestrosultan.fitjournal.kmp"
-version = "0.0.6"
+version = "0.0.7"
 val moduleName = "FitJournalKMP"
 
 kotlin {
@@ -146,9 +146,19 @@ sqldelight {
     }
 }
 
+// An alias for "publish" function that publishes Android code. Just for convenience
+val publishAndroid by tasks.registering {
+    dependsOn(tasks.named("publish"))
+}
+
+// An alias for "publish" function that publishes iOS code. Just for convenience
+val publishIos by tasks.registering {
+    dependsOn(tasks.named("createSwiftPackage"))
+}
+
 val publishPlatforms by tasks.registering {
     dependsOn(
-        tasks.named("publish"),
-        tasks.named("createSwiftPackage")
+        tasks.named("publishAndroid"),
+        tasks.named("publishIos")
     )
 }
