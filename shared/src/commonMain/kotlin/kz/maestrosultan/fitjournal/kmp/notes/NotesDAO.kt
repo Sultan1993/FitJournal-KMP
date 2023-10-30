@@ -9,8 +9,8 @@ class NotesDao(private val queries: FitJournalDatabaseQueries) {
         return queries.getNotes(userId).executeAsList().map { it.map() }
     }
 
-    fun getNoteById(uuid: String): DBNoteObject? {
-        return queries.getNoteById(uuid).executeAsOneOrNull()?.map()
+    fun getNoteById(uuid: String): DBNoteObject {
+        return queries.getNoteById(uuid).executeAsOne().map()
     }
 
     /**
@@ -52,9 +52,10 @@ class NotesDao(private val queries: FitJournalDatabaseQueries) {
         uuid: String,
         back4AppId: String?,
         text: String,
-        isPinned: Boolean
+        isPinned: Boolean,
+        isSynced: Boolean
     ): DBNoteObject {
-        queries.updateNote(back4AppId, text, isPinned, uuid)
+        queries.updateNote(back4AppId, text, isPinned, isSynced, uuid)
         return queries.getNoteById(uuid).executeAsOne().map()
     }
 
@@ -62,8 +63,8 @@ class NotesDao(private val queries: FitJournalDatabaseQueries) {
         queries.deleteNote(uuid)
     }
 
-    fun deleteAllNotes() {
-        queries.deleteAllNotes()
+    fun deleteAllNotes(userId: String) {
+        queries.deleteAllNotes(userId)
     }
 
     private fun Notes.map(): DBNoteObject {
