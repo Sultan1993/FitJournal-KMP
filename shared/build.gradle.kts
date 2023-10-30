@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "kz.maestrosultan.fitjournal.kmp"
-version = "0.0.7"
+version = "0.0.8"
 val moduleName = "FitJournalKMP"
 
 kotlin {
