@@ -7,7 +7,8 @@ CREATE TABLE notes (
   back4AppId TEXT DEFAULT NULL,
   userId TEXT NOT NULL,
   text TEXT NOT NULL,
-  isPinned INTEGER AS Boolean NOT NULL DEFAULT 0
+  isPinned INTEGER AS Boolean NOT NULL DEFAULT 0,
+  isSynced INTEGER AS Boolean NOT NULL DEFAULT 0
 );
 
 getNotes:
@@ -26,12 +27,12 @@ VALUES (?, ?, ?, ?, ?);
 
 updateNote:
 UPDATE notes
-SET back4AppId = ?, text = ?, isPinned = ? WHERE uuid = ?;
+SET back4AppId = ?, text = ?, isPinned = ?, isSynced = ? WHERE uuid = ?;
 
 deleteNote:
 DELETE FROM notes WHERE uuid = ?;
 
 deleteAllNotes:
-DELETE FROM notes;
+DELETE FROM notes WHERE userId = ?;
 
 ------------------------------------------------------------------
