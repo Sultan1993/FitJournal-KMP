@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "kz.maestrosultan.fitjournal.kmp"
-version = "0.0.9"
+version = "0.1.0"
 val moduleName = "FitJournalKMP"
 
 kotlin {
@@ -38,7 +38,7 @@ kotlin {
 
         val commonMain by getting {
             dependencies {
-
+                implementation(libs.kotlin.datetime)
             }
         }
 
