@@ -30,8 +30,8 @@ FROM notes
 WHERE uuid = ?;
 
 createNote:
-INSERT INTO notes(uuid, back4AppId, userId, text, isPinned)
-VALUES (?, ?, ?, ?, ?);
+INSERT INTO notes(uuid, back4AppId, userId, text, isPinned, isSynced)
+VALUES (?, ?, ?, ?, ?, ?);
 
 updateNote:
 UPDATE notes

@@ -1,5 +1,6 @@
 package kz.maestrosultan.fitjournal.kmp.notes.datasource
 
+import kotlinx.datetime.toLocalDateTime
 import kz.maestrosultan.fitjournal.kmp.FitJournalDatabaseQueries
 import kz.maestrosultan.fitjournal.kmp.Notes
 import kz.maestrosultan.fitjournal.kmp.notes.entity.DBNoteObject
@@ -14,39 +15,26 @@ class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
         return dao.getNoteById(uuid).executeAsOne().map()
     }
 
-    /**
-     * This method is more oriented towards local usage. Meaning it will be
-     * user when user creates a note on the device. We don't have back4AppId yet
-     */
-    fun createNote(uuid: String, userId: String, text: String): DBNoteObject {
-        dao.createNote(uuid, null, userId, text, false)
-        return dao.getNoteById(uuid).executeAsOne().map()
-    }
-
-    /**
-     * This method is more oriented towards sync usage. Meaning it will be
-     * user when we don't have anything locally and we fetch all notes from Back4App
-     */
     fun createNote(
         uuid: String,
-        back4AppId: String,
+        back4AppId: String?,
         userId: String,
         text: String,
-        isPinned: Boolean
+        isPinned: Boolean,
+        isSynced: Boolean
     ): DBNoteObject {
-        dao.createNote(uuid, back4AppId, userId, text, isPinned)
+        dao.createNote(uuid, back4AppId, userId, text, isPinned, isSynced)
         return dao.getNoteById(uuid).executeAsOne().map()
     }
 
-    /**
-     * This method is for batch insert from Back4App
-     */
-    fun createNotes(notes: List<DBNoteObject>) {
+    fun createNotes(notes: List<DBNoteObject>): List<DBNoteObject> {
+        var createdNotes = emptyList<DBNoteObject>()
         dao.transaction {
-            notes.forEach {
-                createNote(it.uuid, it.back4AppId!!, it.userId, it.text, it.isPinned)
+            createdNotes = notes.map {
+                createNote(it.uuid, it.back4AppId, it.userId, it.text, it.isPinned, it.isSynced)
             }
         }
+        return createdNotes
     }
 
     fun updateNote(
@@ -58,6 +46,16 @@ class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
     ): DBNoteObject {
         dao.updateNote(back4AppId, text, isPinned, isSynced, uuid)
         return dao.getNoteById(uuid).executeAsOne().map()
+    }
+
+    fun updateNotes(notes: List<DBNoteObject>): List<DBNoteObject> {
+        var updatedNotes = emptyList<DBNoteObject>()
+        dao.transaction {
+            updatedNotes = notes.map {
+                updateNote(it.uuid, it.back4AppId, it.text, it.isPinned, it.isSynced)
+            }
+        }
+        return updatedNotes
     }
 
     fun deleteNote(uuid: String) {
@@ -74,7 +72,10 @@ class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
             back4AppId = this.back4AppId,
             userId = this.userId,
             text = this.text,
-            isPinned = this.isPinned
+            isPinned = this.isPinned,
+            isSynced = this.isSynced,
+            createdAt = this.createdAt.toLocalDateTime(),
+            updatedAt = this.updatedAt.toLocalDateTime()
         )
     }
 }
