@@ -1,4 +1,4 @@
-package kz.maestrosultan.fitjournal.kmp.notes
+package kz.maestrosultan.fitjournal.kmp.notes.entity
 
 data class DBNoteObject(
     val uuid: String,

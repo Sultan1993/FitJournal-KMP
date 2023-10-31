@@ -1,16 +1,17 @@
-package kz.maestrosultan.fitjournal.kmp.notes
+package kz.maestrosultan.fitjournal.kmp.notes.datasource
 
 import kz.maestrosultan.fitjournal.kmp.FitJournalDatabaseQueries
 import kz.maestrosultan.fitjournal.kmp.Notes
+import kz.maestrosultan.fitjournal.kmp.notes.entity.DBNoteObject
 
-class NotesDao(private val queries: FitJournalDatabaseQueries) {
+class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
 
     fun getNotes(userId: String): List<DBNoteObject> {
-        return queries.getNotes(userId).executeAsList().map { it.map() }
+        return dao.getNotes(userId).executeAsList().map { it.map() }
     }
 
     fun getNoteById(uuid: String): DBNoteObject {
-        return queries.getNoteById(uuid).executeAsOne().map()
+        return dao.getNoteById(uuid).executeAsOne().map()
     }
 
     /**
@@ -18,8 +19,8 @@ class NotesDao(private val queries: FitJournalDatabaseQueries) {
      * user when user creates a note on the device. We don't have back4AppId yet
      */
     fun createNote(uuid: String, userId: String, text: String): DBNoteObject {
-        queries.createNote(uuid, null, userId, text, false)
-        return queries.getNoteById(uuid).executeAsOne().map()
+        dao.createNote(uuid, null, userId, text, false)
+        return dao.getNoteById(uuid).executeAsOne().map()
     }
 
     /**
@@ -33,15 +34,15 @@ class NotesDao(private val queries: FitJournalDatabaseQueries) {
         text: String,
         isPinned: Boolean
     ): DBNoteObject {
-        queries.createNote(uuid, back4AppId, userId, text, isPinned)
-        return queries.getNoteById(uuid).executeAsOne().map()
+        dao.createNote(uuid, back4AppId, userId, text, isPinned)
+        return dao.getNoteById(uuid).executeAsOne().map()
     }
 
     /**
      * This method is for batch insert from Back4App
      */
     fun createNotes(notes: List<DBNoteObject>) {
-        queries.transaction {
+        dao.transaction {
             notes.forEach {
                 createNote(it.uuid, it.back4AppId!!, it.userId, it.text, it.isPinned)
             }
@@ -55,16 +56,16 @@ class NotesDao(private val queries: FitJournalDatabaseQueries) {
         isPinned: Boolean,
         isSynced: Boolean
     ): DBNoteObject {
-        queries.updateNote(back4AppId, text, isPinned, isSynced, uuid)
-        return queries.getNoteById(uuid).executeAsOne().map()
+        dao.updateNote(back4AppId, text, isPinned, isSynced, uuid)
+        return dao.getNoteById(uuid).executeAsOne().map()
     }
 
     fun deleteNote(uuid: String) {
-        queries.deleteNote(uuid)
+        dao.deleteNote(uuid)
     }
 
     fun deleteAllNotes(userId: String) {
-        queries.deleteAllNotes(userId)
+        dao.deleteAllNotes(userId)
     }
 
     private fun Notes.map(): DBNoteObject {
