@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "kz.maestrosultan.fitjournal.kmp"
-version = "0.1.0"
+version = "0.1.1"
 val moduleName = "FitJournalKMP"
 
 kotlin {
@@ -81,19 +81,11 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    compileOptions {
-        isCoreLibraryDesugaringEnabled = true
-    }
-
     publishing {
         singleVariant("release") {
             withSourcesJar()
             withJavadocJar()
         }
-    }
-
-    dependencies {
-        coreLibraryDesugaring(libs.android.tools.desugaring)
     }
 }
 

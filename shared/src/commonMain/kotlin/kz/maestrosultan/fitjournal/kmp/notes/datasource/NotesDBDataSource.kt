@@ -17,13 +17,12 @@ class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
 
     fun createNote(
         uuid: String,
-        back4AppId: String?,
         userId: String,
         text: String,
         isPinned: Boolean,
         isSynced: Boolean
     ): DBNoteObject {
-        dao.createNote(uuid, back4AppId, userId, text, isPinned, isSynced)
+        dao.createNote(uuid, userId, text, isPinned, isSynced)
         return dao.getNoteById(uuid).executeAsOne().map()
     }
 
@@ -31,7 +30,7 @@ class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
         var createdNotes = emptyList<DBNoteObject>()
         dao.transaction {
             createdNotes = notes.map {
-                createNote(it.uuid, it.back4AppId, it.userId, it.text, it.isPinned, it.isSynced)
+                createNote(it.uuid, it.userId, it.text, it.isPinned, it.isSynced)
             }
         }
         return createdNotes
@@ -39,12 +38,11 @@ class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
 
     fun updateNote(
         uuid: String,
-        back4AppId: String?,
         text: String,
         isPinned: Boolean,
         isSynced: Boolean
     ): DBNoteObject {
-        dao.updateNote(back4AppId, text, isPinned, isSynced, uuid)
+        dao.updateNote(text, isPinned, isSynced, uuid)
         return dao.getNoteById(uuid).executeAsOne().map()
     }
 
@@ -52,7 +50,7 @@ class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
         var updatedNotes = emptyList<DBNoteObject>()
         dao.transaction {
             updatedNotes = notes.map {
-                updateNote(it.uuid, it.back4AppId, it.text, it.isPinned, it.isSynced)
+                updateNote(it.uuid, it.text, it.isPinned, it.isSynced)
             }
         }
         return updatedNotes
@@ -69,7 +67,6 @@ class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
     private fun Notes.map(): DBNoteObject {
         return DBNoteObject(
             uuid = this.uuid,
-            back4AppId = this.back4AppId,
             userId = this.userId,
             text = this.text,
             isPinned = this.isPinned,

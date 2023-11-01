@@ -4,7 +4,6 @@ import kotlin.Boolean;
 
 CREATE TABLE notes (
   uuid TEXT PRIMARY KEY NOT NULL,
-  back4AppId TEXT DEFAULT NULL,
   userId TEXT NOT NULL,
   text TEXT NOT NULL,
   isPinned INTEGER AS Boolean NOT NULL DEFAULT 0,
@@ -30,12 +29,12 @@ FROM notes
 WHERE uuid = ?;
 
 createNote:
-INSERT INTO notes(uuid, back4AppId, userId, text, isPinned, isSynced)
-VALUES (?, ?, ?, ?, ?, ?);
+INSERT INTO notes(uuid, userId, text, isPinned, isSynced)
+VALUES (?, ?, ?, ?, ?);
 
 updateNote:
 UPDATE notes
-SET back4AppId = ?, text = ?, isPinned = ?, isSynced = ? WHERE uuid = ?;
+SET text = ?, isPinned = ?, isSynced = ? WHERE uuid = ?;
 
 deleteNote:
 DELETE FROM notes WHERE uuid = ?;
