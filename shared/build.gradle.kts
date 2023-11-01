@@ -81,19 +81,11 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    compileOptions {
-        isCoreLibraryDesugaringEnabled = true
-    }
-
     publishing {
         singleVariant("release") {
             withSourcesJar()
             withJavadocJar()
         }
-    }
-
-    dependencies {
-        coreLibraryDesugaring(libs.android.tools.desugaring)
     }
 }
 
