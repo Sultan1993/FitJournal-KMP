@@ -1,6 +1,5 @@
 package kz.maestrosultan.fitjournal.kmp.notes.datasource
 
-import kotlinx.datetime.toLocalDateTime
 import kz.maestrosultan.fitjournal.kmp.FitJournalDatabaseQueries
 import kz.maestrosultan.fitjournal.kmp.Notes
 import kz.maestrosultan.fitjournal.kmp.notes.entity.DBNoteObject
@@ -70,9 +69,7 @@ class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
             userId = this.userId,
             text = this.text,
             isPinned = this.isPinned,
-            isSynced = this.isSynced,
-            createdAt = this.createdAt.toLocalDateTime(),
-            updatedAt = this.updatedAt.toLocalDateTime()
+            isSynced = this.isSynced
         )
     }
 }
