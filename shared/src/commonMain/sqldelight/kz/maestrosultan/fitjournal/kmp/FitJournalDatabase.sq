@@ -4,19 +4,13 @@ import kotlin.Boolean;
 
 CREATE TABLE notes (
   uuid TEXT PRIMARY KEY NOT NULL,
+  back4AppId TEXT,
   userId TEXT NOT NULL,
   text TEXT NOT NULL,
   isPinned INTEGER AS Boolean NOT NULL DEFAULT 0,
-  isSynced INTEGER AS Boolean NOT NULL DEFAULT 0,
-  createdDate TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updatedDate TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  createdDate TEXT NOT NULL,
+  updatedDate TEXT NOT NULL
 );
-
-CREATE TRIGGER update_timestamp_trigger
-AFTER UPDATE ON notes
-BEGIN
-   UPDATE notes SET updatedDate = CURRENT_TIMESTAMP WHERE uuid = new.uuid;
-END;
 
 getNotes:
 SELECT *
@@ -29,12 +23,12 @@ FROM notes
 WHERE uuid = ?;
 
 createNote:
-INSERT INTO notes(uuid, userId, text, isPinned, isSynced)
-VALUES (?, ?, ?, ?, ?);
+INSERT INTO notes(uuid, back4AppId, userId, text, isPinned, createdDate, updatedDate)
+VALUES (?, ?, ?, ?, ?, ?, ?);
 
 updateNote:
 UPDATE notes
-SET text = ?, isPinned = ?, isSynced = ? WHERE uuid = ?;
+SET back4AppId = ?, text = ?, isPinned = ?, updatedDate = ? WHERE uuid = ?;
 
 deleteNote:
 DELETE FROM notes WHERE uuid = ?;
