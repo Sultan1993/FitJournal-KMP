@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "kz.maestrosultan.fitjournal.kmp"
-version = "0.1.1"
+version = "0.1.9"
 val moduleName = "FitJournalKMP"
 
 kotlin {
@@ -143,7 +143,7 @@ val publishAndroid by tasks.registering {
     dependsOn(tasks.named("publish"))
 }
 
-// An alias for "publish" function that publishes iOS code. Just for convenience
+// An alias for "createSwiftPackage" function that publishes iOS code. Just for convenience
 val publishIos by tasks.registering {
     dependsOn(tasks.named("createSwiftPackage"))
 }

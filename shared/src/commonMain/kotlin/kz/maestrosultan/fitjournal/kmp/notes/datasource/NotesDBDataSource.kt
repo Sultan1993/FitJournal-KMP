@@ -1,5 +1,8 @@
 package kz.maestrosultan.fitjournal.kmp.notes.datasource
 
+import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kz.maestrosultan.fitjournal.kmp.FitJournalDatabaseQueries
 import kz.maestrosultan.fitjournal.kmp.Notes
@@ -18,19 +21,38 @@ class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
     fun createNote(
         uuid: String,
         userId: String,
+        back4AppId: String? = null,
         text: String,
         isPinned: Boolean,
-        isSynced: Boolean
+        createdDate: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC),
+        updatedDate: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC)
     ): DBNoteObject {
-        dao.createNote(uuid, userId, text, isPinned, isSynced)
+        dao.createNote(
+            uuid = uuid,
+            back4AppId = back4AppId,
+            userId = userId,
+            text = text,
+            isPinned = isPinned,
+            createdDate = createdDate.toString(),
+            updatedDate = updatedDate.toString()
+        )
         return dao.getNoteById(uuid).executeAsOne().map()
     }
 
     fun createNotes(notes: List<DBNoteObject>): List<DBNoteObject> {
-        var createdNotes = emptyList<DBNoteObject>()
+        val createdNotes = mutableListOf<DBNoteObject>()
         dao.transaction {
-            createdNotes = notes.map {
-                createNote(it.uuid, it.userId, it.text, it.isPinned, it.isSynced)
+            notes.forEach {
+                val createdNote = createNote(
+                    uuid = it.uuid,
+                    back4AppId = it.back4AppId,
+                    userId = it.userId,
+                    text = it.text,
+                    isPinned = it.isPinned,
+                    createdDate = it.createdDate,
+                    updatedDate = it.updatedDate
+                )
+                createdNotes.add(createdNote)
             }
         }
         return createdNotes
@@ -38,19 +60,33 @@ class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
 
     fun updateNote(
         uuid: String,
+        back4AppId: String?,
         text: String,
         isPinned: Boolean,
-        isSynced: Boolean
+        updatedDate: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC)
     ): DBNoteObject {
-        dao.updateNote(text, isPinned, isSynced, uuid)
+        dao.updateNote(
+            back4AppId = back4AppId,
+            text = text,
+            isPinned = isPinned,
+            updatedDate = updatedDate.toString(),
+            uuid = uuid
+        )
         return dao.getNoteById(uuid).executeAsOne().map()
     }
 
     fun updateNotes(notes: List<DBNoteObject>): List<DBNoteObject> {
-        var updatedNotes = emptyList<DBNoteObject>()
+        val updatedNotes = mutableListOf<DBNoteObject>()
         dao.transaction {
-            updatedNotes = notes.map {
-                updateNote(it.uuid, it.text, it.isPinned, it.isSynced)
+             notes.forEach {
+                val updatedNote = updateNote(
+                    uuid = it.uuid,
+                    back4AppId = it.back4AppId,
+                    text = it.text,
+                    isPinned = it.isPinned,
+                    updatedDate = it.updatedDate
+                )
+                updatedNotes.add(updatedNote)
             }
         }
         return updatedNotes
@@ -66,13 +102,13 @@ class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
 
     private fun Notes.map(): DBNoteObject {
         return DBNoteObject(
-            uuid = this.uuid,
-            userId = this.userId,
-            text = this.text,
-            isPinned = this.isPinned,
-            isSynced = this.isSynced,
-            createdAt = this.createdAt.toLocalDateTime(),
-            updatedAt = this.updatedAt.toLocalDateTime()
+            uuid = uuid,
+            back4AppId = back4AppId,
+            userId = userId,
+            text = text,
+            isPinned = isPinned,
+            createdDate = createdDate.toLocalDateTime(),
+            updatedDate = updatedDate.toLocalDateTime(),
         )
     }
 }
