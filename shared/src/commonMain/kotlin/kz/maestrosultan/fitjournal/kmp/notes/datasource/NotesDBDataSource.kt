@@ -92,6 +92,11 @@ class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
         return updatedNotes
     }
 
+    fun updateRemoteId(uuid: String, remoteId: String): DBNoteObject {
+        dao.updateRemoteId(remoteId, uuid)
+        return dao.getNoteById(uuid).executeAsOne().map()
+    }
+
     fun deleteNote(uuid: String) {
         dao.deleteNote(uuid)
     }
