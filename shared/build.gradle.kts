@@ -9,10 +9,12 @@ plugins {
 }
 
 group = "kz.maestrosultan.fitjournal.kmp"
-version = "0.1.9"
+version = "0.2.0"
 val moduleName = "FitJournalKMP"
 
 kotlin {
+    applyDefaultHierarchyTemplate()
+
     // Android
     androidTarget {
         publishLibraryVariants("release")
@@ -33,9 +35,6 @@ kotlin {
     }
 
     sourceSets {
-        @Suppress("OPT_IN_USAGE")
-        targetHierarchy.default()
-
         val commonMain by getting {
             dependencies {
                 implementation(libs.kotlin.datetime)
@@ -96,7 +95,7 @@ publishing {
             url = uri("https://maven.pkg.github.com/Sultan1993/FitJournal-KMP")
             credentials {
                 username = "Sultan1993"
-                password = "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"
+                password = "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"
             }
         }
     }

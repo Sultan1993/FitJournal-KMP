@@ -21,7 +21,7 @@ class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
     fun createNote(
         uuid: String,
         userId: String,
-        back4AppId: String? = null,
+        remoteId: String? = null,
         text: String,
         isPinned: Boolean,
         createdDate: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC),
@@ -29,7 +29,7 @@ class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
     ): DBNoteObject {
         dao.createNote(
             uuid = uuid,
-            back4AppId = back4AppId,
+            remoteId = remoteId,
             userId = userId,
             text = text,
             isPinned = isPinned,
@@ -45,7 +45,7 @@ class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
             notes.forEach {
                 val createdNote = createNote(
                     uuid = it.uuid,
-                    back4AppId = it.back4AppId,
+                    remoteId = it.remoteId,
                     userId = it.userId,
                     text = it.text,
                     isPinned = it.isPinned,
@@ -60,13 +60,13 @@ class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
 
     fun updateNote(
         uuid: String,
-        back4AppId: String?,
+        remoteId: String?,
         text: String,
         isPinned: Boolean,
         updatedDate: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC)
     ): DBNoteObject {
         dao.updateNote(
-            back4AppId = back4AppId,
+            remoteId = remoteId,
             text = text,
             isPinned = isPinned,
             updatedDate = updatedDate.toString(),
@@ -81,7 +81,7 @@ class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
              notes.forEach {
                 val updatedNote = updateNote(
                     uuid = it.uuid,
-                    back4AppId = it.back4AppId,
+                    remoteId = it.remoteId,
                     text = it.text,
                     isPinned = it.isPinned,
                     updatedDate = it.updatedDate
@@ -103,7 +103,7 @@ class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
     private fun Notes.map(): DBNoteObject {
         return DBNoteObject(
             uuid = uuid,
-            back4AppId = back4AppId,
+            remoteId = remoteId,
             userId = userId,
             text = text,
             isPinned = isPinned,
