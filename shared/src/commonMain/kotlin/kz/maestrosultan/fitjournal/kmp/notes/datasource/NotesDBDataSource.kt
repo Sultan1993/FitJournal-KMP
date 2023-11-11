@@ -20,8 +20,8 @@ class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
 
     fun createNote(
         uuid: String,
+        remoteId: String?,
         userId: String,
-        remoteId: String? = null,
         text: String,
         isPinned: Boolean,
         createdDate: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC),
@@ -60,13 +60,11 @@ class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
 
     fun updateNote(
         uuid: String,
-        remoteId: String?,
         text: String,
         isPinned: Boolean,
         updatedDate: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC)
     ): DBNoteObject {
         dao.updateNote(
-            remoteId = remoteId,
             text = text,
             isPinned = isPinned,
             updatedDate = updatedDate.toString(),
@@ -81,7 +79,6 @@ class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
              notes.forEach {
                 val updatedNote = updateNote(
                     uuid = it.uuid,
-                    remoteId = it.remoteId,
                     text = it.text,
                     isPinned = it.isPinned,
                     updatedDate = it.updatedDate

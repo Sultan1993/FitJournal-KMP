@@ -28,7 +28,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);
 
 updateNote:
 UPDATE notes
-SET remoteId = ?, text = ?, isPinned = ?, updatedDate = ? WHERE uuid = ?;
+SET text = ?, isPinned = ?, updatedDate = ? WHERE uuid = ?;
 
 updateRemoteId:
 UPDATE notes
