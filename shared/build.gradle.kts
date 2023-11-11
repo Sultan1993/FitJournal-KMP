@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "kz.maestrosultan.fitjournal.kmp"
-version = "0.2.0"
+version = "0.2.3"
 val moduleName = "FitJournalKMP"
 
 kotlin {
@@ -95,7 +95,7 @@ publishing {
             url = uri("https://maven.pkg.github.com/Sultan1993/FitJournal-KMP")
             credentials {
                 username = "Sultan1993"
-                password = "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"
+                password = "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"
             }
         }
     }
