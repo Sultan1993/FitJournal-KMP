@@ -102,6 +102,10 @@ class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
         dao.deleteAllNotes(userId)
     }
 
+    fun deleteAllNotes() {
+        dao.clearNotes()
+    }
+
     private fun Notes.map(): DBNoteObject {
         return DBNoteObject(
             uuid = uuid,
