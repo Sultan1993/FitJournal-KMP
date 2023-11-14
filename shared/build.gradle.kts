@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "kz.maestrosultan.fitjournal.kmp"
-version = "0.2.3"
+version = "0.2.4"
 val moduleName = "FitJournalKMP"
 
 kotlin {
@@ -149,6 +149,7 @@ val publishIos by tasks.registering {
 
 val publishPlatforms by tasks.registering {
     dependsOn(
+        tasks.named("generateSqlDelightInterface"),
         tasks.named("publishAndroid"),
         tasks.named("publishIos")
     )
