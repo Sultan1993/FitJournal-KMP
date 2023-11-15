@@ -95,7 +95,7 @@ publishing {
             url = uri("https://maven.pkg.github.com/Sultan1993/FitJournal-KMP")
             credentials {
                 username = "Sultan1993"
-                password = "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"
+                password = "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"
             }
         }
     }
