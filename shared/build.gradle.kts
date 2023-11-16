@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "kz.maestrosultan.fitjournal.kmp"
-version = "0.2.4"
+version = "0.2.5"
 val moduleName = "FitJournalKMP"
 
 kotlin {
@@ -38,6 +38,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(libs.kotlin.datetime)
+                implementation(libs.sqldelight.coroutines)
             }
         }
 
@@ -95,7 +96,7 @@ publishing {
             url = uri("https://maven.pkg.github.com/Sultan1993/FitJournal-KMP")
             credentials {
                 username = "Sultan1993"
-                password = "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"
+                password = "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"
             }
         }
     }
