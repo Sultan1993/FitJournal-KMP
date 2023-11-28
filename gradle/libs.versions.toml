@@ -1,0 +1,21 @@
+[versions]
+minSDK = "26"
+compileSDK = "34"
+androidGradlePlugin = "8.1.4"
+kotlin = "1.9.20"
+sqldelight = "2.0.0"
+
+[libraries]
+kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib-common", version.ref = "kotlin" }
+kotlin-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version = "0.4.1" }
+sqldelight-android = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }
+sqldelight-native = { module = "app.cash.sqldelight:native-driver", version.ref = "sqldelight" }
+sqldelight-coroutines = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }
+
+[plugins]
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+multiplatform-swiftpackage = { id = "io.github.luca992.multiplatform-swiftpackage", version = "2.2.0" }
+android-library = { id = "com.android.library", version.ref = "androidGradlePlugin" }
+android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
+sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
