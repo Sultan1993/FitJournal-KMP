@@ -1,0 +1,59 @@
+CREATE TABLE bodyMeasurements (
+    uuid TEXT PRIMARY KEY NOT NULL,
+    remoteId TEXT,
+    userId TEXT NOT NULL,
+    diaryId TEXT NOT NULL,
+    type TEXT NOT NULL,
+    value REAL NOT NULL,
+    comment TEXT,
+    measurementDate TEXT NOT NULL,
+    createdDate TEXT NOT NULL,
+    updatedDate TEXT NOT NULL
+);
+
+getAllBodyMeasurements:
+SELECT *
+FROM bodyMeasurements
+WHERE userId = ?
+AND diaryId = ?;
+
+getBodyMeasurementsByType:
+SELECT *
+FROM bodyMeasurements
+WHERE userId = ?
+AND diaryId = ?
+AND type = ?;
+
+getBodyMeasurementById:
+SELECT *
+FROM bodyMeasurements
+WHERE uuid = ?;
+
+createBodyMeasurement:
+INSERT INTO bodyMeasurements(uuid, remoteId, userId, diaryId, type, value, comment, measurementDate, createdDate, updatedDate)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updateBodyMeasurement:
+UPDATE bodyMeasurements
+SET value = ?, comment = ?, measurementDate = ?, updatedDate = ?
+WHERE uuid = ?;
+
+updateBodyMeasurementRemoteId:
+UPDATE bodyMeasurements
+SET remoteId = ?
+WHERE uuid = ?;
+
+deleteBodyMeasurement:
+DELETE FROM bodyMeasurements
+WHERE uuid = ?;
+
+deleteDiaryBodyMeasurements:
+DELETE FROM bodyMeasurements
+WHERE diaryId = ?;
+
+deleteUserBodyMeasurements:
+DELETE FROM bodyMeasurements
+WHERE userId = ?;
+
+deleteAllBodyMeasurements:
+DELETE FROM bodyMeasurements;
