@@ -1,7 +1,5 @@
 import kotlin.Boolean;
 
-------------------------- NOTES ---------------------------------
-
 CREATE TABLE notes (
   uuid TEXT PRIMARY KEY NOT NULL,
   remoteId TEXT,
@@ -42,5 +40,3 @@ DELETE FROM notes WHERE userId = ?;
 
 clearNotes:
 DELETE FROM notes;
-
-------------------------------------------------------------------

@@ -11,14 +11,16 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import kz.maestrosultan.fitjournal.kmp.FitJournalDatabaseQueries
-import kz.maestrosultan.fitjournal.kmp.Notes
+import kz.maestrosultan.fitjournal.kmp.NotesQueries
 import kz.maestrosultan.fitjournal.kmp.notes.entity.DBNoteObject
+import kz.maestrosultan.fitjournal.kmp.notes.entity.map
 
-class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
+class NotesDBDataSource(private val dao: NotesQueries) {
 
     fun getNotes(userId: String): List<DBNoteObject> {
-        return dao.getNotes(userId).executeAsList().map { it.map() }
+        return dao.getNotes(userId)
+            .executeAsList()
+            .map { it.map() }
     }
 
     fun getNotesFlow(userId: String): Flow<List<DBNoteObject>> {
@@ -57,7 +59,7 @@ class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
             createdDate = createdDate.toString(),
             updatedDate = updatedDate.toString()
         )
-        return dao.getNoteById(uuid).executeAsOne().map()
+        return getNoteById(uuid)
     }
 
     fun createNotes(notes: List<DBNoteObject>): List<DBNoteObject> {
@@ -125,17 +127,5 @@ class NotesDBDataSource(private val dao: FitJournalDatabaseQueries) {
 
     fun deleteAllNotes() {
         dao.clearNotes()
-    }
-
-    private fun Notes.map(): DBNoteObject {
-        return DBNoteObject(
-            uuid = uuid,
-            remoteId = remoteId,
-            userId = userId,
-            text = text,
-            isPinned = isPinned,
-            createdDate = createdDate.toLocalDateTime(),
-            updatedDate = updatedDate.toLocalDateTime(),
-        )
     }
 }
