@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "kz.maestrosultan.fitjournal.kmp"
-version = "0.2.6"
+version = "0.2.8"
 val moduleName = "FitJournalKMP"
 
 kotlin {
@@ -124,7 +124,7 @@ multiplatformSwiftPackage {
     swiftToolsVersion("5.8")
     packageName(moduleName)
     zipFileName(moduleName)
-    outputDirectory(File(rootDir, "swiftpackage/FitJournal-SPM"))
+    outputDirectory(rootProject.rootDir)
     targetPlatforms {
         iOS { v("14") }
     }

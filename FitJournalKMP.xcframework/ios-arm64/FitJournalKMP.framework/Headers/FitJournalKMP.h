@@ -6,9 +6,9 @@
 #import <Foundation/NSString.h>
 #import <Foundation/NSValue.h>
 
-@class FJKMPNotesQueries, FJKMPFitJournalDatabaseCompanion, FJKMPNotes, FJKMPKotlinUnit, FJKMPRuntimeTransacterTransaction, FJKMPKotlinThrowable, FJKMPRuntimeBaseTransacterImpl, FJKMPRuntimeTransacterImpl, FJKMPRuntimeQuery<__covariant RowType>, FJKMPDBNoteObject, FJKMPKotlinx_datetimeLocalDateTime, FJKMPKotlinArray<T>, FJKMPRuntimeAfterVersion, FJKMPRuntimeExecutableQuery<__covariant RowType>, FJKMPKotlinx_datetimeLocalDate, FJKMPKotlinx_datetimeLocalTime, FJKMPKotlinx_datetimeMonth, FJKMPKotlinx_datetimeLocalDateTimeCompanion, FJKMPKotlinx_datetimeDayOfWeek, FJKMPKotlinByteArray, FJKMPKotlinx_datetimeLocalDateCompanion, FJKMPKotlinx_datetimeLocalTimeCompanion, FJKMPKotlinEnumCompanion, FJKMPKotlinEnum<E>, FJKMPKotlinException, FJKMPKotlinRuntimeException, FJKMPKotlinIllegalStateException, FJKMPKotlinByteIterator, FJKMPKotlinx_serialization_coreSerializersModule, FJKMPKotlinx_serialization_coreSerialKind, FJKMPKotlinNothing;
+@class FJKMPBodyMeasurements, FJKMPKotlinUnit, FJKMPRuntimeTransacterTransaction, FJKMPKotlinThrowable, FJKMPRuntimeBaseTransacterImpl, FJKMPRuntimeTransacterImpl, FJKMPRuntimeQuery<__covariant RowType>, FJKMPBodyMeasurementsQueries, FJKMPNotesQueries, FJKMPFitJournalDatabaseCompanion, FJKMPNotes, FJKMPDBBodyMeasurementObject, FJKMPKotlinx_datetimeLocalDate, FJKMPKotlinx_datetimeLocalDateTime, FJKMPDBNoteObject, FJKMPKotlinArray<T>, FJKMPRuntimeExecutableQuery<__covariant RowType>, FJKMPRuntimeAfterVersion, FJKMPKotlinx_datetimeMonth, FJKMPKotlinx_datetimeLocalDateCompanion, FJKMPKotlinx_datetimeDayOfWeek, FJKMPKotlinx_datetimeLocalTime, FJKMPKotlinx_datetimeLocalDateTimeCompanion, FJKMPKotlinByteArray, FJKMPKotlinEnumCompanion, FJKMPKotlinEnum<E>, FJKMPKotlinx_datetimeLocalTimeCompanion, FJKMPKotlinException, FJKMPKotlinRuntimeException, FJKMPKotlinIllegalStateException, FJKMPKotlinByteIterator, FJKMPKotlinx_serialization_coreSerializersModule, FJKMPKotlinx_serialization_coreSerialKind, FJKMPKotlinNothing;
 
-@protocol FJKMPRuntimeTransactionWithoutReturn, FJKMPRuntimeTransactionWithReturn, FJKMPRuntimeTransacterBase, FJKMPRuntimeTransacter, FJKMPFitJournalDatabase, FJKMPRuntimeSqlDriver, FJKMPRuntimeSqlSchema, FJKMPKotlinx_coroutines_coreFlow, FJKMPRuntimeTransactionCallbacks, FJKMPRuntimeQueryListener, FJKMPRuntimeQueryResult, FJKMPRuntimeSqlPreparedStatement, FJKMPRuntimeSqlCursor, FJKMPRuntimeCloseable, FJKMPKotlinComparable, FJKMPKotlinx_coroutines_coreFlowCollector, FJKMPKotlinIterator, FJKMPKotlinx_serialization_coreKSerializer, FJKMPKotlinx_serialization_coreEncoder, FJKMPKotlinx_serialization_coreSerialDescriptor, FJKMPKotlinx_serialization_coreSerializationStrategy, FJKMPKotlinx_serialization_coreDecoder, FJKMPKotlinx_serialization_coreDeserializationStrategy, FJKMPKotlinx_serialization_coreCompositeEncoder, FJKMPKotlinAnnotation, FJKMPKotlinx_serialization_coreCompositeDecoder, FJKMPKotlinx_serialization_coreSerializersModuleCollector, FJKMPKotlinKClass, FJKMPKotlinKDeclarationContainer, FJKMPKotlinKAnnotatedElement, FJKMPKotlinKClassifier;
+@protocol FJKMPRuntimeSqlDriver, FJKMPRuntimeTransactionWithoutReturn, FJKMPRuntimeTransactionWithReturn, FJKMPRuntimeTransacterBase, FJKMPRuntimeTransacter, FJKMPFitJournalDatabase, FJKMPRuntimeSqlSchema, FJKMPKotlinx_coroutines_coreFlow, FJKMPRuntimeQueryListener, FJKMPRuntimeQueryResult, FJKMPRuntimeSqlPreparedStatement, FJKMPRuntimeSqlCursor, FJKMPRuntimeCloseable, FJKMPRuntimeTransactionCallbacks, FJKMPKotlinComparable, FJKMPKotlinx_coroutines_coreFlowCollector, FJKMPKotlinIterator, FJKMPKotlinx_serialization_coreKSerializer, FJKMPKotlinx_serialization_coreEncoder, FJKMPKotlinx_serialization_coreSerialDescriptor, FJKMPKotlinx_serialization_coreSerializationStrategy, FJKMPKotlinx_serialization_coreDecoder, FJKMPKotlinx_serialization_coreDeserializationStrategy, FJKMPKotlinx_serialization_coreCompositeEncoder, FJKMPKotlinAnnotation, FJKMPKotlinx_serialization_coreCompositeDecoder, FJKMPKotlinx_serialization_coreSerializersModuleCollector, FJKMPKotlinKClass, FJKMPKotlinKDeclarationContainer, FJKMPKotlinKAnnotatedElement, FJKMPKotlinKClassifier;
 
 NS_ASSUME_NONNULL_BEGIN
 #pragma clang diagnostic push
@@ -144,6 +144,51 @@ __attribute__((swift_name("KotlinBoolean")))
 + (instancetype)numberWithBool:(BOOL)value;
 @end
 
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("BodyMeasurements")))
+@interface FJKMPBodyMeasurements : FJKMPBase
+- (instancetype)initWithUuid:(NSString *)uuid remoteId:(NSString * _Nullable)remoteId userId:(NSString *)userId diaryId:(NSString *)diaryId type:(NSString *)type value_:(double)value_ comment:(NSString * _Nullable)comment measurementDate:(NSString *)measurementDate createdDate:(NSString *)createdDate updatedDate:(NSString *)updatedDate __attribute__((swift_name("init(uuid:remoteId:userId:diaryId:type:value_:comment:measurementDate:createdDate:updatedDate:)"))) __attribute__((objc_designated_initializer));
+- (FJKMPBodyMeasurements *)doCopyUuid:(NSString *)uuid remoteId:(NSString * _Nullable)remoteId userId:(NSString *)userId diaryId:(NSString *)diaryId type:(NSString *)type value_:(double)value_ comment:(NSString * _Nullable)comment measurementDate:(NSString *)measurementDate createdDate:(NSString *)createdDate updatedDate:(NSString *)updatedDate __attribute__((swift_name("doCopy(uuid:remoteId:userId:diaryId:type:value_:comment:measurementDate:createdDate:updatedDate:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSString * _Nullable comment __attribute__((swift_name("comment")));
+@property (readonly) NSString *createdDate __attribute__((swift_name("createdDate")));
+@property (readonly) NSString *diaryId __attribute__((swift_name("diaryId")));
+@property (readonly) NSString *measurementDate __attribute__((swift_name("measurementDate")));
+@property (readonly) NSString * _Nullable remoteId __attribute__((swift_name("remoteId")));
+@property (readonly) NSString *type __attribute__((swift_name("type")));
+@property (readonly) NSString *updatedDate __attribute__((swift_name("updatedDate")));
+@property (readonly) NSString *userId __attribute__((swift_name("userId")));
+@property (readonly) NSString *uuid __attribute__((swift_name("uuid")));
+@property (readonly) double value_ __attribute__((swift_name("value_")));
+@end
+
+__attribute__((swift_name("RuntimeBaseTransacterImpl")))
+@interface FJKMPRuntimeBaseTransacterImpl : FJKMPBase
+- (instancetype)initWithDriver:(id<FJKMPRuntimeSqlDriver>)driver __attribute__((swift_name("init(driver:)"))) __attribute__((objc_designated_initializer));
+
+/**
+ * @note This method has protected visibility in Kotlin source and is intended only for use by subclasses.
+*/
+- (NSString *)createArgumentsCount:(int32_t)count __attribute__((swift_name("createArguments(count:)")));
+
+/**
+ * @note This method has protected visibility in Kotlin source and is intended only for use by subclasses.
+*/
+- (void)notifyQueriesIdentifier:(int32_t)identifier tableProvider:(void (^)(FJKMPKotlinUnit *(^)(NSString *)))tableProvider __attribute__((swift_name("notifyQueries(identifier:tableProvider:)")));
+
+/**
+ * @note This method has protected visibility in Kotlin source and is intended only for use by subclasses.
+*/
+- (id _Nullable)postTransactionCleanupTransaction:(FJKMPRuntimeTransacterTransaction *)transaction enclosing:(FJKMPRuntimeTransacterTransaction * _Nullable)enclosing thrownException:(FJKMPKotlinThrowable * _Nullable)thrownException returnValue:(id _Nullable)returnValue __attribute__((swift_name("postTransactionCleanup(transaction:enclosing:thrownException:returnValue:)")));
+
+/**
+ * @note This property has protected visibility in Kotlin source and is intended only for use by subclasses.
+*/
+@property (readonly) id<FJKMPRuntimeSqlDriver> driver __attribute__((swift_name("driver")));
+@end
+
 __attribute__((swift_name("RuntimeTransacterBase")))
 @protocol FJKMPRuntimeTransacterBase
 @required
@@ -156,9 +201,36 @@ __attribute__((swift_name("RuntimeTransacter")))
 - (id _Nullable)transactionWithResultNoEnclosing:(BOOL)noEnclosing bodyWithReturn:(id _Nullable (^)(id<FJKMPRuntimeTransactionWithReturn>))bodyWithReturn __attribute__((swift_name("transactionWithResult(noEnclosing:bodyWithReturn:)")));
 @end
 
+__attribute__((swift_name("RuntimeTransacterImpl")))
+@interface FJKMPRuntimeTransacterImpl : FJKMPRuntimeBaseTransacterImpl <FJKMPRuntimeTransacter>
+- (instancetype)initWithDriver:(id<FJKMPRuntimeSqlDriver>)driver __attribute__((swift_name("init(driver:)"))) __attribute__((objc_designated_initializer));
+- (void)transactionNoEnclosing:(BOOL)noEnclosing body:(void (^)(id<FJKMPRuntimeTransactionWithoutReturn>))body __attribute__((swift_name("transaction(noEnclosing:body:)")));
+- (id _Nullable)transactionWithResultNoEnclosing:(BOOL)noEnclosing bodyWithReturn:(id _Nullable (^)(id<FJKMPRuntimeTransactionWithReturn>))bodyWithReturn __attribute__((swift_name("transactionWithResult(noEnclosing:bodyWithReturn:)")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("BodyMeasurementsQueries")))
+@interface FJKMPBodyMeasurementsQueries : FJKMPRuntimeTransacterImpl
+- (instancetype)initWithDriver:(id<FJKMPRuntimeSqlDriver>)driver __attribute__((swift_name("init(driver:)"))) __attribute__((objc_designated_initializer));
+- (void)createBodyMeasurementUuid:(NSString *)uuid remoteId:(NSString * _Nullable)remoteId userId:(NSString *)userId diaryId:(NSString *)diaryId type:(NSString *)type value_:(double)value_ comment:(NSString * _Nullable)comment measurementDate:(NSString *)measurementDate createdDate:(NSString *)createdDate updatedDate:(NSString *)updatedDate __attribute__((swift_name("createBodyMeasurement(uuid:remoteId:userId:diaryId:type:value_:comment:measurementDate:createdDate:updatedDate:)")));
+- (void)deleteAllBodyMeasurements __attribute__((swift_name("deleteAllBodyMeasurements()")));
+- (void)deleteBodyMeasurementUuid:(NSString *)uuid __attribute__((swift_name("deleteBodyMeasurement(uuid:)")));
+- (void)deleteDiaryBodyMeasurementsDiaryId:(NSString *)diaryId __attribute__((swift_name("deleteDiaryBodyMeasurements(diaryId:)")));
+- (void)deleteUserBodyMeasurementsUserId:(NSString *)userId __attribute__((swift_name("deleteUserBodyMeasurements(userId:)")));
+- (FJKMPRuntimeQuery<FJKMPBodyMeasurements *> *)getAllBodyMeasurementsUserId:(NSString *)userId diaryId:(NSString *)diaryId __attribute__((swift_name("getAllBodyMeasurements(userId:diaryId:)")));
+- (FJKMPRuntimeQuery<id> *)getAllBodyMeasurementsUserId:(NSString *)userId diaryId:(NSString *)diaryId mapper:(id (^)(NSString *, NSString * _Nullable, NSString *, NSString *, NSString *, FJKMPDouble *, NSString * _Nullable, NSString *, NSString *, NSString *))mapper __attribute__((swift_name("getAllBodyMeasurements(userId:diaryId:mapper:)")));
+- (FJKMPRuntimeQuery<FJKMPBodyMeasurements *> *)getBodyMeasurementByIdUuid:(NSString *)uuid __attribute__((swift_name("getBodyMeasurementById(uuid:)")));
+- (FJKMPRuntimeQuery<id> *)getBodyMeasurementByIdUuid:(NSString *)uuid mapper:(id (^)(NSString *, NSString * _Nullable, NSString *, NSString *, NSString *, FJKMPDouble *, NSString * _Nullable, NSString *, NSString *, NSString *))mapper __attribute__((swift_name("getBodyMeasurementById(uuid:mapper:)")));
+- (FJKMPRuntimeQuery<FJKMPBodyMeasurements *> *)getBodyMeasurementsByTypeUserId:(NSString *)userId diaryId:(NSString *)diaryId type:(NSString *)type __attribute__((swift_name("getBodyMeasurementsByType(userId:diaryId:type:)")));
+- (FJKMPRuntimeQuery<id> *)getBodyMeasurementsByTypeUserId:(NSString *)userId diaryId:(NSString *)diaryId type:(NSString *)type mapper:(id (^)(NSString *, NSString * _Nullable, NSString *, NSString *, NSString *, FJKMPDouble *, NSString * _Nullable, NSString *, NSString *, NSString *))mapper __attribute__((swift_name("getBodyMeasurementsByType(userId:diaryId:type:mapper:)")));
+- (void)updateBodyMeasurementValue_:(double)value_ comment:(NSString * _Nullable)comment measurementDate:(NSString *)measurementDate updatedDate:(NSString *)updatedDate uuid:(NSString *)uuid __attribute__((swift_name("updateBodyMeasurement(value_:comment:measurementDate:updatedDate:uuid:)")));
+- (void)updateBodyMeasurementRemoteIdRemoteId:(NSString * _Nullable)remoteId uuid:(NSString *)uuid __attribute__((swift_name("updateBodyMeasurementRemoteId(remoteId:uuid:)")));
+@end
+
 __attribute__((swift_name("FitJournalDatabase")))
 @protocol FJKMPFitJournalDatabase <FJKMPRuntimeTransacter>
 @required
+@property (readonly) FJKMPBodyMeasurementsQueries *bodyMeasurementsQueries __attribute__((swift_name("bodyMeasurementsQueries")));
 @property (readonly) FJKMPNotesQueries *notesQueries __attribute__((swift_name("notesQueries")));
 @end
 
@@ -190,38 +262,6 @@ __attribute__((swift_name("Notes")))
 @property (readonly) NSString *uuid __attribute__((swift_name("uuid")));
 @end
 
-__attribute__((swift_name("RuntimeBaseTransacterImpl")))
-@interface FJKMPRuntimeBaseTransacterImpl : FJKMPBase
-- (instancetype)initWithDriver:(id<FJKMPRuntimeSqlDriver>)driver __attribute__((swift_name("init(driver:)"))) __attribute__((objc_designated_initializer));
-
-/**
- * @note This method has protected visibility in Kotlin source and is intended only for use by subclasses.
-*/
-- (NSString *)createArgumentsCount:(int32_t)count __attribute__((swift_name("createArguments(count:)")));
-
-/**
- * @note This method has protected visibility in Kotlin source and is intended only for use by subclasses.
-*/
-- (void)notifyQueriesIdentifier:(int32_t)identifier tableProvider:(void (^)(FJKMPKotlinUnit *(^)(NSString *)))tableProvider __attribute__((swift_name("notifyQueries(identifier:tableProvider:)")));
-
-/**
- * @note This method has protected visibility in Kotlin source and is intended only for use by subclasses.
-*/
-- (id _Nullable)postTransactionCleanupTransaction:(FJKMPRuntimeTransacterTransaction *)transaction enclosing:(FJKMPRuntimeTransacterTransaction * _Nullable)enclosing thrownException:(FJKMPKotlinThrowable * _Nullable)thrownException returnValue:(id _Nullable)returnValue __attribute__((swift_name("postTransactionCleanup(transaction:enclosing:thrownException:returnValue:)")));
-
-/**
- * @note This property has protected visibility in Kotlin source and is intended only for use by subclasses.
-*/
-@property (readonly) id<FJKMPRuntimeSqlDriver> driver __attribute__((swift_name("driver")));
-@end
-
-__attribute__((swift_name("RuntimeTransacterImpl")))
-@interface FJKMPRuntimeTransacterImpl : FJKMPRuntimeBaseTransacterImpl <FJKMPRuntimeTransacter>
-- (instancetype)initWithDriver:(id<FJKMPRuntimeSqlDriver>)driver __attribute__((swift_name("init(driver:)"))) __attribute__((objc_designated_initializer));
-- (void)transactionNoEnclosing:(BOOL)noEnclosing body:(void (^)(id<FJKMPRuntimeTransactionWithoutReturn>))body __attribute__((swift_name("transaction(noEnclosing:body:)")));
-- (id _Nullable)transactionWithResultNoEnclosing:(BOOL)noEnclosing bodyWithReturn:(id _Nullable (^)(id<FJKMPRuntimeTransactionWithReturn>))bodyWithReturn __attribute__((swift_name("transactionWithResult(noEnclosing:bodyWithReturn:)")));
-@end
-
 __attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("NotesQueries")))
 @interface FJKMPNotesQueries : FJKMPRuntimeTransacterImpl
@@ -236,6 +276,47 @@ __attribute__((swift_name("NotesQueries")))
 - (FJKMPRuntimeQuery<id> *)getNotesUserId:(NSString *)userId mapper:(id (^)(NSString *, NSString * _Nullable, NSString *, NSString *, FJKMPBoolean *, NSString *, NSString *))mapper __attribute__((swift_name("getNotes(userId:mapper:)")));
 - (void)updateNoteText:(NSString *)text isPinned:(BOOL)isPinned updatedDate:(NSString *)updatedDate uuid:(NSString *)uuid __attribute__((swift_name("updateNote(text:isPinned:updatedDate:uuid:)")));
 - (void)updateRemoteIdRemoteId:(NSString * _Nullable)remoteId uuid:(NSString *)uuid __attribute__((swift_name("updateRemoteId(remoteId:uuid:)")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("BodyMeasurementsDBDataSource")))
+@interface FJKMPBodyMeasurementsDBDataSource : FJKMPBase
+- (instancetype)initWithDao:(FJKMPBodyMeasurementsQueries *)dao __attribute__((swift_name("init(dao:)"))) __attribute__((objc_designated_initializer));
+- (FJKMPDBBodyMeasurementObject *)createBodyMeasurementUuid:(NSString *)uuid remoteId:(NSString * _Nullable)remoteId userId:(NSString *)userId diaryId:(NSString *)diaryId measurementDate:(FJKMPKotlinx_datetimeLocalDate *)measurementDate type:(NSString *)type value:(double)value comment:(NSString * _Nullable)comment createdDate:(FJKMPKotlinx_datetimeLocalDateTime *)createdDate updatedDate:(FJKMPKotlinx_datetimeLocalDateTime *)updatedDate __attribute__((swift_name("createBodyMeasurement(uuid:remoteId:userId:diaryId:measurementDate:type:value:comment:createdDate:updatedDate:)")));
+- (NSArray<FJKMPDBBodyMeasurementObject *> *)createBodyMeasurementsMeasurements:(NSArray<FJKMPDBBodyMeasurementObject *> *)measurements __attribute__((swift_name("createBodyMeasurements(measurements:)")));
+- (void)deleteAllBodyMeasurements __attribute__((swift_name("deleteAllBodyMeasurements()")));
+- (void)deleteBodyMeasurementUuid:(NSString *)uuid __attribute__((swift_name("deleteBodyMeasurement(uuid:)")));
+- (void)deleteDiaryBodyMeasurementsDiaryId:(NSString *)diaryId __attribute__((swift_name("deleteDiaryBodyMeasurements(diaryId:)")));
+- (void)deleteUserBodyMeasurementsUserId:(NSString *)userId __attribute__((swift_name("deleteUserBodyMeasurements(userId:)")));
+- (NSArray<FJKMPDBBodyMeasurementObject *> *)getAllBodyMeasurementsUserId:(NSString *)userId diaryId:(NSString *)diaryId __attribute__((swift_name("getAllBodyMeasurements(userId:diaryId:)")));
+- (id<FJKMPKotlinx_coroutines_coreFlow>)getAllBodyMeasurementsFlowUserId:(NSString *)userId diaryId:(NSString *)diaryId __attribute__((swift_name("getAllBodyMeasurementsFlow(userId:diaryId:)")));
+- (FJKMPDBBodyMeasurementObject *)getBodyMeasurementByIdUuid:(NSString *)uuid __attribute__((swift_name("getBodyMeasurementById(uuid:)")));
+- (id<FJKMPKotlinx_coroutines_coreFlow>)getBodyMeasurementByIdFlowUuid:(NSString *)uuid __attribute__((swift_name("getBodyMeasurementByIdFlow(uuid:)")));
+- (NSArray<FJKMPDBBodyMeasurementObject *> *)getBodyMeasurementsByTypeUserId:(NSString *)userId diaryId:(NSString *)diaryId type:(NSString *)type __attribute__((swift_name("getBodyMeasurementsByType(userId:diaryId:type:)")));
+- (id<FJKMPKotlinx_coroutines_coreFlow>)getBodyMeasurementsByTypeFlowUserId:(NSString *)userId diaryId:(NSString *)diaryId type:(NSString *)type __attribute__((swift_name("getBodyMeasurementsByTypeFlow(userId:diaryId:type:)")));
+- (FJKMPDBBodyMeasurementObject *)updateBodyMeasurementUuid:(NSString *)uuid value:(double)value comment:(NSString * _Nullable)comment measurementDate:(FJKMPKotlinx_datetimeLocalDate *)measurementDate updatedDate:(FJKMPKotlinx_datetimeLocalDateTime *)updatedDate __attribute__((swift_name("updateBodyMeasurement(uuid:value:comment:measurementDate:updatedDate:)")));
+- (FJKMPDBBodyMeasurementObject *)updateBodyMeasurementRemoteIdUuid:(NSString *)uuid remoteId:(NSString *)remoteId __attribute__((swift_name("updateBodyMeasurementRemoteId(uuid:remoteId:)")));
+- (NSArray<FJKMPDBBodyMeasurementObject *> *)updateBodyMeasurementsMeasurements:(NSArray<FJKMPDBBodyMeasurementObject *> *)measurements __attribute__((swift_name("updateBodyMeasurements(measurements:)")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("DBBodyMeasurementObject")))
+@interface FJKMPDBBodyMeasurementObject : FJKMPBase
+- (instancetype)initWithUuid:(NSString *)uuid remoteId:(NSString * _Nullable)remoteId userId:(NSString *)userId diaryId:(NSString *)diaryId measurementDate:(FJKMPKotlinx_datetimeLocalDate *)measurementDate type:(NSString *)type value:(double)value comment:(NSString * _Nullable)comment createdDate:(FJKMPKotlinx_datetimeLocalDateTime *)createdDate updatedDate:(FJKMPKotlinx_datetimeLocalDateTime *)updatedDate __attribute__((swift_name("init(uuid:remoteId:userId:diaryId:measurementDate:type:value:comment:createdDate:updatedDate:)"))) __attribute__((objc_designated_initializer));
+- (FJKMPDBBodyMeasurementObject *)doCopyUuid:(NSString *)uuid remoteId:(NSString * _Nullable)remoteId userId:(NSString *)userId diaryId:(NSString *)diaryId measurementDate:(FJKMPKotlinx_datetimeLocalDate *)measurementDate type:(NSString *)type value:(double)value comment:(NSString * _Nullable)comment createdDate:(FJKMPKotlinx_datetimeLocalDateTime *)createdDate updatedDate:(FJKMPKotlinx_datetimeLocalDateTime *)updatedDate __attribute__((swift_name("doCopy(uuid:remoteId:userId:diaryId:measurementDate:type:value:comment:createdDate:updatedDate:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSString * _Nullable comment __attribute__((swift_name("comment")));
+@property (readonly) FJKMPKotlinx_datetimeLocalDateTime *createdDate __attribute__((swift_name("createdDate")));
+@property (readonly) NSString *diaryId __attribute__((swift_name("diaryId")));
+@property (readonly) FJKMPKotlinx_datetimeLocalDate *measurementDate __attribute__((swift_name("measurementDate")));
+@property (readonly) NSString * _Nullable remoteId __attribute__((swift_name("remoteId")));
+@property (readonly) NSString *type __attribute__((swift_name("type")));
+@property (readonly) FJKMPKotlinx_datetimeLocalDateTime *updatedDate __attribute__((swift_name("updatedDate")));
+@property (readonly) NSString *userId __attribute__((swift_name("userId")));
+@property (readonly) NSString *uuid __attribute__((swift_name("uuid")));
+@property (readonly) double value __attribute__((swift_name("value")));
 @end
 
 __attribute__((objc_subclassing_restricted))
@@ -281,27 +362,6 @@ __attribute__((swift_name("DatabaseDriverFactory")))
 - (id<FJKMPRuntimeSqlDriver>)createDriver __attribute__((swift_name("createDriver()")));
 @end
 
-__attribute__((swift_name("RuntimeTransactionCallbacks")))
-@protocol FJKMPRuntimeTransactionCallbacks
-@required
-- (void)afterCommitFunction:(void (^)(void))function __attribute__((swift_name("afterCommit(function:)")));
-- (void)afterRollbackFunction:(void (^)(void))function __attribute__((swift_name("afterRollback(function:)")));
-@end
-
-__attribute__((swift_name("RuntimeTransactionWithoutReturn")))
-@protocol FJKMPRuntimeTransactionWithoutReturn <FJKMPRuntimeTransactionCallbacks>
-@required
-- (void)rollback __attribute__((swift_name("rollback()")));
-- (void)transactionBody:(void (^)(id<FJKMPRuntimeTransactionWithoutReturn>))body __attribute__((swift_name("transaction(body:)")));
-@end
-
-__attribute__((swift_name("RuntimeTransactionWithReturn")))
-@protocol FJKMPRuntimeTransactionWithReturn <FJKMPRuntimeTransactionCallbacks>
-@required
-- (void)rollbackReturnValue:(id _Nullable)returnValue __attribute__((swift_name("rollback(returnValue:)")));
-- (id _Nullable)transactionBody_:(id _Nullable (^)(id<FJKMPRuntimeTransactionWithReturn>))body __attribute__((swift_name("transaction(body_:)")));
-@end
-
 __attribute__((swift_name("RuntimeCloseable")))
 @protocol FJKMPRuntimeCloseable
 @required
@@ -320,14 +380,6 @@ __attribute__((swift_name("RuntimeSqlDriver")))
 - (void)removeListenerQueryKeys:(FJKMPKotlinArray<NSString *> *)queryKeys listener:(id<FJKMPRuntimeQueryListener>)listener __attribute__((swift_name("removeListener(queryKeys:listener:)")));
 @end
 
-__attribute__((swift_name("RuntimeSqlSchema")))
-@protocol FJKMPRuntimeSqlSchema
-@required
-- (id<FJKMPRuntimeQueryResult>)createDriver:(id<FJKMPRuntimeSqlDriver>)driver __attribute__((swift_name("create(driver:)")));
-- (id<FJKMPRuntimeQueryResult>)migrateDriver:(id<FJKMPRuntimeSqlDriver>)driver oldVersion:(int64_t)oldVersion newVersion:(int64_t)newVersion callbacks:(FJKMPKotlinArray<FJKMPRuntimeAfterVersion *> *)callbacks __attribute__((swift_name("migrate(driver:oldVersion:newVersion:callbacks:)")));
-@property (readonly) int64_t version __attribute__((swift_name("version")));
-@end
-
 __attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("KotlinUnit")))
 @interface FJKMPKotlinUnit : FJKMPBase
@@ -336,6 +388,13 @@ __attribute__((swift_name("KotlinUnit")))
 + (instancetype)unit __attribute__((swift_name("init()")));
 @property (class, readonly, getter=shared) FJKMPKotlinUnit *shared __attribute__((swift_name("shared")));
 - (NSString *)description __attribute__((swift_name("description()")));
+@end
+
+__attribute__((swift_name("RuntimeTransactionCallbacks")))
+@protocol FJKMPRuntimeTransactionCallbacks
+@required
+- (void)afterCommitFunction:(void (^)(void))function __attribute__((swift_name("afterCommit(function:)")));
+- (void)afterRollbackFunction:(void (^)(void))function __attribute__((swift_name("afterRollback(function:)")));
 @end
 
 __attribute__((swift_name("RuntimeTransacterTransaction")))
@@ -376,6 +435,20 @@ __attribute__((swift_name("KotlinThrowable")))
 - (NSError *)asError __attribute__((swift_name("asError()")));
 @end
 
+__attribute__((swift_name("RuntimeTransactionWithoutReturn")))
+@protocol FJKMPRuntimeTransactionWithoutReturn <FJKMPRuntimeTransactionCallbacks>
+@required
+- (void)rollback __attribute__((swift_name("rollback()")));
+- (void)transactionBody:(void (^)(id<FJKMPRuntimeTransactionWithoutReturn>))body __attribute__((swift_name("transaction(body:)")));
+@end
+
+__attribute__((swift_name("RuntimeTransactionWithReturn")))
+@protocol FJKMPRuntimeTransactionWithReturn <FJKMPRuntimeTransactionCallbacks>
+@required
+- (void)rollbackReturnValue:(id _Nullable)returnValue __attribute__((swift_name("rollback(returnValue:)")));
+- (id _Nullable)transactionBody_:(id _Nullable (^)(id<FJKMPRuntimeTransactionWithReturn>))body __attribute__((swift_name("transaction(body_:)")));
+@end
+
 __attribute__((swift_name("RuntimeExecutableQuery")))
 @interface FJKMPRuntimeExecutableQuery<__covariant RowType> : FJKMPBase
 - (instancetype)initWithMapper:(RowType (^)(id<FJKMPRuntimeSqlCursor>))mapper __attribute__((swift_name("init(mapper:)"))) __attribute__((objc_designated_initializer));
@@ -393,10 +466,42 @@ __attribute__((swift_name("RuntimeQuery")))
 - (void)removeListenerListener:(id<FJKMPRuntimeQueryListener>)listener __attribute__((swift_name("removeListener(listener:)")));
 @end
 
+__attribute__((swift_name("RuntimeSqlSchema")))
+@protocol FJKMPRuntimeSqlSchema
+@required
+- (id<FJKMPRuntimeQueryResult>)createDriver:(id<FJKMPRuntimeSqlDriver>)driver __attribute__((swift_name("create(driver:)")));
+- (id<FJKMPRuntimeQueryResult>)migrateDriver:(id<FJKMPRuntimeSqlDriver>)driver oldVersion:(int64_t)oldVersion newVersion:(int64_t)newVersion callbacks:(FJKMPKotlinArray<FJKMPRuntimeAfterVersion *> *)callbacks __attribute__((swift_name("migrate(driver:oldVersion:newVersion:callbacks:)")));
+@property (readonly) int64_t version __attribute__((swift_name("version")));
+@end
+
 __attribute__((swift_name("KotlinComparable")))
 @protocol FJKMPKotlinComparable
 @required
 - (int32_t)compareToOther:(id _Nullable)other __attribute__((swift_name("compareTo(other:)")));
+@end
+
+
+/**
+ * @note annotations
+ *   kotlinx.serialization.Serializable(with=NormalClass(value=kotlinx/datetime/serializers/LocalDateIso8601Serializer))
+*/
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("Kotlinx_datetimeLocalDate")))
+@interface FJKMPKotlinx_datetimeLocalDate : FJKMPBase <FJKMPKotlinComparable>
+- (instancetype)initWithYear:(int32_t)year monthNumber:(int32_t)monthNumber dayOfMonth:(int32_t)dayOfMonth __attribute__((swift_name("init(year:monthNumber:dayOfMonth:)"))) __attribute__((objc_designated_initializer));
+- (instancetype)initWithYear:(int32_t)year month:(FJKMPKotlinx_datetimeMonth *)month dayOfMonth:(int32_t)dayOfMonth __attribute__((swift_name("init(year:month:dayOfMonth:)"))) __attribute__((objc_designated_initializer));
+@property (class, readonly, getter=companion) FJKMPKotlinx_datetimeLocalDateCompanion *companion __attribute__((swift_name("companion")));
+- (int32_t)compareToOther:(FJKMPKotlinx_datetimeLocalDate *)other __attribute__((swift_name("compareTo(other:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (int32_t)toEpochDays __attribute__((swift_name("toEpochDays()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) int32_t dayOfMonth __attribute__((swift_name("dayOfMonth")));
+@property (readonly) FJKMPKotlinx_datetimeDayOfWeek *dayOfWeek __attribute__((swift_name("dayOfWeek")));
+@property (readonly) int32_t dayOfYear __attribute__((swift_name("dayOfYear")));
+@property (readonly) FJKMPKotlinx_datetimeMonth *month __attribute__((swift_name("month")));
+@property (readonly) int32_t monthNumber __attribute__((swift_name("monthNumber")));
+@property (readonly) int32_t year __attribute__((swift_name("year")));
 @end
 
 
@@ -499,53 +604,6 @@ __attribute__((swift_name("RuntimeAfterVersion")))
 @property (readonly) void (^block)(id<FJKMPRuntimeSqlDriver>) __attribute__((swift_name("block")));
 @end
 
-
-/**
- * @note annotations
- *   kotlinx.serialization.Serializable(with=NormalClass(value=kotlinx/datetime/serializers/LocalDateIso8601Serializer))
-*/
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("Kotlinx_datetimeLocalDate")))
-@interface FJKMPKotlinx_datetimeLocalDate : FJKMPBase <FJKMPKotlinComparable>
-- (instancetype)initWithYear:(int32_t)year monthNumber:(int32_t)monthNumber dayOfMonth:(int32_t)dayOfMonth __attribute__((swift_name("init(year:monthNumber:dayOfMonth:)"))) __attribute__((objc_designated_initializer));
-- (instancetype)initWithYear:(int32_t)year month:(FJKMPKotlinx_datetimeMonth *)month dayOfMonth:(int32_t)dayOfMonth __attribute__((swift_name("init(year:month:dayOfMonth:)"))) __attribute__((objc_designated_initializer));
-@property (class, readonly, getter=companion) FJKMPKotlinx_datetimeLocalDateCompanion *companion __attribute__((swift_name("companion")));
-- (int32_t)compareToOther:(FJKMPKotlinx_datetimeLocalDate *)other __attribute__((swift_name("compareTo(other:)")));
-- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
-- (NSUInteger)hash __attribute__((swift_name("hash()")));
-- (int32_t)toEpochDays __attribute__((swift_name("toEpochDays()")));
-- (NSString *)description __attribute__((swift_name("description()")));
-@property (readonly) int32_t dayOfMonth __attribute__((swift_name("dayOfMonth")));
-@property (readonly) FJKMPKotlinx_datetimeDayOfWeek *dayOfWeek __attribute__((swift_name("dayOfWeek")));
-@property (readonly) int32_t dayOfYear __attribute__((swift_name("dayOfYear")));
-@property (readonly) FJKMPKotlinx_datetimeMonth *month __attribute__((swift_name("month")));
-@property (readonly) int32_t monthNumber __attribute__((swift_name("monthNumber")));
-@property (readonly) int32_t year __attribute__((swift_name("year")));
-@end
-
-
-/**
- * @note annotations
- *   kotlinx.serialization.Serializable(with=NormalClass(value=kotlinx/datetime/serializers/LocalTimeIso8601Serializer))
-*/
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("Kotlinx_datetimeLocalTime")))
-@interface FJKMPKotlinx_datetimeLocalTime : FJKMPBase <FJKMPKotlinComparable>
-- (instancetype)initWithHour:(int32_t)hour minute:(int32_t)minute second:(int32_t)second nanosecond:(int32_t)nanosecond __attribute__((swift_name("init(hour:minute:second:nanosecond:)"))) __attribute__((objc_designated_initializer));
-@property (class, readonly, getter=companion) FJKMPKotlinx_datetimeLocalTimeCompanion *companion __attribute__((swift_name("companion")));
-- (int32_t)compareToOther:(FJKMPKotlinx_datetimeLocalTime *)other __attribute__((swift_name("compareTo(other:)")));
-- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
-- (NSUInteger)hash __attribute__((swift_name("hash()")));
-- (int32_t)toMillisecondOfDay __attribute__((swift_name("toMillisecondOfDay()")));
-- (int64_t)toNanosecondOfDay __attribute__((swift_name("toNanosecondOfDay()")));
-- (int32_t)toSecondOfDay __attribute__((swift_name("toSecondOfDay()")));
-- (NSString *)description __attribute__((swift_name("description()")));
-@property (readonly) int32_t hour __attribute__((swift_name("hour")));
-@property (readonly) int32_t minute __attribute__((swift_name("minute")));
-@property (readonly) int32_t nanosecond __attribute__((swift_name("nanosecond")));
-@property (readonly) int32_t second __attribute__((swift_name("second")));
-@end
-
 __attribute__((swift_name("KotlinEnum")))
 @interface FJKMPKotlinEnum<E> : FJKMPBase <FJKMPKotlinComparable>
 - (instancetype)initWithName:(NSString *)name ordinal:(int32_t)ordinal __attribute__((swift_name("init(name:ordinal:)"))) __attribute__((objc_designated_initializer));
@@ -580,13 +638,14 @@ __attribute__((swift_name("Kotlinx_datetimeMonth")))
 @end
 
 __attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("Kotlinx_datetimeLocalDateTime.Companion")))
-@interface FJKMPKotlinx_datetimeLocalDateTimeCompanion : FJKMPBase
+__attribute__((swift_name("Kotlinx_datetimeLocalDate.Companion")))
+@interface FJKMPKotlinx_datetimeLocalDateCompanion : FJKMPBase
 + (instancetype)alloc __attribute__((unavailable));
 + (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
 + (instancetype)companion __attribute__((swift_name("init()")));
-@property (class, readonly, getter=shared) FJKMPKotlinx_datetimeLocalDateTimeCompanion *shared __attribute__((swift_name("shared")));
-- (FJKMPKotlinx_datetimeLocalDateTime *)parseIsoString:(NSString *)isoString __attribute__((swift_name("parse(isoString:)")));
+@property (class, readonly, getter=shared) FJKMPKotlinx_datetimeLocalDateCompanion *shared __attribute__((swift_name("shared")));
+- (FJKMPKotlinx_datetimeLocalDate *)fromEpochDaysEpochDays:(int32_t)epochDays __attribute__((swift_name("fromEpochDays(epochDays:)")));
+- (FJKMPKotlinx_datetimeLocalDate *)parseIsoString:(NSString *)isoString __attribute__((swift_name("parse(isoString:)")));
 - (id<FJKMPKotlinx_serialization_coreKSerializer>)serializer __attribute__((swift_name("serializer()")));
 @end
 
@@ -604,6 +663,40 @@ __attribute__((swift_name("Kotlinx_datetimeDayOfWeek")))
 @property (class, readonly) FJKMPKotlinx_datetimeDayOfWeek *saturday __attribute__((swift_name("saturday")));
 @property (class, readonly) FJKMPKotlinx_datetimeDayOfWeek *sunday __attribute__((swift_name("sunday")));
 + (FJKMPKotlinArray<FJKMPKotlinx_datetimeDayOfWeek *> *)values __attribute__((swift_name("values()")));
+@end
+
+
+/**
+ * @note annotations
+ *   kotlinx.serialization.Serializable(with=NormalClass(value=kotlinx/datetime/serializers/LocalTimeIso8601Serializer))
+*/
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("Kotlinx_datetimeLocalTime")))
+@interface FJKMPKotlinx_datetimeLocalTime : FJKMPBase <FJKMPKotlinComparable>
+- (instancetype)initWithHour:(int32_t)hour minute:(int32_t)minute second:(int32_t)second nanosecond:(int32_t)nanosecond __attribute__((swift_name("init(hour:minute:second:nanosecond:)"))) __attribute__((objc_designated_initializer));
+@property (class, readonly, getter=companion) FJKMPKotlinx_datetimeLocalTimeCompanion *companion __attribute__((swift_name("companion")));
+- (int32_t)compareToOther:(FJKMPKotlinx_datetimeLocalTime *)other __attribute__((swift_name("compareTo(other:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (int32_t)toMillisecondOfDay __attribute__((swift_name("toMillisecondOfDay()")));
+- (int64_t)toNanosecondOfDay __attribute__((swift_name("toNanosecondOfDay()")));
+- (int32_t)toSecondOfDay __attribute__((swift_name("toSecondOfDay()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) int32_t hour __attribute__((swift_name("hour")));
+@property (readonly) int32_t minute __attribute__((swift_name("minute")));
+@property (readonly) int32_t nanosecond __attribute__((swift_name("nanosecond")));
+@property (readonly) int32_t second __attribute__((swift_name("second")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("Kotlinx_datetimeLocalDateTime.Companion")))
+@interface FJKMPKotlinx_datetimeLocalDateTimeCompanion : FJKMPBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)companion __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) FJKMPKotlinx_datetimeLocalDateTimeCompanion *shared __attribute__((swift_name("shared")));
+- (FJKMPKotlinx_datetimeLocalDateTime *)parseIsoString:(NSString *)isoString __attribute__((swift_name("parse(isoString:)")));
+- (id<FJKMPKotlinx_serialization_coreKSerializer>)serializer __attribute__((swift_name("serializer()")));
 @end
 
 __attribute__((swift_name("KotlinException")))
@@ -679,32 +772,6 @@ __attribute__((swift_name("KotlinByteArray")))
 @end
 
 __attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("Kotlinx_datetimeLocalDate.Companion")))
-@interface FJKMPKotlinx_datetimeLocalDateCompanion : FJKMPBase
-+ (instancetype)alloc __attribute__((unavailable));
-+ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
-+ (instancetype)companion __attribute__((swift_name("init()")));
-@property (class, readonly, getter=shared) FJKMPKotlinx_datetimeLocalDateCompanion *shared __attribute__((swift_name("shared")));
-- (FJKMPKotlinx_datetimeLocalDate *)fromEpochDaysEpochDays:(int32_t)epochDays __attribute__((swift_name("fromEpochDays(epochDays:)")));
-- (FJKMPKotlinx_datetimeLocalDate *)parseIsoString:(NSString *)isoString __attribute__((swift_name("parse(isoString:)")));
-- (id<FJKMPKotlinx_serialization_coreKSerializer>)serializer __attribute__((swift_name("serializer()")));
-@end
-
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("Kotlinx_datetimeLocalTime.Companion")))
-@interface FJKMPKotlinx_datetimeLocalTimeCompanion : FJKMPBase
-+ (instancetype)alloc __attribute__((unavailable));
-+ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
-+ (instancetype)companion __attribute__((swift_name("init()")));
-@property (class, readonly, getter=shared) FJKMPKotlinx_datetimeLocalTimeCompanion *shared __attribute__((swift_name("shared")));
-- (FJKMPKotlinx_datetimeLocalTime *)fromMillisecondOfDayMillisecondOfDay:(int32_t)millisecondOfDay __attribute__((swift_name("fromMillisecondOfDay(millisecondOfDay:)")));
-- (FJKMPKotlinx_datetimeLocalTime *)fromNanosecondOfDayNanosecondOfDay:(int64_t)nanosecondOfDay __attribute__((swift_name("fromNanosecondOfDay(nanosecondOfDay:)")));
-- (FJKMPKotlinx_datetimeLocalTime *)fromSecondOfDaySecondOfDay:(int32_t)secondOfDay __attribute__((swift_name("fromSecondOfDay(secondOfDay:)")));
-- (FJKMPKotlinx_datetimeLocalTime *)parseIsoString:(NSString *)isoString __attribute__((swift_name("parse(isoString:)")));
-- (id<FJKMPKotlinx_serialization_coreKSerializer>)serializer __attribute__((swift_name("serializer()")));
-@end
-
-__attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("KotlinEnumCompanion")))
 @interface FJKMPKotlinEnumCompanion : FJKMPBase
 + (instancetype)alloc __attribute__((unavailable));
@@ -730,6 +797,20 @@ __attribute__((swift_name("Kotlinx_serialization_coreDeserializationStrategy")))
 __attribute__((swift_name("Kotlinx_serialization_coreKSerializer")))
 @protocol FJKMPKotlinx_serialization_coreKSerializer <FJKMPKotlinx_serialization_coreSerializationStrategy, FJKMPKotlinx_serialization_coreDeserializationStrategy>
 @required
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("Kotlinx_datetimeLocalTime.Companion")))
+@interface FJKMPKotlinx_datetimeLocalTimeCompanion : FJKMPBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)companion __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) FJKMPKotlinx_datetimeLocalTimeCompanion *shared __attribute__((swift_name("shared")));
+- (FJKMPKotlinx_datetimeLocalTime *)fromMillisecondOfDayMillisecondOfDay:(int32_t)millisecondOfDay __attribute__((swift_name("fromMillisecondOfDay(millisecondOfDay:)")));
+- (FJKMPKotlinx_datetimeLocalTime *)fromNanosecondOfDayNanosecondOfDay:(int64_t)nanosecondOfDay __attribute__((swift_name("fromNanosecondOfDay(nanosecondOfDay:)")));
+- (FJKMPKotlinx_datetimeLocalTime *)fromSecondOfDaySecondOfDay:(int32_t)secondOfDay __attribute__((swift_name("fromSecondOfDay(secondOfDay:)")));
+- (FJKMPKotlinx_datetimeLocalTime *)parseIsoString:(NSString *)isoString __attribute__((swift_name("parse(isoString:)")));
+- (id<FJKMPKotlinx_serialization_coreKSerializer>)serializer __attribute__((swift_name("serializer()")));
 @end
 
 __attribute__((swift_name("KotlinByteIterator")))
