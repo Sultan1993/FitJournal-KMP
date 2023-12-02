@@ -68,6 +68,7 @@ class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
             .map { it.map() }
     }
 
+    @Throws(Exception::class)
     fun createBodyMeasurement(
         uuid: String,
         remoteId: String?,
@@ -97,6 +98,7 @@ class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
         }
     }
 
+    @Throws(Exception::class)
     fun createBodyMeasurements(measurements: List<DBBodyMeasurementObject>) {
         dao.transaction {
             measurements.forEach {
