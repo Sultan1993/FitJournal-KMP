@@ -283,7 +283,7 @@ __attribute__((swift_name("BodyMeasurementsDBDataSource")))
 @interface FJKMPBodyMeasurementsDBDataSource : FJKMPBase
 - (instancetype)initWithDao:(FJKMPBodyMeasurementsQueries *)dao __attribute__((swift_name("init(dao:)"))) __attribute__((objc_designated_initializer));
 - (FJKMPDBBodyMeasurementObject *)createBodyMeasurementUuid:(NSString *)uuid remoteId:(NSString * _Nullable)remoteId userId:(NSString *)userId diaryId:(NSString *)diaryId measurementDate:(FJKMPKotlinx_datetimeLocalDate *)measurementDate type:(NSString *)type value:(double)value comment:(NSString * _Nullable)comment createdDate:(FJKMPKotlinx_datetimeLocalDateTime *)createdDate updatedDate:(FJKMPKotlinx_datetimeLocalDateTime *)updatedDate __attribute__((swift_name("createBodyMeasurement(uuid:remoteId:userId:diaryId:measurementDate:type:value:comment:createdDate:updatedDate:)")));
-- (NSArray<FJKMPDBBodyMeasurementObject *> *)createBodyMeasurementsMeasurements:(NSArray<FJKMPDBBodyMeasurementObject *> *)measurements __attribute__((swift_name("createBodyMeasurements(measurements:)")));
+- (void)createBodyMeasurementsMeasurements:(NSArray<FJKMPDBBodyMeasurementObject *> *)measurements __attribute__((swift_name("createBodyMeasurements(measurements:)")));
 - (void)deleteAllBodyMeasurements __attribute__((swift_name("deleteAllBodyMeasurements()")));
 - (void)deleteBodyMeasurementUuid:(NSString *)uuid __attribute__((swift_name("deleteBodyMeasurement(uuid:)")));
 - (void)deleteDiaryBodyMeasurementsDiaryId:(NSString *)diaryId __attribute__((swift_name("deleteDiaryBodyMeasurements(diaryId:)")));
@@ -296,7 +296,7 @@ __attribute__((swift_name("BodyMeasurementsDBDataSource")))
 - (id<FJKMPKotlinx_coroutines_coreFlow>)getBodyMeasurementsByTypeFlowUserId:(NSString *)userId diaryId:(NSString *)diaryId type:(NSString *)type __attribute__((swift_name("getBodyMeasurementsByTypeFlow(userId:diaryId:type:)")));
 - (FJKMPDBBodyMeasurementObject *)updateBodyMeasurementUuid:(NSString *)uuid value:(double)value comment:(NSString * _Nullable)comment measurementDate:(FJKMPKotlinx_datetimeLocalDate *)measurementDate updatedDate:(FJKMPKotlinx_datetimeLocalDateTime *)updatedDate __attribute__((swift_name("updateBodyMeasurement(uuid:value:comment:measurementDate:updatedDate:)")));
 - (FJKMPDBBodyMeasurementObject *)updateBodyMeasurementRemoteIdUuid:(NSString *)uuid remoteId:(NSString *)remoteId __attribute__((swift_name("updateBodyMeasurementRemoteId(uuid:remoteId:)")));
-- (NSArray<FJKMPDBBodyMeasurementObject *> *)updateBodyMeasurementsMeasurements:(NSArray<FJKMPDBBodyMeasurementObject *> *)measurements __attribute__((swift_name("updateBodyMeasurements(measurements:)")));
+- (void)updateBodyMeasurementsMeasurements:(NSArray<FJKMPDBBodyMeasurementObject *> *)measurements __attribute__((swift_name("updateBodyMeasurements(measurements:)")));
 @end
 
 __attribute__((objc_subclassing_restricted))
