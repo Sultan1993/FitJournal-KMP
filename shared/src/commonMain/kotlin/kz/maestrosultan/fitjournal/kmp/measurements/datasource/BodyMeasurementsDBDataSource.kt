@@ -80,7 +80,7 @@ class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
         createdDate: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC),
         updatedDate: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC)
     ): DBBodyMeasurementObject {
-        dao.transaction {
+        return dao.transactionWithResult {
             dao.createBodyMeasurement(
                 uuid = uuid,
                 remoteId = remoteId,
@@ -93,15 +93,13 @@ class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
                 createdDate = createdDate.toString(),
                 updatedDate = updatedDate.toString()
             )
+            getBodyMeasurementById(uuid)
         }
-        return getBodyMeasurementById(uuid)
     }
 
-    fun createBodyMeasurements(
-        measurements: List<DBBodyMeasurementObject>
-    ): List<DBBodyMeasurementObject> {
-        return dao.transactionWithResult {
-            measurements.map {
+    fun createBodyMeasurements(measurements: List<DBBodyMeasurementObject>) {
+        dao.transaction {
+            measurements.forEach {
                 createBodyMeasurement(
                     uuid = it.uuid,
                     remoteId = it.remoteId,
@@ -125,7 +123,7 @@ class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
         measurementDate: LocalDate,
         updatedDate: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC)
     ): DBBodyMeasurementObject {
-        dao.transaction {
+        return dao.transactionWithResult {
             dao.updateBodyMeasurement(
                 value_ = value,
                 comment = comment,
@@ -133,15 +131,13 @@ class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
                 updatedDate = updatedDate.toString(),
                 uuid = uuid
             )
+            getBodyMeasurementById(uuid)
         }
-        return getBodyMeasurementById(uuid)
     }
 
-    fun updateBodyMeasurements(
-        measurements: List<DBBodyMeasurementObject>
-    ): List<DBBodyMeasurementObject> {
-        return dao.transactionWithResult {
-            measurements.map {
+    fun updateBodyMeasurements(measurements: List<DBBodyMeasurementObject>) {
+        dao.transaction {
+            measurements.forEach {
                 updateBodyMeasurement(
                     uuid = it.uuid,
                     measurementDate = it.measurementDate,
