@@ -86,10 +86,10 @@ class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
                 remoteId = remoteId,
                 userId = userId,
                 diaryId = diaryId,
-                measurementDate = measurementDate.toString(),
                 type = type,
                 value_ = value,
                 comment = comment,
+                measurementDate = measurementDate.toString(),
                 createdDate = createdDate.toString(),
                 updatedDate = updatedDate.toString()
             )
