@@ -2,8 +2,8 @@
 minSDK = "26"
 compileSDK = "34"
 androidGradlePlugin = "8.1.4"
-kotlin = "1.9.20"
-sqldelight = "2.0.0"
+kotlin = "1.9.21"
+sqldelight = "2.0.1"
 
 [libraries]
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib-common", version.ref = "kotlin" }

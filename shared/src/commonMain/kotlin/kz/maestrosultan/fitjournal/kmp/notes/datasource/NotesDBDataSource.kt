@@ -50,23 +50,24 @@ class NotesDBDataSource(private val dao: NotesQueries) {
         createdDate: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC),
         updatedDate: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC)
     ): DBNoteObject {
-        dao.createNote(
-            uuid = uuid,
-            remoteId = remoteId,
-            userId = userId,
-            text = text,
-            isPinned = isPinned,
-            createdDate = createdDate.toString(),
-            updatedDate = updatedDate.toString()
-        )
+        dao.transaction {
+            dao.createNote(
+                uuid = uuid,
+                remoteId = remoteId,
+                userId = userId,
+                text = text,
+                isPinned = isPinned,
+                createdDate = createdDate.toString(),
+                updatedDate = updatedDate.toString()
+            )
+        }
         return getNoteById(uuid)
     }
 
     fun createNotes(notes: List<DBNoteObject>): List<DBNoteObject> {
-        val createdNotes = mutableListOf<DBNoteObject>()
-        dao.transaction {
-            notes.forEach {
-                val createdNote = createNote(
+        return dao.transactionWithResult {
+            notes.map {
+                createNote(
                     uuid = it.uuid,
                     remoteId = it.remoteId,
                     userId = it.userId,
@@ -75,10 +76,8 @@ class NotesDBDataSource(private val dao: NotesQueries) {
                     createdDate = it.createdDate,
                     updatedDate = it.updatedDate
                 )
-                createdNotes.add(createdNote)
             }
         }
-        return createdNotes
     }
 
     fun updateNote(
@@ -87,33 +86,34 @@ class NotesDBDataSource(private val dao: NotesQueries) {
         isPinned: Boolean,
         updatedDate: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC)
     ): DBNoteObject {
-        dao.updateNote(
-            text = text,
-            isPinned = isPinned,
-            updatedDate = updatedDate.toString(),
-            uuid = uuid
-        )
+        dao.transaction {
+            dao.updateNote(
+                text = text,
+                isPinned = isPinned,
+                updatedDate = updatedDate.toString(),
+                uuid = uuid
+            )
+        }
         return getNoteById(uuid)
     }
 
     fun updateNotes(notes: List<DBNoteObject>): List<DBNoteObject> {
-        val updatedNotes = mutableListOf<DBNoteObject>()
-        dao.transaction {
-             notes.forEach {
-                val updatedNote = updateNote(
+        return dao.transactionWithResult {
+             notes.map {
+                updateNote(
                     uuid = it.uuid,
                     text = it.text,
                     isPinned = it.isPinned,
                     updatedDate = it.updatedDate
                 )
-                updatedNotes.add(updatedNote)
             }
         }
-        return updatedNotes
     }
 
     fun updateRemoteId(uuid: String, remoteId: String): DBNoteObject {
-        dao.updateRemoteId(remoteId, uuid)
+        dao.transaction {
+            dao.updateRemoteId(remoteId, uuid)
+        }
         return getNoteById(uuid)
     }
 
