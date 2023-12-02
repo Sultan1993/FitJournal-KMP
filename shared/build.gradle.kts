@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "kz.maestrosultan.fitjournal.kmp"
-version = "0.2.8"
+version = "0.2.9"
 val moduleName = "FitJournalKMP"
 
 kotlin {
@@ -123,10 +123,17 @@ publishing {
 multiplatformSwiftPackage {
     swiftToolsVersion("5.8")
     packageName(moduleName)
-    zipFileName(moduleName)
     outputDirectory(rootProject.rootDir)
     targetPlatforms {
         iOS { v("14") }
+    }
+}
+
+// Disable "createZipFile" task from "multiplatformSwiftPackage" because it has a conflict with
+// other tasks and we don't really need the zip at all
+afterEvaluate {
+    tasks.named("createZipFile") {
+        enabled = false
     }
 }
 
