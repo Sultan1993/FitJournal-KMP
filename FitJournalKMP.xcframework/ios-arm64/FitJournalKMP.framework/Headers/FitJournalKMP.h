@@ -282,8 +282,18 @@ __attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("BodyMeasurementsDBDataSource")))
 @interface FJKMPBodyMeasurementsDBDataSource : FJKMPBase
 - (instancetype)initWithDao:(FJKMPBodyMeasurementsQueries *)dao __attribute__((swift_name("init(dao:)"))) __attribute__((objc_designated_initializer));
-- (FJKMPDBBodyMeasurementObject *)createBodyMeasurementUuid:(NSString *)uuid remoteId:(NSString * _Nullable)remoteId userId:(NSString *)userId diaryId:(NSString *)diaryId measurementDate:(FJKMPKotlinx_datetimeLocalDate *)measurementDate type:(NSString *)type value:(double)value comment:(NSString * _Nullable)comment createdDate:(FJKMPKotlinx_datetimeLocalDateTime *)createdDate updatedDate:(FJKMPKotlinx_datetimeLocalDateTime *)updatedDate __attribute__((swift_name("createBodyMeasurement(uuid:remoteId:userId:diaryId:measurementDate:type:value:comment:createdDate:updatedDate:)")));
-- (void)createBodyMeasurementsMeasurements:(NSArray<FJKMPDBBodyMeasurementObject *> *)measurements __attribute__((swift_name("createBodyMeasurements(measurements:)")));
+
+/**
+ * @note This method converts instances of Exception to errors.
+ * Other uncaught Kotlin exceptions are fatal.
+*/
+- (FJKMPDBBodyMeasurementObject * _Nullable)createBodyMeasurementUuid:(NSString *)uuid remoteId:(NSString * _Nullable)remoteId userId:(NSString *)userId diaryId:(NSString *)diaryId measurementDate:(FJKMPKotlinx_datetimeLocalDate *)measurementDate type:(NSString *)type value:(double)value comment:(NSString * _Nullable)comment createdDate:(FJKMPKotlinx_datetimeLocalDateTime *)createdDate updatedDate:(FJKMPKotlinx_datetimeLocalDateTime *)updatedDate error:(NSError * _Nullable * _Nullable)error __attribute__((swift_name("createBodyMeasurement(uuid:remoteId:userId:diaryId:measurementDate:type:value:comment:createdDate:updatedDate:)")));
+
+/**
+ * @note This method converts instances of Exception to errors.
+ * Other uncaught Kotlin exceptions are fatal.
+*/
+- (BOOL)createBodyMeasurementsMeasurements:(NSArray<FJKMPDBBodyMeasurementObject *> *)measurements error:(NSError * _Nullable * _Nullable)error __attribute__((swift_name("createBodyMeasurements(measurements:)")));
 - (void)deleteAllBodyMeasurements __attribute__((swift_name("deleteAllBodyMeasurements()")));
 - (void)deleteBodyMeasurementUuid:(NSString *)uuid __attribute__((swift_name("deleteBodyMeasurement(uuid:)")));
 - (void)deleteDiaryBodyMeasurementsDiaryId:(NSString *)diaryId __attribute__((swift_name("deleteDiaryBodyMeasurements(diaryId:)")));
@@ -472,6 +482,15 @@ __attribute__((swift_name("RuntimeSqlSchema")))
 - (id<FJKMPRuntimeQueryResult>)createDriver:(id<FJKMPRuntimeSqlDriver>)driver __attribute__((swift_name("create(driver:)")));
 - (id<FJKMPRuntimeQueryResult>)migrateDriver:(id<FJKMPRuntimeSqlDriver>)driver oldVersion:(int64_t)oldVersion newVersion:(int64_t)newVersion callbacks:(FJKMPKotlinArray<FJKMPRuntimeAfterVersion *> *)callbacks __attribute__((swift_name("migrate(driver:oldVersion:newVersion:callbacks:)")));
 @property (readonly) int64_t version __attribute__((swift_name("version")));
+@end
+
+__attribute__((swift_name("KotlinException")))
+@interface FJKMPKotlinException : FJKMPKotlinThrowable
+- (instancetype)init __attribute__((swift_name("init()"))) __attribute__((objc_designated_initializer));
++ (instancetype)new __attribute__((availability(swift, unavailable, message="use object initializers instead")));
+- (instancetype)initWithMessage:(NSString * _Nullable)message __attribute__((swift_name("init(message:)"))) __attribute__((objc_designated_initializer));
+- (instancetype)initWithCause:(FJKMPKotlinThrowable * _Nullable)cause __attribute__((swift_name("init(cause:)"))) __attribute__((objc_designated_initializer));
+- (instancetype)initWithMessage:(NSString * _Nullable)message cause:(FJKMPKotlinThrowable * _Nullable)cause __attribute__((swift_name("init(message:cause:)"))) __attribute__((objc_designated_initializer));
 @end
 
 __attribute__((swift_name("KotlinComparable")))
@@ -697,15 +716,6 @@ __attribute__((swift_name("Kotlinx_datetimeLocalDateTime.Companion")))
 @property (class, readonly, getter=shared) FJKMPKotlinx_datetimeLocalDateTimeCompanion *shared __attribute__((swift_name("shared")));
 - (FJKMPKotlinx_datetimeLocalDateTime *)parseIsoString:(NSString *)isoString __attribute__((swift_name("parse(isoString:)")));
 - (id<FJKMPKotlinx_serialization_coreKSerializer>)serializer __attribute__((swift_name("serializer()")));
-@end
-
-__attribute__((swift_name("KotlinException")))
-@interface FJKMPKotlinException : FJKMPKotlinThrowable
-- (instancetype)init __attribute__((swift_name("init()"))) __attribute__((objc_designated_initializer));
-+ (instancetype)new __attribute__((availability(swift, unavailable, message="use object initializers instead")));
-- (instancetype)initWithMessage:(NSString * _Nullable)message __attribute__((swift_name("init(message:)"))) __attribute__((objc_designated_initializer));
-- (instancetype)initWithCause:(FJKMPKotlinThrowable * _Nullable)cause __attribute__((swift_name("init(cause:)"))) __attribute__((objc_designated_initializer));
-- (instancetype)initWithMessage:(NSString * _Nullable)message cause:(FJKMPKotlinThrowable * _Nullable)cause __attribute__((swift_name("init(message:cause:)"))) __attribute__((objc_designated_initializer));
 @end
 
 __attribute__((swift_name("KotlinRuntimeException")))
