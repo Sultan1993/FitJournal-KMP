@@ -8,7 +8,6 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -68,16 +67,15 @@ class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
             .map { it.map() }
     }
 
-    @Throws(Exception::class)
     fun createBodyMeasurement(
         uuid: String,
         remoteId: String?,
         userId: String,
         diaryId: String,
-        measurementDate: LocalDate,
         type: String,
         value: Double,
         comment: String?,
+        measurementDate: LocalDateTime,
         createdDate: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC),
         updatedDate: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC)
     ): DBBodyMeasurementObject {
@@ -98,31 +96,11 @@ class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
         }
     }
 
-    @Throws(Exception::class)
-    fun createBodyMeasurements(measurements: List<DBBodyMeasurementObject>) {
-        dao.transaction {
-            measurements.forEach {
-                createBodyMeasurement(
-                    uuid = it.uuid,
-                    remoteId = it.remoteId,
-                    userId = it.userId,
-                    diaryId = it.diaryId,
-                    measurementDate = it.measurementDate,
-                    type = it.type,
-                    value = it.value,
-                    comment = it.comment,
-                    createdDate = it.createdDate,
-                    updatedDate = it.updatedDate
-                )
-            }
-        }
-    }
-
     fun updateBodyMeasurement(
         uuid: String,
         value: Double,
         comment: String?,
-        measurementDate: LocalDate,
+        measurementDate: LocalDateTime,
         updatedDate: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC)
     ): DBBodyMeasurementObject {
         return dao.transactionWithResult {
@@ -137,25 +115,11 @@ class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
         }
     }
 
-    fun updateBodyMeasurements(measurements: List<DBBodyMeasurementObject>) {
-        dao.transaction {
-            measurements.forEach {
-                updateBodyMeasurement(
-                    uuid = it.uuid,
-                    measurementDate = it.measurementDate,
-                    value = it.value,
-                    comment = it.comment,
-                    updatedDate = it.updatedDate
-                )
-            }
-        }
-    }
-
     fun updateBodyMeasurementRemoteId(uuid: String, remoteId: String): DBBodyMeasurementObject {
-        dao.transaction {
+        return dao.transactionWithResult {
             dao.updateBodyMeasurementRemoteId(remoteId, uuid)
+            getBodyMeasurementById(uuid)
         }
-        return getBodyMeasurementById(uuid)
     }
 
     fun deleteBodyMeasurement(uuid: String) {

@@ -50,7 +50,7 @@ class NotesDBDataSource(private val dao: NotesQueries) {
         createdDate: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC),
         updatedDate: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC)
     ): DBNoteObject {
-        dao.transaction {
+        return dao.transactionWithResult {
             dao.createNote(
                 uuid = uuid,
                 remoteId = remoteId,
@@ -60,23 +60,7 @@ class NotesDBDataSource(private val dao: NotesQueries) {
                 createdDate = createdDate.toString(),
                 updatedDate = updatedDate.toString()
             )
-        }
-        return getNoteById(uuid)
-    }
-
-    fun createNotes(notes: List<DBNoteObject>): List<DBNoteObject> {
-        return dao.transactionWithResult {
-            notes.map {
-                createNote(
-                    uuid = it.uuid,
-                    remoteId = it.remoteId,
-                    userId = it.userId,
-                    text = it.text,
-                    isPinned = it.isPinned,
-                    createdDate = it.createdDate,
-                    updatedDate = it.updatedDate
-                )
-            }
+            getNoteById(uuid)
         }
     }
 
@@ -86,35 +70,22 @@ class NotesDBDataSource(private val dao: NotesQueries) {
         isPinned: Boolean,
         updatedDate: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC)
     ): DBNoteObject {
-        dao.transaction {
+        return dao.transactionWithResult {
             dao.updateNote(
                 text = text,
                 isPinned = isPinned,
                 updatedDate = updatedDate.toString(),
                 uuid = uuid
             )
-        }
-        return getNoteById(uuid)
-    }
-
-    fun updateNotes(notes: List<DBNoteObject>): List<DBNoteObject> {
-        return dao.transactionWithResult {
-             notes.map {
-                updateNote(
-                    uuid = it.uuid,
-                    text = it.text,
-                    isPinned = it.isPinned,
-                    updatedDate = it.updatedDate
-                )
-            }
+            getNoteById(uuid)
         }
     }
 
     fun updateRemoteId(uuid: String, remoteId: String): DBNoteObject {
-        dao.transaction {
+        return dao.transactionWithResult {
             dao.updateRemoteId(remoteId, uuid)
+            getNoteById(uuid)
         }
-        return getNoteById(uuid)
     }
 
     fun deleteNote(uuid: String) {
