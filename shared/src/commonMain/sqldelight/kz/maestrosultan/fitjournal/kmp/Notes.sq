@@ -26,17 +26,21 @@ VALUES (?, ?, ?, ?, ?, ?, ?);
 
 updateNote:
 UPDATE notes
-SET text = ?, isPinned = ?, updatedDate = ? WHERE uuid = ?;
+SET text = ?, isPinned = ?, updatedDate = ?
+WHERE uuid = ?;
 
 updateRemoteId:
 UPDATE notes
-SET remoteId = ? WHERE uuid = ?;
+SET remoteId = ?
+WHERE uuid = ?;
 
 deleteNote:
-DELETE FROM notes WHERE uuid = ?;
+DELETE FROM notes
+WHERE uuid = ?;
 
 deleteAllNotes:
-DELETE FROM notes WHERE userId = ?;
+DELETE FROM notes
+WHERE userId = ?;
 
 clearNotes:
 DELETE FROM notes;

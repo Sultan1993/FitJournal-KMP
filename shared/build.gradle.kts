@@ -140,7 +140,7 @@ afterEvaluate {
 sqldelight {
     databases {
         create("FitJournalDatabase") {
-            packageName.set("kz.maestrosultan.fitjournal.kmp")
+            packageName = "kz.maestrosultan.fitjournal.kmp"
         }
     }
 }
@@ -155,6 +155,7 @@ val publishIos by tasks.registering {
     dependsOn(tasks.named("createSwiftPackage"))
 }
 
+// Task that creates both Android and iOS artifacts and publishes them
 val publishPlatforms by tasks.registering {
     dependsOn(
         tasks.named("generateSqlDelightInterface"),

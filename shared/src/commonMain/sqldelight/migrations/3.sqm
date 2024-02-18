@@ -1,0 +1,27 @@
+CREATE TABLE IF NOT EXISTS categories (
+    uuid TEXT PRIMARY KEY NOT NULL,
+    remoteId TEXT,
+    nameRu TEXT NOT NULL,
+    nameEn TEXT NOT NULL,
+    nameUk TEXT NOT NULL,
+    categoryIndex INTEGER NOT NULL,
+    details TEXT
+);
+
+CREATE TABLE IF NOT EXISTS exercises (
+    uuid TEXT PRIMARY KEY NOT NULL,
+    remoteId TEXT,
+    userId TEXT,
+    nameEn TEXT NOT NULL,
+    nameRu TEXT NOT NULL,
+    nameUk TEXT,
+    details TEXT,
+    image1 TEXT,
+    image2 TEXT,
+    resultType INTEGER NOT NULL,
+    primaryCategoryUuid TEXT NOT NULL,
+    primaryCategoryRemoteId TEXT NOT NULL,
+    secondaryCategoryUuids TEXT,
+    secondaryCategoryRemoteIds TEXT,
+    FOREIGN KEY (primaryCategoryUuid) REFERENCES categories(uuid)
+);

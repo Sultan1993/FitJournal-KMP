@@ -1,8 +1,8 @@
 [versions]
 minSDK = "26"
 compileSDK = "34"
-androidGradlePlugin = "8.1.4"
-kotlin = "1.9.21"
+androidGradlePlugin = "8.2.2"
+kotlin = "1.9.22"
 sqldelight = "2.0.1"
 
 [libraries]

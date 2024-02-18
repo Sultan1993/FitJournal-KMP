@@ -1,0 +1,53 @@
+CREATE TABLE exercises (
+    uuid TEXT PRIMARY KEY NOT NULL,
+    remoteId TEXT,
+    userId TEXT NOT NULL,
+    nameEn TEXT NOT NULL,
+    nameRu TEXT NOT NULL,
+    nameUk TEXT,
+    details TEXT,
+    image1 TEXT,
+    image2 TEXT,
+    resultType INTEGER NOT NULL,
+    primaryCategoryUuid TEXT NOT NULL,
+    secondaryCategoryUuids TEXT,
+    FOREIGN KEY (primaryCategoryUuid) REFERENCES categories(uuid)
+);
+
+getAllExercises:
+SELECT *
+FROM exercises
+WHERE userId = ?;
+
+getExercisesByCategoryUuid:
+SELECT *
+FROM exercises
+WHERE primaryCategoryUuid == ? AND userId = ?;
+
+getExerciseByUuid:
+SELECT *
+FROM exercises
+WHERE uuid == ?;
+
+getExerciseByRemoteId:
+SELECT *
+FROM exercises
+WHERE remoteId == ?;
+
+createExercise:
+INSERT INTO exercises(uuid, userId, nameEn, nameRu, nameUk, details, resultType, primaryCategoryUuid)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+updateExerciseRemoteId:
+UPDATE exercises
+SET remoteId = ?
+WHERE uuid = ?;
+
+updateExerciseName:
+UPDATE exercises
+SET nameEn = ?, nameRu = ?, nameUk = ?
+WHERE uuid = ?;
+
+deleteExercise:
+DELETE FROM exercises
+WHERE uuid = ?;

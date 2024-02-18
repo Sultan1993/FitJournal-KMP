@@ -1,0 +1,41 @@
+CREATE TABLE categories (
+    uuid TEXT PRIMARY KEY NOT NULL,
+    remoteId TEXT,
+    nameEn TEXT NOT NULL,
+    nameRu TEXT NOT NULL,
+    nameUk TEXT NOT NULL,
+    type INTEGER NOT NULL,
+    details TEXT
+);
+
+----------------------
+-- "type" row by index
+-- CHEST = 0,
+-- BACK = 1,
+-- BICEPS,
+-- TRICEPS,
+-- FOREARMS,
+-- SHOULDERS,
+-- TRAPEZIUS,
+-- QUADRICEPS,
+-- HAMSTRINGS,
+-- GLUTES,
+-- CALVES,
+-- ABS,
+-- CARDIO,
+-- OTHER;
+----------------------
+
+getAllCategories:
+SELECT *
+FROM categories;
+
+getCategoryByUuid:
+SELECT *
+FROM categories
+WHERE uuid = ?;
+
+getCategoryByRemoteId:
+SELECT *
+FROM categories
+WHERE remoteId = ?;
