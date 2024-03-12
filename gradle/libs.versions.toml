@@ -15,7 +15,7 @@ sqldelight-coroutines = { module = "app.cash.sqldelight:coroutines-extensions", 
 [plugins]
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
-multiplatform-swiftpackage = { id = "io.github.luca992.multiplatform-swiftpackage", version = "2.2.0" }
+multiplatform-swiftpackage = { id = "io.github.luca992.multiplatform-swiftpackage", version = "2.2.2" }
 android-library = { id = "com.android.library", version.ref = "androidGradlePlugin" }
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
