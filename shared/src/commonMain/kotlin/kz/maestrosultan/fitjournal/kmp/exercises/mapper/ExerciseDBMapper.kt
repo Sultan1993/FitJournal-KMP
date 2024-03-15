@@ -7,8 +7,7 @@ class ExerciseDBMapper(private val categoryDataSource: CategoriesDBDataSource) {
 
     fun map(
         uuid: String,
-        remoteId: String?,
-        userId: String,
+        remoteId: String,
         nameEn: String,
         nameRu: String,
         nameUk: String?,
@@ -17,7 +16,8 @@ class ExerciseDBMapper(private val categoryDataSource: CategoriesDBDataSource) {
         image2: String?,
         resultType: Int,
         primaryCategoryUuid: String,
-        secondaryCategoryUuids: String?
+        secondaryCategoryUuids: String?,
+        isGlobal: Boolean
     ): DBExerciseObject {
         val primaryCategory = categoryDataSource.getCategoryByUuid(primaryCategoryUuid)
         val secondaryCategories = if (secondaryCategoryUuids.isNullOrEmpty()) {
@@ -30,7 +30,6 @@ class ExerciseDBMapper(private val categoryDataSource: CategoriesDBDataSource) {
         return DBExerciseObject(
             uuid = uuid,
             remoteId = remoteId,
-            userId = userId,
             nameEn = nameEn,
             nameRu = nameRu,
             nameUk = nameUk,
@@ -39,7 +38,8 @@ class ExerciseDBMapper(private val categoryDataSource: CategoriesDBDataSource) {
             details = details,
             resultType = resultType,
             primaryCategory = primaryCategory,
-            secondaryCategories = secondaryCategories
+            secondaryCategories = secondaryCategories,
+            isGlobal = isGlobal
         )
     }
 }

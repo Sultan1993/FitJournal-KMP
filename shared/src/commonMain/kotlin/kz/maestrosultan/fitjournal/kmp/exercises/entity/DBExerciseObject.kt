@@ -2,8 +2,7 @@ package kz.maestrosultan.fitjournal.kmp.exercises.entity
 
 data class DBExerciseObject(
     val uuid: String,
-    val remoteId: String?,
-    val userId: String,
+    val remoteId: String,
     val nameEn: String,
     val nameRu: String,
     val nameUk: String?,
@@ -12,8 +11,6 @@ data class DBExerciseObject(
     val details: String?,
     val resultType: Int,
     val primaryCategory: DBCategoryObject,
-    val secondaryCategories: List<DBCategoryObject>
-) {
-    val isCustom: Boolean
-        get() = userId != "global"
-}
+    val secondaryCategories: List<DBCategoryObject>?,
+    val isGlobal: Boolean
+)

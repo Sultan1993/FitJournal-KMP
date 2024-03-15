@@ -1,14 +1,6 @@
 import kotlin.Boolean;
 
-CREATE TABLE IF NOT EXISTS categories (
-    uuid TEXT PRIMARY KEY NOT NULL,
-    remoteId TEXT NOT NULL,
-    nameRu TEXT NOT NULL,
-    nameEn TEXT NOT NULL,
-    nameUk TEXT NOT NULL,
-    categoryIndex INTEGER NOT NULL,
-    details TEXT
-);
+DROP TABLE exercises;
 
 CREATE TABLE IF NOT EXISTS exercises (
     uuid TEXT PRIMARY KEY NOT NULL,

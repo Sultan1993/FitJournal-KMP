@@ -1,7 +1,8 @@
+import kotlin.Boolean;
+
 CREATE TABLE exercises (
     uuid TEXT PRIMARY KEY NOT NULL,
-    remoteId TEXT,
-    userId TEXT NOT NULL,
+    remoteId TEXT NOT NULL,
     nameEn TEXT NOT NULL,
     nameRu TEXT NOT NULL,
     nameUk TEXT,
@@ -11,18 +12,18 @@ CREATE TABLE exercises (
     resultType INTEGER NOT NULL,
     primaryCategoryUuid TEXT NOT NULL,
     secondaryCategoryUuids TEXT,
+    global INTEGER AS Boolean NOT NULL DEFAULT 0,
     FOREIGN KEY (primaryCategoryUuid) REFERENCES categories(uuid)
 );
 
 getAllExercises:
 SELECT *
-FROM exercises
-WHERE userId = ?;
+FROM exercises;
 
 getExercisesByCategoryUuid:
 SELECT *
 FROM exercises
-WHERE primaryCategoryUuid == ? AND userId = ?;
+WHERE primaryCategoryUuid == ?;
 
 getExerciseByUuid:
 SELECT *
@@ -35,19 +36,17 @@ FROM exercises
 WHERE remoteId == ?;
 
 createExercise:
-INSERT INTO exercises(uuid, userId, nameEn, nameRu, nameUk, details, resultType, primaryCategoryUuid)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO exercises(uuid, remoteId, nameEn, nameRu, nameUk, details, image1, image2, resultType, primaryCategoryUuid, secondaryCategoryUuids, global)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
-updateExerciseRemoteId:
+updateExercise:
 UPDATE exercises
-SET remoteId = ?
-WHERE uuid = ?;
-
-updateExerciseName:
-UPDATE exercises
-SET nameEn = ?, nameRu = ?, nameUk = ?
+SET remoteId = ?, nameEn = ?, nameRu = ?, nameUk = ?, details = ?, resultType = ?, primaryCategoryUuid = ?, secondaryCategoryUuids = ?
 WHERE uuid = ?;
 
 deleteExercise:
 DELETE FROM exercises
 WHERE uuid = ?;
+
+deleteAllExercises:
+DELETE FROM exercises;

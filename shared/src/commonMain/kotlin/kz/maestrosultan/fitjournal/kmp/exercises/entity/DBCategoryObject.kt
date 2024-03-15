@@ -4,7 +4,7 @@ import kz.maestrosultan.fitjournal.kmp.Categories
 
 data class DBCategoryObject(
     val uuid: String,
-    val remoteId: String?,
+    val remoteId: String,
     val nameEn: String,
     val nameRu: String,
     val nameUk: String,

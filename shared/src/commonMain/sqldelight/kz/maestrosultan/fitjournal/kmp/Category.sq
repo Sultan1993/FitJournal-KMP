@@ -1,6 +1,6 @@
 CREATE TABLE categories (
     uuid TEXT PRIMARY KEY NOT NULL,
-    remoteId TEXT,
+    remoteId TEXT NOT NULL,
     nameEn TEXT NOT NULL,
     nameRu TEXT NOT NULL,
     nameUk TEXT NOT NULL,
@@ -39,3 +39,10 @@ getCategoryByRemoteId:
 SELECT *
 FROM categories
 WHERE remoteId = ?;
+
+createCategory:
+INSERT INTO categories(uuid, remoteId, nameEn, nameRu, nameUk, type, details)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+deleteAllCategories:
+DELETE FROM categories;

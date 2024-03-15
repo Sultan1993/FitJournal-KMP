@@ -57,4 +57,31 @@ class CategoriesDBDataSource(private val dao: CategoryQueries) {
             .mapToOne(Dispatchers.IO)
             .map { it.map() }
     }
+
+    fun createCategory(
+        uuid: String,
+        remoteId: String,
+        nameEn: String,
+        nameRu: String,
+        nameUk: String,
+        type: Int,
+        details: String?
+    ): DBCategoryObject {
+        return dao.transactionWithResult {
+            dao.createCategory(
+                uuid = uuid,
+                remoteId = remoteId,
+                nameEn = nameEn,
+                nameRu = nameRu,
+                nameUk = nameUk,
+                type = type.toLong(),
+                details = details
+            )
+            getCategoryByUuid(uuid)
+        }
+    }
+
+    fun deleteAllCategories() {
+        dao.deleteAllCategories()
+    }
 }

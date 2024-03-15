@@ -6,9 +6,9 @@
 #import <Foundation/NSString.h>
 #import <Foundation/NSValue.h>
 
-@class FJKMPBodyMeasurements, FJKMPKotlinUnit, FJKMPRuntimeTransacterTransaction, FJKMPKotlinThrowable, FJKMPRuntimeBaseTransacterImpl, FJKMPRuntimeTransacterImpl, FJKMPRuntimeQuery<__covariant RowType>, FJKMPBodyMeasurementsQueries, FJKMPNotesQueries, FJKMPFitJournalDatabaseCompanion, FJKMPNotes, FJKMPDBBodyMeasurementObject, FJKMPKotlinx_datetimeLocalDateTime, FJKMPDBNoteObject, FJKMPKotlinArray<T>, FJKMPRuntimeExecutableQuery<__covariant RowType>, FJKMPRuntimeAfterVersion, FJKMPKotlinx_datetimeLocalDate, FJKMPKotlinx_datetimeLocalTime, FJKMPKotlinx_datetimeMonth, FJKMPKotlinx_datetimeLocalDateTimeCompanion, FJKMPKotlinx_datetimeDayOfWeek, FJKMPKotlinByteArray, FJKMPKotlinx_datetimeLocalDateCompanion, FJKMPKotlinx_datetimeLocalTimeCompanion, FJKMPKotlinEnumCompanion, FJKMPKotlinEnum<E>, FJKMPKotlinException, FJKMPKotlinRuntimeException, FJKMPKotlinIllegalStateException, FJKMPKotlinByteIterator, FJKMPKotlinx_serialization_coreSerializersModule, FJKMPKotlinx_serialization_coreSerialKind, FJKMPKotlinNothing;
+@class FJKMPBodyMeasurements, FJKMPKotlinUnit, FJKMPRuntimeTransacterTransaction, FJKMPKotlinThrowable, FJKMPRuntimeBaseTransacterImpl, FJKMPRuntimeTransacterImpl, FJKMPRuntimeQuery<__covariant RowType>, FJKMPCategories, FJKMPExercises, FJKMPBodyMeasurementsQueries, FJKMPCategoryQueries, FJKMPExercisesQueries, FJKMPNotesQueries, FJKMPFitJournalDatabaseCompanion, FJKMPNotes, FJKMPDBCategoryObject, FJKMPExerciseDBMapper, FJKMPDBExerciseObject, FJKMPCategoriesDBDataSource, FJKMPDBBodyMeasurementObject, FJKMPKotlinx_datetimeLocalDateTime, FJKMPDBNoteObject, FJKMPKotlinArray<T>, FJKMPRuntimeExecutableQuery<__covariant RowType>, FJKMPRuntimeAfterVersion, FJKMPKotlinx_datetimeLocalDate, FJKMPKotlinx_datetimeLocalTime, FJKMPKotlinx_datetimeMonth, FJKMPKotlinx_datetimeLocalDateTimeCompanion, FJKMPKotlinx_datetimeDayOfWeek, FJKMPKotlinByteArray, FJKMPKotlinException, FJKMPKotlinRuntimeException, FJKMPKotlinIllegalStateException, FJKMPKotlinx_datetimeLocalDateCompanion, FJKMPKotlinx_datetimeLocalTimeCompanion, FJKMPKotlinEnumCompanion, FJKMPKotlinEnum<E>, FJKMPKotlinByteIterator, FJKMPKotlinx_serialization_coreSerializersModule, FJKMPKotlinx_serialization_coreSerialKind, FJKMPKotlinNothing;
 
-@protocol FJKMPRuntimeSqlDriver, FJKMPRuntimeTransactionWithoutReturn, FJKMPRuntimeTransactionWithReturn, FJKMPRuntimeTransacterBase, FJKMPRuntimeTransacter, FJKMPFitJournalDatabase, FJKMPRuntimeSqlSchema, FJKMPKotlinx_coroutines_coreFlow, FJKMPRuntimeQueryListener, FJKMPRuntimeQueryResult, FJKMPRuntimeSqlPreparedStatement, FJKMPRuntimeSqlCursor, FJKMPRuntimeCloseable, FJKMPRuntimeTransactionCallbacks, FJKMPKotlinComparable, FJKMPKotlinx_coroutines_coreFlowCollector, FJKMPKotlinIterator, FJKMPKotlinx_serialization_coreKSerializer, FJKMPKotlinx_serialization_coreEncoder, FJKMPKotlinx_serialization_coreSerialDescriptor, FJKMPKotlinx_serialization_coreSerializationStrategy, FJKMPKotlinx_serialization_coreDecoder, FJKMPKotlinx_serialization_coreDeserializationStrategy, FJKMPKotlinx_serialization_coreCompositeEncoder, FJKMPKotlinAnnotation, FJKMPKotlinx_serialization_coreCompositeDecoder, FJKMPKotlinx_serialization_coreSerializersModuleCollector, FJKMPKotlinKClass, FJKMPKotlinKDeclarationContainer, FJKMPKotlinKAnnotatedElement, FJKMPKotlinKClassifier;
+@protocol FJKMPRuntimeSqlDriver, FJKMPRuntimeTransactionWithoutReturn, FJKMPRuntimeTransactionWithReturn, FJKMPRuntimeTransacterBase, FJKMPRuntimeTransacter, FJKMPFitJournalDatabase, FJKMPRuntimeSqlSchema, FJKMPKotlinx_coroutines_coreFlow, FJKMPRuntimeQueryListener, FJKMPRuntimeQueryResult, FJKMPRuntimeSqlPreparedStatement, FJKMPRuntimeSqlCursor, FJKMPRuntimeCloseable, FJKMPRuntimeTransactionCallbacks, FJKMPKotlinx_coroutines_coreFlowCollector, FJKMPKotlinComparable, FJKMPKotlinIterator, FJKMPKotlinx_serialization_coreKSerializer, FJKMPKotlinx_serialization_coreEncoder, FJKMPKotlinx_serialization_coreSerialDescriptor, FJKMPKotlinx_serialization_coreSerializationStrategy, FJKMPKotlinx_serialization_coreDecoder, FJKMPKotlinx_serialization_coreDeserializationStrategy, FJKMPKotlinx_serialization_coreCompositeEncoder, FJKMPKotlinAnnotation, FJKMPKotlinx_serialization_coreCompositeDecoder, FJKMPKotlinx_serialization_coreSerializersModuleCollector, FJKMPKotlinKClass, FJKMPKotlinKDeclarationContainer, FJKMPKotlinKAnnotatedElement, FJKMPKotlinKClassifier;
 
 NS_ASSUME_NONNULL_BEGIN
 #pragma clang diagnostic push
@@ -227,10 +227,83 @@ __attribute__((swift_name("BodyMeasurementsQueries")))
 - (void)updateBodyMeasurementRemoteIdRemoteId:(NSString * _Nullable)remoteId uuid:(NSString *)uuid __attribute__((swift_name("updateBodyMeasurementRemoteId(remoteId:uuid:)")));
 @end
 
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("Categories")))
+@interface FJKMPCategories : FJKMPBase
+- (instancetype)initWithUuid:(NSString *)uuid remoteId:(NSString *)remoteId nameEn:(NSString *)nameEn nameRu:(NSString *)nameRu nameUk:(NSString *)nameUk type:(int64_t)type details:(NSString * _Nullable)details __attribute__((swift_name("init(uuid:remoteId:nameEn:nameRu:nameUk:type:details:)"))) __attribute__((objc_designated_initializer));
+- (FJKMPCategories *)doCopyUuid:(NSString *)uuid remoteId:(NSString *)remoteId nameEn:(NSString *)nameEn nameRu:(NSString *)nameRu nameUk:(NSString *)nameUk type:(int64_t)type details:(NSString * _Nullable)details __attribute__((swift_name("doCopy(uuid:remoteId:nameEn:nameRu:nameUk:type:details:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSString * _Nullable details __attribute__((swift_name("details")));
+@property (readonly) NSString *nameEn __attribute__((swift_name("nameEn")));
+@property (readonly) NSString *nameRu __attribute__((swift_name("nameRu")));
+@property (readonly) NSString *nameUk __attribute__((swift_name("nameUk")));
+@property (readonly) NSString *remoteId __attribute__((swift_name("remoteId")));
+@property (readonly) int64_t type __attribute__((swift_name("type")));
+@property (readonly) NSString *uuid __attribute__((swift_name("uuid")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("CategoryQueries")))
+@interface FJKMPCategoryQueries : FJKMPRuntimeTransacterImpl
+- (instancetype)initWithDriver:(id<FJKMPRuntimeSqlDriver>)driver __attribute__((swift_name("init(driver:)"))) __attribute__((objc_designated_initializer));
+- (void)createCategoryUuid:(NSString *)uuid remoteId:(NSString *)remoteId nameEn:(NSString *)nameEn nameRu:(NSString *)nameRu nameUk:(NSString *)nameUk type:(int64_t)type details:(NSString * _Nullable)details __attribute__((swift_name("createCategory(uuid:remoteId:nameEn:nameRu:nameUk:type:details:)")));
+- (void)deleteAllCategories __attribute__((swift_name("deleteAllCategories()")));
+- (FJKMPRuntimeQuery<FJKMPCategories *> *)getAllCategories __attribute__((swift_name("getAllCategories()")));
+- (FJKMPRuntimeQuery<id> *)getAllCategoriesMapper:(id (^)(NSString *, NSString *, NSString *, NSString *, NSString *, FJKMPLong *, NSString * _Nullable))mapper __attribute__((swift_name("getAllCategories(mapper:)")));
+- (FJKMPRuntimeQuery<FJKMPCategories *> *)getCategoryByRemoteIdRemoteId:(NSString *)remoteId __attribute__((swift_name("getCategoryByRemoteId(remoteId:)")));
+- (FJKMPRuntimeQuery<id> *)getCategoryByRemoteIdRemoteId:(NSString *)remoteId mapper:(id (^)(NSString *, NSString *, NSString *, NSString *, NSString *, FJKMPLong *, NSString * _Nullable))mapper __attribute__((swift_name("getCategoryByRemoteId(remoteId:mapper:)")));
+- (FJKMPRuntimeQuery<FJKMPCategories *> *)getCategoryByUuidUuid:(NSString *)uuid __attribute__((swift_name("getCategoryByUuid(uuid:)")));
+- (FJKMPRuntimeQuery<id> *)getCategoryByUuidUuid:(NSString *)uuid mapper:(id (^)(NSString *, NSString *, NSString *, NSString *, NSString *, FJKMPLong *, NSString * _Nullable))mapper __attribute__((swift_name("getCategoryByUuid(uuid:mapper:)")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("Exercises")))
+@interface FJKMPExercises : FJKMPBase
+- (instancetype)initWithUuid:(NSString *)uuid remoteId:(NSString *)remoteId nameEn:(NSString *)nameEn nameRu:(NSString *)nameRu nameUk:(NSString * _Nullable)nameUk details:(NSString * _Nullable)details image1:(NSString * _Nullable)image1 image2:(NSString * _Nullable)image2 resultType:(int64_t)resultType primaryCategoryUuid:(NSString *)primaryCategoryUuid secondaryCategoryUuids:(NSString * _Nullable)secondaryCategoryUuids global:(BOOL)global __attribute__((swift_name("init(uuid:remoteId:nameEn:nameRu:nameUk:details:image1:image2:resultType:primaryCategoryUuid:secondaryCategoryUuids:global:)"))) __attribute__((objc_designated_initializer));
+- (FJKMPExercises *)doCopyUuid:(NSString *)uuid remoteId:(NSString *)remoteId nameEn:(NSString *)nameEn nameRu:(NSString *)nameRu nameUk:(NSString * _Nullable)nameUk details:(NSString * _Nullable)details image1:(NSString * _Nullable)image1 image2:(NSString * _Nullable)image2 resultType:(int64_t)resultType primaryCategoryUuid:(NSString *)primaryCategoryUuid secondaryCategoryUuids:(NSString * _Nullable)secondaryCategoryUuids global:(BOOL)global __attribute__((swift_name("doCopy(uuid:remoteId:nameEn:nameRu:nameUk:details:image1:image2:resultType:primaryCategoryUuid:secondaryCategoryUuids:global:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSString * _Nullable details __attribute__((swift_name("details")));
+@property (readonly) BOOL global __attribute__((swift_name("global")));
+@property (readonly) NSString * _Nullable image1 __attribute__((swift_name("image1")));
+@property (readonly) NSString * _Nullable image2 __attribute__((swift_name("image2")));
+@property (readonly) NSString *nameEn __attribute__((swift_name("nameEn")));
+@property (readonly) NSString *nameRu __attribute__((swift_name("nameRu")));
+@property (readonly) NSString * _Nullable nameUk __attribute__((swift_name("nameUk")));
+@property (readonly) NSString *primaryCategoryUuid __attribute__((swift_name("primaryCategoryUuid")));
+@property (readonly) NSString *remoteId __attribute__((swift_name("remoteId")));
+@property (readonly) int64_t resultType __attribute__((swift_name("resultType")));
+@property (readonly) NSString * _Nullable secondaryCategoryUuids __attribute__((swift_name("secondaryCategoryUuids")));
+@property (readonly) NSString *uuid __attribute__((swift_name("uuid")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("ExercisesQueries")))
+@interface FJKMPExercisesQueries : FJKMPRuntimeTransacterImpl
+- (instancetype)initWithDriver:(id<FJKMPRuntimeSqlDriver>)driver __attribute__((swift_name("init(driver:)"))) __attribute__((objc_designated_initializer));
+- (void)createExerciseUuid:(NSString *)uuid remoteId:(NSString *)remoteId nameEn:(NSString *)nameEn nameRu:(NSString *)nameRu nameUk:(NSString * _Nullable)nameUk details:(NSString * _Nullable)details image1:(NSString * _Nullable)image1 image2:(NSString * _Nullable)image2 resultType:(int64_t)resultType primaryCategoryUuid:(NSString *)primaryCategoryUuid secondaryCategoryUuids:(NSString * _Nullable)secondaryCategoryUuids global:(BOOL)global __attribute__((swift_name("createExercise(uuid:remoteId:nameEn:nameRu:nameUk:details:image1:image2:resultType:primaryCategoryUuid:secondaryCategoryUuids:global:)")));
+- (void)deleteAllExercises __attribute__((swift_name("deleteAllExercises()")));
+- (void)deleteExerciseUuid:(NSString *)uuid __attribute__((swift_name("deleteExercise(uuid:)")));
+- (FJKMPRuntimeQuery<FJKMPExercises *> *)getAllExercises __attribute__((swift_name("getAllExercises()")));
+- (FJKMPRuntimeQuery<id> *)getAllExercisesMapper:(id (^)(NSString *, NSString *, NSString *, NSString *, NSString * _Nullable, NSString * _Nullable, NSString * _Nullable, NSString * _Nullable, FJKMPLong *, NSString *, NSString * _Nullable, FJKMPBoolean *))mapper __attribute__((swift_name("getAllExercises(mapper:)")));
+- (FJKMPRuntimeQuery<FJKMPExercises *> *)getExerciseByRemoteIdRemoteId:(NSString *)remoteId __attribute__((swift_name("getExerciseByRemoteId(remoteId:)")));
+- (FJKMPRuntimeQuery<id> *)getExerciseByRemoteIdRemoteId:(NSString *)remoteId mapper:(id (^)(NSString *, NSString *, NSString *, NSString *, NSString * _Nullable, NSString * _Nullable, NSString * _Nullable, NSString * _Nullable, FJKMPLong *, NSString *, NSString * _Nullable, FJKMPBoolean *))mapper __attribute__((swift_name("getExerciseByRemoteId(remoteId:mapper:)")));
+- (FJKMPRuntimeQuery<FJKMPExercises *> *)getExerciseByUuidUuid:(NSString *)uuid __attribute__((swift_name("getExerciseByUuid(uuid:)")));
+- (FJKMPRuntimeQuery<id> *)getExerciseByUuidUuid:(NSString *)uuid mapper:(id (^)(NSString *, NSString *, NSString *, NSString *, NSString * _Nullable, NSString * _Nullable, NSString * _Nullable, NSString * _Nullable, FJKMPLong *, NSString *, NSString * _Nullable, FJKMPBoolean *))mapper __attribute__((swift_name("getExerciseByUuid(uuid:mapper:)")));
+- (FJKMPRuntimeQuery<FJKMPExercises *> *)getExercisesByCategoryUuidPrimaryCategoryUuid:(NSString *)primaryCategoryUuid __attribute__((swift_name("getExercisesByCategoryUuid(primaryCategoryUuid:)")));
+- (FJKMPRuntimeQuery<id> *)getExercisesByCategoryUuidPrimaryCategoryUuid:(NSString *)primaryCategoryUuid mapper:(id (^)(NSString *, NSString *, NSString *, NSString *, NSString * _Nullable, NSString * _Nullable, NSString * _Nullable, NSString * _Nullable, FJKMPLong *, NSString *, NSString * _Nullable, FJKMPBoolean *))mapper __attribute__((swift_name("getExercisesByCategoryUuid(primaryCategoryUuid:mapper:)")));
+- (void)updateExerciseRemoteId:(NSString *)remoteId nameEn:(NSString *)nameEn nameRu:(NSString *)nameRu nameUk:(NSString * _Nullable)nameUk details:(NSString * _Nullable)details resultType:(int64_t)resultType primaryCategoryUuid:(NSString *)primaryCategoryUuid secondaryCategoryUuids:(NSString * _Nullable)secondaryCategoryUuids uuid:(NSString *)uuid __attribute__((swift_name("updateExercise(remoteId:nameEn:nameRu:nameUk:details:resultType:primaryCategoryUuid:secondaryCategoryUuids:uuid:)")));
+@end
+
 __attribute__((swift_name("FitJournalDatabase")))
 @protocol FJKMPFitJournalDatabase <FJKMPRuntimeTransacter>
 @required
 @property (readonly) FJKMPBodyMeasurementsQueries *bodyMeasurementsQueries __attribute__((swift_name("bodyMeasurementsQueries")));
+@property (readonly) FJKMPCategoryQueries *categoryQueries __attribute__((swift_name("categoryQueries")));
+@property (readonly) FJKMPExercisesQueries *exercisesQueries __attribute__((swift_name("exercisesQueries")));
 @property (readonly) FJKMPNotesQueries *notesQueries __attribute__((swift_name("notesQueries")));
 @end
 
@@ -276,6 +349,85 @@ __attribute__((swift_name("NotesQueries")))
 - (FJKMPRuntimeQuery<id> *)getNotesUserId:(NSString *)userId mapper:(id (^)(NSString *, NSString * _Nullable, NSString *, NSString *, FJKMPBoolean *, NSString *, NSString *))mapper __attribute__((swift_name("getNotes(userId:mapper:)")));
 - (void)updateNoteText:(NSString *)text isPinned:(BOOL)isPinned updatedDate:(NSString *)updatedDate uuid:(NSString *)uuid __attribute__((swift_name("updateNote(text:isPinned:updatedDate:uuid:)")));
 - (void)updateRemoteIdRemoteId:(NSString * _Nullable)remoteId uuid:(NSString *)uuid __attribute__((swift_name("updateRemoteId(remoteId:uuid:)")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("CategoriesDBDataSource")))
+@interface FJKMPCategoriesDBDataSource : FJKMPBase
+- (instancetype)initWithDao:(FJKMPCategoryQueries *)dao __attribute__((swift_name("init(dao:)"))) __attribute__((objc_designated_initializer));
+- (FJKMPDBCategoryObject *)createCategoryUuid:(NSString *)uuid remoteId:(NSString *)remoteId nameEn:(NSString *)nameEn nameRu:(NSString *)nameRu nameUk:(NSString *)nameUk type:(int32_t)type details:(NSString * _Nullable)details __attribute__((swift_name("createCategory(uuid:remoteId:nameEn:nameRu:nameUk:type:details:)")));
+- (void)deleteAllCategories __attribute__((swift_name("deleteAllCategories()")));
+- (NSArray<FJKMPDBCategoryObject *> *)getAllCategories __attribute__((swift_name("getAllCategories()")));
+- (id<FJKMPKotlinx_coroutines_coreFlow>)getAllCategoriesFlow __attribute__((swift_name("getAllCategoriesFlow()")));
+- (NSArray<FJKMPDBCategoryObject *> *)getCategoriesByUuidsUuids:(NSArray<NSString *> *)uuids __attribute__((swift_name("getCategoriesByUuids(uuids:)")));
+- (FJKMPDBCategoryObject *)getCategoryByRemoteIdRemoteId:(NSString *)remoteId __attribute__((swift_name("getCategoryByRemoteId(remoteId:)")));
+- (id<FJKMPKotlinx_coroutines_coreFlow>)getCategoryByRemoteIdFlowRemoteId:(NSString *)remoteId __attribute__((swift_name("getCategoryByRemoteIdFlow(remoteId:)")));
+- (FJKMPDBCategoryObject *)getCategoryByUuidUuid:(NSString *)uuid __attribute__((swift_name("getCategoryByUuid(uuid:)")));
+- (id<FJKMPKotlinx_coroutines_coreFlow>)getCategoryByUuidFlowUuid:(NSString *)uuid __attribute__((swift_name("getCategoryByUuidFlow(uuid:)")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("ExercisesDBDataSource")))
+@interface FJKMPExercisesDBDataSource : FJKMPBase
+- (instancetype)initWithDao:(FJKMPExercisesQueries *)dao mapper:(FJKMPExerciseDBMapper *)mapper __attribute__((swift_name("init(dao:mapper:)"))) __attribute__((objc_designated_initializer));
+- (FJKMPDBExerciseObject *)createExerciseUuid:(NSString *)uuid remoteId:(NSString *)remoteId nameEn:(NSString *)nameEn nameRu:(NSString *)nameRu nameUk:(NSString *)nameUk details:(NSString * _Nullable)details image1:(NSString * _Nullable)image1 image2:(NSString * _Nullable)image2 categoryUuid:(NSString *)categoryUuid secondaryCategoryUuids:(NSArray<NSString *> * _Nullable)secondaryCategoryUuids resultType:(int32_t)resultType isGlobal:(BOOL)isGlobal __attribute__((swift_name("createExercise(uuid:remoteId:nameEn:nameRu:nameUk:details:image1:image2:categoryUuid:secondaryCategoryUuids:resultType:isGlobal:)")));
+- (void)deleteAllExercises __attribute__((swift_name("deleteAllExercises()")));
+- (void)deleteExerciseUuid:(NSString *)uuid __attribute__((swift_name("deleteExercise(uuid:)")));
+- (NSArray<FJKMPDBExerciseObject *> *)getAllExercises __attribute__((swift_name("getAllExercises()")));
+- (id<FJKMPKotlinx_coroutines_coreFlow>)getAllExercisesFlow __attribute__((swift_name("getAllExercisesFlow()")));
+- (FJKMPDBExerciseObject *)getExerciseByRemoteIdRemoteId:(NSString *)remoteId __attribute__((swift_name("getExerciseByRemoteId(remoteId:)")));
+- (id<FJKMPKotlinx_coroutines_coreFlow>)getExerciseByRemoteIdFlowRemoteId:(NSString *)remoteId __attribute__((swift_name("getExerciseByRemoteIdFlow(remoteId:)")));
+- (FJKMPDBExerciseObject *)getExerciseByUuidUuid:(NSString *)uuid __attribute__((swift_name("getExerciseByUuid(uuid:)")));
+- (id<FJKMPKotlinx_coroutines_coreFlow>)getExerciseByUuidFlowUuid:(NSString *)uuid __attribute__((swift_name("getExerciseByUuidFlow(uuid:)")));
+- (NSArray<FJKMPDBExerciseObject *> *)getExercisesByCategoryUuidCategoryUuid:(NSString *)categoryUuid __attribute__((swift_name("getExercisesByCategoryUuid(categoryUuid:)")));
+- (id<FJKMPKotlinx_coroutines_coreFlow>)getExercisesByCategoryUuidFlowCategoryUuid:(NSString *)categoryUuid __attribute__((swift_name("getExercisesByCategoryUuidFlow(categoryUuid:)")));
+- (FJKMPDBExerciseObject *)updateExerciseUuid:(NSString *)uuid remoteId:(NSString *)remoteId nameEn:(NSString *)nameEn nameRu:(NSString *)nameRu nameUk:(NSString *)nameUk details:(NSString * _Nullable)details categoryUuid:(NSString *)categoryUuid secondaryCategoryUuids:(NSArray<NSString *> * _Nullable)secondaryCategoryUuids resultType:(int32_t)resultType __attribute__((swift_name("updateExercise(uuid:remoteId:nameEn:nameRu:nameUk:details:categoryUuid:secondaryCategoryUuids:resultType:)")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("DBCategoryObject")))
+@interface FJKMPDBCategoryObject : FJKMPBase
+- (instancetype)initWithUuid:(NSString *)uuid remoteId:(NSString *)remoteId nameEn:(NSString *)nameEn nameRu:(NSString *)nameRu nameUk:(NSString *)nameUk type:(int32_t)type details:(NSString * _Nullable)details __attribute__((swift_name("init(uuid:remoteId:nameEn:nameRu:nameUk:type:details:)"))) __attribute__((objc_designated_initializer));
+- (FJKMPDBCategoryObject *)doCopyUuid:(NSString *)uuid remoteId:(NSString *)remoteId nameEn:(NSString *)nameEn nameRu:(NSString *)nameRu nameUk:(NSString *)nameUk type:(int32_t)type details:(NSString * _Nullable)details __attribute__((swift_name("doCopy(uuid:remoteId:nameEn:nameRu:nameUk:type:details:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSString * _Nullable details __attribute__((swift_name("details")));
+@property (readonly) NSString *nameEn __attribute__((swift_name("nameEn")));
+@property (readonly) NSString *nameRu __attribute__((swift_name("nameRu")));
+@property (readonly) NSString *nameUk __attribute__((swift_name("nameUk")));
+@property (readonly) NSString *remoteId __attribute__((swift_name("remoteId")));
+@property (readonly) int32_t type __attribute__((swift_name("type")));
+@property (readonly) NSString *uuid __attribute__((swift_name("uuid")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("DBExerciseObject")))
+@interface FJKMPDBExerciseObject : FJKMPBase
+- (instancetype)initWithUuid:(NSString *)uuid remoteId:(NSString *)remoteId nameEn:(NSString *)nameEn nameRu:(NSString *)nameRu nameUk:(NSString * _Nullable)nameUk image1:(NSString * _Nullable)image1 image2:(NSString * _Nullable)image2 details:(NSString * _Nullable)details resultType:(int32_t)resultType primaryCategory:(FJKMPDBCategoryObject *)primaryCategory secondaryCategories:(NSArray<FJKMPDBCategoryObject *> * _Nullable)secondaryCategories isGlobal:(BOOL)isGlobal __attribute__((swift_name("init(uuid:remoteId:nameEn:nameRu:nameUk:image1:image2:details:resultType:primaryCategory:secondaryCategories:isGlobal:)"))) __attribute__((objc_designated_initializer));
+- (FJKMPDBExerciseObject *)doCopyUuid:(NSString *)uuid remoteId:(NSString *)remoteId nameEn:(NSString *)nameEn nameRu:(NSString *)nameRu nameUk:(NSString * _Nullable)nameUk image1:(NSString * _Nullable)image1 image2:(NSString * _Nullable)image2 details:(NSString * _Nullable)details resultType:(int32_t)resultType primaryCategory:(FJKMPDBCategoryObject *)primaryCategory secondaryCategories:(NSArray<FJKMPDBCategoryObject *> * _Nullable)secondaryCategories isGlobal:(BOOL)isGlobal __attribute__((swift_name("doCopy(uuid:remoteId:nameEn:nameRu:nameUk:image1:image2:details:resultType:primaryCategory:secondaryCategories:isGlobal:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSString * _Nullable details __attribute__((swift_name("details")));
+@property (readonly) NSString * _Nullable image1 __attribute__((swift_name("image1")));
+@property (readonly) NSString * _Nullable image2 __attribute__((swift_name("image2")));
+@property (readonly) BOOL isGlobal __attribute__((swift_name("isGlobal")));
+@property (readonly) NSString *nameEn __attribute__((swift_name("nameEn")));
+@property (readonly) NSString *nameRu __attribute__((swift_name("nameRu")));
+@property (readonly) NSString * _Nullable nameUk __attribute__((swift_name("nameUk")));
+@property (readonly) FJKMPDBCategoryObject *primaryCategory __attribute__((swift_name("primaryCategory")));
+@property (readonly) NSString *remoteId __attribute__((swift_name("remoteId")));
+@property (readonly) int32_t resultType __attribute__((swift_name("resultType")));
+@property (readonly) NSArray<FJKMPDBCategoryObject *> * _Nullable secondaryCategories __attribute__((swift_name("secondaryCategories")));
+@property (readonly) NSString *uuid __attribute__((swift_name("uuid")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("ExerciseDBMapper")))
+@interface FJKMPExerciseDBMapper : FJKMPBase
+- (instancetype)initWithCategoryDataSource:(FJKMPCategoriesDBDataSource *)categoryDataSource __attribute__((swift_name("init(categoryDataSource:)"))) __attribute__((objc_designated_initializer));
+- (FJKMPDBExerciseObject *)mapUuid:(NSString *)uuid remoteId:(NSString *)remoteId nameEn:(NSString *)nameEn nameRu:(NSString *)nameRu nameUk:(NSString * _Nullable)nameUk details:(NSString * _Nullable)details image1:(NSString * _Nullable)image1 image2:(NSString * _Nullable)image2 resultType:(int32_t)resultType primaryCategoryUuid:(NSString *)primaryCategoryUuid secondaryCategoryUuids:(NSString * _Nullable)secondaryCategoryUuids isGlobal:(BOOL)isGlobal __attribute__((swift_name("map(uuid:remoteId:nameEn:nameRu:nameUk:details:image1:image2:resultType:primaryCategoryUuid:secondaryCategoryUuids:isGlobal:)")));
 @end
 
 __attribute__((objc_subclassing_restricted))
@@ -470,6 +622,17 @@ __attribute__((swift_name("RuntimeSqlSchema")))
 @property (readonly) int64_t version __attribute__((swift_name("version")));
 @end
 
+__attribute__((swift_name("Kotlinx_coroutines_coreFlow")))
+@protocol FJKMPKotlinx_coroutines_coreFlow
+@required
+
+/**
+ * @note This method converts instances of CancellationException to errors.
+ * Other uncaught Kotlin exceptions are fatal.
+*/
+- (void)collectCollector:(id<FJKMPKotlinx_coroutines_coreFlowCollector>)collector completionHandler:(void (^)(NSError * _Nullable))completionHandler __attribute__((swift_name("collect(collector:completionHandler:)")));
+@end
+
 __attribute__((swift_name("KotlinComparable")))
 @protocol FJKMPKotlinComparable
 @required
@@ -504,17 +667,6 @@ __attribute__((swift_name("Kotlinx_datetimeLocalDateTime")))
 @property (readonly) int32_t second __attribute__((swift_name("second")));
 @property (readonly) FJKMPKotlinx_datetimeLocalTime *time __attribute__((swift_name("time")));
 @property (readonly) int32_t year __attribute__((swift_name("year")));
-@end
-
-__attribute__((swift_name("Kotlinx_coroutines_coreFlow")))
-@protocol FJKMPKotlinx_coroutines_coreFlow
-@required
-
-/**
- * @note This method converts instances of CancellationException to errors.
- * Other uncaught Kotlin exceptions are fatal.
-*/
-- (void)collectCollector:(id<FJKMPKotlinx_coroutines_coreFlowCollector>)collector completionHandler:(void (^)(NSError * _Nullable))completionHandler __attribute__((swift_name("collect(collector:completionHandler:)")));
 @end
 
 __attribute__((objc_subclassing_restricted))
@@ -574,6 +726,58 @@ __attribute__((swift_name("RuntimeAfterVersion")))
 - (instancetype)initWithAfterVersion:(int64_t)afterVersion block:(void (^)(id<FJKMPRuntimeSqlDriver>))block __attribute__((swift_name("init(afterVersion:block:)"))) __attribute__((objc_designated_initializer));
 @property (readonly) int64_t afterVersion __attribute__((swift_name("afterVersion")));
 @property (readonly) void (^block)(id<FJKMPRuntimeSqlDriver>) __attribute__((swift_name("block")));
+@end
+
+__attribute__((swift_name("KotlinException")))
+@interface FJKMPKotlinException : FJKMPKotlinThrowable
+- (instancetype)init __attribute__((swift_name("init()"))) __attribute__((objc_designated_initializer));
++ (instancetype)new __attribute__((availability(swift, unavailable, message="use object initializers instead")));
+- (instancetype)initWithMessage:(NSString * _Nullable)message __attribute__((swift_name("init(message:)"))) __attribute__((objc_designated_initializer));
+- (instancetype)initWithCause:(FJKMPKotlinThrowable * _Nullable)cause __attribute__((swift_name("init(cause:)"))) __attribute__((objc_designated_initializer));
+- (instancetype)initWithMessage:(NSString * _Nullable)message cause:(FJKMPKotlinThrowable * _Nullable)cause __attribute__((swift_name("init(message:cause:)"))) __attribute__((objc_designated_initializer));
+@end
+
+__attribute__((swift_name("KotlinRuntimeException")))
+@interface FJKMPKotlinRuntimeException : FJKMPKotlinException
+- (instancetype)init __attribute__((swift_name("init()"))) __attribute__((objc_designated_initializer));
++ (instancetype)new __attribute__((availability(swift, unavailable, message="use object initializers instead")));
+- (instancetype)initWithMessage:(NSString * _Nullable)message __attribute__((swift_name("init(message:)"))) __attribute__((objc_designated_initializer));
+- (instancetype)initWithCause:(FJKMPKotlinThrowable * _Nullable)cause __attribute__((swift_name("init(cause:)"))) __attribute__((objc_designated_initializer));
+- (instancetype)initWithMessage:(NSString * _Nullable)message cause:(FJKMPKotlinThrowable * _Nullable)cause __attribute__((swift_name("init(message:cause:)"))) __attribute__((objc_designated_initializer));
+@end
+
+__attribute__((swift_name("KotlinIllegalStateException")))
+@interface FJKMPKotlinIllegalStateException : FJKMPKotlinRuntimeException
+- (instancetype)init __attribute__((swift_name("init()"))) __attribute__((objc_designated_initializer));
++ (instancetype)new __attribute__((availability(swift, unavailable, message="use object initializers instead")));
+- (instancetype)initWithMessage:(NSString * _Nullable)message __attribute__((swift_name("init(message:)"))) __attribute__((objc_designated_initializer));
+- (instancetype)initWithCause:(FJKMPKotlinThrowable * _Nullable)cause __attribute__((swift_name("init(cause:)"))) __attribute__((objc_designated_initializer));
+- (instancetype)initWithMessage:(NSString * _Nullable)message cause:(FJKMPKotlinThrowable * _Nullable)cause __attribute__((swift_name("init(message:cause:)"))) __attribute__((objc_designated_initializer));
+@end
+
+
+/**
+ * @note annotations
+ *   kotlin.SinceKotlin(version="1.4")
+*/
+__attribute__((swift_name("KotlinCancellationException")))
+@interface FJKMPKotlinCancellationException : FJKMPKotlinIllegalStateException
+- (instancetype)init __attribute__((swift_name("init()"))) __attribute__((objc_designated_initializer));
++ (instancetype)new __attribute__((availability(swift, unavailable, message="use object initializers instead")));
+- (instancetype)initWithMessage:(NSString * _Nullable)message __attribute__((swift_name("init(message:)"))) __attribute__((objc_designated_initializer));
+- (instancetype)initWithCause:(FJKMPKotlinThrowable * _Nullable)cause __attribute__((swift_name("init(cause:)"))) __attribute__((objc_designated_initializer));
+- (instancetype)initWithMessage:(NSString * _Nullable)message cause:(FJKMPKotlinThrowable * _Nullable)cause __attribute__((swift_name("init(message:cause:)"))) __attribute__((objc_designated_initializer));
+@end
+
+__attribute__((swift_name("Kotlinx_coroutines_coreFlowCollector")))
+@protocol FJKMPKotlinx_coroutines_coreFlowCollector
+@required
+
+/**
+ * @note This method converts instances of CancellationException to errors.
+ * Other uncaught Kotlin exceptions are fatal.
+*/
+- (void)emitValue:(id _Nullable)value completionHandler:(void (^)(NSError * _Nullable))completionHandler __attribute__((swift_name("emit(value:completionHandler:)")));
 @end
 
 
@@ -683,58 +887,6 @@ __attribute__((swift_name("Kotlinx_datetimeDayOfWeek")))
 @property (class, readonly) FJKMPKotlinx_datetimeDayOfWeek *sunday __attribute__((swift_name("sunday")));
 + (FJKMPKotlinArray<FJKMPKotlinx_datetimeDayOfWeek *> *)values __attribute__((swift_name("values()")));
 @property (class, readonly) NSArray<FJKMPKotlinx_datetimeDayOfWeek *> *entries __attribute__((swift_name("entries")));
-@end
-
-__attribute__((swift_name("KotlinException")))
-@interface FJKMPKotlinException : FJKMPKotlinThrowable
-- (instancetype)init __attribute__((swift_name("init()"))) __attribute__((objc_designated_initializer));
-+ (instancetype)new __attribute__((availability(swift, unavailable, message="use object initializers instead")));
-- (instancetype)initWithMessage:(NSString * _Nullable)message __attribute__((swift_name("init(message:)"))) __attribute__((objc_designated_initializer));
-- (instancetype)initWithCause:(FJKMPKotlinThrowable * _Nullable)cause __attribute__((swift_name("init(cause:)"))) __attribute__((objc_designated_initializer));
-- (instancetype)initWithMessage:(NSString * _Nullable)message cause:(FJKMPKotlinThrowable * _Nullable)cause __attribute__((swift_name("init(message:cause:)"))) __attribute__((objc_designated_initializer));
-@end
-
-__attribute__((swift_name("KotlinRuntimeException")))
-@interface FJKMPKotlinRuntimeException : FJKMPKotlinException
-- (instancetype)init __attribute__((swift_name("init()"))) __attribute__((objc_designated_initializer));
-+ (instancetype)new __attribute__((availability(swift, unavailable, message="use object initializers instead")));
-- (instancetype)initWithMessage:(NSString * _Nullable)message __attribute__((swift_name("init(message:)"))) __attribute__((objc_designated_initializer));
-- (instancetype)initWithCause:(FJKMPKotlinThrowable * _Nullable)cause __attribute__((swift_name("init(cause:)"))) __attribute__((objc_designated_initializer));
-- (instancetype)initWithMessage:(NSString * _Nullable)message cause:(FJKMPKotlinThrowable * _Nullable)cause __attribute__((swift_name("init(message:cause:)"))) __attribute__((objc_designated_initializer));
-@end
-
-__attribute__((swift_name("KotlinIllegalStateException")))
-@interface FJKMPKotlinIllegalStateException : FJKMPKotlinRuntimeException
-- (instancetype)init __attribute__((swift_name("init()"))) __attribute__((objc_designated_initializer));
-+ (instancetype)new __attribute__((availability(swift, unavailable, message="use object initializers instead")));
-- (instancetype)initWithMessage:(NSString * _Nullable)message __attribute__((swift_name("init(message:)"))) __attribute__((objc_designated_initializer));
-- (instancetype)initWithCause:(FJKMPKotlinThrowable * _Nullable)cause __attribute__((swift_name("init(cause:)"))) __attribute__((objc_designated_initializer));
-- (instancetype)initWithMessage:(NSString * _Nullable)message cause:(FJKMPKotlinThrowable * _Nullable)cause __attribute__((swift_name("init(message:cause:)"))) __attribute__((objc_designated_initializer));
-@end
-
-
-/**
- * @note annotations
- *   kotlin.SinceKotlin(version="1.4")
-*/
-__attribute__((swift_name("KotlinCancellationException")))
-@interface FJKMPKotlinCancellationException : FJKMPKotlinIllegalStateException
-- (instancetype)init __attribute__((swift_name("init()"))) __attribute__((objc_designated_initializer));
-+ (instancetype)new __attribute__((availability(swift, unavailable, message="use object initializers instead")));
-- (instancetype)initWithMessage:(NSString * _Nullable)message __attribute__((swift_name("init(message:)"))) __attribute__((objc_designated_initializer));
-- (instancetype)initWithCause:(FJKMPKotlinThrowable * _Nullable)cause __attribute__((swift_name("init(cause:)"))) __attribute__((objc_designated_initializer));
-- (instancetype)initWithMessage:(NSString * _Nullable)message cause:(FJKMPKotlinThrowable * _Nullable)cause __attribute__((swift_name("init(message:cause:)"))) __attribute__((objc_designated_initializer));
-@end
-
-__attribute__((swift_name("Kotlinx_coroutines_coreFlowCollector")))
-@protocol FJKMPKotlinx_coroutines_coreFlowCollector
-@required
-
-/**
- * @note This method converts instances of CancellationException to errors.
- * Other uncaught Kotlin exceptions are fatal.
-*/
-- (void)emitValue:(id _Nullable)value completionHandler:(void (^)(NSError * _Nullable))completionHandler __attribute__((swift_name("emit(value:completionHandler:)")));
 @end
 
 __attribute__((swift_name("KotlinIterator")))

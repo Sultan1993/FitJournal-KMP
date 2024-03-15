@@ -15,16 +15,14 @@ class ExercisesDBDataSource(
     private val mapper: ExerciseDBMapper
 ) {
 
-    fun getAllExercises(userId: String): List<DBExerciseObject> {
+    fun getAllExercises(): List<DBExerciseObject> {
         return dao
             .getAllExercises(
-                userId = userId,
-                mapper = { uuid, remoteId, userId, nameEn, nameRu, nameUk, details,
-                           image1, image2, resultType, primaryCategoryUuid, secondaryCategoryUuids ->
+                mapper = { uuid, remoteId, nameEn, nameRu, nameUk, details, image1, image2,
+                           resultType, primaryCategoryUuid, secondaryCategoryUuids, global ->
                     mapper.map(
                         uuid = uuid,
                         remoteId = remoteId,
-                        userId = userId,
                         nameEn = nameEn,
                         nameRu = nameRu,
                         nameUk = nameUk,
@@ -33,23 +31,22 @@ class ExercisesDBDataSource(
                         image2 = image2,
                         resultType = resultType.toInt(),
                         primaryCategoryUuid = primaryCategoryUuid,
-                        secondaryCategoryUuids = secondaryCategoryUuids
+                        secondaryCategoryUuids = secondaryCategoryUuids,
+                        isGlobal = global
                     )
                 }
             )
             .executeAsList()
     }
 
-    fun getAllExercisesFlow(userId: String): Flow<List<DBExerciseObject>> {
+    fun getAllExercisesFlow(): Flow<List<DBExerciseObject>> {
         return dao
             .getAllExercises(
-                userId = userId,
-                mapper = { uuid, remoteId, userId, nameEn, nameRu, nameUk, details,
-                           image1, image2, resultType, primaryCategoryUuid, secondaryCategoryUuids ->
+                mapper = { uuid, remoteId, nameEn, nameRu, nameUk, details, image1, image2,
+                           resultType, primaryCategoryUuid, secondaryCategoryUuids, global ->
                     mapper.map(
                         uuid = uuid,
                         remoteId = remoteId,
-                        userId = userId,
                         nameEn = nameEn,
                         nameRu = nameRu,
                         nameUk = nameUk,
@@ -58,7 +55,8 @@ class ExercisesDBDataSource(
                         image2 = image2,
                         resultType = resultType.toInt(),
                         primaryCategoryUuid = primaryCategoryUuid,
-                        secondaryCategoryUuids = secondaryCategoryUuids
+                        secondaryCategoryUuids = secondaryCategoryUuids,
+                        isGlobal = global
                     )
                 }
             )
@@ -66,17 +64,15 @@ class ExercisesDBDataSource(
             .mapToList(Dispatchers.IO)
     }
 
-    fun getExercisesByCategoryUuid(userId: String, categoryUuid: String): List<DBExerciseObject> {
+    fun getExercisesByCategoryUuid(categoryUuid: String): List<DBExerciseObject> {
         return dao
             .getExercisesByCategoryUuid(
-                userId = userId,
                 primaryCategoryUuid = categoryUuid,
-                mapper = { uuid, remoteId, userId, nameEn, nameRu, nameUk, details,
-                           image1, image2, resultType, primaryCategoryUuid, secondaryCategoryUuids ->
+                mapper = { uuid, remoteId, nameEn, nameRu, nameUk, details, image1, image2,
+                           resultType, primaryCategoryUuid, secondaryCategoryUuids, global ->
                     mapper.map(
                         uuid = uuid,
                         remoteId = remoteId,
-                        userId = userId,
                         nameEn = nameEn,
                         nameRu = nameRu,
                         nameUk = nameUk,
@@ -85,27 +81,23 @@ class ExercisesDBDataSource(
                         image2 = image2,
                         resultType = resultType.toInt(),
                         primaryCategoryUuid = primaryCategoryUuid,
-                        secondaryCategoryUuids = secondaryCategoryUuids
+                        secondaryCategoryUuids = secondaryCategoryUuids,
+                        isGlobal = global
                     )
                 }
             )
             .executeAsList()
     }
 
-    fun getExercisesByCategoryUuidFlow(
-        userId: String,
-        categoryUuid: String
-    ): Flow<List<DBExerciseObject>> {
+    fun getExercisesByCategoryUuidFlow(categoryUuid: String): Flow<List<DBExerciseObject>> {
         return dao
             .getExercisesByCategoryUuid(
-                userId = userId,
                 primaryCategoryUuid = categoryUuid,
-                mapper = { uuid, remoteId, userId, nameEn, nameRu, nameUk, details,
-                           image1, image2, resultType, primaryCategoryUuid, secondaryCategoryUuids ->
+                mapper = { uuid, remoteId, nameEn, nameRu, nameUk, details, image1, image2,
+                           resultType, primaryCategoryUuid, secondaryCategoryUuids, global ->
                     mapper.map(
                         uuid = uuid,
                         remoteId = remoteId,
-                        userId = userId,
                         nameEn = nameEn,
                         nameRu = nameRu,
                         nameUk = nameUk,
@@ -114,7 +106,8 @@ class ExercisesDBDataSource(
                         image2 = image2,
                         resultType = resultType.toInt(),
                         primaryCategoryUuid = primaryCategoryUuid,
-                        secondaryCategoryUuids = secondaryCategoryUuids
+                        secondaryCategoryUuids = secondaryCategoryUuids,
+                        isGlobal = global
                     )
                 }
             )
@@ -126,12 +119,11 @@ class ExercisesDBDataSource(
         return dao
             .getExerciseByUuid(
                 uuid = uuid,
-                mapper = { uuid, remoteId, userId, nameEn, nameRu, nameUk, details,
-                           image1, image2, resultType, primaryCategoryUuid, secondaryCategoryUuids ->
+                mapper = { uuid, remoteId, nameEn, nameRu, nameUk, details, image1, image2,
+                           resultType, primaryCategoryUuid, secondaryCategoryUuids, global ->
                     mapper.map(
                         uuid = uuid,
                         remoteId = remoteId,
-                        userId = userId,
                         nameEn = nameEn,
                         nameRu = nameRu,
                         nameUk = nameUk,
@@ -140,7 +132,8 @@ class ExercisesDBDataSource(
                         image2 = image2,
                         resultType = resultType.toInt(),
                         primaryCategoryUuid = primaryCategoryUuid,
-                        secondaryCategoryUuids = secondaryCategoryUuids
+                        secondaryCategoryUuids = secondaryCategoryUuids,
+                        isGlobal = global
                     )
                 }
             )
@@ -151,12 +144,11 @@ class ExercisesDBDataSource(
         return dao
             .getExerciseByUuid(
                 uuid = uuid,
-                mapper = { uuid, remoteId, userId, nameEn, nameRu, nameUk, details,
-                           image1, image2, resultType, primaryCategoryUuid, secondaryCategoryUuids ->
+                mapper = { uuid, remoteId, nameEn, nameRu, nameUk, details, image1, image2,
+                           resultType, primaryCategoryUuid, secondaryCategoryUuids, global ->
                     mapper.map(
                         uuid = uuid,
                         remoteId = remoteId,
-                        userId = userId,
                         nameEn = nameEn,
                         nameRu = nameRu,
                         nameUk = nameUk,
@@ -165,7 +157,8 @@ class ExercisesDBDataSource(
                         image2 = image2,
                         resultType = resultType.toInt(),
                         primaryCategoryUuid = primaryCategoryUuid,
-                        secondaryCategoryUuids = secondaryCategoryUuids
+                        secondaryCategoryUuids = secondaryCategoryUuids,
+                        isGlobal = global
                     )
                 }
             )
@@ -177,12 +170,11 @@ class ExercisesDBDataSource(
         return dao
             .getExerciseByRemoteId(
                 remoteId = remoteId,
-                mapper = { uuid, remoteId, userId, nameEn, nameRu, nameUk, details,
-                           image1, image2, resultType, primaryCategoryUuid, secondaryCategoryUuids ->
+                mapper = { uuid, remoteId, nameEn, nameRu, nameUk, details, image1, image2,
+                           resultType, primaryCategoryUuid, secondaryCategoryUuids, global ->
                     mapper.map(
                         uuid = uuid,
                         remoteId = remoteId,
-                        userId = userId,
                         nameEn = nameEn,
                         nameRu = nameRu,
                         nameUk = nameUk,
@@ -191,7 +183,8 @@ class ExercisesDBDataSource(
                         image2 = image2,
                         resultType = resultType.toInt(),
                         primaryCategoryUuid = primaryCategoryUuid,
-                        secondaryCategoryUuids = secondaryCategoryUuids
+                        secondaryCategoryUuids = secondaryCategoryUuids,
+                        isGlobal = global
                     )
                 }
             )
@@ -202,12 +195,11 @@ class ExercisesDBDataSource(
         return dao
             .getExerciseByRemoteId(
                 remoteId = remoteId,
-                mapper = { uuid, remoteId, userId, nameEn, nameRu, nameUk, details,
-                           image1, image2, resultType, primaryCategoryUuid, secondaryCategoryUuids ->
+                mapper = { uuid, remoteId, nameEn, nameRu, nameUk, details, image1, image2,
+                           resultType, primaryCategoryUuid, secondaryCategoryUuids, global ->
                     mapper.map(
                         uuid = uuid,
                         remoteId = remoteId,
-                        userId = userId,
                         nameEn = nameEn,
                         nameRu = nameRu,
                         nameUk = nameUk,
@@ -216,7 +208,8 @@ class ExercisesDBDataSource(
                         image2 = image2,
                         resultType = resultType.toInt(),
                         primaryCategoryUuid = primaryCategoryUuid,
-                        secondaryCategoryUuids = secondaryCategoryUuids
+                        secondaryCategoryUuids = secondaryCategoryUuids,
+                        isGlobal = global
                     )
                 }
             )
@@ -226,41 +219,59 @@ class ExercisesDBDataSource(
 
     fun createExercise(
         uuid: String,
-        userId: String,
-        name: String,
+        remoteId: String,
+        nameEn: String,
+        nameRu: String,
+        nameUk: String,
         details: String?,
-        categoryId: String,
-        resultType: Int
+        image1: String?,
+        image2: String?,
+        categoryUuid: String,
+        secondaryCategoryUuids: List<String>?,
+        resultType: Int,
+        isGlobal: Boolean
     ): DBExerciseObject {
         return dao.transactionWithResult {
             dao.createExercise(
                 uuid = uuid,
-                userId = userId,
-                nameEn = name,
-                nameRu = name,
-                nameUk = name,
+                remoteId = remoteId,
+                nameEn = nameEn,
+                nameRu = nameRu,
+                nameUk = nameUk,
                 details = details,
-                primaryCategoryUuid = categoryId,
-                resultType = resultType.toLong()
+                image1 = image1,
+                image2 = image2,
+                primaryCategoryUuid = categoryUuid,
+                secondaryCategoryUuids = secondaryCategoryUuids?.joinToString(";"),
+                resultType = resultType.toLong(),
+                global = isGlobal
             )
             getExerciseByUuid(uuid)
         }
     }
 
-    fun updateExerciseRemoteId(uuid: String, remoteId: String): DBExerciseObject {
+    fun updateExercise(
+        uuid: String,
+        remoteId: String,
+        nameEn: String,
+        nameRu: String,
+        nameUk: String,
+        details: String?,
+        categoryUuid: String,
+        secondaryCategoryUuids: List<String>?,
+        resultType: Int
+    ): DBExerciseObject {
         return dao.transactionWithResult {
-            dao.updateExerciseRemoteId(remoteId, uuid)
-            getExerciseByUuid(uuid)
-        }
-    }
-
-    fun updateExerciseName(uuid: String, name: String): DBExerciseObject {
-        return dao.transactionWithResult {
-            dao.updateExerciseName(
-                nameEn = name,
-                nameRu = name,
-                nameUk = name,
-                uuid = uuid
+            dao.updateExercise(
+                uuid = uuid,
+                remoteId = remoteId,
+                nameEn = nameEn,
+                nameRu = nameRu,
+                nameUk = nameUk,
+                details = details,
+                primaryCategoryUuid = categoryUuid,
+                secondaryCategoryUuids = secondaryCategoryUuids?.joinToString(";"),
+                resultType = resultType.toLong()
             )
             getExerciseByUuid(uuid)
         }
@@ -268,5 +279,9 @@ class ExercisesDBDataSource(
 
     fun deleteExercise(uuid: String) {
         dao.deleteExercise(uuid)
+    }
+
+    fun deleteAllExercises() {
+        dao.deleteAllExercises()
     }
 }
