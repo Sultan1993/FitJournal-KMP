@@ -321,14 +321,13 @@ __attribute__((swift_name("FitJournalDatabaseCompanion")))
 __attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("Notes")))
 @interface FJKMPNotes : FJKMPBase
-- (instancetype)initWithUuid:(NSString *)uuid remoteId:(NSString * _Nullable)remoteId userId:(NSString *)userId text:(NSString *)text isPinned:(BOOL)isPinned createdDate:(NSString *)createdDate updatedDate:(NSString *)updatedDate __attribute__((swift_name("init(uuid:remoteId:userId:text:isPinned:createdDate:updatedDate:)"))) __attribute__((objc_designated_initializer));
-- (FJKMPNotes *)doCopyUuid:(NSString *)uuid remoteId:(NSString * _Nullable)remoteId userId:(NSString *)userId text:(NSString *)text isPinned:(BOOL)isPinned createdDate:(NSString *)createdDate updatedDate:(NSString *)updatedDate __attribute__((swift_name("doCopy(uuid:remoteId:userId:text:isPinned:createdDate:updatedDate:)")));
+- (instancetype)initWithUuid:(NSString *)uuid userId:(NSString *)userId text:(NSString *)text isPinned:(BOOL)isPinned createdDate:(NSString *)createdDate updatedDate:(NSString *)updatedDate __attribute__((swift_name("init(uuid:userId:text:isPinned:createdDate:updatedDate:)"))) __attribute__((objc_designated_initializer));
+- (FJKMPNotes *)doCopyUuid:(NSString *)uuid userId:(NSString *)userId text:(NSString *)text isPinned:(BOOL)isPinned createdDate:(NSString *)createdDate updatedDate:(NSString *)updatedDate __attribute__((swift_name("doCopy(uuid:userId:text:isPinned:createdDate:updatedDate:)")));
 - (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
 - (NSUInteger)hash __attribute__((swift_name("hash()")));
 - (NSString *)description __attribute__((swift_name("description()")));
 @property (readonly) NSString *createdDate __attribute__((swift_name("createdDate")));
 @property (readonly) BOOL isPinned __attribute__((swift_name("isPinned")));
-@property (readonly) NSString * _Nullable remoteId __attribute__((swift_name("remoteId")));
 @property (readonly) NSString *text __attribute__((swift_name("text")));
 @property (readonly) NSString *updatedDate __attribute__((swift_name("updatedDate")));
 @property (readonly) NSString *userId __attribute__((swift_name("userId")));
@@ -339,16 +338,15 @@ __attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("NotesQueries")))
 @interface FJKMPNotesQueries : FJKMPRuntimeTransacterImpl
 - (instancetype)initWithDriver:(id<FJKMPRuntimeSqlDriver>)driver __attribute__((swift_name("init(driver:)"))) __attribute__((objc_designated_initializer));
-- (void)clearNotes __attribute__((swift_name("clearNotes()")));
-- (void)createNoteUuid:(NSString *)uuid remoteId:(NSString * _Nullable)remoteId userId:(NSString *)userId text:(NSString *)text isPinned:(BOOL)isPinned createdDate:(NSString *)createdDate updatedDate:(NSString *)updatedDate __attribute__((swift_name("createNote(uuid:remoteId:userId:text:isPinned:createdDate:updatedDate:)")));
-- (void)deleteAllNotesUserId:(NSString *)userId __attribute__((swift_name("deleteAllNotes(userId:)")));
+- (void)createNoteUuid:(NSString *)uuid userId:(NSString *)userId text:(NSString *)text isPinned:(BOOL)isPinned createdDate:(NSString *)createdDate updatedDate:(NSString *)updatedDate __attribute__((swift_name("createNote(uuid:userId:text:isPinned:createdDate:updatedDate:)")));
+- (void)deleteAllNotes __attribute__((swift_name("deleteAllNotes()")));
 - (void)deleteNoteUuid:(NSString *)uuid __attribute__((swift_name("deleteNote(uuid:)")));
+- (void)deleteUserNotesUserId:(NSString *)userId __attribute__((swift_name("deleteUserNotes(userId:)")));
 - (FJKMPRuntimeQuery<FJKMPNotes *> *)getNoteByIdUuid:(NSString *)uuid __attribute__((swift_name("getNoteById(uuid:)")));
-- (FJKMPRuntimeQuery<id> *)getNoteByIdUuid:(NSString *)uuid mapper:(id (^)(NSString *, NSString * _Nullable, NSString *, NSString *, FJKMPBoolean *, NSString *, NSString *))mapper __attribute__((swift_name("getNoteById(uuid:mapper:)")));
+- (FJKMPRuntimeQuery<id> *)getNoteByIdUuid:(NSString *)uuid mapper:(id (^)(NSString *, NSString *, NSString *, FJKMPBoolean *, NSString *, NSString *))mapper __attribute__((swift_name("getNoteById(uuid:mapper:)")));
 - (FJKMPRuntimeQuery<FJKMPNotes *> *)getNotesUserId:(NSString *)userId __attribute__((swift_name("getNotes(userId:)")));
-- (FJKMPRuntimeQuery<id> *)getNotesUserId:(NSString *)userId mapper:(id (^)(NSString *, NSString * _Nullable, NSString *, NSString *, FJKMPBoolean *, NSString *, NSString *))mapper __attribute__((swift_name("getNotes(userId:mapper:)")));
+- (FJKMPRuntimeQuery<id> *)getNotesUserId:(NSString *)userId mapper:(id (^)(NSString *, NSString *, NSString *, FJKMPBoolean *, NSString *, NSString *))mapper __attribute__((swift_name("getNotes(userId:mapper:)")));
 - (void)updateNoteText:(NSString *)text isPinned:(BOOL)isPinned updatedDate:(NSString *)updatedDate uuid:(NSString *)uuid __attribute__((swift_name("updateNote(text:isPinned:updatedDate:uuid:)")));
-- (void)updateRemoteIdRemoteId:(NSString * _Nullable)remoteId uuid:(NSString *)uuid __attribute__((swift_name("updateRemoteId(remoteId:uuid:)")));
 @end
 
 __attribute__((objc_subclassing_restricted))
@@ -473,29 +471,27 @@ __attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("NotesDBDataSource")))
 @interface FJKMPNotesDBDataSource : FJKMPBase
 - (instancetype)initWithDao:(FJKMPNotesQueries *)dao __attribute__((swift_name("init(dao:)"))) __attribute__((objc_designated_initializer));
-- (FJKMPDBNoteObject *)createNoteUuid:(NSString *)uuid remoteId:(NSString * _Nullable)remoteId userId:(NSString *)userId text:(NSString *)text isPinned:(BOOL)isPinned createdDate:(FJKMPKotlinx_datetimeLocalDateTime *)createdDate updatedDate:(FJKMPKotlinx_datetimeLocalDateTime *)updatedDate __attribute__((swift_name("createNote(uuid:remoteId:userId:text:isPinned:createdDate:updatedDate:)")));
+- (FJKMPDBNoteObject *)createNoteUuid:(NSString *)uuid userId:(NSString *)userId text:(NSString *)text isPinned:(BOOL)isPinned createdDate:(FJKMPKotlinx_datetimeLocalDateTime *)createdDate updatedDate:(FJKMPKotlinx_datetimeLocalDateTime *)updatedDate __attribute__((swift_name("createNote(uuid:userId:text:isPinned:createdDate:updatedDate:)")));
 - (void)deleteAllNotes __attribute__((swift_name("deleteAllNotes()")));
-- (void)deleteAllNotesUserId:(NSString *)userId __attribute__((swift_name("deleteAllNotes(userId:)")));
 - (void)deleteNoteUuid:(NSString *)uuid __attribute__((swift_name("deleteNote(uuid:)")));
+- (void)deleteUserNotesUserId:(NSString *)userId __attribute__((swift_name("deleteUserNotes(userId:)")));
 - (FJKMPDBNoteObject *)getNoteByIdUuid:(NSString *)uuid __attribute__((swift_name("getNoteById(uuid:)")));
 - (id<FJKMPKotlinx_coroutines_coreFlow>)getNoteByIdFlowUuid:(NSString *)uuid __attribute__((swift_name("getNoteByIdFlow(uuid:)")));
 - (NSArray<FJKMPDBNoteObject *> *)getNotesUserId:(NSString *)userId __attribute__((swift_name("getNotes(userId:)")));
 - (id<FJKMPKotlinx_coroutines_coreFlow>)getNotesFlowUserId:(NSString *)userId __attribute__((swift_name("getNotesFlow(userId:)")));
 - (FJKMPDBNoteObject *)updateNoteUuid:(NSString *)uuid text:(NSString *)text isPinned:(BOOL)isPinned updatedDate:(FJKMPKotlinx_datetimeLocalDateTime *)updatedDate __attribute__((swift_name("updateNote(uuid:text:isPinned:updatedDate:)")));
-- (FJKMPDBNoteObject *)updateRemoteIdUuid:(NSString *)uuid remoteId:(NSString *)remoteId __attribute__((swift_name("updateRemoteId(uuid:remoteId:)")));
 @end
 
 __attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("DBNoteObject")))
 @interface FJKMPDBNoteObject : FJKMPBase
-- (instancetype)initWithUuid:(NSString *)uuid remoteId:(NSString * _Nullable)remoteId userId:(NSString *)userId text:(NSString *)text isPinned:(BOOL)isPinned createdDate:(FJKMPKotlinx_datetimeLocalDateTime *)createdDate updatedDate:(FJKMPKotlinx_datetimeLocalDateTime *)updatedDate __attribute__((swift_name("init(uuid:remoteId:userId:text:isPinned:createdDate:updatedDate:)"))) __attribute__((objc_designated_initializer));
-- (FJKMPDBNoteObject *)doCopyUuid:(NSString *)uuid remoteId:(NSString * _Nullable)remoteId userId:(NSString *)userId text:(NSString *)text isPinned:(BOOL)isPinned createdDate:(FJKMPKotlinx_datetimeLocalDateTime *)createdDate updatedDate:(FJKMPKotlinx_datetimeLocalDateTime *)updatedDate __attribute__((swift_name("doCopy(uuid:remoteId:userId:text:isPinned:createdDate:updatedDate:)")));
+- (instancetype)initWithUuid:(NSString *)uuid userId:(NSString *)userId text:(NSString *)text isPinned:(BOOL)isPinned createdDate:(FJKMPKotlinx_datetimeLocalDateTime *)createdDate updatedDate:(FJKMPKotlinx_datetimeLocalDateTime *)updatedDate __attribute__((swift_name("init(uuid:userId:text:isPinned:createdDate:updatedDate:)"))) __attribute__((objc_designated_initializer));
+- (FJKMPDBNoteObject *)doCopyUuid:(NSString *)uuid userId:(NSString *)userId text:(NSString *)text isPinned:(BOOL)isPinned createdDate:(FJKMPKotlinx_datetimeLocalDateTime *)createdDate updatedDate:(FJKMPKotlinx_datetimeLocalDateTime *)updatedDate __attribute__((swift_name("doCopy(uuid:userId:text:isPinned:createdDate:updatedDate:)")));
 - (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
 - (NSUInteger)hash __attribute__((swift_name("hash()")));
 - (NSString *)description __attribute__((swift_name("description()")));
 @property (readonly) FJKMPKotlinx_datetimeLocalDateTime *createdDate __attribute__((swift_name("createdDate")));
 @property (readonly) BOOL isPinned __attribute__((swift_name("isPinned")));
-@property (readonly) NSString * _Nullable remoteId __attribute__((swift_name("remoteId")));
 @property (readonly) NSString *text __attribute__((swift_name("text")));
 @property (readonly) FJKMPKotlinx_datetimeLocalDateTime *updatedDate __attribute__((swift_name("updatedDate")));
 @property (readonly) NSString *userId __attribute__((swift_name("userId")));

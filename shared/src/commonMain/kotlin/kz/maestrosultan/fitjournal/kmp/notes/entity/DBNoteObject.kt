@@ -6,7 +6,6 @@ import kz.maestrosultan.fitjournal.kmp.Notes
 
 data class DBNoteObject(
     val uuid: String,
-    val remoteId: String?,
     val userId: String,
     val text: String,
     val isPinned: Boolean,
@@ -16,7 +15,6 @@ data class DBNoteObject(
 
 internal fun Notes.map() = DBNoteObject(
     uuid = uuid,
-    remoteId = remoteId,
     userId = userId,
     text = text,
     isPinned = isPinned,

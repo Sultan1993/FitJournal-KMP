@@ -43,7 +43,6 @@ class NotesDBDataSource(private val dao: NotesQueries) {
 
     fun createNote(
         uuid: String,
-        remoteId: String?,
         userId: String,
         text: String,
         isPinned: Boolean,
@@ -53,7 +52,6 @@ class NotesDBDataSource(private val dao: NotesQueries) {
         return dao.transactionWithResult {
             dao.createNote(
                 uuid = uuid,
-                remoteId = remoteId,
                 userId = userId,
                 text = text,
                 isPinned = isPinned,
@@ -81,22 +79,15 @@ class NotesDBDataSource(private val dao: NotesQueries) {
         }
     }
 
-    fun updateRemoteId(uuid: String, remoteId: String): DBNoteObject {
-        return dao.transactionWithResult {
-            dao.updateRemoteId(remoteId, uuid)
-            getNoteById(uuid)
-        }
-    }
-
     fun deleteNote(uuid: String) {
         dao.deleteNote(uuid)
     }
 
-    fun deleteAllNotes(userId: String) {
-        dao.deleteAllNotes(userId)
+    fun deleteUserNotes(userId: String) {
+        dao.deleteUserNotes(userId)
     }
 
     fun deleteAllNotes() {
-        dao.clearNotes()
+        dao.deleteAllNotes()
     }
 }

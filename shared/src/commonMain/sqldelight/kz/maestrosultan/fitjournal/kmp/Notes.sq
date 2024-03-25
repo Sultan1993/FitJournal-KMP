@@ -2,7 +2,6 @@ import kotlin.Boolean;
 
 CREATE TABLE notes (
   uuid TEXT PRIMARY KEY NOT NULL,
-  remoteId TEXT,
   userId TEXT NOT NULL,
   text TEXT NOT NULL,
   isPinned INTEGER AS Boolean NOT NULL DEFAULT 0,
@@ -21,26 +20,21 @@ FROM notes
 WHERE uuid = ?;
 
 createNote:
-INSERT INTO notes(uuid, remoteId, userId, text, isPinned, createdDate, updatedDate)
-VALUES (?, ?, ?, ?, ?, ?, ?);
+INSERT INTO notes(uuid, userId, text, isPinned, createdDate, updatedDate)
+VALUES (?, ?, ?, ?, ?, ?);
 
 updateNote:
 UPDATE notes
 SET text = ?, isPinned = ?, updatedDate = ?
 WHERE uuid = ?;
 
-updateRemoteId:
-UPDATE notes
-SET remoteId = ?
-WHERE uuid = ?;
-
 deleteNote:
 DELETE FROM notes
 WHERE uuid = ?;
 
-deleteAllNotes:
+deleteUserNotes:
 DELETE FROM notes
 WHERE userId = ?;
 
-clearNotes:
+deleteAllNotes:
 DELETE FROM notes;
