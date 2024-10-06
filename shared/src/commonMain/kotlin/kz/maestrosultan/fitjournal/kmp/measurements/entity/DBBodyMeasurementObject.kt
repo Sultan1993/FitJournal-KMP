@@ -1,7 +1,6 @@
 package kz.maestrosultan.fitjournal.kmp.measurements.entity
 
 import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.toLocalDateTime
 import kz.maestrosultan.fitjournal.kmp.BodyMeasurements
 
 data class DBBodyMeasurementObject(
@@ -25,7 +24,7 @@ internal fun BodyMeasurements.map() = DBBodyMeasurementObject(
     type = type,
     value = value_,
     comment = comment,
-    measurementDate = measurementDate.toLocalDateTime(),
-    createdDate = createdDate.toLocalDateTime(),
-    updatedDate = updatedDate.toLocalDateTime(),
+    measurementDate = LocalDateTime.parse(measurementDate),
+    createdDate = LocalDateTime.parse(createdDate),
+    updatedDate = LocalDateTime.parse(updatedDate),
 )

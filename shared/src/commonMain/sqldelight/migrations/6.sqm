@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS photoMeasurements (
+    uuid TEXT PRIMARY KEY NOT NULL,
+    userId TEXT NOT NULL,
+    diaryId TEXT NOT NULL,
+    path TEXT NOT NULL,
+    url TEXT NOT NULL,
+    type TEXT NOT NULL,
+    date TEXT NOT NULL,
+    createdDate TEXT NOT NULL,
+    updatedDate TEXT NOT NULL
+);

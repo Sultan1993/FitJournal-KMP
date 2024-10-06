@@ -17,17 +17,17 @@ import kz.maestrosultan.fitjournal.kmp.measurements.entity.map
 
 class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
 
-    fun getAllBodyMeasurements(userId: String, diaryId: String): List<DBBodyMeasurementObject> {
-        return dao.getAllBodyMeasurements(userId, diaryId)
+    fun getBodyMeasurements(userId: String, diaryId: String): List<DBBodyMeasurementObject> {
+        return dao.getBodyMeasurements(userId, diaryId)
             .executeAsList()
             .map { it.map() }
     }
 
-    fun getAllBodyMeasurementsFlow(
+    fun getBodyMeasurementsFlow(
         userId: String,
         diaryId: String
     ): Flow<List<DBBodyMeasurementObject>> {
-        return dao.getAllBodyMeasurements(userId, diaryId)
+        return dao.getBodyMeasurements(userId, diaryId)
             .asFlow()
             .mapToList(Dispatchers.IO)
             .map { it.map { it.map() } }
@@ -126,15 +126,15 @@ class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
         dao.deleteBodyMeasurement(uuid)
     }
 
-    fun deleteDiaryBodyMeasurements(diaryId: String) {
-        dao.deleteDiaryBodyMeasurements(diaryId)
+    fun deleteBodyMeasurementsByDiaryId(diaryId: String) {
+        dao.deleteBodyMeasurementsByDiaryId(diaryId)
     }
 
-    fun deleteUserBodyMeasurements(userId: String) {
-        dao.deleteUserBodyMeasurements(userId)
+    fun deleteBodyMeasurementsByUserId(userId: String) {
+        dao.deleteBodyMeasurementsByUserId(userId)
     }
 
     fun deleteAllBodyMeasurements() {
-        dao.deleteAllBodyMeasurements()
+        dao.deleteBodyMeasurements()
     }
 }

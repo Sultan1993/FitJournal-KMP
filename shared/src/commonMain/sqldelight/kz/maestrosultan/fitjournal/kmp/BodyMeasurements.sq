@@ -11,7 +11,7 @@ CREATE TABLE bodyMeasurements (
     updatedDate TEXT NOT NULL
 );
 
-getAllBodyMeasurements:
+getBodyMeasurements:
 SELECT *
 FROM bodyMeasurements
 WHERE userId = ?
@@ -47,13 +47,13 @@ deleteBodyMeasurement:
 DELETE FROM bodyMeasurements
 WHERE uuid = ?;
 
-deleteDiaryBodyMeasurements:
+deleteBodyMeasurementsByDiaryId:
 DELETE FROM bodyMeasurements
 WHERE diaryId = ?;
 
-deleteUserBodyMeasurements:
+deleteBodyMeasurementsByUserId:
 DELETE FROM bodyMeasurements
 WHERE userId = ?;
 
-deleteAllBodyMeasurements:
+deleteBodyMeasurements:
 DELETE FROM bodyMeasurements;
