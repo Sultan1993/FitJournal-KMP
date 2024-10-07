@@ -1,11 +1,30 @@
-CREATE TABLE IF NOT EXISTS photoMeasurements (
+import kotlin.Boolean;
+
+DROP TABLE categories;
+DROP TABLE exercises;
+
+CREATE TABLE IF NOT EXISTS categories (
     uuid TEXT PRIMARY KEY NOT NULL,
-    userId TEXT NOT NULL,
-    diaryId TEXT NOT NULL,
-    path TEXT NOT NULL,
-    url TEXT NOT NULL,
-    type TEXT NOT NULL,
-    date TEXT NOT NULL,
-    createdDate TEXT NOT NULL,
-    updatedDate TEXT NOT NULL
+    remoteId TEXT NOT NULL,
+    nameEn TEXT NOT NULL,
+    nameRu TEXT NOT NULL,
+    nameUk TEXT NOT NULL,
+    type INTEGER NOT NULL,
+    details TEXT
+);
+
+CREATE TABLE IF NOT EXISTS exercises (
+    uuid TEXT PRIMARY KEY NOT NULL,
+    remoteId TEXT NOT NULL,
+    nameEn TEXT NOT NULL,
+    nameRu TEXT NOT NULL,
+    nameUk TEXT,
+    details TEXT,
+    image1 TEXT,
+    image2 TEXT,
+    resultType INTEGER NOT NULL,
+    primaryCategoryUuid TEXT NOT NULL,
+    secondaryCategoryUuids TEXT,
+    global INTEGER AS Boolean NOT NULL DEFAULT 0,
+    FOREIGN KEY (primaryCategoryUuid) REFERENCES categories(uuid)
 );
