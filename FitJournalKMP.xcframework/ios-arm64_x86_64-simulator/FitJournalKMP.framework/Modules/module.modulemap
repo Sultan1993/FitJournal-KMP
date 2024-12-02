@@ -1,6 +1,5 @@
-framework module FitJournalKMP {
+framework module "FitJournalKMP" {
     umbrella header "FitJournalKMP.h"
-
     export *
     module * { export * }
 }

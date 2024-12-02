@@ -6,9 +6,9 @@
 #import <Foundation/NSString.h>
 #import <Foundation/NSValue.h>
 
-@class FJKMPBodyMeasurements, FJKMPKotlinUnit, FJKMPRuntimeTransacterTransaction, FJKMPKotlinThrowable, FJKMPRuntimeBaseTransacterImpl, FJKMPRuntimeTransacterImpl, FJKMPRuntimeQuery<__covariant RowType>, FJKMPCategories, FJKMPExercises, FJKMPBodyMeasurementsQueries, FJKMPCategoryQueries, FJKMPExercisesQueries, FJKMPNotesQueries, FJKMPFitJournalDatabaseCompanion, FJKMPNotes, FJKMPDBCategoryObject, FJKMPExerciseDBMapper, FJKMPDBExerciseObject, FJKMPCategoriesDBDataSource, FJKMPDBBodyMeasurementObject, FJKMPKotlinx_datetimeLocalDateTime, FJKMPDBNoteObject, FJKMPKotlinArray<T>, FJKMPRuntimeExecutableQuery<__covariant RowType>, FJKMPRuntimeAfterVersion, FJKMPKotlinx_datetimeLocalDate, FJKMPKotlinx_datetimeLocalTime, FJKMPKotlinx_datetimeMonth, FJKMPKotlinx_datetimeLocalDateTimeCompanion, FJKMPKotlinx_datetimeDayOfWeek, FJKMPKotlinByteArray, FJKMPKotlinException, FJKMPKotlinRuntimeException, FJKMPKotlinIllegalStateException, FJKMPKotlinx_datetimeLocalDateCompanion, FJKMPKotlinx_datetimeLocalTimeCompanion, FJKMPKotlinEnumCompanion, FJKMPKotlinEnum<E>, FJKMPKotlinByteIterator, FJKMPKotlinx_serialization_coreSerializersModule, FJKMPKotlinx_serialization_coreSerialKind, FJKMPKotlinNothing;
+@class FJKMPBodyMeasurements, FJKMPKotlinUnit, FJKMPRuntimeTransacterTransaction, FJKMPKotlinThrowable, FJKMPRuntimeBaseTransacterImpl, FJKMPRuntimeTransacterImpl, FJKMPRuntimeQuery<__covariant RowType>, FJKMPCategories, FJKMPExercises, FJKMPBodyMeasurementsQueries, FJKMPCategoryQueries, FJKMPExercisesQueries, FJKMPNotesQueries, FJKMPPhotoMeasurementsQueries, FJKMPFitJournalDatabaseCompanion, FJKMPNotes, FJKMPPhotoMeasurements, FJKMPDBCategoryObject, FJKMPExerciseDBMapper, FJKMPDBExerciseObject, FJKMPCategoriesDBDataSource, FJKMPDBBodyMeasurementObject, FJKMPKotlinx_datetimeLocalDateTime, FJKMPDBPhotoMeasurementObject, FJKMPKotlinx_datetimeLocalDate, FJKMPDBNoteObject, FJKMPKotlinArray<T>, FJKMPRuntimeExecutableQuery<__covariant RowType>, FJKMPRuntimeAfterVersion, FJKMPKotlinx_datetimeLocalTime, FJKMPKotlinx_datetimeMonth, FJKMPKotlinx_datetimeLocalDateTimeCompanion, FJKMPKotlinx_datetimeDayOfWeek, FJKMPKotlinx_datetimeLocalDateCompanion, FJKMPKotlinByteArray, FJKMPKotlinException, FJKMPKotlinRuntimeException, FJKMPKotlinIllegalStateException, FJKMPKotlinx_datetimeLocalTimeCompanion, FJKMPKotlinEnumCompanion, FJKMPKotlinEnum<E>, FJKMPKotlinByteIterator, FJKMPKotlinx_datetimePadding, FJKMPKotlinx_datetimeDayOfWeekNames, FJKMPKotlinx_datetimeMonthNames, FJKMPKotlinx_datetimeDayOfWeekNamesCompanion, FJKMPKotlinx_datetimeMonthNamesCompanion, FJKMPKotlinx_serialization_coreSerializersModule, FJKMPKotlinx_serialization_coreSerialKind, FJKMPKotlinNothing;
 
-@protocol FJKMPRuntimeSqlDriver, FJKMPRuntimeTransactionWithoutReturn, FJKMPRuntimeTransactionWithReturn, FJKMPRuntimeTransacterBase, FJKMPRuntimeTransacter, FJKMPFitJournalDatabase, FJKMPRuntimeSqlSchema, FJKMPKotlinx_coroutines_coreFlow, FJKMPRuntimeQueryListener, FJKMPRuntimeQueryResult, FJKMPRuntimeSqlPreparedStatement, FJKMPRuntimeSqlCursor, FJKMPRuntimeCloseable, FJKMPRuntimeTransactionCallbacks, FJKMPKotlinx_coroutines_coreFlowCollector, FJKMPKotlinComparable, FJKMPKotlinIterator, FJKMPKotlinx_serialization_coreKSerializer, FJKMPKotlinx_serialization_coreEncoder, FJKMPKotlinx_serialization_coreSerialDescriptor, FJKMPKotlinx_serialization_coreSerializationStrategy, FJKMPKotlinx_serialization_coreDecoder, FJKMPKotlinx_serialization_coreDeserializationStrategy, FJKMPKotlinx_serialization_coreCompositeEncoder, FJKMPKotlinAnnotation, FJKMPKotlinx_serialization_coreCompositeDecoder, FJKMPKotlinx_serialization_coreSerializersModuleCollector, FJKMPKotlinKClass, FJKMPKotlinKDeclarationContainer, FJKMPKotlinKAnnotatedElement, FJKMPKotlinKClassifier;
+@protocol FJKMPRuntimeSqlDriver, FJKMPRuntimeTransactionWithoutReturn, FJKMPRuntimeTransactionWithReturn, FJKMPRuntimeTransacterBase, FJKMPRuntimeTransacter, FJKMPFitJournalDatabase, FJKMPRuntimeSqlSchema, FJKMPKotlinx_coroutines_coreFlow, FJKMPRuntimeQueryListener, FJKMPRuntimeQueryResult, FJKMPRuntimeSqlPreparedStatement, FJKMPRuntimeSqlCursor, FJKMPRuntimeCloseable, FJKMPRuntimeTransactionCallbacks, FJKMPKotlinx_coroutines_coreFlowCollector, FJKMPKotlinComparable, FJKMPKotlinIterator, FJKMPKotlinx_datetimeDateTimeFormat, FJKMPKotlinx_datetimeDateTimeFormatBuilderWithDateTime, FJKMPKotlinx_serialization_coreKSerializer, FJKMPKotlinx_datetimeDateTimeFormatBuilderWithDate, FJKMPKotlinx_datetimeDateTimeFormatBuilderWithTime, FJKMPKotlinAppendable, FJKMPKotlinx_datetimeDateTimeFormatBuilder, FJKMPKotlinx_serialization_coreEncoder, FJKMPKotlinx_serialization_coreSerialDescriptor, FJKMPKotlinx_serialization_coreSerializationStrategy, FJKMPKotlinx_serialization_coreDecoder, FJKMPKotlinx_serialization_coreDeserializationStrategy, FJKMPKotlinx_serialization_coreCompositeEncoder, FJKMPKotlinAnnotation, FJKMPKotlinx_serialization_coreCompositeDecoder, FJKMPKotlinx_serialization_coreSerializersModuleCollector, FJKMPKotlinKClass, FJKMPKotlinKDeclarationContainer, FJKMPKotlinKAnnotatedElement, FJKMPKotlinKClassifier;
 
 NS_ASSUME_NONNULL_BEGIN
 #pragma clang diagnostic push
@@ -213,14 +213,14 @@ __attribute__((swift_name("BodyMeasurementsQueries")))
 @interface FJKMPBodyMeasurementsQueries : FJKMPRuntimeTransacterImpl
 - (instancetype)initWithDriver:(id<FJKMPRuntimeSqlDriver>)driver __attribute__((swift_name("init(driver:)"))) __attribute__((objc_designated_initializer));
 - (void)createBodyMeasurementUuid:(NSString *)uuid remoteId:(NSString * _Nullable)remoteId userId:(NSString *)userId diaryId:(NSString *)diaryId type:(NSString *)type value_:(double)value_ comment:(NSString * _Nullable)comment measurementDate:(NSString *)measurementDate createdDate:(NSString *)createdDate updatedDate:(NSString *)updatedDate __attribute__((swift_name("createBodyMeasurement(uuid:remoteId:userId:diaryId:type:value_:comment:measurementDate:createdDate:updatedDate:)")));
-- (void)deleteAllBodyMeasurements __attribute__((swift_name("deleteAllBodyMeasurements()")));
 - (void)deleteBodyMeasurementUuid:(NSString *)uuid __attribute__((swift_name("deleteBodyMeasurement(uuid:)")));
-- (void)deleteDiaryBodyMeasurementsDiaryId:(NSString *)diaryId __attribute__((swift_name("deleteDiaryBodyMeasurements(diaryId:)")));
-- (void)deleteUserBodyMeasurementsUserId:(NSString *)userId __attribute__((swift_name("deleteUserBodyMeasurements(userId:)")));
-- (FJKMPRuntimeQuery<FJKMPBodyMeasurements *> *)getAllBodyMeasurementsUserId:(NSString *)userId diaryId:(NSString *)diaryId __attribute__((swift_name("getAllBodyMeasurements(userId:diaryId:)")));
-- (FJKMPRuntimeQuery<id> *)getAllBodyMeasurementsUserId:(NSString *)userId diaryId:(NSString *)diaryId mapper:(id (^)(NSString *, NSString * _Nullable, NSString *, NSString *, NSString *, FJKMPDouble *, NSString * _Nullable, NSString *, NSString *, NSString *))mapper __attribute__((swift_name("getAllBodyMeasurements(userId:diaryId:mapper:)")));
+- (void)deleteBodyMeasurements __attribute__((swift_name("deleteBodyMeasurements()")));
+- (void)deleteBodyMeasurementsByDiaryIdDiaryId:(NSString *)diaryId __attribute__((swift_name("deleteBodyMeasurementsByDiaryId(diaryId:)")));
+- (void)deleteBodyMeasurementsByUserIdUserId:(NSString *)userId __attribute__((swift_name("deleteBodyMeasurementsByUserId(userId:)")));
 - (FJKMPRuntimeQuery<FJKMPBodyMeasurements *> *)getBodyMeasurementByIdUuid:(NSString *)uuid __attribute__((swift_name("getBodyMeasurementById(uuid:)")));
 - (FJKMPRuntimeQuery<id> *)getBodyMeasurementByIdUuid:(NSString *)uuid mapper:(id (^)(NSString *, NSString * _Nullable, NSString *, NSString *, NSString *, FJKMPDouble *, NSString * _Nullable, NSString *, NSString *, NSString *))mapper __attribute__((swift_name("getBodyMeasurementById(uuid:mapper:)")));
+- (FJKMPRuntimeQuery<FJKMPBodyMeasurements *> *)getBodyMeasurementsUserId:(NSString *)userId diaryId:(NSString *)diaryId __attribute__((swift_name("getBodyMeasurements(userId:diaryId:)")));
+- (FJKMPRuntimeQuery<id> *)getBodyMeasurementsUserId:(NSString *)userId diaryId:(NSString *)diaryId mapper:(id (^)(NSString *, NSString * _Nullable, NSString *, NSString *, NSString *, FJKMPDouble *, NSString * _Nullable, NSString *, NSString *, NSString *))mapper __attribute__((swift_name("getBodyMeasurements(userId:diaryId:mapper:)")));
 - (FJKMPRuntimeQuery<FJKMPBodyMeasurements *> *)getBodyMeasurementsByTypeUserId:(NSString *)userId diaryId:(NSString *)diaryId type:(NSString *)type __attribute__((swift_name("getBodyMeasurementsByType(userId:diaryId:type:)")));
 - (FJKMPRuntimeQuery<id> *)getBodyMeasurementsByTypeUserId:(NSString *)userId diaryId:(NSString *)diaryId type:(NSString *)type mapper:(id (^)(NSString *, NSString * _Nullable, NSString *, NSString *, NSString *, FJKMPDouble *, NSString * _Nullable, NSString *, NSString *, NSString *))mapper __attribute__((swift_name("getBodyMeasurementsByType(userId:diaryId:type:mapper:)")));
 - (void)updateBodyMeasurementValue_:(double)value_ comment:(NSString * _Nullable)comment measurementDate:(NSString *)measurementDate updatedDate:(NSString *)updatedDate uuid:(NSString *)uuid __attribute__((swift_name("updateBodyMeasurement(value_:comment:measurementDate:updatedDate:uuid:)")));
@@ -305,6 +305,7 @@ __attribute__((swift_name("FitJournalDatabase")))
 @property (readonly) FJKMPCategoryQueries *categoryQueries __attribute__((swift_name("categoryQueries")));
 @property (readonly) FJKMPExercisesQueries *exercisesQueries __attribute__((swift_name("exercisesQueries")));
 @property (readonly) FJKMPNotesQueries *notesQueries __attribute__((swift_name("notesQueries")));
+@property (readonly) FJKMPPhotoMeasurementsQueries *photoMeasurementsQueries __attribute__((swift_name("photoMeasurementsQueries")));
 @end
 
 __attribute__((objc_subclassing_restricted))
@@ -347,6 +348,40 @@ __attribute__((swift_name("NotesQueries")))
 - (FJKMPRuntimeQuery<FJKMPNotes *> *)getNotesUserId:(NSString *)userId __attribute__((swift_name("getNotes(userId:)")));
 - (FJKMPRuntimeQuery<id> *)getNotesUserId:(NSString *)userId mapper:(id (^)(NSString *, NSString *, NSString *, FJKMPBoolean *, NSString *, NSString *))mapper __attribute__((swift_name("getNotes(userId:mapper:)")));
 - (void)updateNoteText:(NSString *)text isPinned:(BOOL)isPinned updatedDate:(NSString *)updatedDate uuid:(NSString *)uuid __attribute__((swift_name("updateNote(text:isPinned:updatedDate:uuid:)")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("PhotoMeasurements")))
+@interface FJKMPPhotoMeasurements : FJKMPBase
+- (instancetype)initWithUuid:(NSString *)uuid userId:(NSString *)userId diaryId:(NSString *)diaryId path:(NSString *)path url:(NSString *)url type:(NSString *)type date:(NSString *)date createdDate:(NSString *)createdDate updatedDate:(NSString *)updatedDate __attribute__((swift_name("init(uuid:userId:diaryId:path:url:type:date:createdDate:updatedDate:)"))) __attribute__((objc_designated_initializer));
+- (FJKMPPhotoMeasurements *)doCopyUuid:(NSString *)uuid userId:(NSString *)userId diaryId:(NSString *)diaryId path:(NSString *)path url:(NSString *)url type:(NSString *)type date:(NSString *)date createdDate:(NSString *)createdDate updatedDate:(NSString *)updatedDate __attribute__((swift_name("doCopy(uuid:userId:diaryId:path:url:type:date:createdDate:updatedDate:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSString *createdDate __attribute__((swift_name("createdDate")));
+@property (readonly) NSString *date __attribute__((swift_name("date")));
+@property (readonly) NSString *diaryId __attribute__((swift_name("diaryId")));
+@property (readonly) NSString *path __attribute__((swift_name("path")));
+@property (readonly) NSString *type __attribute__((swift_name("type")));
+@property (readonly) NSString *updatedDate __attribute__((swift_name("updatedDate")));
+@property (readonly) NSString *url __attribute__((swift_name("url")));
+@property (readonly) NSString *userId __attribute__((swift_name("userId")));
+@property (readonly) NSString *uuid __attribute__((swift_name("uuid")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("PhotoMeasurementsQueries")))
+@interface FJKMPPhotoMeasurementsQueries : FJKMPRuntimeTransacterImpl
+- (instancetype)initWithDriver:(id<FJKMPRuntimeSqlDriver>)driver __attribute__((swift_name("init(driver:)"))) __attribute__((objc_designated_initializer));
+- (void)createPhotoMeasurementUuid:(NSString *)uuid userId:(NSString *)userId diaryId:(NSString *)diaryId path:(NSString *)path url:(NSString *)url type:(NSString *)type date:(NSString *)date createdDate:(NSString *)createdDate updatedDate:(NSString *)updatedDate __attribute__((swift_name("createPhotoMeasurement(uuid:userId:diaryId:path:url:type:date:createdDate:updatedDate:)")));
+- (void)deletePhotoMeasurementUuid:(NSString *)uuid __attribute__((swift_name("deletePhotoMeasurement(uuid:)")));
+- (void)deletePhotoMeasurements __attribute__((swift_name("deletePhotoMeasurements()")));
+- (void)deletePhotoMeasurementsByDiaryIdDiaryId:(NSString *)diaryId __attribute__((swift_name("deletePhotoMeasurementsByDiaryId(diaryId:)")));
+- (void)deletePhotoMeasurementsByUserIdUserId:(NSString *)userId __attribute__((swift_name("deletePhotoMeasurementsByUserId(userId:)")));
+- (FJKMPRuntimeQuery<FJKMPPhotoMeasurements *> *)getPhotoMeasurementByIdUuid:(NSString *)uuid __attribute__((swift_name("getPhotoMeasurementById(uuid:)")));
+- (FJKMPRuntimeQuery<id> *)getPhotoMeasurementByIdUuid:(NSString *)uuid mapper:(id (^)(NSString *, NSString *, NSString *, NSString *, NSString *, NSString *, NSString *, NSString *, NSString *))mapper __attribute__((swift_name("getPhotoMeasurementById(uuid:mapper:)")));
+- (FJKMPRuntimeQuery<FJKMPPhotoMeasurements *> *)getPhotoMeasurementsUserId:(NSString *)userId diaryId:(NSString *)diaryId __attribute__((swift_name("getPhotoMeasurements(userId:diaryId:)")));
+- (FJKMPRuntimeQuery<id> *)getPhotoMeasurementsUserId:(NSString *)userId diaryId:(NSString *)diaryId mapper:(id (^)(NSString *, NSString *, NSString *, NSString *, NSString *, NSString *, NSString *, NSString *, NSString *))mapper __attribute__((swift_name("getPhotoMeasurements(userId:diaryId:mapper:)")));
 @end
 
 __attribute__((objc_subclassing_restricted))
@@ -435,16 +470,30 @@ __attribute__((swift_name("BodyMeasurementsDBDataSource")))
 - (FJKMPDBBodyMeasurementObject *)createBodyMeasurementUuid:(NSString *)uuid remoteId:(NSString * _Nullable)remoteId userId:(NSString *)userId diaryId:(NSString *)diaryId type:(NSString *)type value:(double)value comment:(NSString * _Nullable)comment measurementDate:(FJKMPKotlinx_datetimeLocalDateTime *)measurementDate createdDate:(FJKMPKotlinx_datetimeLocalDateTime *)createdDate updatedDate:(FJKMPKotlinx_datetimeLocalDateTime *)updatedDate __attribute__((swift_name("createBodyMeasurement(uuid:remoteId:userId:diaryId:type:value:comment:measurementDate:createdDate:updatedDate:)")));
 - (void)deleteAllBodyMeasurements __attribute__((swift_name("deleteAllBodyMeasurements()")));
 - (void)deleteBodyMeasurementUuid:(NSString *)uuid __attribute__((swift_name("deleteBodyMeasurement(uuid:)")));
-- (void)deleteDiaryBodyMeasurementsDiaryId:(NSString *)diaryId __attribute__((swift_name("deleteDiaryBodyMeasurements(diaryId:)")));
-- (void)deleteUserBodyMeasurementsUserId:(NSString *)userId __attribute__((swift_name("deleteUserBodyMeasurements(userId:)")));
-- (NSArray<FJKMPDBBodyMeasurementObject *> *)getAllBodyMeasurementsUserId:(NSString *)userId diaryId:(NSString *)diaryId __attribute__((swift_name("getAllBodyMeasurements(userId:diaryId:)")));
-- (id<FJKMPKotlinx_coroutines_coreFlow>)getAllBodyMeasurementsFlowUserId:(NSString *)userId diaryId:(NSString *)diaryId __attribute__((swift_name("getAllBodyMeasurementsFlow(userId:diaryId:)")));
+- (void)deleteBodyMeasurementsByDiaryIdDiaryId:(NSString *)diaryId __attribute__((swift_name("deleteBodyMeasurementsByDiaryId(diaryId:)")));
+- (void)deleteBodyMeasurementsByUserIdUserId:(NSString *)userId __attribute__((swift_name("deleteBodyMeasurementsByUserId(userId:)")));
 - (FJKMPDBBodyMeasurementObject *)getBodyMeasurementByIdUuid:(NSString *)uuid __attribute__((swift_name("getBodyMeasurementById(uuid:)")));
 - (id<FJKMPKotlinx_coroutines_coreFlow>)getBodyMeasurementByIdFlowUuid:(NSString *)uuid __attribute__((swift_name("getBodyMeasurementByIdFlow(uuid:)")));
+- (NSArray<FJKMPDBBodyMeasurementObject *> *)getBodyMeasurementsUserId:(NSString *)userId diaryId:(NSString *)diaryId __attribute__((swift_name("getBodyMeasurements(userId:diaryId:)")));
 - (NSArray<FJKMPDBBodyMeasurementObject *> *)getBodyMeasurementsByTypeUserId:(NSString *)userId diaryId:(NSString *)diaryId type:(NSString *)type __attribute__((swift_name("getBodyMeasurementsByType(userId:diaryId:type:)")));
 - (id<FJKMPKotlinx_coroutines_coreFlow>)getBodyMeasurementsByTypeFlowUserId:(NSString *)userId diaryId:(NSString *)diaryId type:(NSString *)type __attribute__((swift_name("getBodyMeasurementsByTypeFlow(userId:diaryId:type:)")));
+- (id<FJKMPKotlinx_coroutines_coreFlow>)getBodyMeasurementsFlowUserId:(NSString *)userId diaryId:(NSString *)diaryId __attribute__((swift_name("getBodyMeasurementsFlow(userId:diaryId:)")));
 - (FJKMPDBBodyMeasurementObject *)updateBodyMeasurementUuid:(NSString *)uuid value:(double)value comment:(NSString * _Nullable)comment measurementDate:(FJKMPKotlinx_datetimeLocalDateTime *)measurementDate updatedDate:(FJKMPKotlinx_datetimeLocalDateTime *)updatedDate __attribute__((swift_name("updateBodyMeasurement(uuid:value:comment:measurementDate:updatedDate:)")));
 - (FJKMPDBBodyMeasurementObject *)updateBodyMeasurementRemoteIdUuid:(NSString *)uuid remoteId:(NSString *)remoteId __attribute__((swift_name("updateBodyMeasurementRemoteId(uuid:remoteId:)")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("PhotoMeasurementsDBDataSource")))
+@interface FJKMPPhotoMeasurementsDBDataSource : FJKMPBase
+- (instancetype)initWithDao:(FJKMPPhotoMeasurementsQueries *)dao __attribute__((swift_name("init(dao:)"))) __attribute__((objc_designated_initializer));
+- (FJKMPDBPhotoMeasurementObject *)createPhotoMeasurementUuid:(NSString *)uuid userId:(NSString *)userId diaryId:(NSString *)diaryId path:(NSString *)path url:(NSString *)url type:(NSString *)type date:(FJKMPKotlinx_datetimeLocalDate *)date createdDate:(FJKMPKotlinx_datetimeLocalDateTime *)createdDate updatedDate:(FJKMPKotlinx_datetimeLocalDateTime *)updatedDate __attribute__((swift_name("createPhotoMeasurement(uuid:userId:diaryId:path:url:type:date:createdDate:updatedDate:)")));
+- (void)deletePhotoMeasurementUuid:(NSString *)uuid __attribute__((swift_name("deletePhotoMeasurement(uuid:)")));
+- (void)deletePhotoMeasurements __attribute__((swift_name("deletePhotoMeasurements()")));
+- (void)deletePhotoMeasurementsByDiaryIdDiaryId:(NSString *)diaryId __attribute__((swift_name("deletePhotoMeasurementsByDiaryId(diaryId:)")));
+- (void)deletePhotoMeasurementsByUserIdUserId:(NSString *)userId __attribute__((swift_name("deletePhotoMeasurementsByUserId(userId:)")));
+- (FJKMPDBPhotoMeasurementObject *)getPhotoMeasurementByIdUuid:(NSString *)uuid __attribute__((swift_name("getPhotoMeasurementById(uuid:)")));
+- (NSArray<FJKMPDBPhotoMeasurementObject *> *)getPhotoMeasurementsUserId:(NSString *)userId diaryId:(NSString *)diaryId __attribute__((swift_name("getPhotoMeasurements(userId:diaryId:)")));
+- (id<FJKMPKotlinx_coroutines_coreFlow>)getPhotoMeasurementsFlowUserId:(NSString *)userId diaryId:(NSString *)diaryId __attribute__((swift_name("getPhotoMeasurementsFlow(userId:diaryId:)")));
 @end
 
 __attribute__((objc_subclassing_restricted))
@@ -465,6 +514,25 @@ __attribute__((swift_name("DBBodyMeasurementObject")))
 @property (readonly) NSString *userId __attribute__((swift_name("userId")));
 @property (readonly) NSString *uuid __attribute__((swift_name("uuid")));
 @property (readonly) double value __attribute__((swift_name("value")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("DBPhotoMeasurementObject")))
+@interface FJKMPDBPhotoMeasurementObject : FJKMPBase
+- (instancetype)initWithUuid:(NSString *)uuid userId:(NSString *)userId diaryId:(NSString *)diaryId path:(NSString *)path url:(NSString *)url type:(NSString *)type date:(FJKMPKotlinx_datetimeLocalDate *)date createdDate:(FJKMPKotlinx_datetimeLocalDateTime *)createdDate updatedDate:(FJKMPKotlinx_datetimeLocalDateTime *)updatedDate __attribute__((swift_name("init(uuid:userId:diaryId:path:url:type:date:createdDate:updatedDate:)"))) __attribute__((objc_designated_initializer));
+- (FJKMPDBPhotoMeasurementObject *)doCopyUuid:(NSString *)uuid userId:(NSString *)userId diaryId:(NSString *)diaryId path:(NSString *)path url:(NSString *)url type:(NSString *)type date:(FJKMPKotlinx_datetimeLocalDate *)date createdDate:(FJKMPKotlinx_datetimeLocalDateTime *)createdDate updatedDate:(FJKMPKotlinx_datetimeLocalDateTime *)updatedDate __attribute__((swift_name("doCopy(uuid:userId:diaryId:path:url:type:date:createdDate:updatedDate:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) FJKMPKotlinx_datetimeLocalDateTime *createdDate __attribute__((swift_name("createdDate")));
+@property (readonly) FJKMPKotlinx_datetimeLocalDate *date __attribute__((swift_name("date")));
+@property (readonly) NSString *diaryId __attribute__((swift_name("diaryId")));
+@property (readonly) NSString *path __attribute__((swift_name("path")));
+@property (readonly) NSString *type __attribute__((swift_name("type")));
+@property (readonly) FJKMPKotlinx_datetimeLocalDateTime *updatedDate __attribute__((swift_name("updatedDate")));
+@property (readonly) NSString *url __attribute__((swift_name("url")));
+@property (readonly) NSString *userId __attribute__((swift_name("userId")));
+@property (readonly) NSString *uuid __attribute__((swift_name("uuid")));
 @end
 
 __attribute__((objc_subclassing_restricted))
@@ -665,6 +733,30 @@ __attribute__((swift_name("Kotlinx_datetimeLocalDateTime")))
 @property (readonly) int32_t year __attribute__((swift_name("year")));
 @end
 
+
+/**
+ * @note annotations
+ *   kotlinx.serialization.Serializable(with=NormalClass(value=kotlinx/datetime/serializers/LocalDateIso8601Serializer))
+*/
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("Kotlinx_datetimeLocalDate")))
+@interface FJKMPKotlinx_datetimeLocalDate : FJKMPBase <FJKMPKotlinComparable>
+- (instancetype)initWithYear:(int32_t)year monthNumber:(int32_t)monthNumber dayOfMonth:(int32_t)dayOfMonth __attribute__((swift_name("init(year:monthNumber:dayOfMonth:)"))) __attribute__((objc_designated_initializer));
+- (instancetype)initWithYear:(int32_t)year month:(FJKMPKotlinx_datetimeMonth *)month dayOfMonth:(int32_t)dayOfMonth __attribute__((swift_name("init(year:month:dayOfMonth:)"))) __attribute__((objc_designated_initializer));
+@property (class, readonly, getter=companion) FJKMPKotlinx_datetimeLocalDateCompanion *companion __attribute__((swift_name("companion")));
+- (int32_t)compareToOther:(FJKMPKotlinx_datetimeLocalDate *)other __attribute__((swift_name("compareTo(other:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (int32_t)toEpochDays __attribute__((swift_name("toEpochDays()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) int32_t dayOfMonth __attribute__((swift_name("dayOfMonth")));
+@property (readonly) FJKMPKotlinx_datetimeDayOfWeek *dayOfWeek __attribute__((swift_name("dayOfWeek")));
+@property (readonly) int32_t dayOfYear __attribute__((swift_name("dayOfYear")));
+@property (readonly) FJKMPKotlinx_datetimeMonth *month __attribute__((swift_name("month")));
+@property (readonly) int32_t monthNumber __attribute__((swift_name("monthNumber")));
+@property (readonly) int32_t year __attribute__((swift_name("year")));
+@end
+
 __attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("KotlinArray")))
 @interface FJKMPKotlinArray<T> : FJKMPBase
@@ -779,30 +871,6 @@ __attribute__((swift_name("Kotlinx_coroutines_coreFlowCollector")))
 
 /**
  * @note annotations
- *   kotlinx.serialization.Serializable(with=NormalClass(value=kotlinx/datetime/serializers/LocalDateIso8601Serializer))
-*/
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("Kotlinx_datetimeLocalDate")))
-@interface FJKMPKotlinx_datetimeLocalDate : FJKMPBase <FJKMPKotlinComparable>
-- (instancetype)initWithYear:(int32_t)year monthNumber:(int32_t)monthNumber dayOfMonth:(int32_t)dayOfMonth __attribute__((swift_name("init(year:monthNumber:dayOfMonth:)"))) __attribute__((objc_designated_initializer));
-- (instancetype)initWithYear:(int32_t)year month:(FJKMPKotlinx_datetimeMonth *)month dayOfMonth:(int32_t)dayOfMonth __attribute__((swift_name("init(year:month:dayOfMonth:)"))) __attribute__((objc_designated_initializer));
-@property (class, readonly, getter=companion) FJKMPKotlinx_datetimeLocalDateCompanion *companion __attribute__((swift_name("companion")));
-- (int32_t)compareToOther:(FJKMPKotlinx_datetimeLocalDate *)other __attribute__((swift_name("compareTo(other:)")));
-- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
-- (NSUInteger)hash __attribute__((swift_name("hash()")));
-- (int32_t)toEpochDays __attribute__((swift_name("toEpochDays()")));
-- (NSString *)description __attribute__((swift_name("description()")));
-@property (readonly) int32_t dayOfMonth __attribute__((swift_name("dayOfMonth")));
-@property (readonly) FJKMPKotlinx_datetimeDayOfWeek *dayOfWeek __attribute__((swift_name("dayOfWeek")));
-@property (readonly) int32_t dayOfYear __attribute__((swift_name("dayOfYear")));
-@property (readonly) FJKMPKotlinx_datetimeMonth *month __attribute__((swift_name("month")));
-@property (readonly) int32_t monthNumber __attribute__((swift_name("monthNumber")));
-@property (readonly) int32_t year __attribute__((swift_name("year")));
-@end
-
-
-/**
- * @note annotations
  *   kotlinx.serialization.Serializable(with=NormalClass(value=kotlinx/datetime/serializers/LocalTimeIso8601Serializer))
 */
 __attribute__((objc_subclassing_restricted))
@@ -864,7 +932,8 @@ __attribute__((swift_name("Kotlinx_datetimeLocalDateTime.Companion")))
 + (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
 + (instancetype)companion __attribute__((swift_name("init()")));
 @property (class, readonly, getter=shared) FJKMPKotlinx_datetimeLocalDateTimeCompanion *shared __attribute__((swift_name("shared")));
-- (FJKMPKotlinx_datetimeLocalDateTime *)parseIsoString:(NSString *)isoString __attribute__((swift_name("parse(isoString:)")));
+- (id<FJKMPKotlinx_datetimeDateTimeFormat>)FormatBuilder:(void (^)(id<FJKMPKotlinx_datetimeDateTimeFormatBuilderWithDateTime>))builder __attribute__((swift_name("Format(builder:)")));
+- (FJKMPKotlinx_datetimeLocalDateTime *)parseInput:(id)input format:(id<FJKMPKotlinx_datetimeDateTimeFormat>)format __attribute__((swift_name("parse(input:format:)")));
 - (id<FJKMPKotlinx_serialization_coreKSerializer>)serializer __attribute__((swift_name("serializer()")));
 @end
 
@@ -883,6 +952,19 @@ __attribute__((swift_name("Kotlinx_datetimeDayOfWeek")))
 @property (class, readonly) FJKMPKotlinx_datetimeDayOfWeek *sunday __attribute__((swift_name("sunday")));
 + (FJKMPKotlinArray<FJKMPKotlinx_datetimeDayOfWeek *> *)values __attribute__((swift_name("values()")));
 @property (class, readonly) NSArray<FJKMPKotlinx_datetimeDayOfWeek *> *entries __attribute__((swift_name("entries")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("Kotlinx_datetimeLocalDate.Companion")))
+@interface FJKMPKotlinx_datetimeLocalDateCompanion : FJKMPBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)companion __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) FJKMPKotlinx_datetimeLocalDateCompanion *shared __attribute__((swift_name("shared")));
+- (id<FJKMPKotlinx_datetimeDateTimeFormat>)FormatBlock:(void (^)(id<FJKMPKotlinx_datetimeDateTimeFormatBuilderWithDate>))block __attribute__((swift_name("Format(block:)")));
+- (FJKMPKotlinx_datetimeLocalDate *)fromEpochDaysEpochDays:(int32_t)epochDays __attribute__((swift_name("fromEpochDays(epochDays:)")));
+- (FJKMPKotlinx_datetimeLocalDate *)parseInput:(id)input format:(id<FJKMPKotlinx_datetimeDateTimeFormat>)format __attribute__((swift_name("parse(input:format:)")));
+- (id<FJKMPKotlinx_serialization_coreKSerializer>)serializer __attribute__((swift_name("serializer()")));
 @end
 
 __attribute__((swift_name("KotlinIterator")))
@@ -906,28 +988,17 @@ __attribute__((swift_name("KotlinByteArray")))
 @end
 
 __attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("Kotlinx_datetimeLocalDate.Companion")))
-@interface FJKMPKotlinx_datetimeLocalDateCompanion : FJKMPBase
-+ (instancetype)alloc __attribute__((unavailable));
-+ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
-+ (instancetype)companion __attribute__((swift_name("init()")));
-@property (class, readonly, getter=shared) FJKMPKotlinx_datetimeLocalDateCompanion *shared __attribute__((swift_name("shared")));
-- (FJKMPKotlinx_datetimeLocalDate *)fromEpochDaysEpochDays:(int32_t)epochDays __attribute__((swift_name("fromEpochDays(epochDays:)")));
-- (FJKMPKotlinx_datetimeLocalDate *)parseIsoString:(NSString *)isoString __attribute__((swift_name("parse(isoString:)")));
-- (id<FJKMPKotlinx_serialization_coreKSerializer>)serializer __attribute__((swift_name("serializer()")));
-@end
-
-__attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("Kotlinx_datetimeLocalTime.Companion")))
 @interface FJKMPKotlinx_datetimeLocalTimeCompanion : FJKMPBase
 + (instancetype)alloc __attribute__((unavailable));
 + (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
 + (instancetype)companion __attribute__((swift_name("init()")));
 @property (class, readonly, getter=shared) FJKMPKotlinx_datetimeLocalTimeCompanion *shared __attribute__((swift_name("shared")));
+- (id<FJKMPKotlinx_datetimeDateTimeFormat>)FormatBuilder:(void (^)(id<FJKMPKotlinx_datetimeDateTimeFormatBuilderWithTime>))builder __attribute__((swift_name("Format(builder:)")));
 - (FJKMPKotlinx_datetimeLocalTime *)fromMillisecondOfDayMillisecondOfDay:(int32_t)millisecondOfDay __attribute__((swift_name("fromMillisecondOfDay(millisecondOfDay:)")));
 - (FJKMPKotlinx_datetimeLocalTime *)fromNanosecondOfDayNanosecondOfDay:(int64_t)nanosecondOfDay __attribute__((swift_name("fromNanosecondOfDay(nanosecondOfDay:)")));
 - (FJKMPKotlinx_datetimeLocalTime *)fromSecondOfDaySecondOfDay:(int32_t)secondOfDay __attribute__((swift_name("fromSecondOfDay(secondOfDay:)")));
-- (FJKMPKotlinx_datetimeLocalTime *)parseIsoString:(NSString *)isoString __attribute__((swift_name("parse(isoString:)")));
+- (FJKMPKotlinx_datetimeLocalTime *)parseInput:(id)input format:(id<FJKMPKotlinx_datetimeDateTimeFormat>)format __attribute__((swift_name("parse(input:format:)")));
 - (id<FJKMPKotlinx_serialization_coreKSerializer>)serializer __attribute__((swift_name("serializer()")));
 @end
 
@@ -938,6 +1009,52 @@ __attribute__((swift_name("KotlinEnumCompanion")))
 + (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
 + (instancetype)companion __attribute__((swift_name("init()")));
 @property (class, readonly, getter=shared) FJKMPKotlinEnumCompanion *shared __attribute__((swift_name("shared")));
+@end
+
+__attribute__((swift_name("Kotlinx_datetimeDateTimeFormat")))
+@protocol FJKMPKotlinx_datetimeDateTimeFormat
+@required
+- (NSString *)formatValue:(id _Nullable)value __attribute__((swift_name("format(value:)")));
+- (id<FJKMPKotlinAppendable>)formatToAppendable:(id<FJKMPKotlinAppendable>)appendable value:(id _Nullable)value __attribute__((swift_name("formatTo(appendable:value:)")));
+- (id _Nullable)parseInput:(id)input __attribute__((swift_name("parse(input:)")));
+- (id _Nullable)parseOrNullInput:(id)input __attribute__((swift_name("parseOrNull(input:)")));
+@end
+
+__attribute__((swift_name("Kotlinx_datetimeDateTimeFormatBuilder")))
+@protocol FJKMPKotlinx_datetimeDateTimeFormatBuilder
+@required
+- (void)charsValue:(NSString *)value __attribute__((swift_name("chars(value:)")));
+@end
+
+__attribute__((swift_name("Kotlinx_datetimeDateTimeFormatBuilderWithDate")))
+@protocol FJKMPKotlinx_datetimeDateTimeFormatBuilderWithDate <FJKMPKotlinx_datetimeDateTimeFormatBuilder>
+@required
+- (void)dateFormat:(id<FJKMPKotlinx_datetimeDateTimeFormat>)format __attribute__((swift_name("date(format:)")));
+- (void)dayOfMonthPadding:(FJKMPKotlinx_datetimePadding *)padding __attribute__((swift_name("dayOfMonth(padding:)")));
+- (void)dayOfWeekNames:(FJKMPKotlinx_datetimeDayOfWeekNames *)names __attribute__((swift_name("dayOfWeek(names:)")));
+- (void)monthNameNames:(FJKMPKotlinx_datetimeMonthNames *)names __attribute__((swift_name("monthName(names:)")));
+- (void)monthNumberPadding:(FJKMPKotlinx_datetimePadding *)padding __attribute__((swift_name("monthNumber(padding:)")));
+- (void)yearPadding:(FJKMPKotlinx_datetimePadding *)padding __attribute__((swift_name("year(padding:)")));
+- (void)yearTwoDigitsBaseYear:(int32_t)baseYear __attribute__((swift_name("yearTwoDigits(baseYear:)")));
+@end
+
+__attribute__((swift_name("Kotlinx_datetimeDateTimeFormatBuilderWithTime")))
+@protocol FJKMPKotlinx_datetimeDateTimeFormatBuilderWithTime <FJKMPKotlinx_datetimeDateTimeFormatBuilder>
+@required
+- (void)amPmHourPadding:(FJKMPKotlinx_datetimePadding *)padding __attribute__((swift_name("amPmHour(padding:)")));
+- (void)amPmMarkerAm:(NSString *)am pm:(NSString *)pm __attribute__((swift_name("amPmMarker(am:pm:)")));
+- (void)hourPadding:(FJKMPKotlinx_datetimePadding *)padding __attribute__((swift_name("hour(padding:)")));
+- (void)minutePadding:(FJKMPKotlinx_datetimePadding *)padding __attribute__((swift_name("minute(padding:)")));
+- (void)secondPadding:(FJKMPKotlinx_datetimePadding *)padding __attribute__((swift_name("second(padding:)")));
+- (void)secondFractionFixedLength:(int32_t)fixedLength __attribute__((swift_name("secondFraction(fixedLength:)")));
+- (void)secondFractionMinLength:(int32_t)minLength maxLength:(int32_t)maxLength __attribute__((swift_name("secondFraction(minLength:maxLength:)")));
+- (void)timeFormat:(id<FJKMPKotlinx_datetimeDateTimeFormat>)format __attribute__((swift_name("time(format:)")));
+@end
+
+__attribute__((swift_name("Kotlinx_datetimeDateTimeFormatBuilderWithDateTime")))
+@protocol FJKMPKotlinx_datetimeDateTimeFormatBuilderWithDateTime <FJKMPKotlinx_datetimeDateTimeFormatBuilderWithDate, FJKMPKotlinx_datetimeDateTimeFormatBuilderWithTime>
+@required
+- (void)dateTimeFormat:(id<FJKMPKotlinx_datetimeDateTimeFormat>)format __attribute__((swift_name("dateTime(format:)")));
 @end
 
 __attribute__((swift_name("Kotlinx_serialization_coreSerializationStrategy")))
@@ -965,6 +1082,51 @@ __attribute__((swift_name("KotlinByteIterator")))
 + (instancetype)new __attribute__((availability(swift, unavailable, message="use object initializers instead")));
 - (FJKMPByte *)next __attribute__((swift_name("next()")));
 - (int8_t)nextByte __attribute__((swift_name("nextByte()")));
+@end
+
+__attribute__((swift_name("KotlinAppendable")))
+@protocol FJKMPKotlinAppendable
+@required
+- (id<FJKMPKotlinAppendable>)appendValue:(unichar)value __attribute__((swift_name("append(value:)")));
+- (id<FJKMPKotlinAppendable>)appendValue_:(id _Nullable)value __attribute__((swift_name("append(value_:)")));
+- (id<FJKMPKotlinAppendable>)appendValue:(id _Nullable)value startIndex:(int32_t)startIndex endIndex:(int32_t)endIndex __attribute__((swift_name("append(value:startIndex:endIndex:)")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("Kotlinx_datetimePadding")))
+@interface FJKMPKotlinx_datetimePadding : FJKMPKotlinEnum<FJKMPKotlinx_datetimePadding *>
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
+- (instancetype)initWithName:(NSString *)name ordinal:(int32_t)ordinal __attribute__((swift_name("init(name:ordinal:)"))) __attribute__((objc_designated_initializer)) __attribute__((unavailable));
+@property (class, readonly) FJKMPKotlinx_datetimePadding *none __attribute__((swift_name("none")));
+@property (class, readonly) FJKMPKotlinx_datetimePadding *zero __attribute__((swift_name("zero")));
+@property (class, readonly) FJKMPKotlinx_datetimePadding *space __attribute__((swift_name("space")));
++ (FJKMPKotlinArray<FJKMPKotlinx_datetimePadding *> *)values __attribute__((swift_name("values()")));
+@property (class, readonly) NSArray<FJKMPKotlinx_datetimePadding *> *entries __attribute__((swift_name("entries")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("Kotlinx_datetimeDayOfWeekNames")))
+@interface FJKMPKotlinx_datetimeDayOfWeekNames : FJKMPBase
+- (instancetype)initWithNames:(NSArray<NSString *> *)names __attribute__((swift_name("init(names:)"))) __attribute__((objc_designated_initializer));
+- (instancetype)initWithMonday:(NSString *)monday tuesday:(NSString *)tuesday wednesday:(NSString *)wednesday thursday:(NSString *)thursday friday:(NSString *)friday saturday:(NSString *)saturday sunday:(NSString *)sunday __attribute__((swift_name("init(monday:tuesday:wednesday:thursday:friday:saturday:sunday:)"))) __attribute__((objc_designated_initializer));
+@property (class, readonly, getter=companion) FJKMPKotlinx_datetimeDayOfWeekNamesCompanion *companion __attribute__((swift_name("companion")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSArray<NSString *> *names __attribute__((swift_name("names")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("Kotlinx_datetimeMonthNames")))
+@interface FJKMPKotlinx_datetimeMonthNames : FJKMPBase
+- (instancetype)initWithNames:(NSArray<NSString *> *)names __attribute__((swift_name("init(names:)"))) __attribute__((objc_designated_initializer));
+- (instancetype)initWithJanuary:(NSString *)january february:(NSString *)february march:(NSString *)march april:(NSString *)april may:(NSString *)may june:(NSString *)june july:(NSString *)july august:(NSString *)august september:(NSString *)september october:(NSString *)october november:(NSString *)november december:(NSString *)december __attribute__((swift_name("init(january:february:march:april:may:june:july:august:september:october:november:december:)"))) __attribute__((objc_designated_initializer));
+@property (class, readonly, getter=companion) FJKMPKotlinx_datetimeMonthNamesCompanion *companion __attribute__((swift_name("companion")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSArray<NSString *> *names __attribute__((swift_name("names")));
 @end
 
 __attribute__((swift_name("Kotlinx_serialization_coreEncoder")))
@@ -1106,6 +1268,28 @@ __attribute__((swift_name("Kotlinx_serialization_coreDecoder")))
 - (int16_t)decodeShort __attribute__((swift_name("decodeShort()")));
 - (NSString *)decodeString __attribute__((swift_name("decodeString()")));
 @property (readonly) FJKMPKotlinx_serialization_coreSerializersModule *serializersModule __attribute__((swift_name("serializersModule")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("Kotlinx_datetimeDayOfWeekNames.Companion")))
+@interface FJKMPKotlinx_datetimeDayOfWeekNamesCompanion : FJKMPBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)companion __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) FJKMPKotlinx_datetimeDayOfWeekNamesCompanion *shared __attribute__((swift_name("shared")));
+@property (readonly) FJKMPKotlinx_datetimeDayOfWeekNames *ENGLISH_ABBREVIATED __attribute__((swift_name("ENGLISH_ABBREVIATED")));
+@property (readonly) FJKMPKotlinx_datetimeDayOfWeekNames *ENGLISH_FULL __attribute__((swift_name("ENGLISH_FULL")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("Kotlinx_datetimeMonthNames.Companion")))
+@interface FJKMPKotlinx_datetimeMonthNamesCompanion : FJKMPBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)companion __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) FJKMPKotlinx_datetimeMonthNamesCompanion *shared __attribute__((swift_name("shared")));
+@property (readonly) FJKMPKotlinx_datetimeMonthNames *ENGLISH_ABBREVIATED __attribute__((swift_name("ENGLISH_ABBREVIATED")));
+@property (readonly) FJKMPKotlinx_datetimeMonthNames *ENGLISH_FULL __attribute__((swift_name("ENGLISH_FULL")));
 @end
 
 __attribute__((swift_name("Kotlinx_serialization_coreCompositeEncoder")))
