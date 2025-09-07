@@ -16,14 +16,13 @@ kotlin {
     applyDefaultHierarchyTemplate()
     jvmToolchain(17)
 
+    compilerOptions {
+        optIn.add("kotlin.time.ExperimentalTime")
+    }
+
     // Android
     androidTarget {
         publishLibraryVariants("release")
-        compilations.all {
-            kotlinOptions {
-                jvmTarget = "17"
-            }
-        }
     }
 
     // iOS
@@ -102,7 +101,7 @@ publishing {
             url = uri("https://maven.pkg.github.com/Sultan1993/FitJournal-KMP")
             credentials {
                 username = "Sultan1993"
-                password = "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"
+                password = "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"
             }
         }
     }
