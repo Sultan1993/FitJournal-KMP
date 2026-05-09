@@ -2,14 +2,16 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.multiplatform.swiftpackage)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.android.library)
     alias(libs.plugins.sqldelight)
-    id("maven-publish")
+    alias(libs.plugins.skie)
 }
 
 group = "kz.maestrosultan.fitjournal.kmp"
-version = "0.4.8"
+// FJ 2.0 baseline. See docs/fj-2.0-migration-plan.md for the consolidation
+// plan moving domain entities + repositories + use cases into shared.
+version = "0.5.0"
 
 val moduleName = "FitJournalKMP"
 
@@ -21,10 +23,7 @@ kotlin {
         optIn.add("kotlin.time.ExperimentalTime")
     }
 
-    // Android
-    androidTarget {
-        publishLibraryVariants("release")
-    }
+    androidTarget()
 
     // iOS
     val xcf = XCFramework()
@@ -44,7 +43,11 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(libs.kotlin.datetime)
+                implementation(libs.kotlinx.coroutines.core)
+                implementation(libs.kotlinx.serialization.json)
                 implementation(libs.sqldelight.coroutines)
+                // SKIE handles Swift interop annotations automatically; no
+                // explicit annotation library needed in commonMain.
             }
         }
 
@@ -86,61 +89,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-
-    publishing {
-        singleVariant("release") {
-            withSourcesJar()
-            withJavadocJar()
-        }
-    }
-}
-
-publishing {
-    repositories {
-        maven {
-            name = "github"
-            url = uri("https://maven.pkg.github.com/Sultan1993/FitJournal-KMP")
-            credentials {
-                username = "Sultan1993"
-                password = "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"
-            }
-        }
-    }
-
-    publications {
-        // Publish only main (Android)
-        matching { it.name == "kotlinMultiplatform" }.all {
-            val targetPublication = this@all
-            tasks.withType<AbstractPublishToMaven>()
-                .matching { it.publication == targetPublication }
-                .configureEach { onlyIf { findProperty("isMainHost") == "true" } }
-        }
-
-        // Disable publishing iOS version to Maven
-        matching { it.name.contains("ios", true) }.all {
-            val targetPublication = this@all
-            tasks.withType<AbstractPublishToMaven>()
-                .matching { it.publication == targetPublication }
-                .forEach { it.enabled = false }
-        }
-    }
-}
-
-multiplatformSwiftPackage {
-    swiftToolsVersion("5.8")
-    packageName(moduleName)
-    outputDirectory(rootProject.rootDir)
-    targetPlatforms {
-        iOS { v("14") }
-    }
-}
-
-// Disable "createZipFile" task from "multiplatformSwiftPackage" because it has a conflict with
-// other tasks and we don't really need the zip at all
-afterEvaluate {
-    tasks.named("createZipFile") {
-        enabled = false
-    }
 }
 
 sqldelight {
@@ -149,23 +97,4 @@ sqldelight {
             packageName = "kz.maestrosultan.fitjournal.kmp"
         }
     }
-}
-
-// An alias for "publish" function that publishes Android code. Just for convenience
-val publishAndroid by tasks.registering {
-    dependsOn(tasks.named("publish"))
-}
-
-// An alias for "createSwiftPackage" function that publishes iOS code. Just for convenience
-val publishIos by tasks.registering {
-    dependsOn(tasks.named("createSwiftPackage"))
-}
-
-// Task that creates both Android and iOS artifacts and publishes them
-val publishPlatforms by tasks.registering {
-    dependsOn(
-        tasks.named("generateSqlDelightInterface"),
-        tasks.named("publishAndroid"),
-        tasks.named("publishIos")
-    )
 }

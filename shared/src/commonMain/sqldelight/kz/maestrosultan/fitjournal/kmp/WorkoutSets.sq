@@ -1,0 +1,99 @@
+import kotlin.Boolean;
+
+CREATE TABLE workoutSets (
+    uuid TEXT PRIMARY KEY NOT NULL,
+    workoutExerciseUuid TEXT NOT NULL REFERENCES workoutExercises(uuid) ON DELETE CASCADE,
+    position INTEGER NOT NULL,
+    weight REAL,
+    reps INTEGER,
+    distance REAL,
+    duration INTEGER,
+    difficultyType INTEGER NOT NULL DEFAULT 0,
+    completed INTEGER AS Boolean NOT NULL DEFAULT 1
+);
+
+-- Composite (workoutExerciseUuid, position) so
+-- `WHERE workoutExerciseUuid = ? ORDER BY position ASC` is index-driven.
+CREATE INDEX idx_workoutSets_exercise ON workoutSets(workoutExerciseUuid, position);
+
+getWorkoutSetsByExercise:
+SELECT *
+FROM workoutSets
+WHERE workoutExerciseUuid = ?
+ORDER BY position ASC;
+
+-- Bulk: sets across every live record in (user, diary) within a date
+-- window. Companion to `getWorkoutExercisesByDiary`; same windowing
+-- semantics. Caller groups by `workoutExerciseUuid`.
+getWorkoutSetsByDiary:
+SELECT ws.*
+FROM workoutSets ws
+JOIN workoutExercises we ON we.uuid = ws.workoutExerciseUuid
+JOIN workoutRecords wr ON wr.uuid = we.workoutRecordUuid
+WHERE wr.userId = ?
+AND wr.diaryId = ?
+AND wr.date >= ?
+AND wr.date < ?
+AND wr.deletedAt IS NULL
+ORDER BY ws.workoutExerciseUuid ASC, ws.position ASC;
+
+-- Narrow: every set in (user, diary) for a specific catalog exercise. Used
+-- by best-weight / best-cardio reads on the exercise details page so we
+-- don't load and discard 99% of the diary. SQL filters by exerciseUuid
+-- before joining sets.
+getWorkoutSetsForExerciseInDiary:
+SELECT ws.*
+FROM workoutSets ws
+JOIN workoutExercises we ON we.uuid = ws.workoutExerciseUuid
+JOIN workoutRecords wr ON wr.uuid = we.workoutRecordUuid
+WHERE we.exerciseUuid = ?
+AND wr.userId = ?
+AND wr.diaryId = ?
+AND wr.deletedAt IS NULL;
+
+-- "Most recent set with this exercise BEFORE the given date" — drives the
+-- previousWeight / previousDistance / previousDifficultyType hints on a
+-- set cell ("you did 100kg×10 last time"). Pre-FJ-2.0 these values were
+-- stored on the Parse WorkoutSet row at write time; the new SQLite schema
+-- doesn't carry them, so we compute on read instead. Returns the LAST
+-- set of the most recent prior workoutExercise that points at this
+-- catalog exercise, or nothing. Caller passes the current record's
+-- date string (`yyyy-MM-dd`); strict `<` keeps sets from the same
+-- record out of their own previous lookup.
+getLastSetForExerciseBeforeDate:
+SELECT ws.*
+FROM workoutSets ws
+JOIN workoutExercises we ON we.uuid = ws.workoutExerciseUuid
+JOIN workoutRecords wr ON wr.uuid = we.workoutRecordUuid
+WHERE we.exerciseUuid = ?
+AND wr.userId = ?
+AND wr.diaryId = ?
+AND wr.date < ?
+AND wr.deletedAt IS NULL
+ORDER BY wr.date DESC, we.position DESC, ws.position DESC
+LIMIT 1;
+
+getWorkoutSetById:
+SELECT *
+FROM workoutSets
+WHERE uuid = ?;
+
+createWorkoutSet:
+INSERT INTO workoutSets(uuid, workoutExerciseUuid, position, weight, reps, distance, duration, difficultyType, completed)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updateWorkoutSet:
+UPDATE workoutSets
+SET position = ?, weight = ?, reps = ?, distance = ?, duration = ?, difficultyType = ?, completed = ?
+WHERE uuid = ?;
+
+deleteWorkoutSet:
+DELETE FROM workoutSets
+WHERE uuid = ?;
+
+deleteWorkoutSetsByExercise:
+DELETE FROM workoutSets
+WHERE workoutExerciseUuid = ?;
+
+deleteAllWorkoutSets:
+DELETE FROM workoutSets;

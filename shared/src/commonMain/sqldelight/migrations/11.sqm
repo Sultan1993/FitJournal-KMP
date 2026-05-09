@@ -1,0 +1,4 @@
+-- Add updatedDate column to exercises so softDeleteExercise can stamp it,
+-- mirroring the pattern used by diaries/notes/bodyMeasurements. Nullable
+-- TEXT so existing rows are unaffected (they predate the column).
+ALTER TABLE exercises ADD COLUMN updatedDate TEXT;

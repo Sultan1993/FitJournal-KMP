@@ -1,0 +1,34 @@
+-- Adds sync-aware columns to legacy tables (notes, bodyMeasurements,
+-- exercises) so they can participate in the SyncWorker push/pull cycle
+-- (see docs/sync-worker-design.md).
+--
+-- Default `pendingUpload=0` on existing rows = "treat as already synced".
+-- That's correct for rows that were AWS-resident before this migration:
+-- - notes & bodyMeasurements were already migrated to AWS by legacy
+--   Parse → AWS migrators, then re-pulled into SQLite by
+--   LocalDbHydrationMigrator.
+-- - exercises were imported from Parse to SQLite by the legacy
+--   ExercisesMigrator; user-custom rows will start being synced once
+--   the repo write flip in Round 4 lands.
+--
+-- All ALTER statements are non-breaking (nullable adds + DEFAULT 0)
+-- so existing INSERT statements compile without the new columns.
+
+ALTER TABLE notes ADD COLUMN remoteId TEXT;
+ALTER TABLE notes ADD COLUMN pendingUpload INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE notes ADD COLUMN deletedAt TEXT;
+
+ALTER TABLE bodyMeasurements ADD COLUMN pendingUpload INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE bodyMeasurements ADD COLUMN deletedAt TEXT;
+
+-- exercises already has `remoteId TEXT NOT NULL` and `global INTEGER`.
+-- Adding userId (nullable; "global" rows have no user; user-custom rows
+-- carry awsUserId), pendingUpload, deletedAt.
+ALTER TABLE exercises ADD COLUMN userId TEXT;
+ALTER TABLE exercises ADD COLUMN pendingUpload INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE exercises ADD COLUMN deletedAt TEXT;
+
+CREATE INDEX IF NOT EXISTS idx_notes_pending ON notes(pendingUpload);
+CREATE INDEX IF NOT EXISTS idx_bodyMeasurements_pending ON bodyMeasurements(pendingUpload);
+CREATE INDEX IF NOT EXISTS idx_exercises_pending ON exercises(pendingUpload);
+CREATE INDEX IF NOT EXISTS idx_exercises_user ON exercises(userId);

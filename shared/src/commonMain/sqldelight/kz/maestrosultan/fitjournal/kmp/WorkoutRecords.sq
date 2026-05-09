@@ -1,0 +1,105 @@
+import kotlin.Boolean;
+
+CREATE TABLE workoutRecords (
+    uuid TEXT PRIMARY KEY NOT NULL,
+    remoteId TEXT,
+    userId TEXT NOT NULL,
+    diaryId TEXT NOT NULL,
+    date TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    comment TEXT,
+    startedAt TEXT,
+    durationSec INTEGER,
+    deletedAt TEXT,
+    pendingUpload INTEGER AS Boolean NOT NULL DEFAULT 1,
+    schemaVersion INTEGER NOT NULL DEFAULT 1,
+    createdDate TEXT NOT NULL,
+    updatedDate TEXT NOT NULL
+);
+
+-- Sole hot-path index: every UI read scopes to (userId, diaryId), filters
+-- live, orders by date DESC then position ASC. Partial on
+-- `deletedAt IS NULL` keeps it tight. The previous `(userId, date)` and
+-- `(diaryId)` indices were redundant on a single-user-per-device app
+-- where every read is diary-scoped already.
+CREATE INDEX idx_workoutRecords_live_diary ON workoutRecords(userId, diaryId, date DESC, position ASC) WHERE deletedAt IS NULL;
+CREATE INDEX idx_workoutRecords_pending ON workoutRecords(pendingUpload);
+
+-- Records in (user, diary). Date filter is half-open: `from` inclusive,
+-- `to` exclusive. Callers that want "everything" pass an epoch lower
+-- bound and `9999-12-31` upper bound; one shape covers full-diary scans,
+-- monthly windows, and date-day filters.
+getWorkoutRecordsByDiary:
+SELECT *
+FROM workoutRecords
+WHERE userId = ?
+AND diaryId = ?
+AND date >= ?
+AND date < ?
+AND deletedAt IS NULL
+ORDER BY date DESC, position ASC;
+
+
+-- Single-record read for UI/repo. Filters tombstones — a soft-deleted
+-- record looks like "not found" to the UI.
+getWorkoutRecordById:
+SELECT *
+FROM workoutRecords
+WHERE uuid = ?
+AND deletedAt IS NULL;
+
+-- Sync-only single-record read. Sees tombstones so SyncOrchestrator
+-- can push a soft-delete to AWS (or confirm an already-pushed one).
+-- UI/repo paths must use [getWorkoutRecordById] above.
+getWorkoutRecordByIdIncludingDeleted:
+SELECT *
+FROM workoutRecords
+WHERE uuid = ?;
+
+getPendingUploads:
+SELECT *
+FROM workoutRecords
+WHERE pendingUpload = 1;
+
+createWorkoutRecord:
+INSERT INTO workoutRecords(uuid, remoteId, userId, diaryId, date, position, comment, startedAt, durationSec, pendingUpload, createdDate, updatedDate)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updateWorkoutRecord:
+UPDATE workoutRecords
+SET position = ?, comment = ?, startedAt = ?, durationSec = ?, updatedDate = ?, pendingUpload = 1
+WHERE uuid = ?;
+
+updateWorkoutRecordRemoteId:
+UPDATE workoutRecords
+SET remoteId = ?, pendingUpload = 0
+WHERE uuid = ?;
+
+-- Sync-pull upsert for the parent record. Children (workoutExercises +
+-- workoutSets) are wiped via FK ON DELETE CASCADE when the row is replaced
+-- and re-created by the orchestrator from the decoded payload.
+-- Callers must check `pendingUpload=1` on the existing row first to honor
+-- the local-wins escape hatch.
+upsertWorkoutRecordFromRemote:
+INSERT OR REPLACE INTO workoutRecords(uuid, remoteId, userId, diaryId, date, position, comment, startedAt, durationSec, deletedAt, pendingUpload, schemaVersion, createdDate, updatedDate)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?);
+
+softDeleteWorkoutRecord:
+UPDATE workoutRecords
+SET deletedAt = ?, updatedDate = ?, pendingUpload = 1
+WHERE uuid = ?;
+
+deleteWorkoutRecord:
+DELETE FROM workoutRecords
+WHERE uuid = ?;
+
+deleteWorkoutRecordsByDiary:
+DELETE FROM workoutRecords
+WHERE diaryId = ?;
+
+deleteWorkoutRecordsByUserId:
+DELETE FROM workoutRecords
+WHERE userId = ?;
+
+deleteAllWorkoutRecords:
+DELETE FROM workoutRecords;

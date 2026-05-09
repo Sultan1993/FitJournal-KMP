@@ -13,35 +13,121 @@ CREATE TABLE exercises (
     primaryCategoryUuid TEXT NOT NULL,
     secondaryCategoryUuids TEXT,
     global INTEGER AS Boolean NOT NULL DEFAULT 0,
+    userId TEXT,
+    pendingUpload INTEGER AS Boolean NOT NULL DEFAULT 0,
+    deletedAt TEXT,
+    updatedDate TEXT,
     FOREIGN KEY (primaryCategoryUuid) REFERENCES categories(uuid)
 );
 
+CREATE INDEX idx_exercises_pending ON exercises(pendingUpload);
+CREATE INDEX idx_exercises_user ON exercises(userId);
+-- `getExerciseByRemoteId(IfLive)` is hit on every sync tick. Without
+-- this, the find-by-remote does a full table scan over the catalog
+-- (~250 globals + customs).
+CREATE INDEX idx_exercises_remoteId ON exercises(remoteId) WHERE remoteId IS NOT NULL;
+-- `getExercisesByCategoryForUser` powers the category browse UI.
+CREATE INDEX idx_exercises_category_live ON exercises(primaryCategoryUuid) WHERE deletedAt IS NULL;
+
+-- Unscoped count for the migration "have we seeded?" check. NOT for UI
+-- reads — those use [getAllExercisesForUser] so customs from a prior
+-- logged-in account don't leak across.
 getAllExercises:
 SELECT *
-FROM exercises;
+FROM exercises
+WHERE deletedAt IS NULL;
 
-getExercisesByCategoryUuid:
+-- userId-scoped: returns global catalog rows + this user's custom rows.
+-- Single canonical "all exercises the user can see" — covers the catalog
+-- lookup feeding workout reads, exercise list, and search. Scoping
+-- prevents leftover customs from a prior logged-in account from leaking
+-- after an account switch.
+getAllExercisesForUser:
 SELECT *
 FROM exercises
-WHERE primaryCategoryUuid == ?;
+WHERE (global = 1 OR userId = ?)
+AND deletedAt IS NULL;
+
+getExercisesByCategoryForUser:
+SELECT *
+FROM exercises
+WHERE primaryCategoryUuid == ?
+AND (global = 1 OR userId = ?)
+AND deletedAt IS NULL;
 
 getExerciseByUuid:
 SELECT *
 FROM exercises
 WHERE uuid == ?;
 
+-- Tombstone-filtered variant for the repository read path. Workouts that
+-- reference a soft-deleted catalog row drop the reference (compactMap)
+-- rather than surfacing a ghost exercise.
+getExerciseByUuidIfLive:
+SELECT *
+FROM exercises
+WHERE uuid == ?
+AND deletedAt IS NULL;
+
 getExerciseByRemoteId:
 SELECT *
 FROM exercises
 WHERE remoteId == ?;
 
+-- Tombstone-filtered remote-id lookup. Mirror of `getExerciseByUuidIfLive`.
+-- The sync push path uses `getExerciseByRemoteId` (no filter) so it can
+-- see tombstones; UI/repo paths use this variant via `getExerciseByRemoteIdOrNull`.
+getExerciseByRemoteIdIfLive:
+SELECT *
+FROM exercises
+WHERE remoteId == ?
+AND deletedAt IS NULL;
+
+getPendingUploads:
+SELECT *
+FROM exercises
+WHERE pendingUpload = 1;
+
+getUserCustomExercises:
+SELECT *
+FROM exercises
+WHERE userId = ?
+AND global = 0
+AND deletedAt IS NULL;
+
 createExercise:
-INSERT INTO exercises(uuid, remoteId, nameEn, nameRu, nameUk, details, image1, image2, resultType, primaryCategoryUuid, secondaryCategoryUuids, global)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO exercises(uuid, remoteId, nameEn, nameRu, nameUk, details, image1, image2, resultType, primaryCategoryUuid, secondaryCategoryUuids, global, userId, pendingUpload)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 updateExercise:
 UPDATE exercises
-SET remoteId = ?, nameEn = ?, nameRu = ?, nameUk = ?, details = ?, resultType = ?, primaryCategoryUuid = ?, secondaryCategoryUuids = ?
+SET remoteId = ?, nameEn = ?, nameRu = ?, nameUk = ?, details = ?, resultType = ?, primaryCategoryUuid = ?, secondaryCategoryUuids = ?, pendingUpload = 1
+WHERE uuid = ?;
+
+-- Name-only update for the rename UI flow. Bumps pendingUpload so the
+-- SyncWorker pushes the change. Writes all three locale columns because
+-- a custom-exercise rename should overwrite every locale (legacy parity).
+renameExercise:
+UPDATE exercises
+SET nameEn = ?, nameRu = ?, nameUk = ?, pendingUpload = 1
+WHERE uuid = ?;
+
+updateExerciseRemoteId:
+UPDATE exercises
+SET remoteId = ?, pendingUpload = 0
+WHERE uuid = ?;
+
+-- Sync-pull upsert: writes the row from AWS without bumping pendingUpload.
+-- Used by SyncOrchestrator pull. Callers must check `pendingUpload=1` on
+-- the existing row before calling this and skip if unpushed local writes
+-- would be stomped (the local-wins escape hatch).
+upsertExerciseFromRemote:
+INSERT OR REPLACE INTO exercises(uuid, remoteId, nameEn, nameRu, nameUk, details, image1, image2, resultType, primaryCategoryUuid, secondaryCategoryUuids, global, userId, pendingUpload, deletedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?);
+
+softDeleteExercise:
+UPDATE exercises
+SET deletedAt = ?, updatedDate = ?, pendingUpload = 1
 WHERE uuid = ?;
 
 deleteExercise:

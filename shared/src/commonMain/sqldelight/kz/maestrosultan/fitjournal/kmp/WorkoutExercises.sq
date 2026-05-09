@@ -1,0 +1,65 @@
+CREATE TABLE workoutExercises (
+    uuid TEXT PRIMARY KEY NOT NULL,
+    workoutRecordUuid TEXT NOT NULL REFERENCES workoutRecords(uuid) ON DELETE CASCADE,
+    exerciseUuid TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    comment TEXT
+);
+
+-- Composite (workoutRecordUuid, position) so the canonical
+-- `WHERE workoutRecordUuid = ? ORDER BY position ASC` is fully
+-- index-driven (no post-fetch sort step).
+CREATE INDEX idx_workoutExercises_record ON workoutExercises(workoutRecordUuid, position);
+CREATE INDEX idx_workoutExercises_exercise ON workoutExercises(exerciseUuid);
+
+getWorkoutExercisesByRecord:
+SELECT *
+FROM workoutExercises
+WHERE workoutRecordUuid = ?
+ORDER BY position ASC;
+
+getWorkoutExercisesByExerciseUuid:
+SELECT *
+FROM workoutExercises
+WHERE exerciseUuid = ?;
+
+-- Bulk: child exercises across every live workout record in (user, diary)
+-- within a date window. Companion to `getWorkoutRecordsByDiary` so the
+-- repository can hydrate full trees in 3 SQL calls. `from` inclusive,
+-- `to` exclusive. Callers that want "everything" pass `0000-01-01` /
+-- `9999-12-31`. Caller groups by `workoutRecordUuid`.
+getWorkoutExercisesByDiary:
+SELECT we.*
+FROM workoutExercises we
+JOIN workoutRecords wr ON wr.uuid = we.workoutRecordUuid
+WHERE wr.userId = ?
+AND wr.diaryId = ?
+AND wr.date >= ?
+AND wr.date < ?
+AND wr.deletedAt IS NULL
+ORDER BY we.workoutRecordUuid ASC, we.position ASC;
+
+getWorkoutExerciseById:
+SELECT *
+FROM workoutExercises
+WHERE uuid = ?;
+
+createWorkoutExercise:
+INSERT INTO workoutExercises(uuid, workoutRecordUuid, exerciseUuid, position, comment)
+VALUES (?, ?, ?, ?, ?);
+
+updateWorkoutExercise:
+UPDATE workoutExercises
+SET position = ?, comment = ?
+WHERE uuid = ?;
+
+deleteWorkoutExercise:
+DELETE FROM workoutExercises
+WHERE uuid = ?;
+
+deleteWorkoutExercisesByRecord:
+DELETE FROM workoutExercises
+WHERE workoutRecordUuid = ?;
+
+deleteAllWorkoutExercises:
+DELETE FROM workoutExercises;

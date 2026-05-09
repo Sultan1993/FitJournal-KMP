@@ -1,3 +1,5 @@
+import kotlin.Boolean;
+
 CREATE TABLE bodyMeasurements (
     uuid TEXT PRIMARY KEY NOT NULL,
     remoteId TEXT,
@@ -8,39 +10,64 @@ CREATE TABLE bodyMeasurements (
     comment TEXT,
     measurementDate TEXT NOT NULL,
     createdDate TEXT NOT NULL,
-    updatedDate TEXT NOT NULL
+    updatedDate TEXT NOT NULL,
+    pendingUpload INTEGER AS Boolean NOT NULL DEFAULT 0,
+    deletedAt TEXT
 );
+
+CREATE INDEX idx_bodyMeasurements_pending ON bodyMeasurements(pendingUpload);
+CREATE INDEX idx_bodyMeasurements_diary_live ON bodyMeasurements(userId, diaryId) WHERE deletedAt IS NULL;
 
 getBodyMeasurements:
 SELECT *
 FROM bodyMeasurements
 WHERE userId = ?
-AND diaryId = ?;
+AND diaryId = ?
+AND deletedAt IS NULL;
 
 getBodyMeasurementsByType:
 SELECT *
 FROM bodyMeasurements
 WHERE userId = ?
 AND diaryId = ?
-AND type = ?;
+AND type = ?
+AND deletedAt IS NULL;
 
 getBodyMeasurementById:
 SELECT *
 FROM bodyMeasurements
 WHERE uuid = ?;
 
+getPendingUploads:
+SELECT *
+FROM bodyMeasurements
+WHERE pendingUpload = 1;
+
 createBodyMeasurement:
-INSERT INTO bodyMeasurements(uuid, remoteId, userId, diaryId, type, value, comment, measurementDate, createdDate, updatedDate)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO bodyMeasurements(uuid, remoteId, userId, diaryId, type, value, comment, measurementDate, createdDate, updatedDate, pendingUpload)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 updateBodyMeasurement:
 UPDATE bodyMeasurements
-SET value = ?, comment = ?, measurementDate = ?, updatedDate = ?
+SET value = ?, comment = ?, measurementDate = ?, updatedDate = ?, pendingUpload = 1
 WHERE uuid = ?;
 
 updateBodyMeasurementRemoteId:
 UPDATE bodyMeasurements
-SET remoteId = ?
+SET remoteId = ?, pendingUpload = 0
+WHERE uuid = ?;
+
+-- Sync-pull upsert: writes the row from AWS without bumping pendingUpload.
+-- Callers must check `pendingUpload=1` on the existing row before calling
+-- this and skip if unpushed local writes would be stomped (the local-wins
+-- escape hatch in SyncOrchestrator.applyBodyMeasurementRemote).
+upsertBodyMeasurementFromRemote:
+INSERT OR REPLACE INTO bodyMeasurements(uuid, remoteId, userId, diaryId, type, value, comment, measurementDate, createdDate, updatedDate, pendingUpload, deletedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?);
+
+softDeleteBodyMeasurement:
+UPDATE bodyMeasurements
+SET deletedAt = ?, updatedDate = ?, pendingUpload = 1
 WHERE uuid = ?;
 
 deleteBodyMeasurement:

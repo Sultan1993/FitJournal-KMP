@@ -6,26 +6,56 @@ CREATE TABLE notes (
   text TEXT NOT NULL,
   isPinned INTEGER AS Boolean NOT NULL DEFAULT 0,
   createdDate TEXT NOT NULL,
-  updatedDate TEXT NOT NULL
+  updatedDate TEXT NOT NULL,
+  remoteId TEXT,
+  pendingUpload INTEGER AS Boolean NOT NULL DEFAULT 0,
+  deletedAt TEXT
 );
+
+CREATE INDEX idx_notes_pending ON notes(pendingUpload);
+CREATE INDEX idx_notes_user_live ON notes(userId) WHERE deletedAt IS NULL;
 
 getNotes:
 SELECT *
 FROM notes
-WHERE userId = ?;
+WHERE userId = ?
+AND deletedAt IS NULL;
 
 getNoteById:
 SELECT *
 FROM notes
 WHERE uuid = ?;
 
+getPendingUploads:
+SELECT *
+FROM notes
+WHERE pendingUpload = 1;
+
 createNote:
-INSERT INTO notes(uuid, userId, text, isPinned, createdDate, updatedDate)
-VALUES (?, ?, ?, ?, ?, ?);
+INSERT INTO notes(uuid, userId, text, isPinned, createdDate, updatedDate, remoteId, pendingUpload)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 
 updateNote:
 UPDATE notes
-SET text = ?, isPinned = ?, updatedDate = ?
+SET text = ?, isPinned = ?, updatedDate = ?, pendingUpload = 1
+WHERE uuid = ?;
+
+updateNoteRemoteId:
+UPDATE notes
+SET remoteId = ?, pendingUpload = 0
+WHERE uuid = ?;
+
+-- Sync-pull upsert: writes the row from AWS without bumping pendingUpload.
+-- Callers must check `pendingUpload=1` on the existing row before calling
+-- this and skip if unpushed local writes would be stomped (the local-wins
+-- escape hatch in SyncOrchestrator.applyNoteRemote).
+upsertNoteFromRemote:
+INSERT OR REPLACE INTO notes(uuid, userId, text, isPinned, createdDate, updatedDate, remoteId, pendingUpload, deletedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?);
+
+softDeleteNote:
+UPDATE notes
+SET deletedAt = ?, updatedDate = ?, pendingUpload = 1
 WHERE uuid = ?;
 
 deleteNote:

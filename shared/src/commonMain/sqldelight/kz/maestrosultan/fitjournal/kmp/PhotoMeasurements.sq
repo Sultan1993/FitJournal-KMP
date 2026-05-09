@@ -10,6 +10,10 @@ CREATE TABLE photoMeasurements (
     updatedDate TEXT NOT NULL
 );
 
+-- `getPhotoMeasurements(userId, diaryId)` is hit every time the photo
+-- measurements screen opens. Without an index it's a full table scan.
+CREATE INDEX idx_photoMeasurements_diary ON photoMeasurements(userId, diaryId);
+
 getPhotoMeasurements:
 SELECT *
 FROM photoMeasurements
