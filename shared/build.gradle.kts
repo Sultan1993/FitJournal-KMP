@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.android.library)
+    alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.sqldelight)
     alias(libs.plugins.skie)
 }
@@ -17,13 +17,22 @@ val moduleName = "FitJournalKMP"
 
 kotlin {
     applyDefaultHierarchyTemplate()
-    jvmToolchain(17)
+    jvmToolchain(21)
 
     compilerOptions {
         optIn.add("kotlin.time.ExperimentalTime")
     }
 
-    androidTarget()
+    // AGP 9: the kotlin-multiplatform plugin owns the Android target via
+    // the `androidLibrary { }` block. The legacy `com.android.library`
+    // plugin + separate `android { }` configuration is no longer applied
+    // in this module — the KMP plugin handles Android compileSdk/minSdk,
+    // sourceSets, and the AAR build internally.
+    androidLibrary {
+        namespace = group.toString()
+        compileSdk = libs.versions.compileSDK.get().toInt()
+        minSdk = libs.versions.minSDK.get().toInt()
+    }
 
     // iOS
     val xcf = XCFramework()
@@ -76,25 +85,18 @@ kotlin {
     }
 }
 
-android {
-    namespace = group.toString()
-    compileSdk = libs.versions.compileSDK.get().toInt()
-    defaultConfig {
-        minSdk = libs.versions.minSDK.get().toInt()
-    }
-
-    sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-}
-
 sqldelight {
     databases {
         create("FitJournalDatabase") {
             packageName = "kz.maestrosultan.fitjournal.kmp"
         }
+    }
+}
+
+skie {
+    // Disable phone-home analytics — the upload task can hang on slow
+    // networks and stall CI builds.
+    analytics {
+        disableUpload.set(true)
     }
 }

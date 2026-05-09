@@ -1,8 +1,8 @@
 [versions]
-minSDK = "26"
-compileSDK = "36"
-androidGradlePlugin = "8.12.2"
-kotlin = "2.2.0"
+minSDK = "28"
+compileSDK = "37"
+androidGradlePlugin = "9.0.0"
+kotlin = "2.3.20"
 sqldelight = "2.1.0"
 coroutines = "1.10.2"
 # SKIE (Touchlab) — Kotlin/Native ↔ Swift integration. Exposes `suspend
@@ -11,7 +11,7 @@ coroutines = "1.10.2"
 # enums as *exhaustive* Swift enums (no `default:` clauses needed in
 # Swift switches over KMP enum types). Replaces KMP-NativeCoroutines as
 # the comprehensive Swift interop layer.
-skie = "0.10.6"
+skie = "0.10.11"
 
 [libraries]
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib-common", version.ref = "kotlin" }
@@ -26,8 +26,7 @@ sqldelight-coroutines = { module = "app.cash.sqldelight:coroutines-extensions", 
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-multiplatform-swiftpackage = { id = "io.github.luca992.multiplatform-swiftpackage", version = "2.3.0" }
-android-library = { id = "com.android.library", version.ref = "androidGradlePlugin" }
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
+android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "androidGradlePlugin" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 skie = { id = "co.touchlab.skie", version.ref = "skie" }
