@@ -1,5 +1,7 @@
 package kz.maestrosultan.fitjournal.kmp.exercises.entity
 
+import kotlin.time.Instant
+
 data class DBExerciseObject(
     val uuid: String,
     val remoteId: String,
@@ -12,5 +14,8 @@ data class DBExerciseObject(
     val resultType: Int,
     val primaryCategory: DBCategoryObject,
     val secondaryCategories: List<DBCategoryObject>?,
-    val isGlobal: Boolean
+    val isGlobal: Boolean,
+    val userId: String? = null,
+    val pendingUpload: Boolean = false,
+    val deletedAt: Instant? = null,
 )

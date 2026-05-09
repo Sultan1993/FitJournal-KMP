@@ -1,16 +1,19 @@
 package kz.maestrosultan.fitjournal.kmp.notes.entity
 
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Instant
 import kz.maestrosultan.fitjournal.kmp.Notes
+import kz.maestrosultan.fitjournal.kmp.time.parseStoredInstant
 
 data class DBNoteObject(
     val uuid: String,
     val userId: String,
     val text: String,
     val isPinned: Boolean,
-    val createdDate: LocalDateTime,
-    val updatedDate: LocalDateTime
+    val createdDate: Instant,
+    val updatedDate: Instant,
+    val remoteId: String? = null,
+    val pendingUpload: Boolean = false,
+    val deletedAt: Instant? = null,
 )
 
 internal fun Notes.map() = DBNoteObject(
@@ -18,6 +21,9 @@ internal fun Notes.map() = DBNoteObject(
     userId = userId,
     text = text,
     isPinned = isPinned,
-    createdDate = createdDate.toLocalDateTime(),
-    updatedDate = updatedDate.toLocalDateTime(),
+    createdDate = parseStoredInstant(createdDate),
+    updatedDate = parseStoredInstant(updatedDate),
+    remoteId = remoteId,
+    pendingUpload = pendingUpload,
+    deletedAt = deletedAt?.let(::parseStoredInstant),
 )

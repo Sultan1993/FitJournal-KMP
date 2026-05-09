@@ -1,7 +1,8 @@
 package kz.maestrosultan.fitjournal.kmp.measurements.entity
 
-import kotlinx.datetime.LocalDateTime
+import kotlin.time.Instant
 import kz.maestrosultan.fitjournal.kmp.BodyMeasurements
+import kz.maestrosultan.fitjournal.kmp.time.parseStoredInstant
 
 data class DBBodyMeasurementObject(
     val uuid: String,
@@ -11,9 +12,11 @@ data class DBBodyMeasurementObject(
     val type: String,
     val value: Double,
     val comment: String?,
-    val measurementDate: LocalDateTime,
-    val createdDate: LocalDateTime,
-    val updatedDate: LocalDateTime
+    val measurementDate: Instant,
+    val createdDate: Instant,
+    val updatedDate: Instant,
+    val pendingUpload: Boolean = false,
+    val deletedAt: Instant? = null,
 )
 
 internal fun BodyMeasurements.map() = DBBodyMeasurementObject(
@@ -24,7 +27,9 @@ internal fun BodyMeasurements.map() = DBBodyMeasurementObject(
     type = type,
     value = value_,
     comment = comment,
-    measurementDate = LocalDateTime.parse(measurementDate),
-    createdDate = LocalDateTime.parse(createdDate),
-    updatedDate = LocalDateTime.parse(updatedDate),
+    measurementDate = parseStoredInstant(measurementDate),
+    createdDate = parseStoredInstant(createdDate),
+    updatedDate = parseStoredInstant(updatedDate),
+    pendingUpload = pendingUpload,
+    deletedAt = deletedAt?.let(::parseStoredInstant),
 )

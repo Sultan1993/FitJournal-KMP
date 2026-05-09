@@ -3,43 +3,47 @@ package kz.maestrosultan.fitjournal.kmp.measurements.datasource
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import kz.maestrosultan.fitjournal.kmp.PhotoMeasurementsQueries
 import kz.maestrosultan.fitjournal.kmp.measurements.entity.DBPhotoMeasurementObject
 import kz.maestrosultan.fitjournal.kmp.measurements.entity.map
+import kz.maestrosultan.fitjournal.kmp.time.toStoredString
 
 class PhotoMeasurementsDBDataSource(private val dao: PhotoMeasurementsQueries) {
 
-    fun getPhotoMeasurements(userId: String, diaryId: String): List<DBPhotoMeasurementObject> {
-        return dao.getPhotoMeasurements(userId, diaryId)
-            .executeAsList()
-            .map { it.map() }
-    }
+    suspend fun getPhotoMeasurements(userId: String, diaryId: String): List<DBPhotoMeasurementObject> =
+        withContext(Dispatchers.IO) {
+            dao.getPhotoMeasurements(userId, diaryId)
+                .executeAsList()
+                .map { it.map() }
+        }
 
     fun getPhotoMeasurementsFlow(
         userId: String,
-        diaryId: String
+        diaryId: String,
     ): Flow<List<DBPhotoMeasurementObject>> {
         return dao.getPhotoMeasurements(userId, diaryId)
             .asFlow()
             .mapToList(Dispatchers.IO)
             .map { it.map { it.map() } }
+            .flowOn(Dispatchers.IO)
     }
 
-    fun getPhotoMeasurementById(uuid: String): DBPhotoMeasurementObject {
-        return dao.getPhotoMeasurementById(uuid)
-            .executeAsOne()
-            .map()
-    }
+    suspend fun getPhotoMeasurementById(uuid: String): DBPhotoMeasurementObject =
+        withContext(Dispatchers.IO) {
+            dao.getPhotoMeasurementById(uuid)
+                .executeAsOne()
+                .map()
+        }
 
-    fun createPhotoMeasurement(
+    suspend fun createPhotoMeasurement(
         uuid: String,
         userId: String,
         diaryId: String,
@@ -47,10 +51,10 @@ class PhotoMeasurementsDBDataSource(private val dao: PhotoMeasurementsQueries) {
         url: String,
         type: String,
         date: LocalDate,
-        createdDate: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC),
-        updatedDate: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC)
-    ): DBPhotoMeasurementObject {
-        return dao.transactionWithResult {
+        createdDate: Instant = Clock.System.now(),
+        updatedDate: Instant = createdDate,
+    ): DBPhotoMeasurementObject = withContext(Dispatchers.IO) {
+        dao.transactionWithResult {
             dao.createPhotoMeasurement(
                 uuid = uuid,
                 userId = userId,
@@ -59,26 +63,26 @@ class PhotoMeasurementsDBDataSource(private val dao: PhotoMeasurementsQueries) {
                 url = url,
                 type = type,
                 date = date.toString(),
-                createdDate = createdDate.toString(),
-                updatedDate = updatedDate.toString()
+                createdDate = createdDate.toStoredString(),
+                updatedDate = updatedDate.toStoredString(),
             )
-            getPhotoMeasurementById(uuid)
+            dao.getPhotoMeasurementById(uuid).executeAsOne().map()
         }
     }
 
-    fun deletePhotoMeasurement(uuid: String) {
+    suspend fun deletePhotoMeasurement(uuid: String) = withContext(Dispatchers.IO) {
         dao.deletePhotoMeasurement(uuid)
     }
 
-    fun deletePhotoMeasurementsByDiaryId(diaryId: String) {
+    suspend fun deletePhotoMeasurementsByDiaryId(diaryId: String) = withContext(Dispatchers.IO) {
         dao.deletePhotoMeasurementsByDiaryId(diaryId)
     }
 
-    fun deletePhotoMeasurementsByUserId(userId: String) {
+    suspend fun deletePhotoMeasurementsByUserId(userId: String) = withContext(Dispatchers.IO) {
         dao.deletePhotoMeasurementsByUserId(userId)
     }
 
-    fun deletePhotoMeasurements() {
+    suspend fun deletePhotoMeasurements() = withContext(Dispatchers.IO) {
         dao.deletePhotoMeasurements()
     }
 }
