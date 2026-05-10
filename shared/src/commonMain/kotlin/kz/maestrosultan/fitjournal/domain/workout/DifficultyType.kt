@@ -1,5 +1,7 @@
 package kz.maestrosultan.fitjournal.domain.workout
 
+import kotlinx.serialization.Serializable
+
 /**
  * Set difficulty as the user logs it. Stable numeric `id`s — the SQLite
  * column stores `id`, the AWS payload stores `id`, and any change to these
@@ -9,10 +11,11 @@ package kz.maestrosultan.fitjournal.domain.workout
  * is collapsed to [LIGHT] on read for backward compat with stored data
  * and synced legacy records.
  *
- * Localized titles live as platform extensions:
- *  - iOS:     `extension DifficultyType { var title: String }` using NSLocalizedString
- *  - Android: `val DifficultyType.titleResId: Int` using R.string
+ * Serialized to JSON as the enum name (e.g. `"MEDIUM"`) inside payload
+ * shapes; SQLite stores the integer `id`. The decoder is configured with
+ * `coerceInputValues = true` so unknown values fall back to [NONE].
  */
+@Serializable
 enum class DifficultyType {
     NONE,
     LIGHT,
@@ -26,6 +29,8 @@ enum class DifficultyType {
             MEDIUM -> 3
             HARD -> 4
         }
+
+    val ordinalValue: Int get() = id
 
     companion object {
         fun create(value: Int?): DifficultyType = when (value) {
