@@ -26,7 +26,7 @@ class NotesRepositoryTest {
         assertEquals("hello", note.text)
         assertEquals(false, note.isPinned)
         assertEquals(listOf(id), repo.getNotes(userId).map { it.id })
-        assertTrue(ds.getPendingUploads().any { it.uuid == id }, "a new note must be queued for upload")
+        assertTrue(ds.getPendingUploads(userId).any { it.uuid == id }, "a new note must be queued for upload")
     }
 
     @Test
@@ -54,7 +54,7 @@ class NotesRepositoryTest {
             "tombstone row must remain so the orchestrator can push the deletion",
         )
         assertNotNull(tombstone.deletedAt, "deletedAt must be stamped on soft delete")
-        assertTrue(ds.getPendingUploads().any { it.uuid == id }, "tombstone must be queued for upload")
+        assertTrue(ds.getPendingUploads(userId).any { it.uuid == id }, "tombstone must be queued for upload")
     }
 
     @Test

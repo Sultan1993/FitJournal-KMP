@@ -48,7 +48,7 @@ class RecordRepositoryTest {
         assertEquals(1, rec.exercises.size)
         assertEquals(exId, rec.exercises.single().exercise.uuid)
         assertEquals(0, rec.exercises.single().sets.size)
-        assertTrue(workoutsDB.getPendingUploads().any { it.uuid == rec.id }, "a new record must be queued for upload")
+        assertTrue(workoutsDB.getPendingUploads(userId).any { it.uuid == rec.id }, "a new record must be queued for upload")
     }
 
     @Test
@@ -102,7 +102,7 @@ class RecordRepositoryTest {
         assertTrue(repo.getRecordsByDate(userId, journalId, date).isEmpty(), "live read must hide a deleted record")
         val tombstone = assertNotNull(workoutsDB.getWorkoutRecordByIdIncludingDeleted(rec.id))
         assertNotNull(tombstone.row.deletedAt, "deletedAt must be stamped")
-        assertTrue(workoutsDB.getPendingUploads().any { it.uuid == rec.id }, "tombstone must be queued for push")
+        assertTrue(workoutsDB.getPendingUploads(userId).any { it.uuid == rec.id }, "tombstone must be queued for push")
     }
 
     @Test

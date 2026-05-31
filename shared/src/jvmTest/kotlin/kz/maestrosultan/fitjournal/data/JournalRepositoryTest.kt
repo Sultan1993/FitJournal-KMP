@@ -25,7 +25,7 @@ class JournalRepositoryTest {
         assertEquals("Legs", j.name)
         assertEquals(3, j.workoutGoal)
         assertEquals(false, j.isPersonal)
-        assertTrue(ds.getPendingUploads().any { it.uuid == id }, "a new journal must be queued for upload")
+        assertTrue(ds.getPendingUploads(userId).any { it.uuid == id }, "a new journal must be queued for upload")
     }
 
     @Test

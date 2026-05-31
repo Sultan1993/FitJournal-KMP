@@ -46,7 +46,7 @@ class ExerciseRepositoryTest {
         assertEquals(ResultType.WEIGHT_REPS, exercise.resultType)
         assertTrue(exercise.isPersonal, "a user-created exercise must be personal/custom")
         assertEquals(catUuid, exercise.primaryCategory.uuid)
-        assertTrue(exDs.getPendingUploads().any { it.uuid == id }, "a new exercise must be queued for upload")
+        assertTrue(exDs.getPendingUploads(userId).any { it.uuid == id }, "a new exercise must be queued for upload")
     }
 
     @Test

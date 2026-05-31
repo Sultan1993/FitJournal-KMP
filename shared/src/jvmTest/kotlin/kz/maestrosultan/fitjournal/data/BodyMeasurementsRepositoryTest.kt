@@ -28,7 +28,7 @@ class BodyMeasurementsRepositoryTest {
         assertEquals(1, list.size)
         assertEquals(80.5, list.first().value)
         assertEquals(BodyMeasurementType.WEIGHT, list.first().type)
-        assertTrue(ds.getPendingUploads().any { it.uuid == id }, "a new measurement must be queued for upload")
+        assertTrue(ds.getPendingUploads(userId).any { it.uuid == id }, "a new measurement must be queued for upload")
     }
 
     @Test
