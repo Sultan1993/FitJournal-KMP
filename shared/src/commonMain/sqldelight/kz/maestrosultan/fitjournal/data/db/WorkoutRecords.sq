@@ -39,7 +39,12 @@ AND journalId = ?
 AND date >= ?
 AND date < ?
 AND deletedAt IS NULL
-ORDER BY date DESC, position ASC;
+-- `uuid` is the final tiebreaker so ordering is deterministic even when two
+-- records share a position (each device assigns position as local max+1, so
+-- AWS sync can deliver same-position records from another device). Without it
+-- same-position rows render in arbitrary rowid order and superset "next record"
+-- becomes ambiguous.
+ORDER BY date DESC, position ASC, uuid ASC;
 
 
 -- Single-record read for UI/repo. Filters tombstones — a soft-deleted
