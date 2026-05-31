@@ -1,9 +1,41 @@
--- Adds the local-first persistence layer for the Parse → AWS migration:
--- journals, workoutRecords, workoutExercises, workoutSets.
--- All statements are idempotent so this migration is safe even on databases
--- that already have these tables for any reason.
+-- Migration 8 — FJ1.x (schema v8) → FJ2.0 schema (squashed).
+--
+-- Squash of the original dev migrations 8–19 (all unreleased FJ2.0 work) into
+-- one step. Released FJ1.x devices sit at schema v8 (notes/bodyMeasurements/
+-- categories/exercises/photoMeasurements, keyed by the legacy parseUserId). On
+-- the first FJ2.0 launch this migration runs once: it drops every v8 table
+-- (wiping the parseUserId-keyed Parse read-cache — those rows are invisible
+-- orphans under FJ2.0's awsUserId keying; SyncOrchestrator re-hydrates from AWS)
+-- and recreates the full FJ2.0 schema. Fresh FJ2.0 installs never run this —
+-- they build the latest schema directly from the .sq CREATE statements.
+--
+-- The CREATE statements below are the plain-SQLite form of the .sq schema
+-- (SQLDelight type adapters stripped); the resulting tables are identical to a
+-- fresh install. Keep this file in lockstep with the .sq files.
 
-CREATE TABLE IF NOT EXISTS journals (
+-- Drop the v8 read-cache (and any partial FJ2.0 tables) ---------------------
+DROP TABLE IF EXISTS workoutSets;
+DROP TABLE IF EXISTS workoutExercises;
+DROP TABLE IF EXISTS workoutRecords;
+DROP TABLE IF EXISTS journals;
+DROP TABLE IF EXISTS diaries;
+DROP TABLE IF EXISTS photoMeasurements;
+DROP TABLE IF EXISTS notes;
+DROP TABLE IF EXISTS bodyMeasurements;
+DROP TABLE IF EXISTS exercises;
+DROP TABLE IF EXISTS categories;
+
+-- Recreate the FJ2.0 schema --------------------------------------------------
+CREATE TABLE categories (
+    uuid TEXT PRIMARY KEY NOT NULL,
+    remoteId TEXT NOT NULL,
+    nameEn TEXT NOT NULL,
+    nameRu TEXT NOT NULL,
+    nameUk TEXT NOT NULL,
+    type INTEGER NOT NULL,
+    details TEXT
+);
+CREATE TABLE journals (
     uuid TEXT PRIMARY KEY NOT NULL,
     remoteId TEXT,
     userId TEXT NOT NULL,
@@ -16,11 +48,62 @@ CREATE TABLE IF NOT EXISTS journals (
     createdDate TEXT NOT NULL,
     updatedDate TEXT NOT NULL
 );
-
-CREATE INDEX IF NOT EXISTS idx_diaries_user ON journals(userId);
-CREATE INDEX IF NOT EXISTS idx_diaries_pending ON journals(pendingUpload);
-
-CREATE TABLE IF NOT EXISTS workoutRecords (
+CREATE INDEX idx_journals_user_live ON journals(userId) WHERE deletedAt IS NULL;
+CREATE INDEX idx_journals_pending ON journals(uuid) WHERE pendingUpload = 1;
+CREATE TABLE exercises (
+    uuid TEXT PRIMARY KEY NOT NULL,
+    remoteId TEXT NOT NULL,
+    nameEn TEXT NOT NULL,
+    nameRu TEXT NOT NULL,
+    nameUk TEXT,
+    details TEXT,
+    image1 TEXT,
+    image2 TEXT,
+    resultType INTEGER NOT NULL,
+    primaryCategoryUuid TEXT NOT NULL,
+    secondaryCategoryUuids TEXT,
+    global INTEGER NOT NULL DEFAULT 0,
+    userId TEXT,
+    pendingUpload INTEGER NOT NULL DEFAULT 0,
+    deletedAt TEXT,
+    updatedDate TEXT,
+    FOREIGN KEY (primaryCategoryUuid) REFERENCES categories(uuid)
+);
+CREATE INDEX idx_exercises_pending ON exercises(uuid) WHERE pendingUpload = 1;
+CREATE INDEX idx_exercises_user ON exercises(userId) WHERE deletedAt IS NULL;
+CREATE INDEX idx_exercises_remoteId ON exercises(remoteId) WHERE remoteId IS NOT NULL;
+CREATE TABLE notes (
+  uuid TEXT PRIMARY KEY NOT NULL,
+  userId TEXT NOT NULL,
+  text TEXT NOT NULL,
+  isPinned INTEGER NOT NULL DEFAULT 0,
+  createdDate TEXT NOT NULL,
+  updatedDate TEXT NOT NULL,
+  remoteId TEXT,
+  pendingUpload INTEGER NOT NULL DEFAULT 0,
+  deletedAt TEXT
+);
+CREATE INDEX idx_notes_pending ON notes(uuid) WHERE pendingUpload = 1;
+CREATE INDEX idx_notes_user_live ON notes(userId, createdDate DESC) WHERE deletedAt IS NULL;
+CREATE INDEX idx_notes_pinned_live ON notes(userId, updatedDate DESC) WHERE isPinned = 1 AND deletedAt IS NULL;
+CREATE TABLE bodyMeasurements (
+    uuid TEXT PRIMARY KEY NOT NULL,
+    remoteId TEXT,
+    userId TEXT NOT NULL,
+    journalId TEXT NOT NULL,
+    type TEXT NOT NULL,
+    value REAL NOT NULL,
+    comment TEXT,
+    measurementDate TEXT NOT NULL,
+    createdDate TEXT NOT NULL,
+    updatedDate TEXT NOT NULL,
+    pendingUpload INTEGER NOT NULL DEFAULT 0,
+    deletedAt TEXT
+);
+CREATE INDEX idx_bodyMeasurements_pending ON bodyMeasurements(uuid) WHERE pendingUpload = 1;
+CREATE INDEX idx_bodyMeasurements_journal_live ON bodyMeasurements(userId, journalId, measurementDate DESC) WHERE deletedAt IS NULL;
+CREATE INDEX idx_bodyMeasurements_journal_type_live ON bodyMeasurements(userId, journalId, type, measurementDate DESC) WHERE deletedAt IS NULL;
+CREATE TABLE workoutRecords (
     uuid TEXT PRIMARY KEY NOT NULL,
     remoteId TEXT,
     userId TEXT NOT NULL,
@@ -36,23 +119,18 @@ CREATE TABLE IF NOT EXISTS workoutRecords (
     createdDate TEXT NOT NULL,
     updatedDate TEXT NOT NULL
 );
-
-CREATE INDEX IF NOT EXISTS idx_workoutRecords_user_date ON workoutRecords(userId, date);
-CREATE INDEX IF NOT EXISTS idx_workoutRecords_diary ON workoutRecords(journalId);
-CREATE INDEX IF NOT EXISTS idx_workoutRecords_pending ON workoutRecords(pendingUpload);
-
-CREATE TABLE IF NOT EXISTS workoutExercises (
+CREATE INDEX idx_workoutRecords_live_journal ON workoutRecords(userId, journalId, date DESC, position ASC) WHERE deletedAt IS NULL;
+CREATE INDEX idx_workoutRecords_pending ON workoutRecords(uuid) WHERE pendingUpload = 1;
+CREATE TABLE workoutExercises (
     uuid TEXT PRIMARY KEY NOT NULL,
     workoutRecordUuid TEXT NOT NULL REFERENCES workoutRecords(uuid) ON DELETE CASCADE,
     exerciseUuid TEXT NOT NULL,
     position INTEGER NOT NULL,
     comment TEXT
 );
-
-CREATE INDEX IF NOT EXISTS idx_workoutExercises_record ON workoutExercises(workoutRecordUuid);
-CREATE INDEX IF NOT EXISTS idx_workoutExercises_exercise ON workoutExercises(exerciseUuid);
-
-CREATE TABLE IF NOT EXISTS workoutSets (
+CREATE INDEX idx_workoutExercises_record ON workoutExercises(workoutRecordUuid, position);
+CREATE INDEX idx_workoutExercises_exercise ON workoutExercises(exerciseUuid);
+CREATE TABLE workoutSets (
     uuid TEXT PRIMARY KEY NOT NULL,
     workoutExerciseUuid TEXT NOT NULL REFERENCES workoutExercises(uuid) ON DELETE CASCADE,
     position INTEGER NOT NULL,
@@ -63,5 +141,4 @@ CREATE TABLE IF NOT EXISTS workoutSets (
     difficultyType INTEGER NOT NULL DEFAULT 0,
     completed INTEGER NOT NULL DEFAULT 1
 );
-
-CREATE INDEX IF NOT EXISTS idx_workoutSets_exercise ON workoutSets(workoutExerciseUuid);
+CREATE INDEX idx_workoutSets_exercise ON workoutSets(workoutExerciseUuid, position);

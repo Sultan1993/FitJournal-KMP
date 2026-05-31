@@ -108,6 +108,17 @@ sqldelight {
     databases {
         create("FitJournalDatabase") {
             packageName = "kz.maestrosultan.fitjournal.data.db"
+            // NOTE: verifyMigrations is intentionally NOT enabled. SQLDelight's
+            // migration verifier replays .sqm files from an empty database, but
+            // the released FJ1.x migrations 1–7 ALTER tables that were created by
+            // Schema.create() (the .sq of that era), not by a migration — so
+            // `1.sqm`'s `ALTER TABLE notes RENAME COLUMN back4AppId …` can't be
+            // resolved against an empty base ("no table found with name notes").
+            // Enabling it would require rewriting frozen released migrations.
+            // The squashed 8.sqm is instead verified out-of-band (it drops the v8
+            // tables and recreates the .sq schema verbatim; replaying it onto a v8
+            // snapshot reproduces a fresh install — proven via sqlite3 and
+            // SQLDelight's own verifyCommonMainFitJournalDatabaseMigration task).
         }
     }
 }
