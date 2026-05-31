@@ -126,6 +126,51 @@ WHERE workoutExerciseUuid = (
 ORDER BY position DESC
 LIMIT 1;
 
+-- Batched variant of getLastSetForExerciseBeforeDate: for a set of catalog
+-- exercises sharing ONE cutoff date, returns the most recent prior
+-- workoutExercise.uuid per exercise. Replaces the per-exercise N+1 loop in
+-- `DefaultRecordRepository.buildPreviousSetMap` for the boundary cases (a
+-- single-day read → one query instead of one-per-exercise). Same tiebreaker
+-- chain as the scalar query above, expressed as NOT EXISTS (no window
+-- functions, so it runs on the SqliteDialect 3.18 baseline). Pair with
+-- getLastSetsForWorkoutExercises.
+getLastWorkoutExercisesForExercisesBeforeDate:
+SELECT we.exerciseUuid AS exerciseUuid, we.uuid AS weUuid
+FROM workoutExercises we
+JOIN workoutRecords wr ON wr.uuid = we.workoutRecordUuid
+WHERE we.exerciseUuid IN :exerciseUuids
+AND wr.userId = :userId
+AND wr.journalId = :journalId
+AND wr.date < :beforeDate
+AND wr.deletedAt IS NULL
+AND NOT EXISTS (
+    SELECT 1
+    FROM workoutExercises we2
+    JOIN workoutRecords wr2 ON wr2.uuid = we2.workoutRecordUuid
+    WHERE we2.exerciseUuid = we.exerciseUuid
+    AND wr2.userId = :userId
+    AND wr2.journalId = :journalId
+    AND wr2.date < :beforeDate
+    AND wr2.deletedAt IS NULL
+    AND (
+        wr2.date > wr.date
+        OR (wr2.date = wr.date AND wr2.position > wr.position)
+        OR (wr2.date = wr.date AND wr2.position = wr.position AND we2.position > we.position)
+    )
+);
+
+-- Last set (highest position) for each of the given workoutExercises.
+-- Companion to getLastWorkoutExercisesForExercisesBeforeDate.
+getLastSetsForWorkoutExercises:
+SELECT *
+FROM workoutSets
+WHERE workoutExerciseUuid IN ?
+AND position = (
+    SELECT MAX(s2.position)
+    FROM workoutSets s2
+    WHERE s2.workoutExerciseUuid = workoutSets.workoutExerciseUuid
+);
+
 -- All set writes go through `replaceWorkoutRecord` (whole-tree replace),
 -- so only INSERT is needed at this layer. Updates / deletes are
 -- handled by the parent record's DELETE-and-reinsert step plus FK

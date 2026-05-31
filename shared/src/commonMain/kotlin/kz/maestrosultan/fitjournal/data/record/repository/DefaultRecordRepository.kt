@@ -729,14 +729,21 @@ class DefaultRecordRepository(
             }
         }
 
-        for (b in boundary) {
-            val previousSet = workoutsDB.getLastSetForExerciseBeforeDate(
-                exerciseUuid = b.exWithSets.exercise.exerciseUuid,
-                userId = b.tree.row.userId,
-                journalId = b.tree.row.journalId,
-                beforeDateString = b.tree.row.date,
+        // Batch the boundary lookups by date: one round-trip per distinct
+        // record date (a single-day read → one query) instead of one query
+        // per exercise. userId/journalId are constant across a single read.
+        for ((date, contexts) in boundary.groupBy { it.tree.row.date }) {
+            val sample = contexts.first()
+            val previousByExerciseUuid = workoutsDB.getLastSetsForExercisesBeforeDate(
+                exerciseUuids = contexts.map { it.exWithSets.exercise.exerciseUuid }.distinct(),
+                userId = sample.tree.row.userId,
+                journalId = sample.tree.row.journalId,
+                beforeDateString = date,
             )
-            previousByWeUuid[b.exWithSets.exercise.uuid] = previousSet
+            for (b in contexts) {
+                previousByWeUuid[b.exWithSets.exercise.uuid] =
+                    previousByExerciseUuid[b.exWithSets.exercise.exerciseUuid]
+            }
         }
 
         return previousByWeUuid
