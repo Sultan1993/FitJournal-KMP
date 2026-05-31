@@ -2,16 +2,15 @@ package kz.maestrosultan.fitjournal.data.record.repository
 
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
 
-import kotlin.time.Clock
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
-import kz.maestrosultan.fitjournal.domain.core.FetchPeriod
 import kz.maestrosultan.fitjournal.domain.exercise.Exercise
 import kz.maestrosultan.fitjournal.domain.workout.DifficultyType
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
@@ -22,8 +21,10 @@ import kz.maestrosultan.fitjournal.data.exercise.datasource.ExercisesDBDataSourc
 import kz.maestrosultan.fitjournal.domain.identifier.randomUuid
 import kz.maestrosultan.fitjournal.data.exercise.entity.DBExerciseObject
 import kz.maestrosultan.fitjournal.data.record.datasource.WorkoutsDBDataSource
+import kz.maestrosultan.fitjournal.data.record.entity.DBWorkoutExerciseObject
 import kz.maestrosultan.fitjournal.data.record.entity.DBWorkoutExerciseWithSets
 import kz.maestrosultan.fitjournal.data.record.entity.DBWorkoutRecord
+import kz.maestrosultan.fitjournal.data.record.entity.DBWorkoutRecordRow
 import kz.maestrosultan.fitjournal.data.record.entity.DBWorkoutSetObject
 
 /**
@@ -58,25 +59,21 @@ class DefaultRecordRepository(
 
     // ─── Reads ─────────────────────────────────────────────────────────
 
+    override fun observeRecordsChanged(userId: String, journalId: String): Flow<String> =
+        workoutsDB.observeJournalRecordsSignal(userId, journalId)
+
     override suspend fun getAllRecords(
         userId: String,
-        diaryId: String,
+        journalId: String,
     ): List<WorkoutRecord> {
         val exerciseLookup = exerciseLookupForRead(userId)
-        val trees = workoutsDB.getWorkoutRecordsByDiary(userId, diaryId)
+        val trees = workoutsDB.getWorkoutRecordsByJournal(userId, journalId)
         return toDomainList(trees, exerciseLookup)
-    }
-
-    override fun getAllRecordsFlow(
-        userId: String,
-        diaryId: String,
-    ): Flow<List<WorkoutRecord>> = flow {
-        emit(getAllRecords(userId, diaryId))
     }
 
     override suspend fun getRecordsByDate(
         userId: String,
-        diaryId: String,
+        journalId: String,
         date: LocalDate,
     ): List<WorkoutRecord> {
         val exerciseLookup = exerciseLookupForRead(userId)
@@ -85,21 +82,13 @@ class DefaultRecordRepository(
         // lexicographically.
         val from = date.toString()
         val to = date.plusDaysSafe(1).toString()
-        val trees = workoutsDB.getWorkoutRecordsByDiary(userId, diaryId, from, to)
+        val trees = workoutsDB.getWorkoutRecordsByJournal(userId, journalId, from, to)
         return toDomainList(trees, exerciseLookup)
-    }
-
-    override fun getRecordsByDateFlow(
-        userId: String,
-        diaryId: String,
-        date: LocalDate,
-    ): Flow<List<WorkoutRecord>> = flow {
-        emit(getRecordsByDate(userId, diaryId, date))
     }
 
     override suspend fun getRecordsByMonth(
         userId: String,
-        diaryId: String,
+        journalId: String,
         month: String,
         year: String,
     ): List<WorkoutRecord> {
@@ -117,77 +106,104 @@ class DefaultRecordRepository(
             val nm = nextMonthInt.toString().padStart(2, '0')
             "$year-$nm-01"
         }
-        val trees = workoutsDB.getWorkoutRecordsByDiary(userId, diaryId, from, to)
+        val trees = workoutsDB.getWorkoutRecordsByJournal(userId, journalId, from, to)
         return toDomainList(trees, exerciseLookup)
     }
 
-    override fun getRecordsByMonthFlow(
+    override suspend fun getRecentRecords(
         userId: String,
-        diaryId: String,
-        month: String,
-        year: String,
-    ): Flow<List<WorkoutRecord>> = flow {
-        emit(getRecordsByMonth(userId, diaryId, month, year))
-    }
-
-    override suspend fun getRecordsByBatch(
-        userId: String,
-        diaryId: String,
-        batchSize: Int,
-        forceLoad: Boolean,
-    ): Pair<List<WorkoutRecord>, Boolean> {
+        journalId: String,
+    ): List<WorkoutRecord> {
         val exerciseLookup = exerciseLookupForRead(userId)
-        // The workout-list page caps at the last 1 year of records (older
-        // sessions remain reachable via the calendar pickers but don't
-        // render in the linear list). With the partial index on
-        // (userId, diaryId, date DESC) WHERE deletedAt IS NULL and the
-        // JOIN-based bulk read, the year window loads in one shot, so
-        // pagination is a no-op: `batchSize` is ignored, `isLastBatch`
-        // is always true.
+        // Caps at the last 1 year. The partial index on
+        // (userId, journalId, date DESC) WHERE deletedAt IS NULL plus the
+        // JOIN-based bulk read load the whole window in one shot — no
+        // pagination needed even on heavy users (1000+ records).
         val today = todayInSystemTz()
         val oneYearAgo = today.minusYearsSafe(1).toString()
         val to = "9999-12-31"
-        val trees = workoutsDB.getWorkoutRecordsByDiary(userId, diaryId, oneYearAgo, to)
-        val records = toDomainList(trees, exerciseLookup)
-        return records to true
+        val trees = workoutsDB.getWorkoutRecordsByJournal(userId, journalId, oneYearAgo, to)
+        // Workout-history list cells don't render previous-set hints —
+        // skip the bulk compute + boundary SQL fallback entirely. Saves
+        // ~5ms on a 1-year window for a heavy user and avoids ~30
+        // single-purpose `getLastSetForExerciseBeforeDate` calls.
+        return toDomainList(trees, exerciseLookup, includePreviousSet = false)
     }
 
-    override suspend fun getRecordsByPeriod(
+    override suspend fun getExerciseOccurrences(
         userId: String,
-        diaryId: String,
-        period: FetchPeriod,
-        forceLoad: Boolean,
-    ): List<WorkoutRecord> {
-        val exerciseLookup = exerciseLookupForRead(userId)
-        val today = todayInSystemTz()
-        val from = today.minusDaysSafe(period.daysAgo).toString()
-        val to = "9999-12-31"
-        val trees = workoutsDB.getWorkoutRecordsByDiary(userId, diaryId, from, to)
-        return toDomainList(trees, exerciseLookup)
+        journalId: String,
+        exerciseId: String,
+    ): List<WorkoutExercise> {
+        // 1 SQL: catalog row (with categories). uuid PK lookup. Returns
+        // null if the catalog row was soft-deleted; in that case the
+        // screen has nothing legitimate to render, so bail.
+        val dbExercise = exercisesDB.getExerciseByUuid(exerciseId)
+            ?: return emptyList()
+        val domainExercise = mapper(dbExercise)
+        // 1 SQL: every set for this exercise in the 1-year window, with
+        // recordDate + workoutExercise.comment surfaced via the mapper.
+        // Group by workoutExerciseUuid in Kotlin to rebuild the
+        // per-occurrence shape History/Stats expect.
+        val rows = exerciseDetailsWindow().let { (from, to) ->
+            workoutsDB.getSetsForExerciseInJournal(
+                exerciseUuid = exerciseId,
+                userId = userId,
+                journalId = journalId,
+                from = from,
+                to = to,
+            ) { set, recordDate, weComment -> OccurrenceRow(set, recordDate, weComment) }
+        }
+        if (rows.isEmpty()) return emptyList()
+        return rows
+            .groupBy { it.set.workoutExerciseUuid }
+            .map { (weUuid, group) ->
+                val first = group.first()
+                val recordDate = LocalDate.parse(first.recordDate)
+                WorkoutExercise(
+                    id = weUuid,
+                    userId = userId,
+                    journalId = journalId,
+                    date = recordDate,
+                    exercise = domainExercise,
+                    sets = group.map { row ->
+                        mapSet(
+                            set = row.set,
+                            userId = userId,
+                            journalId = journalId,
+                            recordDate = recordDate,
+                            resultType = domainExercise.resultType,
+                            previousSet = null,
+                        )
+                    },
+                    comment = first.workoutExerciseComment,
+                )
+            }
     }
 
     override suspend fun getSetsForExercise(
         userId: String,
-        diaryId: String,
+        journalId: String,
         exerciseId: String,
     ): List<WorkoutSet> {
-        val dbSets = workoutsDB.getSetsForExerciseInDiary(
+        val today = todayInSystemTz()
+        val (from, to) = exerciseDetailsWindow()
+        // Same SQL as `getExerciseOccurrences`. Info-tab "best weight /
+        // best cardio" just wants a flat list of sets in the window;
+        // date is per-row and surfaces on the returned `WorkoutSet`.
+        // workoutExercise.comment is irrelevant here, so we drop it.
+        return workoutsDB.getSetsForExerciseInJournal(
             exerciseUuid = exerciseId,
             userId = userId,
-            diaryId = diaryId,
-        )
-        // Best-result use cases only read weight/reps/distance/duration
-        // off each set. date/userId/diaryId on `WorkoutSet` are required
-        // by the domain type but unused here — fill with stable
-        // placeholders so callers that pass them through (rare) don't
-        // break.
-        val today = todayInSystemTz()
-        return dbSets.map { set ->
+            journalId = journalId,
+            from = from,
+            to = to,
+        ) { set, recordDate, _ ->
             WorkoutSet(
                 id = set.uuid,
                 userId = userId,
-                diaryId = diaryId,
-                date = today,
+                journalId = journalId,
+                date = runCatching { LocalDate.parse(recordDate) }.getOrDefault(today),
                 weight = set.weight,
                 reps = set.reps,
                 distance = set.distance,
@@ -199,6 +215,18 @@ class DefaultRecordRepository(
                 previousDifficultyType = DifficultyType.NONE,
             )
         }
+    }
+
+    /**
+     * 1-year window (`[oneYearAgo, far-future)`). Matches the app-wide
+     * windowing rule applied by `getRecentRecords` so the exercise
+     * details page never surfaces history older than the rest of the
+     * app shows.
+     */
+    private fun exerciseDetailsWindow(): Pair<String, String> {
+        val from = todayInSystemTz().minusYearsSafe(1).toString()
+        val to = "9999-12-31"
+        return from to to
     }
 
     /**
@@ -220,13 +248,178 @@ class DefaultRecordRepository(
 
     // ─── Writes ────────────────────────────────────────────────────────
 
+    override suspend fun addExercisesToDate(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+        exerciseIds: List<String>,
+    ) {
+        if (exerciseIds.isEmpty()) return
+        val lastPosition = lastRecordPositionForDate(userId, journalId, date)
+        val now = Clock.System.now()
+        val dateStr = date.toString()
+        val trees = exerciseIds.mapIndexed { index, exerciseId ->
+            val recordUuid = randomUuid()
+            DBWorkoutRecord(
+                row = newRecordRow(recordUuid, userId, journalId, dateStr, lastPosition + index + 1, now),
+                exercises = listOf(
+                    DBWorkoutExerciseWithSets(
+                        exercise = DBWorkoutExerciseObject(
+                            uuid = randomUuid(),
+                            workoutRecordUuid = recordUuid,
+                            exerciseUuid = exerciseId,
+                            position = 0,
+                            comment = null,
+                        ),
+                        sets = emptyList(),
+                    ),
+                ),
+            )
+        }
+        workoutsDB.createWorkoutRecordsIfMissing(trees)
+    }
+
+    override suspend fun addRecordsToDate(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+        records: List<WorkoutRecord>,
+    ) {
+        insertCopiedRecords(userId, journalId, date, records)
+    }
+
+    override suspend fun addRecordsFromDateToToday(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+    ) {
+        val source = getRecordsByDate(userId, journalId, date)
+        insertCopiedRecords(userId, journalId, todayInSystemTz(), source)
+    }
+
+    override suspend fun replaceExerciseInRecord(
+        userId: String,
+        journalId: String,
+        recordId: String,
+        newExerciseId: String,
+    ) {
+        val tree = workoutsDB.getWorkoutRecordById(recordId) ?: return
+        val newFirst = DBWorkoutExerciseWithSets(
+            exercise = DBWorkoutExerciseObject(
+                uuid = randomUuid(),
+                workoutRecordUuid = tree.row.uuid,
+                exerciseUuid = newExerciseId,
+                position = 0,
+                comment = null,
+            ),
+            sets = emptyList(),
+        )
+        // Replace the first exercise; keep any others (a superset record)
+        // re-positioned after it, matching the iOS import repository.
+        val tail = tree.exercises.drop(1).mapIndexed { index, exWithSets ->
+            exWithSets.copy(exercise = exWithSets.exercise.copy(position = index + 1))
+        }
+        workoutsDB.replaceWorkoutRecord(
+            tree.copy(
+                row = tree.row.copy(updatedDate = Clock.System.now()),
+                exercises = listOf(newFirst) + tail,
+            ),
+        )
+    }
+
+    /**
+     * Recreates [sources] as fresh records on [date]. Sets keep their
+     * reps/duration but drop weight/distance and difficulty (a re-do
+     * template); previous-set hints are computed on read, not stored.
+     */
+    private suspend fun insertCopiedRecords(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+        sources: List<WorkoutRecord>,
+    ) {
+        if (sources.isEmpty()) return
+        val lastPosition = lastRecordPositionForDate(userId, journalId, date)
+        val now = Clock.System.now()
+        val dateStr = date.toString()
+        val trees = sources.mapIndexed { index, source ->
+            val recordUuid = randomUuid()
+            DBWorkoutRecord(
+                row = newRecordRow(recordUuid, userId, journalId, dateStr, lastPosition + index + 1, now),
+                exercises = source.exercises.mapIndexed { exIndex, srcEx ->
+                    val weUuid = randomUuid()
+                    DBWorkoutExerciseWithSets(
+                        exercise = DBWorkoutExerciseObject(
+                            uuid = weUuid,
+                            workoutRecordUuid = recordUuid,
+                            exerciseUuid = srcEx.exercise.uuid,
+                            position = exIndex,
+                            comment = srcEx.comment,
+                        ),
+                        sets = srcEx.sets.mapIndexed { setIndex, srcSet ->
+                            DBWorkoutSetObject(
+                                uuid = randomUuid(),
+                                workoutExerciseUuid = weUuid,
+                                position = setIndex,
+                                weight = null,
+                                reps = srcSet.reps,
+                                distance = null,
+                                duration = srcSet.duration,
+                                difficultyType = DifficultyType.NONE.id,
+                                completed = false,
+                            )
+                        },
+                    )
+                },
+            )
+        }
+        workoutsDB.createWorkoutRecordsIfMissing(trees)
+    }
+
+    private suspend fun lastRecordPositionForDate(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+    ): Int {
+        val from = date.toString()
+        val to = date.plusDaysSafe(1).toString()
+        // -1 when the date has no records, so the first new record lands at
+        // position 0 (matches the iOS import repository's base).
+        return workoutsDB.getWorkoutRecordsByJournal(userId, journalId, from, to)
+            .maxOfOrNull { it.row.position } ?: -1
+    }
+
+    private fun newRecordRow(
+        uuid: String,
+        userId: String,
+        journalId: String,
+        date: String,
+        position: Int,
+        now: Instant,
+    ): DBWorkoutRecordRow = DBWorkoutRecordRow(
+        uuid = uuid,
+        remoteId = null,
+        userId = userId,
+        journalId = journalId,
+        date = date,
+        position = position,
+        comment = null,
+        startedAt = null,
+        durationSec = null,
+        deletedAt = null,
+        pendingUpload = true,
+        schemaVersion = 1,
+        createdDate = now,
+        updatedDate = now,
+    )
+
     override suspend fun saveWorkoutExerciseComment(
         userId: String,
-        diaryId: String,
+        journalId: String,
         workoutExerciseId: String,
         comment: String?,
     ) {
-        val tree = findTreeContainingExercise(userId, diaryId, workoutExerciseId) ?: return
+        val tree = findTreeContainingExercise(userId, journalId, workoutExerciseId) ?: return
         val updatedExercises = tree.exercises.map { exWithSets ->
             if (exWithSets.exercise.uuid == workoutExerciseId) {
                 exWithSets.copy(exercise = exWithSets.exercise.copy(comment = comment))
@@ -244,13 +437,13 @@ class DefaultRecordRepository(
 
     override suspend fun refreshRecordPositions(
         userId: String,
-        diaryId: String,
+        journalId: String,
         records: List<WorkoutRecord>,
     ) {
         // For each record, if its position changed, replace the tree
         // with the updated position. Marks parent pendingUpload=1.
         for (rec in records) {
-            val tree = workoutsDB.getWorkoutRecord(rec.id) ?: continue
+            val tree = workoutsDB.getWorkoutRecordById(rec.id) ?: continue
             if (tree.row.position == rec.position) continue
             workoutsDB.replaceWorkoutRecord(
                 tree.copy(
@@ -265,12 +458,12 @@ class DefaultRecordRepository(
 
     override suspend fun mergeRecords(
         userId: String,
-        diaryId: String,
+        journalId: String,
         firstRecord: WorkoutRecord,
         secondRecord: WorkoutRecord,
     ): List<WorkoutRecord> {
-        val firstTree = workoutsDB.getWorkoutRecord(firstRecord.id) ?: return emptyList()
-        val secondTree = workoutsDB.getWorkoutRecord(secondRecord.id) ?: return emptyList()
+        val firstTree = workoutsDB.getWorkoutRecordById(firstRecord.id) ?: return emptyList()
+        val secondTree = workoutsDB.getWorkoutRecordById(secondRecord.id) ?: return emptyList()
 
         val basePosition = firstTree.exercises.size
         val mergedTail = secondTree.exercises.mapIndexed { idx, exWithSets ->
@@ -299,18 +492,18 @@ class DefaultRecordRepository(
 
         val dateStr = firstRecord.date.toString()
         val exerciseLookup = exerciseLookupForRead(userId)
-        val trees = workoutsDB.getWorkoutRecordsByDiary(userId, diaryId)
+        val trees = workoutsDB.getWorkoutRecordsByJournal(userId, journalId)
             .filter { it.row.date == dateStr }
         return toDomainList(trees, exerciseLookup)
     }
 
     override suspend fun removeExerciseFromRecord(
         userId: String,
-        diaryId: String,
+        journalId: String,
         record: WorkoutRecord,
         exercise: WorkoutExercise,
     ): List<WorkoutRecord> {
-        val tree = workoutsDB.getWorkoutRecord(record.id) ?: return emptyList()
+        val tree = workoutsDB.getWorkoutRecordById(record.id) ?: return emptyList()
         val remaining = tree.exercises.filterNot { it.exercise.uuid == exercise.id }
         if (remaining.isEmpty()) {
             // Last exercise removed → tombstone the (now empty) record
@@ -330,14 +523,14 @@ class DefaultRecordRepository(
         }
         val dateStr = record.date.toString()
         val exerciseLookup = exerciseLookupForRead(userId)
-        val trees = workoutsDB.getWorkoutRecordsByDiary(userId, diaryId)
+        val trees = workoutsDB.getWorkoutRecordsByJournal(userId, journalId)
             .filter { it.row.date == dateStr }
         return toDomainList(trees, exerciseLookup)
     }
 
     override suspend fun deleteRecord(
         userId: String,
-        diaryId: String,
+        journalId: String,
         record: WorkoutRecord,
     ) {
         workoutsDB.softDeleteWorkoutRecord(record.id)
@@ -345,11 +538,11 @@ class DefaultRecordRepository(
 
     override suspend fun deleteRecordsForDate(
         userId: String,
-        diaryId: String,
+        journalId: String,
         date: LocalDate,
     ) {
         val dateStr = date.toString()
-        workoutsDB.getWorkoutRecordsByDiary(userId, diaryId)
+        workoutsDB.getWorkoutRecordsByJournal(userId, journalId)
             .filter { it.row.date == dateStr }
             .forEach { workoutsDB.softDeleteWorkoutRecord(it.row.uuid) }
     }
@@ -360,7 +553,7 @@ class DefaultRecordRepository(
 
     override suspend fun addSet(
         userId: String,
-        diaryId: String,
+        journalId: String,
         workoutExerciseId: String,
         weight: Double?,
         reps: Int?,
@@ -368,7 +561,7 @@ class DefaultRecordRepository(
         duration: Int?,
         difficultyType: DifficultyType,
     ) {
-        val tree = findTreeContainingExercise(userId, diaryId, workoutExerciseId) ?: return
+        val tree = findTreeContainingExercise(userId, journalId, workoutExerciseId) ?: return
         val updatedExercises = tree.exercises.map { exWithSets ->
             if (exWithSets.exercise.uuid != workoutExerciseId) return@map exWithSets
             val newSet = DBWorkoutSetObject(
@@ -394,7 +587,7 @@ class DefaultRecordRepository(
 
     override suspend fun updateSet(
         userId: String,
-        diaryId: String,
+        journalId: String,
         workoutExerciseId: String,
         setId: String,
         weight: Double?,
@@ -403,7 +596,7 @@ class DefaultRecordRepository(
         duration: Int?,
         difficultyType: DifficultyType,
     ) {
-        val tree = findTreeContainingExercise(userId, diaryId, workoutExerciseId) ?: return
+        val tree = findTreeContainingExercise(userId, journalId, workoutExerciseId) ?: return
         val updatedExercises = tree.exercises.map { exWithSets ->
             if (exWithSets.exercise.uuid != workoutExerciseId) return@map exWithSets
             val updatedSets = exWithSets.sets.map { set ->
@@ -431,11 +624,11 @@ class DefaultRecordRepository(
 
     override suspend fun deleteSet(
         userId: String,
-        diaryId: String,
+        journalId: String,
         workoutExerciseId: String,
         setId: String,
     ) {
-        val tree = findTreeContainingExercise(userId, diaryId, workoutExerciseId) ?: return
+        val tree = findTreeContainingExercise(userId, journalId, workoutExerciseId) ?: return
         val updatedExercises = tree.exercises.map { exWithSets ->
             if (exWithSets.exercise.uuid != workoutExerciseId) return@map exWithSets
             val survivors = exWithSets.sets.filterNot { it.uuid == setId }
@@ -457,24 +650,104 @@ class DefaultRecordRepository(
      * Maps every tree → domain `WorkoutRecord`, dropping any whose
      * children fail to resolve (e.g. catalog row hard-deleted).
      */
+    /**
+     * @param includePreviousSet When true, computes the "you did 100kg×10
+     * last time" hint on every set. Uses an in-memory pass over the
+     * loaded trees + a bounded SQL fallback (one call per unique catalog
+     * exercise whose oldest occurrence lies at the window boundary).
+     * Set to false on list / aggregate paths (workout history, workload
+     * muscle data) where the hint is never rendered — those callers save
+     * the entire previous-set computation including the boundary SQL
+     * calls. Detail paths (`getRecordsByDate`) leave it true.
+     */
     private suspend fun toDomainList(
         trees: List<DBWorkoutRecord>,
         exerciseLookup: Map<String, Exercise>,
+        includePreviousSet: Boolean = true,
     ): List<WorkoutRecord> {
+        if (trees.isEmpty()) return emptyList()
+        val previousSetMap = if (includePreviousSet) {
+            buildPreviousSetMap(trees)
+        } else {
+            emptyMap()
+        }
         val out = ArrayList<WorkoutRecord>(trees.size)
         for (tree in trees) {
-            val mapped = runCatching { toDomain(tree, exerciseLookup) }.getOrNull()
+            val mapped = runCatching { toDomain(tree, exerciseLookup, previousSetMap) }.getOrNull()
             if (mapped != null) out.add(mapped)
         }
         return out
     }
 
-    private suspend fun toDomain(
+    /**
+     * Builds `weUuid -> previousSet?` for every workoutExercise inside
+     * [trees]. For each catalog exercise, "previous" is the LAST set of
+     * the most recent prior occurrence in chronological order
+     * `(record.date DESC, record.position DESC, we.position DESC)`.
+     * Most lookups resolve in-memory from the already-loaded trees.
+     * The remaining "oldest in window per exercise" cases fall through
+     * to [WorkoutsDBDataSource.getLastSetForExerciseBeforeDate].
+     */
+    private suspend fun buildPreviousSetMap(
+        trees: List<DBWorkoutRecord>,
+    ): Map<String, DBWorkoutSetObject?> {
+        // Flatten and group by catalog exerciseUuid so each group is a
+        // chronological chain of occurrences for one exercise.
+        data class WeContext(
+            val tree: DBWorkoutRecord,
+            val exWithSets: DBWorkoutExerciseWithSets,
+        )
+        val byExerciseUuid = trees
+            .flatMap { tree -> tree.exercises.map { WeContext(tree, it) } }
+            .groupBy { it.exWithSets.exercise.exerciseUuid }
+
+        val previousByWeUuid = HashMap<String, DBWorkoutSetObject?>(
+            byExerciseUuid.values.sumOf { it.size }
+        )
+        val boundary = ArrayList<WeContext>()
+
+        for ((_, contexts) in byExerciseUuid) {
+            // Sort newest → oldest so each entry's "previous" is the
+            // NEXT one in the sorted list. Ordering matches
+            // `getLastSetForExerciseBeforeDate`'s tiebreaker chain.
+            val sorted = contexts.sortedWith(
+                compareByDescending<WeContext> { it.tree.row.date }
+                    .thenByDescending { it.tree.row.position }
+                    .thenByDescending { it.exWithSets.exercise.position }
+            )
+            for (i in sorted.indices) {
+                val current = sorted[i]
+                val previous = sorted.getOrNull(i + 1)
+                if (previous != null) {
+                    previousByWeUuid[current.exWithSets.exercise.uuid] =
+                        previous.exWithSets.sets.maxByOrNull { it.position }
+                } else {
+                    // Oldest occurrence in this window — the real previous
+                    // (if any) is outside the loaded trees. Defer to SQL.
+                    boundary.add(current)
+                }
+            }
+        }
+
+        for (b in boundary) {
+            val previousSet = workoutsDB.getLastSetForExerciseBeforeDate(
+                exerciseUuid = b.exWithSets.exercise.exerciseUuid,
+                userId = b.tree.row.userId,
+                journalId = b.tree.row.journalId,
+                beforeDateString = b.tree.row.date,
+            )
+            previousByWeUuid[b.exWithSets.exercise.uuid] = previousSet
+        }
+
+        return previousByWeUuid
+    }
+
+    private fun toDomain(
         tree: DBWorkoutRecord,
         exerciseLookup: Map<String, Exercise>,
+        previousSetMap: Map<String, DBWorkoutSetObject?>,
     ): WorkoutRecord {
         val recordDate = LocalDate.parse(tree.row.date)
-        val recordDateString = tree.row.date
         val mappedExercises = tree.exercises.mapNotNull { exWithSets ->
             // A soft-deleted catalog entry is a legitimate state, not a
             // crash — drop just that one exercise from the rendered tree.
@@ -482,17 +755,17 @@ class DefaultRecordRepository(
                 mapExercise(
                     exWithSets = exWithSets,
                     userId = tree.row.userId,
-                    diaryId = tree.row.diaryId,
+                    journalId = tree.row.journalId,
                     recordDate = recordDate,
-                    recordDateString = recordDateString,
                     exerciseLookup = exerciseLookup,
+                    previousSetMap = previousSetMap,
                 )
             }.getOrNull()
         }
         return WorkoutRecord(
             id = tree.row.uuid,
             userId = tree.row.userId,
-            diaryId = tree.row.diaryId,
+            journalId = tree.row.journalId,
             position = tree.row.position,
             date = recordDate,
             exercises = mappedExercises,
@@ -501,35 +774,27 @@ class DefaultRecordRepository(
         )
     }
 
-    private suspend fun mapExercise(
+    private fun mapExercise(
         exWithSets: DBWorkoutExerciseWithSets,
         userId: String,
-        diaryId: String,
+        journalId: String,
         recordDate: LocalDate,
-        recordDateString: String,
         exerciseLookup: Map<String, Exercise>,
+        previousSetMap: Map<String, DBWorkoutSetObject?>,
     ): WorkoutExercise {
         // O(1) lookup against the per-call exercise dict (one SELECT off
         // the catalog table, shaped for resolution).
         val domainExercise = exerciseLookup[exWithSets.exercise.exerciseUuid]
             ?: error("Catalog exercise not found: ${exWithSets.exercise.exerciseUuid}")
-        // Look up the most recent set with this exercise BEFORE this
-        // record's date so the cell can show "you did 100kg×10 last
-        // time" hints. One query per workoutExercise; null on the user's
-        // first time logging this exercise. All sets in this
-        // workoutExercise share the same previous values — matches
-        // pre-FJ-2.0 semantics.
-        val previousSet = workoutsDB.getLastSetForExerciseBeforeDate(
-            exerciseUuid = exWithSets.exercise.exerciseUuid,
-            userId = userId,
-            diaryId = diaryId,
-            beforeDateString = recordDateString,
-        )
+        // Pre-computed by `buildPreviousSetMap` — no per-we SQL call.
+        // All sets in this workoutExercise share the same previous values
+        // (matches pre-FJ-2.0 semantics).
+        val previousSet = previousSetMap[exWithSets.exercise.uuid]
         val sets = exWithSets.sets.map { set ->
             mapSet(
                 set = set,
                 userId = userId,
-                diaryId = diaryId,
+                journalId = journalId,
                 recordDate = recordDate,
                 resultType = domainExercise.resultType,
                 previousSet = previousSet,
@@ -538,7 +803,7 @@ class DefaultRecordRepository(
         return WorkoutExercise(
             id = exWithSets.exercise.uuid,
             userId = userId,
-            diaryId = diaryId,
+            journalId = journalId,
             date = recordDate,
             exercise = domainExercise,
             sets = sets,
@@ -549,14 +814,14 @@ class DefaultRecordRepository(
     private fun mapSet(
         set: DBWorkoutSetObject,
         userId: String,
-        diaryId: String,
+        journalId: String,
         recordDate: LocalDate,
         resultType: ResultType,
         previousSet: DBWorkoutSetObject?,
     ): WorkoutSet = WorkoutSet(
         id = set.uuid,
         userId = userId,
-        diaryId = diaryId,
+        journalId = journalId,
         date = recordDate,
         weight = set.weight,
         reps = set.reps,
@@ -574,9 +839,9 @@ class DefaultRecordRepository(
 
     private suspend fun findTreeContainingExercise(
         userId: String,
-        diaryId: String,
+        journalId: String,
         workoutExerciseId: String,
-    ): DBWorkoutRecord? = workoutsDB.getWorkoutRecordsByDiary(userId, diaryId)
+    ): DBWorkoutRecord? = workoutsDB.getWorkoutRecordsByJournal(userId, journalId)
         .firstOrNull { tree -> tree.exercises.any { it.exercise.uuid == workoutExerciseId } }
 
     private fun todayInSystemTz(): LocalDate =
@@ -587,9 +852,18 @@ class DefaultRecordRepository(
     private fun LocalDate.plusDaysSafe(days: Int): LocalDate =
         this.plus(days, DateTimeUnit.DAY)
 
-    private fun LocalDate.minusDaysSafe(days: Int): LocalDate =
-        this.minus(days, DateTimeUnit.DAY)
-
     private fun LocalDate.minusYearsSafe(years: Int): LocalDate =
         this.minus(years, DateTimeUnit.YEAR)
 }
+
+/**
+ * Repository-internal projection used to group sets by their parent
+ * `workoutExerciseUuid` while building the per-occurrence
+ * [WorkoutExercise] list for History/Stats. Lives next to its single
+ * caller — it's not a data-layer entity and shouldn't be reused.
+ */
+private data class OccurrenceRow(
+    val set: DBWorkoutSetObject,
+    val recordDate: String,
+    val workoutExerciseComment: String?,
+)

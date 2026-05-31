@@ -2,7 +2,6 @@ package kz.maestrosultan.fitjournal.data.measurements.datasource
 
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
-import app.cash.sqldelight.coroutines.mapToOne
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.coroutines.Dispatchers
@@ -18,18 +17,18 @@ import kz.maestrosultan.fitjournal.data.time.toStoredString
 
 class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
 
-    suspend fun getBodyMeasurements(userId: String, diaryId: String): List<DBBodyMeasurementObject> =
+    suspend fun getBodyMeasurements(userId: String, journalId: String): List<DBBodyMeasurementObject> =
         withContext(Dispatchers.IO) {
-            dao.getBodyMeasurements(userId, diaryId)
+            dao.getBodyMeasurements(userId, journalId)
                 .executeAsList()
                 .map { it.map() }
         }
 
     fun getBodyMeasurementsFlow(
         userId: String,
-        diaryId: String,
+        journalId: String,
     ): Flow<List<DBBodyMeasurementObject>> {
-        return dao.getBodyMeasurements(userId, diaryId)
+        return dao.getBodyMeasurements(userId, journalId)
             .asFlow()
             .mapToList(Dispatchers.IO)
             .map { it.map { it.map() } }
@@ -38,46 +37,19 @@ class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
 
     suspend fun getBodyMeasurementsByType(
         userId: String,
-        diaryId: String,
+        journalId: String,
         type: String,
     ): List<DBBodyMeasurementObject> = withContext(Dispatchers.IO) {
-        dao.getBodyMeasurementsByType(userId, diaryId, type)
+        dao.getBodyMeasurementsByType(userId, journalId, type)
             .executeAsList()
             .map { it.map() }
-    }
-
-    fun getBodyMeasurementsByTypeFlow(
-        userId: String,
-        diaryId: String,
-        type: String,
-    ): Flow<List<DBBodyMeasurementObject>> {
-        return dao.getBodyMeasurementsByType(userId, diaryId, type)
-            .asFlow()
-            .mapToList(Dispatchers.IO)
-            .map { it.map { it.map() } }
-            .flowOn(Dispatchers.IO)
-    }
-
-    suspend fun getBodyMeasurementById(uuid: String): DBBodyMeasurementObject =
-        withContext(Dispatchers.IO) {
-            dao.getBodyMeasurementById(uuid)
-                .executeAsOne()
-                .map()
-        }
-
-    fun getBodyMeasurementByIdFlow(uuid: String): Flow<DBBodyMeasurementObject> {
-        return dao.getBodyMeasurementById(uuid)
-            .asFlow()
-            .mapToOne(Dispatchers.IO)
-            .map { it.map() }
-            .flowOn(Dispatchers.IO)
     }
 
     suspend fun createBodyMeasurement(
         uuid: String,
         remoteId: String?,
         userId: String,
-        diaryId: String,
+        journalId: String,
         type: String,
         value: Double,
         comment: String?,
@@ -85,23 +57,20 @@ class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
         createdDate: Instant = Clock.System.now(),
         updatedDate: Instant = createdDate,
         pendingUpload: Boolean = false,
-    ): DBBodyMeasurementObject = withContext(Dispatchers.IO) {
-        dao.transactionWithResult {
-            dao.createBodyMeasurement(
-                uuid = uuid,
-                remoteId = remoteId,
-                userId = userId,
-                diaryId = diaryId,
-                type = type,
-                value_ = value,
-                comment = comment,
-                measurementDate = measurementDate.toStoredString(),
-                createdDate = createdDate.toStoredString(),
-                updatedDate = updatedDate.toStoredString(),
-                pendingUpload = pendingUpload,
-            )
-            dao.getBodyMeasurementById(uuid).executeAsOne().map()
-        }
+    ) = withContext(Dispatchers.IO) {
+        dao.createBodyMeasurement(
+            uuid = uuid,
+            remoteId = remoteId,
+            userId = userId,
+            journalId = journalId,
+            type = type,
+            value_ = value,
+            comment = comment,
+            measurementDate = measurementDate.toStoredString(),
+            createdDate = createdDate.toStoredString(),
+            updatedDate = updatedDate.toStoredString(),
+            pendingUpload = pendingUpload,
+        )
     }
 
     /**
@@ -113,7 +82,7 @@ class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
     suspend fun createBodyMeasurementIfMissing(
         uuid: String,
         userId: String,
-        diaryId: String,
+        journalId: String,
         type: String,
         value: Double,
         comment: String?,
@@ -124,14 +93,16 @@ class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
         pendingUpload: Boolean = true,
     ): Boolean = withContext(Dispatchers.IO) {
         dao.transactionWithResult {
-            if (dao.getBodyMeasurementById(uuid).executeAsOneOrNull() != null) {
+            // IncludingDeleted: don't re-insert a row the user has
+            // already soft-deleted on this device.
+            if (dao.getBodyMeasurementByIdIncludingDeleted(uuid).executeAsOneOrNull() != null) {
                 return@transactionWithResult false
             }
             dao.createBodyMeasurement(
                 uuid = uuid,
                 remoteId = remoteId,
                 userId = userId,
-                diaryId = diaryId,
+                journalId = journalId,
                 type = type,
                 value_ = value,
                 comment = comment,
@@ -150,38 +121,42 @@ class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
         comment: String?,
         measurementDate: Instant,
         updatedDate: Instant = Clock.System.now(),
-    ): DBBodyMeasurementObject = withContext(Dispatchers.IO) {
-        dao.transactionWithResult {
-            dao.updateBodyMeasurement(
-                value_ = value,
-                comment = comment,
-                measurementDate = measurementDate.toStoredString(),
-                updatedDate = updatedDate.toStoredString(),
-                uuid = uuid,
-            )
-            dao.getBodyMeasurementById(uuid).executeAsOne().map()
-        }
+    ) = withContext(Dispatchers.IO) {
+        dao.updateBodyMeasurement(
+            value_ = value,
+            comment = comment,
+            measurementDate = measurementDate.toStoredString(),
+            updatedDate = updatedDate.toStoredString(),
+            uuid = uuid,
+        )
     }
 
-    suspend fun updateBodyMeasurementRemoteId(uuid: String, remoteId: String): DBBodyMeasurementObject =
-        withContext(Dispatchers.IO) {
-            dao.transactionWithResult {
-                dao.updateBodyMeasurementRemoteId(remoteId, uuid)
-                dao.getBodyMeasurementById(uuid).executeAsOne().map()
-            }
-        }
-
-    suspend fun getBodyMeasurementByIdOrNull(uuid: String): DBBodyMeasurementObject? =
+    /**
+     * UI-facing single-row read. Returns null when the row doesn't
+     * exist OR has been soft-deleted — a tombstone from another device
+     * looks like "not found" to the UI.
+     */
+    suspend fun getBodyMeasurementById(uuid: String): DBBodyMeasurementObject? =
         withContext(Dispatchers.IO) {
             dao.getBodyMeasurementById(uuid).executeAsOneOrNull()?.map()
         }
 
-    suspend fun getPendingUploads(): List<DBBodyMeasurementObject> = withContext(Dispatchers.IO) {
-        dao.getPendingUploads().executeAsList().map { it.map() }
+    /**
+     * Sync-only single-row read. Sees tombstones so the orchestrator
+     * can run the local-wins guard correctly on rows whose local copy
+     * is a pending-push tombstone (otherwise the remote stomps it).
+     */
+    suspend fun getBodyMeasurementByIdIncludingDeleted(uuid: String): DBBodyMeasurementObject? =
+        withContext(Dispatchers.IO) {
+            dao.getBodyMeasurementByIdIncludingDeleted(uuid).executeAsOneOrNull()?.map()
+        }
+
+    suspend fun getPendingUploads(userId: String): List<DBBodyMeasurementObject> = withContext(Dispatchers.IO) {
+        dao.getPendingUploads(userId).executeAsList().map { it.map() }
     }
 
     suspend fun markUploaded(uuid: String, remoteId: String) = withContext(Dispatchers.IO) {
-        dao.updateBodyMeasurementRemoteId(remoteId, uuid)
+        dao.updateBodyMeasurementRemoteId(remoteId = remoteId, uuid = uuid)
     }
 
     /**
@@ -194,7 +169,7 @@ class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
     suspend fun upsertFromRemote(
         uuid: String,
         userId: String,
-        diaryId: String,
+        journalId: String,
         type: String,
         value: Double,
         comment: String?,
@@ -208,7 +183,7 @@ class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
             uuid = uuid,
             remoteId = remoteId,
             userId = userId,
-            diaryId = diaryId,
+            journalId = journalId,
             type = type,
             value_ = value,
             comment = comment,
@@ -237,19 +212,7 @@ class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
         )
     }
 
-    suspend fun deleteBodyMeasurement(uuid: String) = withContext(Dispatchers.IO) {
-        dao.deleteBodyMeasurement(uuid)
-    }
-
-    suspend fun deleteBodyMeasurementsByDiaryId(diaryId: String) = withContext(Dispatchers.IO) {
-        dao.deleteBodyMeasurementsByDiaryId(diaryId)
-    }
-
     suspend fun deleteBodyMeasurementsByUserId(userId: String) = withContext(Dispatchers.IO) {
         dao.deleteBodyMeasurementsByUserId(userId)
-    }
-
-    suspend fun deleteAllBodyMeasurements() = withContext(Dispatchers.IO) {
-        dao.deleteBodyMeasurements()
     }
 }

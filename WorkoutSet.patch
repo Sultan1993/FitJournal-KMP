@@ -1,0 +1,164 @@
+Index: shared/src/commonMain/sqldelight/kz/maestrosultan/fitjournal/data/db/WorkoutSets.sq
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/shared/src/commonMain/sqldelight/kz/maestrosultan/fitjournal/data/db/WorkoutSets.sq b/shared/src/commonMain/sqldelight/kz/maestrosultan/fitjournal/data/db/WorkoutSets.sq
+--- a/shared/src/commonMain/sqldelight/kz/maestrosultan/fitjournal/data/db/WorkoutSets.sq
++++ b/shared/src/commonMain/sqldelight/kz/maestrosultan/fitjournal/data/db/WorkoutSets.sq	(date 1780174428056)
+@@ -22,64 +22,34 @@
+ WHERE workoutExerciseUuid = ?
+ ORDER BY position ASC;
+ 
+--- Bulk: every set under [workoutRecordUuid] in one SQL call. Replaces
+--- the per-exercise N+1 loop in `WorkoutsDBDataSource.childrenOf`. Plan:
+--- `idx_workoutExercises_record` resolves the record's exercises → PK
+--- join → `idx_workoutSets_exercise` composite walk so the natural scan
+--- order matches the ORDER BY (no sort step).
+-getWorkoutSetsByRecord:
+-SELECT ws.*
+-FROM workoutSets ws
+-JOIN workoutExercises we ON we.uuid = ws.workoutExerciseUuid
+-WHERE we.workoutRecordUuid = ?
+-ORDER BY we.position ASC, ws.position ASC;
+-
+--- Bulk: sets across every live record in (user, journal) within a date
+--- window. Companion to `getWorkoutExercisesByJournal`; same windowing
++-- Bulk: sets across every live record in (user, diary) within a date
++-- window. Companion to `getWorkoutExercisesByDiary`; same windowing
+ -- semantics. Caller groups by `workoutExerciseUuid`.
+---
+--- ORDER BY matches natural JOIN scan order so SQLite doesn't sort:
+--- wr in `(date DESC, position ASC)` (partial index) → we in `position
+--- ASC` (composite) → ws in `position ASC` (composite). Rows for the
+--- same workoutExercise stay contiguous, so the caller's
+--- `groupBy { workoutExerciseUuid }` still yields position-sorted
+--- set lists per exercise.
+-getWorkoutSetsByJournal:
++getWorkoutSetsByDiary:
+ SELECT ws.*
+ FROM workoutSets ws
+ JOIN workoutExercises we ON we.uuid = ws.workoutExerciseUuid
+ JOIN workoutRecords wr ON wr.uuid = we.workoutRecordUuid
+ WHERE wr.userId = ?
+-AND wr.journalId = ?
++AND wr.diaryId = ?
+ AND wr.date >= ?
+ AND wr.date < ?
+ AND wr.deletedAt IS NULL
+-ORDER BY wr.date DESC, we.position ASC, ws.position ASC;
++ORDER BY ws.workoutExerciseUuid ASC, ws.position ASC;
+ 
+--- Single SQL feeding the entire exercise details page (Info / History /
+--- Stats). Returns every set in (user, journal) for a specific catalog
+--- exercise within `[from, to)`, with the parent record's `date` and the
+--- workoutExercise's `comment` projected so callers can group + render
+--- in Kotlin without a second query. Same 1-year window as the rest of
+--- the app.
+---
+--- Plan: `idx_workoutExercises_exercise` resolves we by exerciseUuid
+--- (~50–200 rows for a popular catalog exercise) → PK join to wr → PK
+--- join to ws via `idx_workoutSets_exercise` (composite on
+--- workoutExerciseUuid, position). ORDER BY matches the natural scan
+--- order so SQLite skips a sort step.
+-getWorkoutSetsForExerciseInJournal:
+-SELECT ws.*, wr.date AS recordDate, we.comment AS workoutExerciseComment
++-- Narrow: every set in (user, diary) for a specific catalog exercise. Used
++-- by best-weight / best-cardio reads on the exercise details page so we
++-- don't load and discard 99% of the diary. SQL filters by exerciseUuid
++-- before joining sets.
++getWorkoutSetsForExerciseInDiary:
++SELECT ws.*
+ FROM workoutSets ws
+ JOIN workoutExercises we ON we.uuid = ws.workoutExerciseUuid
+ JOIN workoutRecords wr ON wr.uuid = we.workoutRecordUuid
+ WHERE we.exerciseUuid = ?
+ AND wr.userId = ?
+-AND wr.journalId = ?
+-AND wr.date >= ?
+-AND wr.date < ?
+-AND wr.deletedAt IS NULL
+-ORDER BY wr.date DESC, we.position ASC, ws.position ASC;
++AND wr.diaryId = ?
++AND wr.deletedAt IS NULL;
+ 
+ -- "Most recent set with this exercise BEFORE the given date" — drives the
+ -- previousWeight / previousDistance / previousDifficultyType hints on a
+@@ -90,46 +60,40 @@
+ -- catalog exercise, or nothing. Caller passes the current record's
+ -- date string (`yyyy-MM-dd`); strict `<` keeps sets from the same
+ -- record out of their own previous lookup.
+---
+--- Rewritten as a scalar-subquery + index lookup so frequent catalog
+--- exercises (e.g. "push-up", 500+ historical occurrences) don't
+--- materialize every candidate set. The inner subquery finds just the
+--- winning `workoutExercise.uuid` (joining 3 tables but not pulling
+--- workoutSets), then the outer query hits the
+--- `idx_workoutSets_exercise(workoutExerciseUuid, position)` composite
+--- in reverse for an O(1) index seek + early termination.
+---
+--- Correctness: the LAST set (max position) of the LATEST prior we IS
+--- the latest set in time, because positions are per-we, not global.
+--- Edge case — no prior occurrence: subquery returns NULL, outer
+--- WHERE `= NULL` is always false, query yields 0 rows. Matches the
+--- previous "no previous hint" behavior.
+ getLastSetForExerciseBeforeDate:
+-SELECT *
+-FROM workoutSets
+-WHERE workoutExerciseUuid = (
+-    SELECT we.uuid
+-    FROM workoutExercises we
+-    JOIN workoutRecords wr ON wr.uuid = we.workoutRecordUuid
+-    WHERE we.exerciseUuid = ?
+-    AND wr.userId = ?
+-    AND wr.journalId = ?
+-    AND wr.date < ?
+-    AND wr.deletedAt IS NULL
+-    -- `wr.position DESC` tiebreak picks the LATER record in the day
+-    -- when a user logs multiple workouts on the same date. Previous
+-    -- query tiebroke by we.position alone which is meaningless
+-    -- across records (position is per-record).
+-    ORDER BY wr.date DESC, wr.position DESC, we.position DESC
+-    LIMIT 1
+-)
+-ORDER BY position DESC
++SELECT ws.*
++FROM workoutSets ws
++JOIN workoutExercises we ON we.uuid = ws.workoutExerciseUuid
++JOIN workoutRecords wr ON wr.uuid = we.workoutRecordUuid
++WHERE we.exerciseUuid = ?
++AND wr.userId = ?
++AND wr.diaryId = ?
++AND wr.date < ?
++AND wr.deletedAt IS NULL
++ORDER BY wr.date DESC, we.position DESC, ws.position DESC
+ LIMIT 1;
+ 
+--- All set writes go through `replaceWorkoutRecord` (whole-tree replace),
+--- so only INSERT is needed at this layer. Updates / deletes are
+--- handled by the parent record's DELETE-and-reinsert step plus FK
+--- CASCADE.
++getWorkoutSetById:
++SELECT *
++FROM workoutSets
++WHERE uuid = ?;
++
+ createWorkoutSet:
+ INSERT INTO workoutSets(uuid, workoutExerciseUuid, position, weight, reps, distance, duration, difficultyType, completed)
+ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
++
++updateWorkoutSet:
++UPDATE workoutSets
++SET position = ?, weight = ?, reps = ?, distance = ?, duration = ?, difficultyType = ?, completed = ?
++WHERE uuid = ?;
++
++deleteWorkoutSet:
++DELETE FROM workoutSets
++WHERE uuid = ?;
++
++deleteWorkoutSetsByExercise:
++DELETE FROM workoutSets
++WHERE workoutExerciseUuid = ?;
++
++deleteAllWorkoutSets:
++DELETE FROM workoutSets;

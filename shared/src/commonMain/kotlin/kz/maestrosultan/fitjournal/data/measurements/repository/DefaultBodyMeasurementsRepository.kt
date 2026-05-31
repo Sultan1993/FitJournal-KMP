@@ -17,41 +17,27 @@ class DefaultBodyMeasurementsRepository(
     private val localDataSource: BodyMeasurementsDBDataSource,
 ) : BodyMeasurementsRepository {
 
-    override suspend fun getBodyMeasurements(userId: String, diaryId: String): List<BodyMeasurement> =
-        localDataSource.getBodyMeasurements(userId, diaryId).map { it.toDomain() }
+    override suspend fun getBodyMeasurements(userId: String, journalId: String): List<BodyMeasurement> =
+        localDataSource.getBodyMeasurements(userId, journalId).map { it.toDomain() }
 
     override fun getBodyMeasurementsFlow(
         userId: String,
-        diaryId: String,
+        journalId: String,
     ): Flow<List<BodyMeasurement>> =
-        localDataSource.getBodyMeasurementsFlow(userId, diaryId)
+        localDataSource.getBodyMeasurementsFlow(userId, journalId)
             .map { rows -> rows.map { it.toDomain() } }
 
     override suspend fun getBodyMeasurementsByType(
         userId: String,
-        diaryId: String,
+        journalId: String,
         type: BodyMeasurementType,
     ): List<BodyMeasurement> =
-        localDataSource.getBodyMeasurementsByType(userId, diaryId, type.id).map { it.toDomain() }
-
-    override fun getBodyMeasurementsByTypeFlow(
-        userId: String,
-        diaryId: String,
-        type: BodyMeasurementType,
-    ): Flow<List<BodyMeasurement>> =
-        localDataSource.getBodyMeasurementsByTypeFlow(userId, diaryId, type.id)
-            .map { rows -> rows.map { it.toDomain() } }
-
-    override suspend fun getBodyMeasurementById(uuid: String): BodyMeasurement =
-        localDataSource.getBodyMeasurementById(uuid).toDomain()
-
-    override fun getBodyMeasurementByIdFlow(uuid: String): Flow<BodyMeasurement> =
-        localDataSource.getBodyMeasurementByIdFlow(uuid).map { it.toDomain() }
+        localDataSource.getBodyMeasurementsByType(userId, journalId, type.id).map { it.toDomain() }
 
     override suspend fun createBodyMeasurement(
         uuid: String,
         userId: String,
-        diaryId: String,
+        journalId: String,
         type: BodyMeasurementType,
         value: Double,
         date: LocalDate,
@@ -62,7 +48,7 @@ class DefaultBodyMeasurementsRepository(
             uuid = uuid,
             remoteId = null,
             userId = userId,
-            diaryId = diaryId,
+            journalId = journalId,
             type = type.id,
             value = value,
             comment = comment,
@@ -105,7 +91,7 @@ private fun DBBodyMeasurementObject.toDomain(): BodyMeasurement {
     return BodyMeasurement(
         id = uuid,
         userId = userId,
-        diaryId = diaryId,
+        journalId = journalId,
         type = resolvedType,
         value = value,
         comment = comment,

@@ -1,7 +1,7 @@
 package kz.maestrosultan.fitjournal.domain.measurement
 
 /**
- * Body-measurement column on the Diary screen — what the user is tracking.
+ * Body-measurement column on the Journal screen — what the user is tracking.
  *
  * `id` is the canonical wire/DB string used by Parse, AWS, and SQLite. iOS
  * historically wrote `rawValue` (the camelCase name); Android historically

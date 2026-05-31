@@ -4,7 +4,7 @@ CREATE TABLE bodyMeasurements (
     uuid TEXT PRIMARY KEY NOT NULL,
     remoteId TEXT,
     userId TEXT NOT NULL,
-    diaryId TEXT NOT NULL,
+    journalId TEXT NOT NULL,
     type TEXT NOT NULL,
     value REAL NOT NULL,
     comment TEXT,
@@ -15,43 +15,72 @@ CREATE TABLE bodyMeasurements (
     deletedAt TEXT
 );
 
-CREATE INDEX idx_bodyMeasurements_pending ON bodyMeasurements(pendingUpload);
-CREATE INDEX idx_bodyMeasurements_diary_live ON bodyMeasurements(userId, diaryId) WHERE deletedAt IS NULL;
+-- Sync push drain. Partial on `pendingUpload = 1` so the index scales
+-- with the (typically empty) backlog, not the whole table.
+CREATE INDEX idx_bodyMeasurements_pending ON bodyMeasurements(uuid) WHERE pendingUpload = 1;
+-- Drives `getBodyMeasurements`. `measurementDate DESC` lets SQLite walk
+-- the index directly in display order — no sort step.
+CREATE INDEX idx_bodyMeasurements_journal_live ON bodyMeasurements(userId, journalId, measurementDate DESC) WHERE deletedAt IS NULL;
+-- Drives `getBodyMeasurementsByType` (per-measurement chart screen).
+-- The leading three keys cover the WHERE; `measurementDate DESC`
+-- covers the ORDER BY.
+CREATE INDEX idx_bodyMeasurements_journal_type_live ON bodyMeasurements(userId, journalId, type, measurementDate DESC) WHERE deletedAt IS NULL;
 
 getBodyMeasurements:
 SELECT *
 FROM bodyMeasurements
 WHERE userId = ?
-AND diaryId = ?
-AND deletedAt IS NULL;
+AND journalId = ?
+AND deletedAt IS NULL
+ORDER BY measurementDate DESC;
 
 getBodyMeasurementsByType:
 SELECT *
 FROM bodyMeasurements
 WHERE userId = ?
-AND diaryId = ?
+AND journalId = ?
 AND type = ?
-AND deletedAt IS NULL;
+AND deletedAt IS NULL
+ORDER BY measurementDate DESC;
 
+-- UI-facing single-row read. Tombstones filtered — a soft-deleted row
+-- looks like "not found" to the UI.
 getBodyMeasurementById:
 SELECT *
 FROM bodyMeasurements
+WHERE uuid = ?
+AND deletedAt IS NULL;
+
+-- Sync-only single-row read. Sees tombstones so the orchestrator can
+-- compare local vs remote `deletedAt` on pull and propagate the
+-- deletion. UI paths must use [getBodyMeasurementById].
+getBodyMeasurementByIdIncludingDeleted:
+SELECT *
+FROM bodyMeasurements
 WHERE uuid = ?;
 
+-- Pending uploads, scoped to a single user. After sign-out/sign-in
+-- as a different user, the previous user's stale pendingUpload rows
+-- must NOT be pushed under the new user's session.
 getPendingUploads:
 SELECT *
 FROM bodyMeasurements
-WHERE pendingUpload = 1;
+WHERE pendingUpload = 1
+AND userId = ?;
 
 createBodyMeasurement:
-INSERT INTO bodyMeasurements(uuid, remoteId, userId, diaryId, type, value, comment, measurementDate, createdDate, updatedDate, pendingUpload)
+INSERT INTO bodyMeasurements(uuid, remoteId, userId, journalId, type, value, comment, measurementDate, createdDate, updatedDate, pendingUpload)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
+-- Live-only update — tombstoned rows should never be edited from UI.
 updateBodyMeasurement:
 UPDATE bodyMeasurements
 SET value = ?, comment = ?, measurementDate = ?, updatedDate = ?, pendingUpload = 1
-WHERE uuid = ?;
+WHERE uuid = ?
+AND deletedAt IS NULL;
 
+-- Push-success ack. No `deletedAt IS NULL` filter — tombstones must
+-- also clear their pendingUpload after a successful tombstone push.
 updateBodyMeasurementRemoteId:
 UPDATE bodyMeasurements
 SET remoteId = ?, pendingUpload = 0
@@ -62,25 +91,23 @@ WHERE uuid = ?;
 -- this and skip if unpushed local writes would be stomped (the local-wins
 -- escape hatch in SyncOrchestrator.applyBodyMeasurementRemote).
 upsertBodyMeasurementFromRemote:
-INSERT OR REPLACE INTO bodyMeasurements(uuid, remoteId, userId, diaryId, type, value, comment, measurementDate, createdDate, updatedDate, pendingUpload, deletedAt)
+INSERT OR REPLACE INTO bodyMeasurements(uuid, remoteId, userId, journalId, type, value, comment, measurementDate, createdDate, updatedDate, pendingUpload, deletedAt)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?);
 
+-- Idempotent on live rows only — re-tombstoning shifts `deletedAt`
+-- for no reason.
 softDeleteBodyMeasurement:
 UPDATE bodyMeasurements
 SET deletedAt = ?, updatedDate = ?, pendingUpload = 1
-WHERE uuid = ?;
+WHERE uuid = ?
+AND deletedAt IS NULL;
 
-deleteBodyMeasurement:
-DELETE FROM bodyMeasurements
-WHERE uuid = ?;
-
-deleteBodyMeasurementsByDiaryId:
-DELETE FROM bodyMeasurements
-WHERE diaryId = ?;
-
+-- Hard purge by user. Used by the delete-account flow.
 deleteBodyMeasurementsByUserId:
 DELETE FROM bodyMeasurements
 WHERE userId = ?;
 
-deleteBodyMeasurements:
+-- Full wipe. Used once on FJ1.x → FJ2.0 upgrade to drop legacy
+-- parseUserId-keyed rows before hydration repopulates with awsUserId.
+wipeAll:
 DELETE FROM bodyMeasurements;

@@ -1,0 +1,24 @@
+-- FJ1.x → FJ2.0 cleanup: drop every row in every user-scoped table on upgrade.
+--
+-- Why: FJ1.x used this same KMP DB as a read-cache for Parse, with all rows
+-- keyed by the user's Parse objectId (parseUserId). FJ2.0 keys everything by
+-- the new awsUserId. After the first FJ2.0 launch, AWSUserMigrator rekeys
+-- AWS-side and SyncOrchestrator hydrates local SQLite with the awsUserId-keyed
+-- rows — but the FJ1.x parseUserId-keyed rows would remain alongside as
+-- invisible orphans (UI queries filter by User.userId = awsUserId). Wiping
+-- here removes them in one shot, before any FJ2.0 code reads the DB.
+--
+-- Runs exactly once per device: SQLDelight migrations only fire on schema
+-- version bumps. Fresh FJ2.0 installs create the DB at the latest version and
+-- never execute this file — they have nothing to wipe. The global catalog
+-- (categories + globals in exercises) is also dropped here; SyncOrchestrator's
+-- pullGlobalCatalog() repopulates it on the next tick.
+
+DELETE FROM workoutSets;
+DELETE FROM workoutExercises;
+DELETE FROM workoutRecords;
+DELETE FROM journals;
+DELETE FROM notes;
+DELETE FROM bodyMeasurements;
+DELETE FROM exercises;
+DELETE FROM categories;

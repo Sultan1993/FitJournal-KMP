@@ -16,14 +16,14 @@ WHERE deletedAt IS NULL;
 
 -- 2. photoMeasurements: every entry to the photo screen scanned the table.
 CREATE INDEX IF NOT EXISTS idx_photoMeasurements_diary
-ON photoMeasurements(userId, diaryId);
+ON photoMeasurements(userId, journalId);
 
--- 3. diaries: convert full (userId) index to partial (userId WHERE deletedAt IS NULL)
+-- 3. journals: convert full (userId) index to partial (userId WHERE deletedAt IS NULL)
 -- to match the notes_user_live / bodyMeasurements_diary_live pattern.
--- `getDiaries` and `getPersonalDiary` both filter `deletedAt IS NULL`.
+-- `getJournals` and `getPersonalJournal` both filter `deletedAt IS NULL`.
 DROP INDEX IF EXISTS idx_diaries_user;
 CREATE INDEX IF NOT EXISTS idx_diaries_user_live
-ON diaries(userId)
+ON journals(userId)
 WHERE deletedAt IS NULL;
 
 -- 4. workoutExercises: existing single-column index on workoutRecordUuid

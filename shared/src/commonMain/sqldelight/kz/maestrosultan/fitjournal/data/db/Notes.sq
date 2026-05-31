@@ -12,34 +12,90 @@ CREATE TABLE notes (
   deletedAt TEXT
 );
 
-CREATE INDEX idx_notes_pending ON notes(pendingUpload);
-CREATE INDEX idx_notes_user_live ON notes(userId) WHERE deletedAt IS NULL;
+-- Sync push drain. Partial on `pendingUpload = 1` so the index only
+-- contains the (typically empty) set of rows waiting to push — same
+-- size on disk as the count of pending writes, not the whole table.
+CREATE INDEX idx_notes_pending ON notes(uuid) WHERE pendingUpload = 1;
 
+-- Drives `getNotes`. Partial on `deletedAt IS NULL` keeps tombstoned
+-- rows out. `createdDate DESC` lets SQLite walk the index directly in
+-- display order — no sort step.
+CREATE INDEX idx_notes_user_live ON notes(userId, createdDate DESC) WHERE deletedAt IS NULL;
+
+-- Drives `getPinnedNotes`. Partial on `isPinned = 1 AND deletedAt IS NULL`
+-- so the index only contains the handful of pinned-and-live rows per
+-- user; SQLite walks it in `updatedDate DESC` order so the query needs
+-- neither filter nor sort. Maintenance fires only on pin/unpin/delete.
+CREATE INDEX idx_notes_pinned_live ON notes(userId, updatedDate DESC) WHERE isPinned = 1 AND deletedAt IS NULL;
+
+-- All live notes for a user, newest first. Display-sorted in SQL via
+-- the partial index above so callers never re-sort.
 getNotes:
 SELECT *
 FROM notes
 WHERE userId = ?
+AND deletedAt IS NULL
+ORDER BY createdDate DESC;
+
+-- Live pinned notes only, most-recently-edited first. Same partial
+-- index covers the WHERE; the trailing `ORDER BY updatedDate DESC`
+-- needs a small in-memory sort but pinned notes are a handful of rows
+-- per user, so this is cheaper than maintaining a second index.
+getPinnedNotes:
+SELECT *
+FROM notes
+WHERE userId = ?
+AND isPinned = 1
+AND deletedAt IS NULL
+ORDER BY updatedDate DESC;
+
+-- Live single-row read for UI. Tombstones are filtered — a note
+-- deleted on another device looks like "not found" to the UI, which
+-- is the right semantic.
+getNoteById:
+SELECT *
+FROM notes
+WHERE uuid = ?
 AND deletedAt IS NULL;
 
-getNoteById:
+-- Sync-only single-row read. Sees tombstones so the orchestrator can
+-- compare local vs remote `deletedAt` and push the deletion to AWS.
+-- UI paths must use [getNoteById] above.
+getNoteByIdIncludingDeleted:
 SELECT *
 FROM notes
 WHERE uuid = ?;
 
+-- Pending uploads, scoped to a single user. After sign-out/sign-in
+-- as a different user, the previous user's stale pendingUpload rows
+-- must NOT be pushed under the new user's session.
 getPendingUploads:
 SELECT *
 FROM notes
-WHERE pendingUpload = 1;
+WHERE pendingUpload = 1
+AND userId = ?;
 
 createNote:
 INSERT INTO notes(uuid, userId, text, isPinned, createdDate, updatedDate, remoteId, pendingUpload)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 
+-- Live-only update. Tombstoned rows are no-ops — a UI write should
+-- never land on a deleted row, and the predicate makes that explicit.
 updateNote:
 UPDATE notes
 SET text = ?, isPinned = ?, updatedDate = ?, pendingUpload = 1
-WHERE uuid = ?;
+WHERE uuid = ?
+AND deletedAt IS NULL;
 
+-- Push-success ack. Clears pendingUpload after a successful AWS push.
+-- We intentionally do NOT filter on `deletedAt IS NULL` here — that
+-- would prevent tombstone pushes from being acked (the row IS tombstoned
+-- at the moment we ack the tombstone push, by definition), causing
+-- every soft-deleted note to re-push forever. The rare race "user
+-- deletes between AWS upsert and this ack" is accepted; the more
+-- principled fix would predicate on `updatedDate = ?` matching the
+-- pushed version, but the race window is milliseconds and the cost of
+-- the fix is plumbing `updatedDate` through `markUploaded`.
 updateNoteRemoteId:
 UPDATE notes
 SET remoteId = ?, pendingUpload = 0
@@ -53,18 +109,23 @@ upsertNoteFromRemote:
 INSERT OR REPLACE INTO notes(uuid, userId, text, isPinned, createdDate, updatedDate, remoteId, pendingUpload, deletedAt)
 VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?);
 
+-- Soft delete is idempotent only on live rows. Re-tombstoning an
+-- already-deleted row would change `deletedAt` (silently shifting the
+-- AWS deletion timestamp) and bump `updatedDate` for no reason — the
+-- predicate makes the second call a no-op.
 softDeleteNote:
 UPDATE notes
 SET deletedAt = ?, updatedDate = ?, pendingUpload = 1
-WHERE uuid = ?;
+WHERE uuid = ?
+AND deletedAt IS NULL;
 
-deleteNote:
-DELETE FROM notes
-WHERE uuid = ?;
-
+-- Hard purge by user. Used by Settings → delete account. Bypasses
+-- soft-delete because the user is leaving the device entirely.
 deleteUserNotes:
 DELETE FROM notes
 WHERE userId = ?;
 
-deleteAllNotes:
+-- Full wipe. Used once on FJ1.x → FJ2.0 upgrade to drop legacy
+-- parseUserId-keyed rows before hydration repopulates with awsUserId.
+wipeAll:
 DELETE FROM notes;

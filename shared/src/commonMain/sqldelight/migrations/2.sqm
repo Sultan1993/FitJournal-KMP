@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS bodyMeasurements (
     uuid TEXT PRIMARY KEY NOT NULL,
     remoteId TEXT,
     userId TEXT NOT NULL,
-    diaryId TEXT NOT NULL,
+    journalId TEXT NOT NULL,
     type TEXT NOT NULL,
     value REAL NOT NULL,
     comment TEXT,

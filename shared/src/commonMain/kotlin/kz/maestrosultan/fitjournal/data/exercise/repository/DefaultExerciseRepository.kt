@@ -6,6 +6,7 @@ import kotlin.time.Clock
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kz.maestrosultan.fitjournal.domain.exercise.Exercise
+import kz.maestrosultan.fitjournal.domain.exercise.sortedByDisplayOrder
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
 import kz.maestrosultan.fitjournal.data.exercise.datasource.ExercisesDBDataSource
 import kz.maestrosultan.fitjournal.data.exercise.entity.DBExerciseObject
@@ -16,35 +17,43 @@ class DefaultExerciseRepository(
 ) : ExerciseRepository {
 
     override suspend fun getExercises(userId: String): List<Exercise> =
-        localDataSource.getAllExercisesWithCategoriesBatch(userId).map(mapper)
+        localDataSource.getAllExercisesWithCategoriesBatch(userId)
+            .map(mapper)
+            .sortedByDisplayOrder()
 
     override fun getExercisesFlow(userId: String): Flow<List<Exercise>> =
-        localDataSource.getAllExercisesForUserFlow(userId).map { rows -> rows.map(mapper) }
+        localDataSource.getAllExercisesForUserFlow(userId)
+            .map { rows -> rows.map(mapper).sortedByDisplayOrder() }
 
     override suspend fun getExerciseById(uuid: String): Exercise? =
-        localDataSource.getExerciseByUuidOrNull(uuid)?.let(mapper)
+        localDataSource.getExerciseByUuid(uuid)?.let(mapper)
 
     override fun getExerciseByIdFlow(uuid: String): Flow<Exercise?> =
-        localDataSource.getExerciseByUuidFlow(uuid).map(mapper)
+        localDataSource.getExerciseByUuidFlow(uuid).map { it?.let(mapper) }
 
     override suspend fun getExercisesByCategory(
         userId: String,
         categoryUuid: String,
     ): List<Exercise> {
         val all = localDataSource.getAllExercisesWithCategoriesBatch(userId)
-        val inCategory = all.filter { row ->
-            row.primaryCategory.uuid == categoryUuid ||
-                row.secondaryCategories?.any { it.uuid == categoryUuid } == true
-        }
-        return inCategory.map(mapper)
+        return filterByCategory(all, categoryUuid).map(mapper).sortedByDisplayOrder()
     }
 
     override fun getExercisesByCategoryFlow(
         userId: String,
         categoryUuid: String,
     ): Flow<List<Exercise>> =
-        localDataSource.getExercisesByCategoryForUserFlow(categoryUuid, userId)
-            .map { rows -> rows.map(mapper) }
+        localDataSource.getAllExercisesForUserFlow(userId).map { rows ->
+            filterByCategory(rows, categoryUuid).map(mapper).sortedByDisplayOrder()
+        }
+
+    private fun filterByCategory(
+        rows: List<DBExerciseObject>,
+        categoryUuid: String,
+    ): List<DBExerciseObject> = rows.filter { row ->
+        row.primaryCategory.uuid == categoryUuid ||
+            row.secondaryCategories?.any { it.uuid == categoryUuid } == true
+    }
 
     override suspend fun createExercise(
         uuid: String,
@@ -96,3 +105,4 @@ class DefaultExerciseRepository(
         }
     }
 }
+

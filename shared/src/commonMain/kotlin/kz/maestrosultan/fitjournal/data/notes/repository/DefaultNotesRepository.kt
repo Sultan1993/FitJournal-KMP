@@ -19,11 +19,14 @@ class DefaultNotesRepository(
     override fun getNotesFlow(userId: String): Flow<List<Note>> =
         localDataSource.getNotesFlow(userId).map { rows -> rows.map { it.toDomain() } }
 
-    override suspend fun getNoteById(uuid: String): Note =
-        localDataSource.getNoteById(uuid).toDomain()
+    override suspend fun getPinnedNotes(userId: String): List<Note> =
+        localDataSource.getPinnedNotes(userId).map { it.toDomain() }
 
-    override fun getNoteByIdFlow(uuid: String): Flow<Note> =
-        localDataSource.getNoteByIdFlow(uuid).map { it.toDomain() }
+    override fun getPinnedNotesFlow(userId: String): Flow<List<Note>> =
+        localDataSource.getPinnedNotesFlow(userId).map { rows -> rows.map { it.toDomain() } }
+
+    override suspend fun getNoteById(uuid: String): Note? =
+        localDataSource.getNoteById(uuid)?.toDomain()
 
     override suspend fun createNote(uuid: String, userId: String, text: String, isPinned: Boolean) {
         val now = Clock.System.now()
@@ -50,8 +53,8 @@ class DefaultNotesRepository(
 
     override suspend fun deleteNote(uuid: String) {
         // Soft delete: tombstone + pendingUpload=1 so the SyncOrchestrator
-        // propagates the deletion to AWS on its next tick. Hard delete would
-        // strand the AWS row alive forever.
+        // propagates the deletion to AWS on its next tick. Hard delete
+        // would strand the AWS row alive forever.
         localDataSource.softDeleteNote(uuid)
     }
 

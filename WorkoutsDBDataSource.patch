@@ -1,0 +1,265 @@
+Index: shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/data/record/datasource/WorkoutsDBDataSource.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/data/record/datasource/WorkoutsDBDataSource.kt b/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/data/record/datasource/WorkoutsDBDataSource.kt
+--- a/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/data/record/datasource/WorkoutsDBDataSource.kt
++++ b/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/data/record/datasource/WorkoutsDBDataSource.kt	(date 1780174428054)
+@@ -1,13 +1,9 @@
+ package kz.maestrosultan.fitjournal.data.record.datasource
+ 
+-import app.cash.sqldelight.coroutines.asFlow
+-import app.cash.sqldelight.coroutines.mapToOne
+ import kotlin.time.Clock
+ import kotlin.time.Instant
+ import kotlinx.coroutines.Dispatchers
+ import kotlinx.coroutines.IO
+-import kotlinx.coroutines.flow.Flow
+-import kotlinx.coroutines.flow.flowOn
+ import kotlinx.coroutines.withContext
+ import kz.maestrosultan.fitjournal.data.db.WorkoutExercisesQueries
+ import kz.maestrosultan.fitjournal.data.db.WorkoutRecordsQueries
+@@ -33,26 +29,33 @@
+ 
+     // ─── Reads ────────────────────────────────────────────────────────────
+ 
+-    // Emits the current MAX(updatedDate) for the journal and re-emits on
+-    // every workoutRecords write. Used by the home screen as a reactive
+-    // "workouts changed" trigger.
+-    fun observeJournalRecordsSignal(userId: String, journalId: String): Flow<String> =
+-        recordsDao.observeJournalRecordsSignal(userId, journalId)
+-            .asFlow()
+-            .mapToOne(Dispatchers.IO)
+-            .flowOn(Dispatchers.IO)
++    suspend fun getWorkoutRecordRow(uuid: String): DBWorkoutRecordRow? = withContext(Dispatchers.IO) {
++        recordsDao.getWorkoutRecordById(uuid).executeAsOneOrNull()?.map()
++    }
+ 
+-    suspend fun getPendingUploads(userId: String): List<DBWorkoutRecordRow> = withContext(Dispatchers.IO) {
+-        recordsDao.getPendingUploads(userId).executeAsList().map { it.map() }
++    suspend fun getWorkoutRecordRowsByDiary(
++        userId: String,
++        diaryId: String,
++        from: String = EPOCH,
++        to: String = FAR_FUTURE,
++    ): List<DBWorkoutRecordRow> = withContext(Dispatchers.IO) {
++        recordsDao
++            .getWorkoutRecordsByDiary(userId, diaryId, from, to)
++            .executeAsList()
++            .map { it.map() }
+     }
+ 
+-    suspend fun getWorkoutRecordById(uuid: String): DBWorkoutRecord? = withContext(Dispatchers.IO) {
++    suspend fun getPendingUploads(): List<DBWorkoutRecordRow> = withContext(Dispatchers.IO) {
++        recordsDao.getPendingUploads().executeAsList().map { it.map() }
++    }
++
++    suspend fun getWorkoutRecord(uuid: String): DBWorkoutRecord? = withContext(Dispatchers.IO) {
+         val row = recordsDao.getWorkoutRecordById(uuid).executeAsOneOrNull()?.map()
+             ?: return@withContext null
+         DBWorkoutRecord(row = row, exercises = childrenOf(uuid))
+     }
+ 
+-    suspend fun getWorkoutRecordByIdIncludingDeleted(uuid: String): DBWorkoutRecord? =
++    suspend fun getWorkoutRecordIncludingDeleted(uuid: String): DBWorkoutRecord? =
+         withContext(Dispatchers.IO) {
+             val row = recordsDao.getWorkoutRecordByIdIncludingDeleted(uuid)
+                 .executeAsOneOrNull()
+@@ -60,23 +63,23 @@
+             DBWorkoutRecord(row = row, exercises = childrenOf(uuid))
+         }
+ 
+-    suspend fun getWorkoutRecordsByJournal(
++    suspend fun getWorkoutRecordsByDiary(
+         userId: String,
+-        journalId: String,
++        diaryId: String,
+         from: String = EPOCH,
+         to: String = FAR_FUTURE,
+     ): List<DBWorkoutRecord> = withContext(Dispatchers.IO) {
+         val rows = recordsDao
+-            .getWorkoutRecordsByJournal(userId, journalId, from, to)
++            .getWorkoutRecordsByDiary(userId, diaryId, from, to)
+             .executeAsList()
+             .map { it.map() }
+         if (rows.isEmpty()) return@withContext emptyList()
+         val exercises: List<DBWorkoutExerciseObject> = exercisesDao
+-            .getWorkoutExercisesByJournal(userId, journalId, from, to)
++            .getWorkoutExercisesByDiary(userId, diaryId, from, to)
+             .executeAsList()
+             .map { it.map() }
+         val sets: List<DBWorkoutSetObject> = setsDao
+-            .getWorkoutSetsByJournal(userId, journalId, from, to)
++            .getWorkoutSetsByDiary(userId, diaryId, from, to)
+             .executeAsList()
+             .map { it.map() }
+         val setsByExerciseUuid = sets.groupBy { it.workoutExerciseUuid }
+@@ -98,101 +101,57 @@
+         }
+     }
+ 
+-    /**
+-     * One row per set, with the parent record's `date` and the parent
+-     * workoutExercise's `comment` projected from the JOIN. Caller picks
+-     * the row shape via [mapper] so the data layer doesn't have to
+-     * invent a one-off projection type — the repository can map
+-     * straight into whatever it needs (a `WorkoutSet` for best-result
+-     * reads, a private grouping struct for occurrences, etc.).
+-     */
+-    suspend fun <T : Any> getSetsForExerciseInJournal(
++    suspend fun getWorkoutExercisesByExerciseUuid(exerciseUuid: String): List<DBWorkoutExerciseObject> =
++        withContext(Dispatchers.IO) {
++            exercisesDao.getWorkoutExercisesByExerciseUuid(exerciseUuid)
++                .executeAsList()
++                .map { it.map() }
++        }
++
++    suspend fun getSetsForExerciseInDiary(
+         exerciseUuid: String,
+         userId: String,
+-        journalId: String,
+-        from: String = EPOCH,
+-        to: String = FAR_FUTURE,
+-        mapper: (
+-            set: DBWorkoutSetObject,
+-            recordDate: String,
+-            workoutExerciseComment: String?,
+-        ) -> T,
+-    ): List<T> = withContext(Dispatchers.IO) {
++        diaryId: String,
++    ): List<DBWorkoutSetObject> = withContext(Dispatchers.IO) {
+         setsDao
+-            .getWorkoutSetsForExerciseInJournal(
+-                exerciseUuid = exerciseUuid,
+-                userId = userId,
+-                journalId = journalId,
+-                date = from,
+-                date_ = to,
+-            ) { uuid, weUuid, position, weight, reps, distance, duration, difficultyType, completed, recordDate, weComment ->
+-                mapper(
+-                    DBWorkoutSetObject(
+-                        uuid = uuid,
+-                        workoutExerciseUuid = weUuid,
+-                        position = position.toInt(),
+-                        weight = weight,
+-                        reps = reps?.toInt(),
+-                        distance = distance,
+-                        duration = duration?.toInt(),
+-                        difficultyType = difficultyType.toInt(),
+-                        completed = completed,
+-                    ),
+-                    recordDate,
+-                    weComment,
+-                )
+-            }
++            .getWorkoutSetsForExerciseInDiary(exerciseUuid, userId, diaryId)
+             .executeAsList()
++            .map { it.map() }
+     }
+ 
+     suspend fun getLastSetForExerciseBeforeDate(
+         exerciseUuid: String,
+         userId: String,
+-        journalId: String,
++        diaryId: String,
+         beforeDateString: String,
+     ): DBWorkoutSetObject? = withContext(Dispatchers.IO) {
+         setsDao
+-            .getLastSetForExerciseBeforeDate(exerciseUuid, userId, journalId, beforeDateString)
++            .getLastSetForExerciseBeforeDate(exerciseUuid, userId, diaryId, beforeDateString)
+             .executeAsOneOrNull()
+             ?.map()
+     }
+ 
+     private fun childrenOf(workoutRecordUuid: String): List<DBWorkoutExerciseWithSets> {
+-        // Two SQL calls total instead of 1 + N: load all exercises for
+-        // the record, then a single bulk-join load of every set under
+-        // those exercises. Groups by `workoutExerciseUuid` in Kotlin
+-        // (rows are already in position order from
+-        // `idx_workoutSets_exercise`). Materially cheaper on the sync
+-        // push loop where this fires per pending record.
+         val exercises = exercisesDao
+             .getWorkoutExercisesByRecord(workoutRecordUuid)
+             .executeAsList()
+             .map { it.map() }
+-        if (exercises.isEmpty()) return emptyList()
+-        val setsByExerciseUuid = setsDao
+-            .getWorkoutSetsByRecord(workoutRecordUuid)
+-            .executeAsList()
+-            .map { it.map() }
+-            .groupBy { it.workoutExerciseUuid }
+-        return exercises.map { ex ->
+-            DBWorkoutExerciseWithSets(
+-                exercise = ex,
+-                sets = setsByExerciseUuid[ex.uuid] ?: emptyList(),
+-            )
++        return exercises.map { ex ->
++            val sets = setsDao
++                .getWorkoutSetsByExercise(ex.uuid)
++                .executeAsList()
++                .map { it.map() }
++            DBWorkoutExerciseWithSets(exercise = ex, sets = sets)
+         }
+     }
+ 
+     // ─── Writes ───────────────────────────────────────────────────────────
+ 
+     suspend fun createWorkoutRecordIfMissing(record: DBWorkoutRecord): Boolean = withContext(Dispatchers.IO) {
+-        // Atomic check-and-insert. Prior version had the existence check
+-        // OUTSIDE the transaction → TOCTOU: two concurrent migrator runs
+-        // could both pass the check and both insert. Matches the pattern
+-        // already used by `createWorkoutRecordsIfMissing` plural.
+-        recordsDao.transactionWithResult {
+-            if (recordsDao.getWorkoutRecordByIdIncludingDeleted(record.row.uuid).executeAsOneOrNull() != null) {
+-                return@transactionWithResult false
+-            }
++        if (recordsDao.getWorkoutRecordByIdIncludingDeleted(record.row.uuid).executeAsOneOrNull() != null) {
++            return@withContext false
++        }
++        recordsDao.transactionWithResult {
+             insertRecord(record)
+             true
+         }
+@@ -251,31 +210,7 @@
+                 uuid = record.row.uuid,
+                 remoteId = record.row.remoteId ?: record.row.uuid,
+                 userId = record.row.userId,
+-                journalId = record.row.journalId,
+-                date = record.row.date,
+-                position = record.row.position.toLong(),
+-                comment = record.row.comment,
+-                startedAt = record.row.startedAt?.toStoredString(),
+-                durationSec = record.row.durationSec?.toLong(),
+-                deletedAt = record.row.deletedAt?.toStoredString(),
+-                schemaVersion = record.row.schemaVersion.toLong(),
+-                createdDate = record.row.createdDate.toStoredString(),
+-                updatedDate = record.row.updatedDate.toStoredString(),
+-            )
+-            insertChildren(record)
+-        }
+-    }
+-
+-    // Orphan-reparent path: same upsert shape, but pendingUpload=1 so the
+-    // corrected journalId reaches AWS on the next push tick. Caller has
+-    // already swapped `record.row.journalId` to the personal journal.
+-    suspend fun replaceWorkoutRecordFromRemoteAsPending(record: DBWorkoutRecord) = withContext(Dispatchers.IO) {
+-        recordsDao.transaction {
+-            recordsDao.upsertWorkoutRecordFromRemoteAsPending(
+-                uuid = record.row.uuid,
+-                remoteId = record.row.remoteId ?: record.row.uuid,
+-                userId = record.row.userId,
+-                journalId = record.row.journalId,
++                diaryId = record.row.diaryId,
+                 date = record.row.date,
+                 position = record.row.position.toLong(),
+                 comment = record.row.comment,
+@@ -301,7 +236,7 @@
+             uuid = record.row.uuid,
+             remoteId = record.row.remoteId,
+             userId = record.row.userId,
+-            journalId = record.row.journalId,
++            diaryId = record.row.diaryId,
+             date = record.row.date,
+             position = record.row.position.toLong(),
+             comment = record.row.comment,

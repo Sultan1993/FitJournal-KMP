@@ -2,7 +2,6 @@ package kz.maestrosultan.fitjournal.data.notes.datasource
 
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
-import app.cash.sqldelight.coroutines.mapToOne
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.coroutines.Dispatchers
@@ -32,16 +31,38 @@ class NotesDBDataSource(private val dao: NotesQueries) {
             .flowOn(Dispatchers.IO)
     }
 
-    suspend fun getNoteById(uuid: String): DBNoteObject = withContext(Dispatchers.IO) {
-        dao.getNoteById(uuid).executeAsOne().map()
+    suspend fun getPinnedNotes(userId: String): List<DBNoteObject> = withContext(Dispatchers.IO) {
+        dao.getPinnedNotes(userId)
+            .executeAsList()
+            .map { it.map() }
     }
 
-    fun getNoteByIdFlow(uuid: String): Flow<DBNoteObject> {
-        return dao.getNoteById(uuid)
+    fun getPinnedNotesFlow(userId: String): Flow<List<DBNoteObject>> {
+        return dao.getPinnedNotes(userId)
             .asFlow()
-            .mapToOne(Dispatchers.IO)
-            .map { it.map() }
+            .mapToList(Dispatchers.IO)
+            .map { it.map { it.map() } }
             .flowOn(Dispatchers.IO)
+    }
+
+    /**
+     * UI-facing single-row read. Returns null when the row doesn't
+     * exist OR is soft-deleted — a note tombstoned by sync from another
+     * device looks like "not found" to the UI, which is the right
+     * semantic. Sync paths needing to see tombstones use
+     * [getNoteByIdIncludingDeleted].
+     */
+    suspend fun getNoteById(uuid: String): DBNoteObject? = withContext(Dispatchers.IO) {
+        dao.getNoteById(uuid).executeAsOneOrNull()?.map()
+    }
+
+    /**
+     * Sync-only: sees soft-deleted rows so the orchestrator can compare
+     * local vs remote `deletedAt` on pull and propagate tombstones to
+     * AWS on push. UI code must use [getNoteById].
+     */
+    suspend fun getNoteByIdIncludingDeleted(uuid: String): DBNoteObject? = withContext(Dispatchers.IO) {
+        dao.getNoteByIdIncludingDeleted(uuid).executeAsOneOrNull()?.map()
     }
 
     suspend fun createNote(
@@ -53,54 +74,17 @@ class NotesDBDataSource(private val dao: NotesQueries) {
         updatedDate: Instant = createdDate,
         remoteId: String? = null,
         pendingUpload: Boolean = false,
-    ): DBNoteObject = withContext(Dispatchers.IO) {
-        dao.transactionWithResult {
-            dao.createNote(
-                uuid = uuid,
-                userId = userId,
-                text = text,
-                isPinned = isPinned,
-                createdDate = createdDate.toStoredString(),
-                updatedDate = updatedDate.toStoredString(),
-                remoteId = remoteId,
-                pendingUpload = pendingUpload,
-            )
-            dao.getNoteById(uuid).executeAsOne().map()
-        }
-    }
-
-    /**
-     * Insert if uuid not already present. Returns true on insert, false on
-     * skip. Used by `DefaultNotesMigrator` so re-running after a partial
-     * crash doesn't duplicate. New rows ship with `pendingUpload=true` so
-     * SyncOrchestrator pushes them on its next tick.
-     */
-    suspend fun createNoteIfMissing(
-        uuid: String,
-        userId: String,
-        text: String,
-        isPinned: Boolean,
-        createdDate: Instant = Clock.System.now(),
-        updatedDate: Instant = createdDate,
-        remoteId: String? = null,
-        pendingUpload: Boolean = true,
-    ): Boolean = withContext(Dispatchers.IO) {
-        dao.transactionWithResult {
-            if (dao.getNoteById(uuid).executeAsOneOrNull() != null) {
-                return@transactionWithResult false
-            }
-            dao.createNote(
-                uuid = uuid,
-                userId = userId,
-                text = text,
-                isPinned = isPinned,
-                createdDate = createdDate.toStoredString(),
-                updatedDate = updatedDate.toStoredString(),
-                remoteId = remoteId,
-                pendingUpload = pendingUpload,
-            )
-            true
-        }
+    ) = withContext(Dispatchers.IO) {
+        dao.createNote(
+            uuid = uuid,
+            userId = userId,
+            text = text,
+            isPinned = isPinned,
+            createdDate = createdDate.toStoredString(),
+            updatedDate = updatedDate.toStoredString(),
+            remoteId = remoteId,
+            pendingUpload = pendingUpload,
+        )
     }
 
     suspend fun updateNote(
@@ -108,24 +92,17 @@ class NotesDBDataSource(private val dao: NotesQueries) {
         text: String,
         isPinned: Boolean,
         updatedDate: Instant = Clock.System.now(),
-    ): DBNoteObject = withContext(Dispatchers.IO) {
-        dao.transactionWithResult {
-            dao.updateNote(
-                text = text,
-                isPinned = isPinned,
-                updatedDate = updatedDate.toStoredString(),
-                uuid = uuid,
-            )
-            dao.getNoteById(uuid).executeAsOne().map()
-        }
+    ) = withContext(Dispatchers.IO) {
+        dao.updateNote(
+            text = text,
+            isPinned = isPinned,
+            updatedDate = updatedDate.toStoredString(),
+            uuid = uuid,
+        )
     }
 
-    suspend fun getNoteByIdOrNull(uuid: String): DBNoteObject? = withContext(Dispatchers.IO) {
-        dao.getNoteById(uuid).executeAsOneOrNull()?.map()
-    }
-
-    suspend fun getPendingUploads(): List<DBNoteObject> = withContext(Dispatchers.IO) {
-        dao.getPendingUploads().executeAsList().map { it.map() }
+    suspend fun getPendingUploads(userId: String): List<DBNoteObject> = withContext(Dispatchers.IO) {
+        dao.getPendingUploads(userId).executeAsList().map { it.map() }
     }
 
     suspend fun markUploaded(uuid: String, remoteId: String) = withContext(Dispatchers.IO) {
@@ -165,7 +142,7 @@ class NotesDBDataSource(private val dao: NotesQueries) {
      * Soft delete: stamps `deletedAt`, bumps `updatedDate`, and flips
      * `pendingUpload=1` so the SyncOrchestrator pushes the tombstone to AWS
      * on its next tick. The row stays in SQLite (filtered out by `getNotes`
-     * and `getNoteByIdFlow` via the `deletedAt IS NULL` predicates).
+     * via the `deletedAt IS NULL` predicate).
      */
     suspend fun softDeleteNote(
         uuid: String,
@@ -179,15 +156,7 @@ class NotesDBDataSource(private val dao: NotesQueries) {
         )
     }
 
-    suspend fun deleteNote(uuid: String) = withContext(Dispatchers.IO) {
-        dao.deleteNote(uuid)
-    }
-
     suspend fun deleteUserNotes(userId: String) = withContext(Dispatchers.IO) {
         dao.deleteUserNotes(userId)
-    }
-
-    suspend fun deleteAllNotes() = withContext(Dispatchers.IO) {
-        dao.deleteAllNotes()
     }
 }

@@ -20,14 +20,17 @@ CREATE TABLE exercises (
     FOREIGN KEY (primaryCategoryUuid) REFERENCES categories(uuid)
 );
 
-CREATE INDEX idx_exercises_pending ON exercises(pendingUpload);
-CREATE INDEX idx_exercises_user ON exercises(userId);
--- `getExerciseByRemoteId(IfLive)` is hit on every sync tick. Without
--- this, the find-by-remote does a full table scan over the catalog
--- (~250 globals + customs).
+-- Sync push drain. Partial on `pendingUpload = 1` so the index scales
+-- with the (typically empty) backlog, not the whole catalog.
+CREATE INDEX idx_exercises_pending ON exercises(uuid) WHERE pendingUpload = 1;
+-- Live-only — every UI read filters `deletedAt IS NULL`; tombstoned
+-- rows in this index would only ever be visited by sync paths that
+-- already join on `pendingUpload`.
+CREATE INDEX idx_exercises_user ON exercises(userId) WHERE deletedAt IS NULL;
+-- `getExerciseByRemoteId(IncludingDeleted)` is hit on every sync tick.
+-- Without this, the find-by-remote does a full table scan over the
+-- catalog (~250 globals + customs).
 CREATE INDEX idx_exercises_remoteId ON exercises(remoteId) WHERE remoteId IS NOT NULL;
--- `getExercisesByCategoryForUser` powers the category browse UI.
-CREATE INDEX idx_exercises_category_live ON exercises(primaryCategoryUuid) WHERE deletedAt IS NULL;
 
 -- Unscoped count for the migration "have we seeded?" check. NOT for UI
 -- reads — those use [getAllExercisesForUser] so customs from a prior
@@ -42,51 +45,65 @@ WHERE deletedAt IS NULL;
 -- lookup feeding workout reads, exercise list, and search. Scoping
 -- prevents leftover customs from a prior logged-in account from leaking
 -- after an account switch.
+--
+-- UNION ALL of two index-friendly arms instead of `OR` so each branch
+-- can use a partial index: globals come from the table (no userId
+-- filter needed; the global flag is highly selective), customs come
+-- from `idx_exercises_user` partial-on-deletedAt-IS-NULL.
 getAllExercisesForUser:
 SELECT *
 FROM exercises
-WHERE (global = 1 OR userId = ?)
-AND deletedAt IS NULL;
-
-getExercisesByCategoryForUser:
+WHERE global = 1
+AND deletedAt IS NULL
+UNION ALL
 SELECT *
 FROM exercises
-WHERE primaryCategoryUuid == ?
-AND (global = 1 OR userId = ?)
+WHERE userId = ?
+AND global = 0
 AND deletedAt IS NULL;
 
+-- UI-facing single-row read. Tombstones filtered — a soft-deleted
+-- catalog row looks like "not found" to the repo, so workouts that
+-- reference it drop the reference cleanly. Sync code paths needing
+-- to see tombstones use [getExerciseByUuidIncludingDeleted].
 getExerciseByUuid:
-SELECT *
-FROM exercises
-WHERE uuid == ?;
-
--- Tombstone-filtered variant for the repository read path. Workouts that
--- reference a soft-deleted catalog row drop the reference (compactMap)
--- rather than surfacing a ghost exercise.
-getExerciseByUuidIfLive:
 SELECT *
 FROM exercises
 WHERE uuid == ?
 AND deletedAt IS NULL;
 
-getExerciseByRemoteId:
+-- Sync-only single-row read. Sees soft-deleted rows so the orchestrator
+-- can compare local vs remote `deletedAt` on pull and propagate
+-- tombstones to AWS on push. UI/repo paths must use [getExerciseByUuid].
+getExerciseByUuidIncludingDeleted:
 SELECT *
 FROM exercises
-WHERE remoteId == ?;
+WHERE uuid == ?;
 
--- Tombstone-filtered remote-id lookup. Mirror of `getExerciseByUuidIfLive`.
--- The sync push path uses `getExerciseByRemoteId` (no filter) so it can
--- see tombstones; UI/repo paths use this variant via `getExerciseByRemoteIdOrNull`.
-getExerciseByRemoteIdIfLive:
+-- UI/sync canonical remote-id lookup, live only.
+getExerciseByRemoteId:
 SELECT *
 FROM exercises
 WHERE remoteId == ?
 AND deletedAt IS NULL;
 
+-- Sync-only / legacy-migrator variant. Sees tombstones.
+getExerciseByRemoteIdIncludingDeleted:
+SELECT *
+FROM exercises
+WHERE remoteId == ?;
+
+-- Pending uploads, scoped to a single user. After sign-out/sign-in
+-- as a different user, the previous user's stale pendingUpload rows
+-- must NOT be pushed under the new user's session. `global = 0` is
+-- defensive — global catalog rows are read-only and shouldn't be in
+-- pendingUpload anyway.
 getPendingUploads:
 SELECT *
 FROM exercises
-WHERE pendingUpload = 1;
+WHERE pendingUpload = 1
+AND userId = ?
+AND global = 0;
 
 getUserCustomExercises:
 SELECT *
@@ -99,19 +116,18 @@ createExercise:
 INSERT INTO exercises(uuid, remoteId, nameEn, nameRu, nameUk, details, image1, image2, resultType, primaryCategoryUuid, secondaryCategoryUuids, global, userId, pendingUpload)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
-updateExercise:
-UPDATE exercises
-SET remoteId = ?, nameEn = ?, nameRu = ?, nameUk = ?, details = ?, resultType = ?, primaryCategoryUuid = ?, secondaryCategoryUuids = ?, pendingUpload = 1
-WHERE uuid = ?;
-
 -- Name-only update for the rename UI flow. Bumps pendingUpload so the
 -- SyncWorker pushes the change. Writes all three locale columns because
 -- a custom-exercise rename should overwrite every locale (legacy parity).
+-- Live-only — tombstoned rows should never be edited from UI.
 renameExercise:
 UPDATE exercises
 SET nameEn = ?, nameRu = ?, nameUk = ?, pendingUpload = 1
-WHERE uuid = ?;
+WHERE uuid = ?
+AND deletedAt IS NULL;
 
+-- Push-success ack. No `deletedAt IS NULL` filter — tombstones must
+-- also clear their pendingUpload after a successful tombstone push.
 updateExerciseRemoteId:
 UPDATE exercises
 SET remoteId = ?, pendingUpload = 0
@@ -125,14 +141,19 @@ upsertExerciseFromRemote:
 INSERT OR REPLACE INTO exercises(uuid, remoteId, nameEn, nameRu, nameUk, details, image1, image2, resultType, primaryCategoryUuid, secondaryCategoryUuids, global, userId, pendingUpload, deletedAt)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?);
 
+-- Idempotent on live rows only — re-tombstoning shifts `deletedAt`
+-- for no reason.
 softDeleteExercise:
 UPDATE exercises
 SET deletedAt = ?, updatedDate = ?, pendingUpload = 1
-WHERE uuid = ?;
+WHERE uuid = ?
+AND deletedAt IS NULL;
 
 deleteExercise:
 DELETE FROM exercises
 WHERE uuid = ?;
 
-deleteAllExercises:
+-- Full wipe. Used once on FJ1.x → FJ2.0 upgrade to drop legacy
+-- parseUserId-keyed rows before hydration repopulates with awsUserId.
+wipeAll:
 DELETE FROM exercises;

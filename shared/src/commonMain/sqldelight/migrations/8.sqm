@@ -1,9 +1,9 @@
 -- Adds the local-first persistence layer for the Parse → AWS migration:
--- diaries, workoutRecords, workoutExercises, workoutSets.
+-- journals, workoutRecords, workoutExercises, workoutSets.
 -- All statements are idempotent so this migration is safe even on databases
 -- that already have these tables for any reason.
 
-CREATE TABLE IF NOT EXISTS diaries (
+CREATE TABLE IF NOT EXISTS journals (
     uuid TEXT PRIMARY KEY NOT NULL,
     remoteId TEXT,
     userId TEXT NOT NULL,
@@ -17,14 +17,14 @@ CREATE TABLE IF NOT EXISTS diaries (
     updatedDate TEXT NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_diaries_user ON diaries(userId);
-CREATE INDEX IF NOT EXISTS idx_diaries_pending ON diaries(pendingUpload);
+CREATE INDEX IF NOT EXISTS idx_diaries_user ON journals(userId);
+CREATE INDEX IF NOT EXISTS idx_diaries_pending ON journals(pendingUpload);
 
 CREATE TABLE IF NOT EXISTS workoutRecords (
     uuid TEXT PRIMARY KEY NOT NULL,
     remoteId TEXT,
     userId TEXT NOT NULL,
-    diaryId TEXT NOT NULL,
+    journalId TEXT NOT NULL,
     date TEXT NOT NULL,
     position INTEGER NOT NULL,
     comment TEXT,
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS workoutRecords (
 );
 
 CREATE INDEX IF NOT EXISTS idx_workoutRecords_user_date ON workoutRecords(userId, date);
-CREATE INDEX IF NOT EXISTS idx_workoutRecords_diary ON workoutRecords(diaryId);
+CREATE INDEX IF NOT EXISTS idx_workoutRecords_diary ON workoutRecords(journalId);
 CREATE INDEX IF NOT EXISTS idx_workoutRecords_pending ON workoutRecords(pendingUpload);
 
 CREATE TABLE IF NOT EXISTS workoutExercises (

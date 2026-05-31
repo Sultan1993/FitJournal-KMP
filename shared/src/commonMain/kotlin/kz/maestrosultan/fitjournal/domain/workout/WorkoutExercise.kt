@@ -6,7 +6,7 @@ import kz.maestrosultan.fitjournal.domain.exercise.Exercise
 data class WorkoutExercise(
     val id: String,
     val userId: String,
-    val diaryId: String,
+    val journalId: String,
     val date: LocalDate,
     val exercise: Exercise,
     val sets: List<WorkoutSet>,

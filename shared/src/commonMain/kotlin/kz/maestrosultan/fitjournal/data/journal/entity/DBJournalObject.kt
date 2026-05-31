@@ -1,10 +1,10 @@
-package kz.maestrosultan.fitjournal.data.diary.entity
+package kz.maestrosultan.fitjournal.data.journal.entity
 
 import kotlin.time.Instant
-import kz.maestrosultan.fitjournal.data.db.Diaries
+import kz.maestrosultan.fitjournal.data.db.Journals
 import kz.maestrosultan.fitjournal.data.time.parseStoredInstant
 
-data class DBDiaryObject(
+data class DBJournalObject(
     val uuid: String,
     val remoteId: String?,
     val userId: String,
@@ -18,7 +18,7 @@ data class DBDiaryObject(
     val updatedDate: Instant,
 )
 
-fun Diaries.map(): DBDiaryObject = DBDiaryObject(
+fun Journals.map(): DBJournalObject = DBJournalObject(
     uuid = uuid,
     remoteId = remoteId,
     userId = userId,

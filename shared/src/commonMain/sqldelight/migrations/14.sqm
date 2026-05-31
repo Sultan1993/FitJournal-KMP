@@ -1,0 +1,11 @@
+-- Replace the live-notes index with a (userId, createdDate DESC)
+-- composite so the new `getNotes` / `getPinnedNotes` queries can walk
+-- the index in display order — SQLite skips the sort step entirely.
+--
+-- Fresh installs created the new shape directly via `Notes.sq`. This
+-- migration rebuilds it for upgrade-path users.
+
+DROP INDEX IF EXISTS idx_notes_user_live;
+CREATE INDEX IF NOT EXISTS idx_notes_user_live
+ON notes(userId, createdDate DESC)
+WHERE deletedAt IS NULL;

@@ -18,48 +18,45 @@ FROM workoutExercises
 WHERE workoutRecordUuid = ?
 ORDER BY position ASC;
 
-getWorkoutExercisesByExerciseUuid:
-SELECT *
-FROM workoutExercises
-WHERE exerciseUuid = ?;
-
--- Bulk: child exercises across every live workout record in (user, diary)
--- within a date window. Companion to `getWorkoutRecordsByDiary` so the
+-- Bulk: child exercises across every live workout record in (user, journal)
+-- within a date window. Companion to `getWorkoutRecordsByJournal` so the
 -- repository can hydrate full trees in 3 SQL calls. `from` inclusive,
 -- `to` exclusive. Callers that want "everything" pass `0000-01-01` /
 -- `9999-12-31`. Caller groups by `workoutRecordUuid`.
-getWorkoutExercisesByDiary:
+--
+-- ORDER BY matches the natural JOIN scan order so SQLite doesn't have
+-- to materialize-and-sort: `idx_workoutRecords_live_diary` yields wr
+-- rows in `(date DESC, position ASC)`, and for each wr we get its
+-- workoutExercises in `position ASC` via the composite
+-- `idx_workoutExercises_record`. Rows for the same record stay
+-- contiguous (one record = one date), so `groupBy { workoutRecordUuid }`
+-- in the caller still yields position-sorted child lists per record.
+getWorkoutExercisesByJournal:
 SELECT we.*
 FROM workoutExercises we
 JOIN workoutRecords wr ON wr.uuid = we.workoutRecordUuid
 WHERE wr.userId = ?
-AND wr.diaryId = ?
+AND wr.journalId = ?
 AND wr.date >= ?
 AND wr.date < ?
 AND wr.deletedAt IS NULL
-ORDER BY we.workoutRecordUuid ASC, we.position ASC;
-
-getWorkoutExerciseById:
-SELECT *
-FROM workoutExercises
-WHERE uuid = ?;
+ORDER BY wr.date DESC, we.position ASC;
 
 createWorkoutExercise:
 INSERT INTO workoutExercises(uuid, workoutRecordUuid, exerciseUuid, position, comment)
 VALUES (?, ?, ?, ?, ?);
 
-updateWorkoutExercise:
-UPDATE workoutExercises
-SET position = ?, comment = ?
-WHERE uuid = ?;
-
-deleteWorkoutExercise:
-DELETE FROM workoutExercises
-WHERE uuid = ?;
-
+-- Wipe-and-replace step inside `replaceWorkoutRecord`. Sets cascade
+-- via FK ON DELETE CASCADE so this single DELETE drops all child sets
+-- for the record's exercises in one shot.
 deleteWorkoutExercisesByRecord:
 DELETE FROM workoutExercises
 WHERE workoutRecordUuid = ?;
 
-deleteAllWorkoutExercises:
+-- Full wipe. Used once on FJ1.x → FJ2.0 upgrade to drop legacy
+-- parseUserId-keyed rows before hydration repopulates with awsUserId.
+-- Belt-and-braces against `PRAGMA foreign_keys=OFF` paths: the parent
+-- workoutRecords wipe should cascade-delete these via FK, but we call
+-- this explicitly so the wipe is correct even if the pragma is off.
+wipeAll:
 DELETE FROM workoutExercises;

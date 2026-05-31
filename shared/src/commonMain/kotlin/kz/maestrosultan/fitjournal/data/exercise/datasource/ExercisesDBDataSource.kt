@@ -2,7 +2,7 @@ package kz.maestrosultan.fitjournal.data.exercise.datasource
 
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
-import app.cash.sqldelight.coroutines.mapToOne
+import app.cash.sqldelight.coroutines.mapToOneOrNull
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.coroutines.Dispatchers
@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kz.maestrosultan.fitjournal.data.db.ExercisesQueries
+import kz.maestrosultan.fitjournal.data.exercise.entity.DBCategoryObject
 import kz.maestrosultan.fitjournal.data.exercise.entity.DBExerciseObject
 import kz.maestrosultan.fitjournal.data.exercise.mapper.ExerciseDBMapper
 import kz.maestrosultan.fitjournal.data.time.parseStoredInstant
@@ -47,147 +48,46 @@ class ExercisesDBDataSource(
     }
 
     /**
-     * Returns global catalog rows + this user's custom rows. Use this in
-     * UI exercise pickers — it correctly filters out custom rows belonging
-     * to a previous account on the same device (e.g. after logout/login
-     * with a different Firebase user).
+     * UI-facing single-row read. Returns null if the row doesn't exist
+     * OR has been soft-deleted — workouts that reference a tombstoned
+     * custom exercise drop the reference cleanly rather than surfacing
+     * a ghost. Sync code paths that need to see tombstones use
+     * [getExerciseByUuidIncludingDeleted].
+     *
+     * Categories are pre-fetched OUTSIDE the row mapper. Doing the
+     * category lookup inside the mapper triggers a nested SQL call
+     * while the outer prepared statement is still mid-iteration — fine
+     * when sqliter has multiple reader connections (WAL mode default),
+     * a hard deadlock when there's only one connection (DELETE mode).
+     * Pre-fetching matches the pattern used by the batch reader.
      */
-    fun getAllExercisesForUserFlow(userId: String): Flow<List<DBExerciseObject>> {
-        return dao
-            .getAllExercisesForUser(
-                userId = userId,
-                mapper = { uuid, remoteId, nameEn, nameRu, nameUk, details, image1, image2,
-                           resultType, primaryCategoryUuid, secondaryCategoryUuids, global,
-                           _, _, _, _ ->
-                    mapper.map(
-                        uuid = uuid,
-                        remoteId = remoteId,
-                        nameEn = nameEn,
-                        nameRu = nameRu,
-                        nameUk = nameUk,
-                        details = details,
-                        image1 = image1,
-                        image2 = image2,
-                        resultType = resultType.toInt(),
-                        primaryCategoryUuid = primaryCategoryUuid,
-                        secondaryCategoryUuids = secondaryCategoryUuids,
-                        isGlobal = global
-                    )
-                }
-            )
-            .asFlow()
-            .mapToList(Dispatchers.IO)
-            .flowOn(Dispatchers.IO)
-    }
-
-    suspend fun getAllExercisesForUser(userId: String): List<DBExerciseObject> = withContext(Dispatchers.IO) {
-        dao
-            .getAllExercisesForUser(
-                userId = userId,
-                mapper = { uuid, remoteId, nameEn, nameRu, nameUk, details, image1, image2,
-                           resultType, primaryCategoryUuid, secondaryCategoryUuids, global,
-                           _, _, _, _ ->
-                    mapper.map(
-                        uuid = uuid,
-                        remoteId = remoteId,
-                        nameEn = nameEn,
-                        nameRu = nameRu,
-                        nameUk = nameUk,
-                        details = details,
-                        image1 = image1,
-                        image2 = image2,
-                        resultType = resultType.toInt(),
-                        primaryCategoryUuid = primaryCategoryUuid,
-                        secondaryCategoryUuids = secondaryCategoryUuids,
-                        isGlobal = global
-                    )
-                }
-            )
-            .executeAsList()
-    }
-
-    fun getExercisesByCategoryForUserFlow(categoryUuid: String, userId: String): Flow<List<DBExerciseObject>> {
-        return dao
-            .getExercisesByCategoryForUser(
-                primaryCategoryUuid = categoryUuid,
-                userId = userId,
-                mapper = { uuid, remoteId, nameEn, nameRu, nameUk, details, image1, image2,
-                           resultType, primaryCategoryUuid, secondaryCategoryUuids, global,
-                           _, _, _, _ ->
-                    mapper.map(
-                        uuid = uuid,
-                        remoteId = remoteId,
-                        nameEn = nameEn,
-                        nameRu = nameRu,
-                        nameUk = nameUk,
-                        details = details,
-                        image1 = image1,
-                        image2 = image2,
-                        resultType = resultType.toInt(),
-                        primaryCategoryUuid = primaryCategoryUuid,
-                        secondaryCategoryUuids = secondaryCategoryUuids,
-                        isGlobal = global
-                    )
-                }
-            )
-            .asFlow()
-            .mapToList(Dispatchers.IO)
-            .flowOn(Dispatchers.IO)
-    }
-
-    suspend fun getExerciseByUuid(uuid: String): DBExerciseObject = withContext(Dispatchers.IO) {
+    suspend fun getExerciseByUuid(uuid: String): DBExerciseObject? = withContext(Dispatchers.IO) {
+        val categoryByUuid = mapper.allCategoriesByUuid()
         dao
             .getExerciseByUuid(
                 uuid = uuid,
                 mapper = { uuid, remoteId, nameEn, nameRu, nameUk, details, image1, image2,
                            resultType, primaryCategoryUuid, secondaryCategoryUuids, global,
                            _, _, _, _ ->
-                    mapper.map(
+                    val primary = categoryByUuid[primaryCategoryUuid]
+                        ?: error("Catalog category not found for exercise '$uuid': '$primaryCategoryUuid'")
+                    val secondary = secondaryCategoryUuids
+                        ?.takeIf { it.isNotEmpty() }
+                        ?.split(";")
+                        ?.mapNotNull { categoryByUuid[it] }
+                    DBExerciseObject(
                         uuid = uuid,
                         remoteId = remoteId,
                         nameEn = nameEn,
                         nameRu = nameRu,
                         nameUk = nameUk,
-                        details = details,
                         image1 = image1,
                         image2 = image2,
-                        resultType = resultType.toInt(),
-                        primaryCategoryUuid = primaryCategoryUuid,
-                        secondaryCategoryUuids = secondaryCategoryUuids,
-                        isGlobal = global
-                    )
-                }
-            )
-            .executeAsOne()
-    }
-
-    /**
-     * Nullable + tombstone-filtered variant. Returns null if the row
-     * doesn't exist OR has been soft-deleted (deletedAt IS NOT NULL).
-     * Repository reads use this so workouts referencing a deleted custom
-     * exercise drop the reference cleanly. Sync code paths that need to
-     * see tombstones should use [getExerciseByRemoteId] (no live filter).
-     */
-    suspend fun getExerciseByUuidOrNull(uuid: String): DBExerciseObject? = withContext(Dispatchers.IO) {
-        dao
-            .getExerciseByUuidIfLive(
-                uuid = uuid,
-                mapper = { uuid, remoteId, nameEn, nameRu, nameUk, details, image1, image2,
-                           resultType, primaryCategoryUuid, secondaryCategoryUuids, global,
-                           _, _, _, _ ->
-                    mapper.map(
-                        uuid = uuid,
-                        remoteId = remoteId,
-                        nameEn = nameEn,
-                        nameRu = nameRu,
-                        nameUk = nameUk,
                         details = details,
-                        image1 = image1,
-                        image2 = image2,
                         resultType = resultType.toInt(),
-                        primaryCategoryUuid = primaryCategoryUuid,
-                        secondaryCategoryUuids = secondaryCategoryUuids,
-                        isGlobal = global
+                        primaryCategory = primary,
+                        secondaryCategories = secondary,
+                        isGlobal = global,
                     )
                 }
             )
@@ -195,38 +95,19 @@ class ExercisesDBDataSource(
     }
 
     /**
-     * Updates the user-facing fields on an existing exercise. Used by
-     * ExerciseRepository's write path so a UI rename actually persists
-     * locally. The .sq query bumps `pendingUpload=1` so the SyncWorker
-     * pushes the change to AWS.
+     * Sync-only: sees soft-deleted rows so the orchestrator can compare
+     * local vs remote `deletedAt` on pull and propagate tombstones to
+     * AWS on push. Without this, a tombstoned-and-pending local row
+     * looks "missing" to the live read, the local-wins guard misses,
+     * and the remote upsert stomps the tombstone (data-loss bug).
+     * UI/repo paths must use [getExerciseByUuid].
+     *
+     * Lean mapper — no category resolution (sync only needs uuid /
+     * remoteId / pendingUpload for the guard).
      */
-    suspend fun updateExerciseFields(
-        uuid: String,
-        remoteId: String,
-        nameEn: String,
-        nameRu: String,
-        nameUk: String?,
-        details: String?,
-        primaryCategoryUuid: String,
-        secondaryCategoryUuids: List<String>?,
-        resultType: Int
-    ) = withContext(Dispatchers.IO) {
-        dao.updateExercise(
-            remoteId = remoteId,
-            nameEn = nameEn,
-            nameRu = nameRu,
-            nameUk = nameUk,
-            details = details,
-            primaryCategoryUuid = primaryCategoryUuid,
-            secondaryCategoryUuids = secondaryCategoryUuids?.joinToString(";"),
-            resultType = resultType.toLong(),
-            uuid = uuid
-        )
-    }
-
-    fun getExerciseByUuidFlow(uuid: String): Flow<DBExerciseObject> {
-        return dao
-            .getExerciseByUuidIfLive(
+    suspend fun getExerciseByUuidIncludingDeleted(uuid: String): DBExerciseObject? = withContext(Dispatchers.IO) {
+        dao
+            .getExerciseByUuidIncludingDeleted(
                 uuid = uuid,
                 mapper = { uuid, remoteId, nameEn, nameRu, nameUk, details, image1, image2,
                            resultType, primaryCategoryUuid, secondaryCategoryUuids, global,
@@ -243,16 +124,19 @@ class ExercisesDBDataSource(
                         resultType = resultType.toInt(),
                         primaryCategoryUuid = primaryCategoryUuid,
                         secondaryCategoryUuids = secondaryCategoryUuids,
-                        isGlobal = global
+                        isGlobal = global,
                     )
                 }
             )
-            .asFlow()
-            .mapToOne(Dispatchers.IO)
-            .flowOn(Dispatchers.IO)
+            .executeAsOneOrNull()
     }
 
-    suspend fun getExerciseByRemoteId(remoteId: String): DBExerciseObject = withContext(Dispatchers.IO) {
+    /**
+     * UI/sync canonical remote-id lookup, live only. Used by the sync
+     * orchestrator's fallback path when a pulled AWS row doesn't match
+     * by uuid (e.g. legacy data where uuid != remoteId).
+     */
+    suspend fun getExerciseByRemoteId(remoteId: String): DBExerciseObject? = withContext(Dispatchers.IO) {
         dao
             .getExerciseByRemoteId(
                 remoteId = remoteId,
@@ -271,24 +155,21 @@ class ExercisesDBDataSource(
                         resultType = resultType.toInt(),
                         primaryCategoryUuid = primaryCategoryUuid,
                         secondaryCategoryUuids = secondaryCategoryUuids,
-                        isGlobal = global
+                        isGlobal = global,
                     )
                 }
             )
-            .executeAsOne()
+            .executeAsOneOrNull()
     }
 
     /**
-     * Nullable + tombstone-filtered remote-id lookup. Mirrors
-     * [getExerciseByUuidOrNull] semantics: returns null if the row
-     * doesn't exist OR has been soft-deleted. Repository reads use this
-     * so a deleted exercise can't be resurrected via remoteId on pull;
-     * sync code paths that need to see tombstones must call
-     * [getExerciseByRemoteId] directly (no filter).
+     * Sees tombstones. Used by sync (local-wins guard via remoteId
+     * fallback) and the legacy migrator's "do I already have a row for
+     * this Parse objectId, even if soft-deleted?" check.
      */
-    suspend fun getExerciseByRemoteIdOrNull(remoteId: String): DBExerciseObject? = withContext(Dispatchers.IO) {
+    suspend fun getExerciseByRemoteIdIncludingDeleted(remoteId: String): DBExerciseObject? = withContext(Dispatchers.IO) {
         dao
-            .getExerciseByRemoteIdIfLive(
+            .getExerciseByRemoteIdIncludingDeleted(
                 remoteId = remoteId,
                 mapper = { uuid, remoteId, nameEn, nameRu, nameUk, details, image1, image2,
                            resultType, primaryCategoryUuid, secondaryCategoryUuids, global,
@@ -305,7 +186,7 @@ class ExercisesDBDataSource(
                         resultType = resultType.toInt(),
                         primaryCategoryUuid = primaryCategoryUuid,
                         secondaryCategoryUuids = secondaryCategoryUuids,
-                        isGlobal = global
+                        isGlobal = global,
                     )
                 }
             )
@@ -327,46 +208,23 @@ class ExercisesDBDataSource(
         isGlobal: Boolean,
         userId: String? = null,
         pendingUpload: Boolean = false
-    ): DBExerciseObject = withContext(Dispatchers.IO) {
-        dao.transactionWithResult {
-            dao.createExercise(
-                uuid = uuid,
-                remoteId = remoteId,
-                nameEn = nameEn,
-                nameRu = nameRu,
-                nameUk = nameUk,
-                details = details,
-                image1 = image1,
-                image2 = image2,
-                primaryCategoryUuid = categoryUuid,
-                secondaryCategoryUuids = secondaryCategoryUuids?.joinToString(";"),
-                resultType = resultType.toLong(),
-                global = isGlobal,
-                userId = userId,
-                pendingUpload = pendingUpload
-            )
-            dao.getExerciseByUuid(
-                uuid = uuid,
-                mapper = { u, rId, nEn, nRu, nUk, det, i1, i2,
-                           rt, pcu, scu, g,
-                           _, _, _, _ ->
-                    mapper.map(
-                        uuid = u,
-                        remoteId = rId,
-                        nameEn = nEn,
-                        nameRu = nRu,
-                        nameUk = nUk,
-                        details = det,
-                        image1 = i1,
-                        image2 = i2,
-                        resultType = rt.toInt(),
-                        primaryCategoryUuid = pcu,
-                        secondaryCategoryUuids = scu,
-                        isGlobal = g
-                    )
-                }
-            ).executeAsOne()
-        }
+    ) = withContext(Dispatchers.IO) {
+        dao.createExercise(
+            uuid = uuid,
+            remoteId = remoteId,
+            nameEn = nameEn,
+            nameRu = nameRu,
+            nameUk = nameUk,
+            details = details,
+            image1 = image1,
+            image2 = image2,
+            primaryCategoryUuid = categoryUuid,
+            secondaryCategoryUuids = secondaryCategoryUuids?.joinToString(";"),
+            resultType = resultType.toLong(),
+            global = isGlobal,
+            userId = userId,
+            pendingUpload = pendingUpload,
+        )
     }
 
     /**
@@ -397,7 +255,9 @@ class ExercisesDBDataSource(
         pendingUpload: Boolean = false,
     ): Boolean = withContext(Dispatchers.IO) {
         dao.transactionWithResult {
-            if (dao.getExerciseByUuid(
+            // Sees tombstones — a row the user deliberately deleted
+            // shouldn't be re-imported by a migrator re-run.
+            if (dao.getExerciseByUuidIncludingDeleted(
                     uuid = uuid,
                     mapper = { u, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ -> u }
                 ).executeAsOneOrNull() != null
@@ -421,53 +281,6 @@ class ExercisesDBDataSource(
                 pendingUpload = pendingUpload,
             )
             true
-        }
-    }
-
-    suspend fun updateExercise(
-        uuid: String,
-        remoteId: String,
-        nameEn: String,
-        nameRu: String,
-        nameUk: String,
-        details: String?,
-        categoryUuid: String,
-        secondaryCategoryUuids: List<String>?,
-        resultType: Int
-    ): DBExerciseObject = withContext(Dispatchers.IO) {
-        dao.transactionWithResult {
-            dao.updateExercise(
-                uuid = uuid,
-                remoteId = remoteId,
-                nameEn = nameEn,
-                nameRu = nameRu,
-                nameUk = nameUk,
-                details = details,
-                primaryCategoryUuid = categoryUuid,
-                secondaryCategoryUuids = secondaryCategoryUuids?.joinToString(";"),
-                resultType = resultType.toLong()
-            )
-            dao.getExerciseByUuid(
-                uuid = uuid,
-                mapper = { u, rId, nEn, nRu, nUk, det, i1, i2,
-                           rt, pcu, scu, g,
-                           _, _, _, _ ->
-                    mapper.map(
-                        uuid = u,
-                        remoteId = rId,
-                        nameEn = nEn,
-                        nameRu = nRu,
-                        nameUk = nUk,
-                        details = det,
-                        image1 = i1,
-                        image2 = i2,
-                        resultType = rt.toInt(),
-                        primaryCategoryUuid = pcu,
-                        secondaryCategoryUuids = scu,
-                        isGlobal = g
-                    )
-                }
-            ).executeAsOne()
         }
     }
 
@@ -523,44 +336,75 @@ class ExercisesDBDataSource(
      */
     suspend fun getAllExercisesWithCategoriesBatch(userId: String): List<DBExerciseObject> =
         withContext(Dispatchers.IO) {
-            val categoryByUuid: Map<String, kz.maestrosultan.fitjournal.data.exercise.entity.DBCategoryObject> =
-                mapper.allCategoriesByUuid()
-            dao.getAllExercisesForUser(
-                userId = userId,
-                mapper = { uuid, remoteId, nameEn, nameRu, nameUk, details, image1, image2,
-                           resultType, primaryCategoryUuid, secondaryCategoryUuids, global,
-                           _, _, _, _ ->
-                    val primary = categoryByUuid[primaryCategoryUuid]
-                        ?: kz.maestrosultan.fitjournal.data.exercise.entity.DBCategoryObject(
-                            uuid = primaryCategoryUuid,
-                            remoteId = primaryCategoryUuid,
-                            nameEn = "Unknown",
-                            nameRu = "Unknown",
-                            nameUk = "Unknown",
-                            type = 0,
-                            details = null
-                        )
-                    val secondary: List<kz.maestrosultan.fitjournal.data.exercise.entity.DBCategoryObject>? =
-                        secondaryCategoryUuids
-                            ?.takeIf { it.isNotEmpty() }
-                            ?.split(";")
-                            ?.mapNotNull { categoryByUuid[it] }
-                    DBExerciseObject(
-                        uuid = uuid,
-                        remoteId = remoteId,
-                        nameEn = nameEn,
-                        nameRu = nameRu,
-                        nameUk = nameUk,
-                        image1 = image1,
-                        image2 = image2,
-                        details = details,
-                        resultType = resultType.toInt(),
-                        primaryCategory = primary,
-                        secondaryCategories = secondary,
-                        isGlobal = global
-                    )
+            val categoryByUuid = mapper.allCategoriesByUuid()
+            buildExercisesQuery(userId, categoryByUuid).executeAsList()
+        }
+
+    /**
+     * Reactive variant of [getAllExercisesWithCategoriesBatch]. SQLDelight
+     * emits a fresh snapshot on any mutation of the `exercises` table —
+     * powers Android's live exercise-list UI updates after create / delete
+     * without re-querying from the use case.
+     *
+     * Categories are captured once at flow construction. The catalog is
+     * admin-managed (seeded via `scripts/seed_aws_global_catalog.py`) so
+     * one snapshot is good for the flow's lifetime. If you ever need
+     * categories to participate in reactive updates, combine with
+     * `CategoriesDBDataSource.getAllCategoriesFlow`.
+     */
+    fun getAllExercisesForUserFlow(userId: String): Flow<List<DBExerciseObject>> {
+        val categoryByUuid = mapper.allCategoriesByUuid()
+        return buildExercisesQuery(userId, categoryByUuid)
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .flowOn(Dispatchers.IO)
+    }
+
+    fun getExerciseByUuidFlow(uuid: String): Flow<DBExerciseObject?> {
+        val categoryByUuid = mapper.allCategoriesByUuid()
+        return dao.getExerciseByUuid(
+            uuid = uuid,
+            mapper = exerciseRowMapper(categoryByUuid),
+        ).asFlow().mapToOneOrNull(Dispatchers.IO).flowOn(Dispatchers.IO)
+    }
+
+    private fun buildExercisesQuery(
+        userId: String,
+        categoryByUuid: Map<String, DBCategoryObject>,
+    ) = dao.getAllExercisesForUser(
+        userId = userId,
+        mapper = exerciseRowMapper(categoryByUuid),
+    )
+
+    private fun exerciseRowMapper(
+        categoryByUuid: Map<String, DBCategoryObject>,
+    ): (String, String, String, String, String?, String?, String?, String?, Long, String, String?, Boolean, String?, Boolean, String?, String?) -> DBExerciseObject =
+        { uuid, remoteId, nameEn, nameRu, nameUk, details, image1, image2,
+          resultType, primaryCategoryUuid, secondaryCategoryUuids, global,
+          _, _, _, _ ->
+            val primary = categoryByUuid[primaryCategoryUuid]
+                ?: error("Catalog category not found for exercise '$uuid': '$primaryCategoryUuid'")
+            val secondary: List<DBCategoryObject>? = secondaryCategoryUuids
+                ?.takeIf { it.isNotEmpty() }
+                ?.split(";")
+                ?.map { secondaryUuid ->
+                    categoryByUuid[secondaryUuid]
+                        ?: error("Secondary category not found for exercise '$uuid': '$secondaryUuid'")
                 }
-            ).executeAsList()
+            DBExerciseObject(
+                uuid = uuid,
+                remoteId = remoteId,
+                nameEn = nameEn,
+                nameRu = nameRu,
+                nameUk = nameUk,
+                image1 = image1,
+                image2 = image2,
+                details = details,
+                resultType = resultType.toInt(),
+                primaryCategory = primary,
+                secondaryCategories = secondary,
+                isGlobal = global,
+            )
         }
 
     /**
@@ -594,9 +438,10 @@ class ExercisesDBDataSource(
      * `pendingUpload=1` regardless of `deletedAt` (tombstoned rows must
      * also propagate to AWS as soft-deletes).
      */
-    suspend fun getPendingUploads(): List<DBExerciseObject> = withContext(Dispatchers.IO) {
+    suspend fun getPendingUploads(userId: String): List<DBExerciseObject> = withContext(Dispatchers.IO) {
         dao
             .getPendingUploads(
+                userId = userId,
                 mapper = { uuid, remoteId, nameEn, nameRu, nameUk, details, image1, image2,
                            resultType, primaryCategoryUuid, secondaryCategoryUuids, global,
                            userId, _, deletedAt, _ ->
@@ -702,8 +547,4 @@ class ExercisesDBDataSource(
                 )
                 .executeAsList()
         }
-
-    suspend fun deleteAllExercises() = withContext(Dispatchers.IO) {
-        dao.deleteAllExercises()
-    }
 }

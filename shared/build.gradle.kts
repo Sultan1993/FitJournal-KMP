@@ -28,6 +28,12 @@ kotlin {
         minSdk = libs.versions.minSDK.get().toInt()
     }
 
+    // Test-only JVM target. Lets the pure-commonMain repositories be unit-tested
+    // with an in-memory JDBC SQLite driver (see src/jvmTest). The Android and iOS
+    // variants the apps actually consume are unaffected — nothing depends on this
+    // target. See docs/sync-migration-architecture.md §10.
+    jvm()
+
     // iOS
     val xcf = XCFramework()
     listOf(
@@ -38,6 +44,15 @@ kotlin {
             baseName = moduleName
             export(libs.kotlin.stdlib)
             xcf.add(this)
+            // Match the iOS app's `IPHONEOS_DEPLOYMENT_TARGET = 17.0`. Kotlin
+            // 2.3.20 defaults K/N's iOS deployment target to 14.0; Xcode 26.4
+            // / Swift 6.3.1 rejects the resulting `.swiftmodule` as "built
+            // for incompatible target" and falls back to a partial
+            // swiftinterface compile, dropping symbols. Pinning to 17 here
+            // realigns it.
+            freeCompilerArgs += listOf(
+                "-Xoverride-konan-properties=osVersionMin.ios_arm64=17.0;osVersionMin.ios_simulator_arm64=17.0",
+            )
         }
     }
 
@@ -71,6 +86,19 @@ kotlin {
         val iosMain by getting {
             dependencies {
                 implementation(libs.sqldelight.native)
+            }
+        }
+
+        // JVM (test harness only)
+        val jvmMain by getting {
+            dependencies {
+                implementation("app.cash.sqldelight:sqlite-driver:2.1.0")
+            }
+        }
+        val jvmTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.kotlinx.coroutines.core)
             }
         }
     }

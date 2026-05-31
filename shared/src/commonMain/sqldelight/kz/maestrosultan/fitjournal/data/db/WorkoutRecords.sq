@@ -4,7 +4,7 @@ CREATE TABLE workoutRecords (
     uuid TEXT PRIMARY KEY NOT NULL,
     remoteId TEXT,
     userId TEXT NOT NULL,
-    diaryId TEXT NOT NULL,
+    journalId TEXT NOT NULL,
     date TEXT NOT NULL,
     position INTEGER NOT NULL,
     comment TEXT,
@@ -17,23 +17,25 @@ CREATE TABLE workoutRecords (
     updatedDate TEXT NOT NULL
 );
 
--- Sole hot-path index: every UI read scopes to (userId, diaryId), filters
+-- Sole hot-path index: every UI read scopes to (userId, journalId), filters
 -- live, orders by date DESC then position ASC. Partial on
 -- `deletedAt IS NULL` keeps it tight. The previous `(userId, date)` and
--- `(diaryId)` indices were redundant on a single-user-per-device app
--- where every read is diary-scoped already.
-CREATE INDEX idx_workoutRecords_live_diary ON workoutRecords(userId, diaryId, date DESC, position ASC) WHERE deletedAt IS NULL;
-CREATE INDEX idx_workoutRecords_pending ON workoutRecords(pendingUpload);
+-- `(journalId)` indices were redundant on a single-user-per-device app
+-- where every read is journal-scoped already.
+CREATE INDEX idx_workoutRecords_live_journal ON workoutRecords(userId, journalId, date DESC, position ASC) WHERE deletedAt IS NULL;
+-- Sync push drain. Partial on `pendingUpload = 1` so the index scales
+-- with the (typically empty) backlog, not the whole table.
+CREATE INDEX idx_workoutRecords_pending ON workoutRecords(uuid) WHERE pendingUpload = 1;
 
--- Records in (user, diary). Date filter is half-open: `from` inclusive,
+-- Records in (user, journal). Date filter is half-open: `from` inclusive,
 -- `to` exclusive. Callers that want "everything" pass an epoch lower
--- bound and `9999-12-31` upper bound; one shape covers full-diary scans,
+-- bound and `9999-12-31` upper bound; one shape covers full-journal scans,
 -- monthly windows, and date-day filters.
-getWorkoutRecordsByDiary:
+getWorkoutRecordsByJournal:
 SELECT *
 FROM workoutRecords
 WHERE userId = ?
-AND diaryId = ?
+AND journalId = ?
 AND date >= ?
 AND date < ?
 AND deletedAt IS NULL
@@ -56,19 +58,39 @@ SELECT *
 FROM workoutRecords
 WHERE uuid = ?;
 
+-- Pending uploads, scoped to a single user. After sign-out/sign-in
+-- as a different user, the previous user's stale pendingUpload rows
+-- must NOT be pushed under the new user's session.
 getPendingUploads:
 SELECT *
 FROM workoutRecords
-WHERE pendingUpload = 1;
+WHERE pendingUpload = 1
+AND userId = ?;
+
+-- Lightweight change signal for the home screen. Observed as a Flow:
+-- SQLDelight re-emits whenever the workoutRecords table is written
+-- (insert / update / soft-delete). Every write bumps `updatedDate`
+-- (set edits go through replaceWorkoutRecord → updateWorkoutRecord,
+-- which sets updatedDate), so MAX(updatedDate) changes on ANY content
+-- change — not just record add/delete. coalesce → non-null empty
+-- string when the journal has no records yet.
+observeJournalRecordsSignal:
+SELECT coalesce(MAX(updatedDate), '') AS signal
+FROM workoutRecords
+WHERE userId = ?
+AND journalId = ?;
 
 createWorkoutRecord:
-INSERT INTO workoutRecords(uuid, remoteId, userId, diaryId, date, position, comment, startedAt, durationSec, pendingUpload, createdDate, updatedDate)
+INSERT INTO workoutRecords(uuid, remoteId, userId, journalId, date, position, comment, startedAt, durationSec, pendingUpload, createdDate, updatedDate)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
+-- Live-only update. Tombstoned rows are no-ops — a UI write should
+-- never land on a deleted record, and the predicate makes that explicit.
 updateWorkoutRecord:
 UPDATE workoutRecords
 SET position = ?, comment = ?, startedAt = ?, durationSec = ?, updatedDate = ?, pendingUpload = 1
-WHERE uuid = ?;
+WHERE uuid = ?
+AND deletedAt IS NULL;
 
 updateWorkoutRecordRemoteId:
 UPDATE workoutRecords
@@ -81,25 +103,36 @@ WHERE uuid = ?;
 -- Callers must check `pendingUpload=1` on the existing row first to honor
 -- the local-wins escape hatch.
 upsertWorkoutRecordFromRemote:
-INSERT OR REPLACE INTO workoutRecords(uuid, remoteId, userId, diaryId, date, position, comment, startedAt, durationSec, deletedAt, pendingUpload, schemaVersion, createdDate, updatedDate)
+INSERT OR REPLACE INTO workoutRecords(uuid, remoteId, userId, journalId, date, position, comment, startedAt, durationSec, deletedAt, pendingUpload, schemaVersion, createdDate, updatedDate)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?);
 
+-- Same shape as the above but hardcodes pendingUpload=1. Used by the
+-- orchestrator's orphan-reparent path: a remote workout references a
+-- journalId that no longer exists locally (e.g. parent journal dropped
+-- during a destructive schema migration). We rewrite `journalId` to the
+-- user's personal journal and mark dirty so push corrects AWS on the
+-- next tick.
+upsertWorkoutRecordFromRemoteAsPending:
+INSERT OR REPLACE INTO workoutRecords(uuid, remoteId, userId, journalId, date, position, comment, startedAt, durationSec, deletedAt, pendingUpload, schemaVersion, createdDate, updatedDate)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?);
+
+-- Idempotent on live rows only — re-tombstoning shifts `deletedAt`
+-- and bumps `updatedDate` for no reason; the predicate makes the
+-- second call a no-op.
 softDeleteWorkoutRecord:
 UPDATE workoutRecords
 SET deletedAt = ?, updatedDate = ?, pendingUpload = 1
-WHERE uuid = ?;
+WHERE uuid = ?
+AND deletedAt IS NULL;
 
-deleteWorkoutRecord:
-DELETE FROM workoutRecords
-WHERE uuid = ?;
-
-deleteWorkoutRecordsByDiary:
-DELETE FROM workoutRecords
-WHERE diaryId = ?;
-
+-- Hard purge by user. Only used by the delete-account flow.
 deleteWorkoutRecordsByUserId:
 DELETE FROM workoutRecords
 WHERE userId = ?;
 
-deleteAllWorkoutRecords:
+-- Full wipe. Used once on FJ1.x → FJ2.0 upgrade to drop legacy
+-- parseUserId-keyed rows before hydration repopulates with awsUserId.
+-- FK ON DELETE CASCADE on workoutExercises/workoutSets handles children
+-- when PRAGMA foreign_keys=ON.
+wipeAll:
 DELETE FROM workoutRecords;

@@ -1,6 +1,6 @@
 import kotlin.Boolean;
 
-DROP TABLE notes;
+DROP TABLE IF EXISTS notes;
 
 CREATE TABLE IF NOT EXISTS notes (
   uuid TEXT PRIMARY KEY NOT NULL,

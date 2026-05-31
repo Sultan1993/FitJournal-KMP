@@ -44,5 +44,13 @@ createCategory:
 INSERT INTO categories(uuid, remoteId, nameEn, nameRu, nameUk, type, details)
 VALUES (?, ?, ?, ?, ?, ?, ?);
 
-deleteAllCategories:
+-- Sync-pull upsert: writes the row from AWS without any pendingUpload flag.
+-- Used by SyncOrchestrator pullGlobalCatalog. Idempotent — safe to call every tick.
+upsertCategoryFromRemote:
+INSERT OR REPLACE INTO categories(uuid, remoteId, nameEn, nameRu, nameUk, type, details)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+-- Full wipe. Used once on FJ1.x → FJ2.0 upgrade to drop legacy
+-- parseUserId-keyed rows before hydration repopulates with awsUserId.
+wipeAll:
 DELETE FROM categories;

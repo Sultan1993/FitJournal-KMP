@@ -1,0 +1,113 @@
+import kotlin.Boolean;
+
+CREATE TABLE journals (
+    uuid TEXT PRIMARY KEY NOT NULL,
+    remoteId TEXT,
+    userId TEXT NOT NULL,
+    name TEXT NOT NULL,
+    comments TEXT,
+    isPersonal INTEGER AS Boolean NOT NULL DEFAULT 0,
+    workoutGoal INTEGER,
+    deletedAt TEXT,
+    pendingUpload INTEGER AS Boolean NOT NULL DEFAULT 1,
+    createdDate TEXT NOT NULL,
+    updatedDate TEXT NOT NULL
+);
+
+-- Partial: every UI read filters `deletedAt IS NULL`. Skipping tombstoned
+-- rows from the index keeps it small and hot-cached. Mirrors the pattern
+-- used by notes/bodyMeasurements.
+CREATE INDEX idx_journals_user_live ON journals(userId) WHERE deletedAt IS NULL;
+-- Sync push drain. Partial on `pendingUpload = 1`.
+CREATE INDEX idx_journals_pending ON journals(uuid) WHERE pendingUpload = 1;
+
+-- Personal journal first, then alphabetical by name. Sort happens in
+-- SQL — callers never re-sort.
+getJournals:
+SELECT *
+FROM journals
+WHERE userId = ?
+AND deletedAt IS NULL
+ORDER BY isPersonal DESC, name ASC;
+
+-- UI-facing single-row read. Tombstones filtered — a soft-deleted
+-- journal looks like "not found" to the UI.
+getJournalById:
+SELECT *
+FROM journals
+WHERE uuid = ?
+AND deletedAt IS NULL;
+
+-- Sync-only single-row read. Sees tombstones so the orchestrator can
+-- compare local vs remote `deletedAt` on pull and propagate the
+-- deletion to AWS on push. UI/repo paths must use [getJournalById].
+getJournalByIdIncludingDeleted:
+SELECT *
+FROM journals
+WHERE uuid = ?;
+
+getPersonalJournal:
+SELECT *
+FROM journals
+WHERE userId = ?
+AND isPersonal = 1
+AND deletedAt IS NULL
+LIMIT 1;
+
+-- Pending uploads, scoped to a single user. After sign-out/sign-in
+-- as a different user, the previous user's stale pendingUpload rows
+-- must NOT be pushed under the new user's session.
+getPendingUploads:
+SELECT *
+FROM journals
+WHERE pendingUpload = 1
+AND userId = ?;
+
+createJournal:
+INSERT INTO journals(uuid, remoteId, userId, name, comments, isPersonal, workoutGoal, pendingUpload, createdDate, updatedDate)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+-- Live-only update — tombstoned journals should never be edited.
+updateJournal:
+UPDATE journals
+SET name = ?, comments = ?, workoutGoal = ?, updatedDate = ?, pendingUpload = 1
+WHERE uuid = ?
+AND deletedAt IS NULL;
+
+-- Push-success ack. No `deletedAt IS NULL` filter — tombstones must
+-- also clear their pendingUpload after a successful tombstone push.
+-- See the parallel comment in `Notes.sq` for the race rationale.
+updateJournalRemoteId:
+UPDATE journals
+SET remoteId = ?, pendingUpload = 0
+WHERE uuid = ?;
+
+-- Sync-pull upsert: writes the row from AWS without bumping pendingUpload.
+-- Used by SyncOrchestrator pull. Callers must check `pendingUpload=1` on
+-- the existing row before calling this and skip if unpushed local writes
+-- would be stomped (the local-wins escape hatch).
+upsertJournalFromRemote:
+INSERT OR REPLACE INTO journals(uuid, remoteId, userId, name, comments, isPersonal, workoutGoal, deletedAt, pendingUpload, createdDate, updatedDate)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?);
+
+-- Idempotent on live rows only.
+softDeleteJournal:
+UPDATE journals
+SET deletedAt = ?, updatedDate = ?, pendingUpload = 1
+WHERE uuid = ?
+AND deletedAt IS NULL;
+
+-- Bulk soft-delete used by the delete-account flow. Single UPDATE under
+-- `idx_journals_user_live` (partial on `deletedAt IS NULL`) — O(rows
+-- touched), no per-row round-trip. Replaces the per-row loop in
+-- `DefaultJournalRepository.deleteUserJournals`.
+softDeleteJournalsByUserId:
+UPDATE journals
+SET deletedAt = ?, updatedDate = ?, pendingUpload = 1
+WHERE userId = ?
+AND deletedAt IS NULL;
+
+-- Full wipe. Used once on FJ1.x → FJ2.0 upgrade to drop legacy
+-- parseUserId-keyed rows before hydration repopulates with awsUserId.
+wipeAll:
+DELETE FROM journals;

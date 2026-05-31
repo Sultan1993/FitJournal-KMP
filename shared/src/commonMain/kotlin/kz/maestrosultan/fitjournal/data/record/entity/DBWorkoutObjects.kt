@@ -22,7 +22,7 @@ data class DBWorkoutRecordRow(
     val uuid: String,
     val remoteId: String?,
     val userId: String,
-    val diaryId: String,
+    val journalId: String,
     val date: String,
     val position: Int,
     val comment: String?,
@@ -61,6 +61,7 @@ data class DBWorkoutExerciseWithSets(
     val sets: List<DBWorkoutSetObject>,
 )
 
+
 /**
  * A workout record — domain shape: an entry in the user's logbook. Has
  * its parent SQL row plus the child exercises (each with their child
@@ -76,7 +77,7 @@ fun WorkoutRecords.map(): DBWorkoutRecordRow = DBWorkoutRecordRow(
     uuid = uuid,
     remoteId = remoteId,
     userId = userId,
-    diaryId = diaryId,
+    journalId = journalId,
     date = date,
     position = position.toInt(),
     comment = comment,

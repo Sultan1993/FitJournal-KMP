@@ -19,7 +19,7 @@ import kotlinx.datetime.LocalDate
 data class WorkoutSet(
     val id: String,
     val userId: String,
-    val diaryId: String,
+    val journalId: String,
     val date: LocalDate,
     val weight: Double?,
     val reps: Int?,

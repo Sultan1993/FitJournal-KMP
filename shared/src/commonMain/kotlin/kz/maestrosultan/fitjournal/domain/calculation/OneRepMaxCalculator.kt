@@ -18,13 +18,26 @@ object OneRepMaxCalculator {
     )
 
     fun calculate(weight: Double, reps: Int): List<OneRepMaxItem> {
-        val oneRm = weight * (36.0 / (37.0 - reps.toDouble()))
+        // A non-positive weight (bodyweight-only set or bad upstream data)
+        // would yield a table of all-zero rows — return empty so the UI can
+        // show "no estimate" instead of a misleading 0-kg table.
+        if (weight <= 0.0 || reps <= 0) return emptyList()
+        // Clamp to the validity range of Brzycki. At reps ≥ 37 the
+        // denominator hits zero or goes negative — the formula was never
+        // intended past ~10 reps anyway. Outside [1, 10] we cap at 10
+        // rather than refusing the call so the UI table still has data
+        // to render for users who logged a high-rep set.
+        val clampedReps = reps.coerceIn(1, 10)
+        val oneRm = weight * (36.0 / (37.0 - clampedReps.toDouble()))
         return PERCENTAGES.mapIndexed { index, percent ->
             val repCount = index + 1
             val computedWeight = if (index == 0) oneRm else (percent * oneRm) / 100.0
             OneRepMaxItem(
                 repCount = repCount,
-                weight = computedWeight.toInt(),
+                // Round instead of truncate — `.toInt()` was dropping fractional
+                // kg/lb (e.g. 99.9 → 99). Rounding makes the 1RM table match
+                // both lifting-coach intuition and the iOS pre-FJ-2.0 behavior.
+                weight = kotlin.math.round(computedWeight).toInt(),
                 percent = percent,
             )
         }

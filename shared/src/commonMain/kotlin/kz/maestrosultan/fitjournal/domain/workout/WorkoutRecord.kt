@@ -6,7 +6,7 @@ import kotlinx.datetime.LocalDate
 data class WorkoutRecord(
     val id: String,
     val userId: String,
-    val diaryId: String,
+    val journalId: String,
     val position: Int,
     val date: LocalDate,
     val exercises: List<WorkoutExercise>,

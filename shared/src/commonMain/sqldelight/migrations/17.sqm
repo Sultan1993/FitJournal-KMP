@@ -1,0 +1,44 @@
+-- Migration 17 — Index reshape for measurement-date sort, drop dead
+-- by-category index, make `idx_exercises_user` partial.
+--
+-- Fresh installs pick the new shapes up from the `.sq` files directly.
+-- The query-level tombstone guards on `updateXRemoteId` and the
+-- `getBodyMeasurementById` split / `getBodyMeasurementByIdIncludingDeleted`
+-- addition are pure query changes regenerated from the `.sq` files —
+-- they don't need migration steps.
+--
+-- `idx_bodyMeasurements_diary_live` gains `measurementDate DESC` so the
+-- main list query walks the index directly in display order — no sort
+-- step.
+DROP INDEX IF EXISTS idx_bodyMeasurements_diary_live;
+CREATE INDEX IF NOT EXISTS idx_bodyMeasurements_diary_live
+ON bodyMeasurements(userId, journalId, measurementDate DESC)
+WHERE deletedAt IS NULL;
+
+-- New type-scoped variant: drives the per-measurement chart screen
+-- (`getBodyMeasurementsByType`). Without it, that query did a full
+-- scan over every measurement in the journal and post-filtered by type.
+CREATE INDEX IF NOT EXISTS idx_bodyMeasurements_diary_type_live
+ON bodyMeasurements(userId, journalId, type, measurementDate DESC)
+WHERE deletedAt IS NULL;
+
+-- `idx_exercises_user` becomes partial on `deletedAt IS NULL`. Every
+-- UI read of this index filters tombstones; carrying them in the
+-- index just wastes space.
+DROP INDEX IF EXISTS idx_exercises_user;
+CREATE INDEX IF NOT EXISTS idx_exercises_user
+ON exercises(userId)
+WHERE deletedAt IS NULL;
+
+-- `idx_exercises_category_live` is dead: the only query that used it
+-- (`getExercisesByCategoryForUser`) had no caller and has been removed
+-- from `Exercises.sq`. The repo path full-loads and filters in Kotlin
+-- because secondary-category matching can't be a SQL `=` lookup.
+DROP INDEX IF EXISTS idx_exercises_category_live;
+
+-- `photoMeasurements` table is dead: Android's repo populates an
+-- in-memory MutableStateFlow from AWS reads (never reads the table);
+-- iOS goes direct to AWS without a local DS. The `syncPhotoMeasurements`
+-- function that wrote rows was never called. Drop table and index.
+DROP INDEX IF EXISTS idx_photoMeasurements_diary;
+DROP TABLE IF EXISTS photoMeasurements;

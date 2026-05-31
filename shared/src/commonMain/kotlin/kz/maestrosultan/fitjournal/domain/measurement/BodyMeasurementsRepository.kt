@@ -7,28 +7,19 @@ import kz.maestrosultan.fitjournal.domain.measurement.BodyMeasurementType
 
 interface BodyMeasurementsRepository {
 
-    suspend fun getBodyMeasurements(userId: String, diaryId: String): List<BodyMeasurement>
-    fun getBodyMeasurementsFlow(userId: String, diaryId: String): Flow<List<BodyMeasurement>>
+    suspend fun getBodyMeasurements(userId: String, journalId: String): List<BodyMeasurement>
+    fun getBodyMeasurementsFlow(userId: String, journalId: String): Flow<List<BodyMeasurement>>
 
     suspend fun getBodyMeasurementsByType(
         userId: String,
-        diaryId: String,
+        journalId: String,
         type: BodyMeasurementType,
     ): List<BodyMeasurement>
-
-    fun getBodyMeasurementsByTypeFlow(
-        userId: String,
-        diaryId: String,
-        type: BodyMeasurementType,
-    ): Flow<List<BodyMeasurement>>
-
-    suspend fun getBodyMeasurementById(uuid: String): BodyMeasurement
-    fun getBodyMeasurementByIdFlow(uuid: String): Flow<BodyMeasurement>
 
     suspend fun createBodyMeasurement(
         uuid: String,
         userId: String,
-        diaryId: String,
+        journalId: String,
         type: BodyMeasurementType,
         value: Double,
         date: LocalDate,
@@ -42,7 +33,12 @@ interface BodyMeasurementsRepository {
         comment: String?,
     )
 
+    /**
+     * Soft delete — tombstones the row and flips `pendingUpload=1` so
+     * the SyncOrchestrator pushes the deletion to AWS on its next tick.
+     */
     suspend fun deleteBodyMeasurement(uuid: String)
 
+    /** Hard purge — used by the delete-account flow. */
     suspend fun deleteUserBodyMeasurements(userId: String)
 }

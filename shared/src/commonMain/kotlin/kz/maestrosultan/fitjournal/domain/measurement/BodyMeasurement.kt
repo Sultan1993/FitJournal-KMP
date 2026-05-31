@@ -5,7 +5,7 @@ import kotlin.time.Instant
 data class BodyMeasurement(
     val id: String,
     val userId: String,
-    val diaryId: String,
+    val journalId: String,
     val type: BodyMeasurementType,
     val value: Double,
     val comment: String?,

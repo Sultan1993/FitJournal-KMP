@@ -4,7 +4,7 @@ import kotlin.time.Instant
 
 /**
  * Domain model of the signed-in user. Mutable session state — the
- * currently selected diary, the active subscription, the firebase token —
+ * currently selected journal, the active subscription, the firebase token —
  * lives outside this type in platform-side stores; this type stays a
  * pure value object so it round-trips through SQLite and AWS without
  * extra plumbing.

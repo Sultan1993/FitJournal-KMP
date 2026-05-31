@@ -1,6 +1,6 @@
 import kotlin.Boolean;
 
-DROP TABLE exercises;
+DROP TABLE IF EXISTS exercises;
 
 CREATE TABLE IF NOT EXISTS exercises (
     uuid TEXT PRIMARY KEY NOT NULL,

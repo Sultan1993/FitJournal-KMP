@@ -24,23 +24,17 @@ class ExerciseDBMapper(private val categoryDataSource: CategoriesDBDataSource) {
         secondaryCategoryUuids: String?,
         isGlobal: Boolean
     ): DBExerciseObject {
-        // Use OrNull to tolerate missing/stale categories; fallback placeholder prevents crashes.
-        val primaryCategory = categoryDataSource.getCategoryByUuidOrNullBlocking(primaryCategoryUuid)
-            ?: DBCategoryObject(
-                uuid = primaryCategoryUuid,
-                remoteId = primaryCategoryUuid,
-                nameEn = "Unknown",
-                nameRu = "Unknown",
-                nameUk = "Unknown",
-                type = 0,
-                details = null
-            )
+        val primaryCategory = categoryDataSource.getCategoryByUuidBlocking(primaryCategoryUuid)
+            ?: error("Catalog category not found for exercise '$uuid': '$primaryCategoryUuid'")
         val secondaryCategories = if (secondaryCategoryUuids.isNullOrEmpty()) {
             emptyList()
         } else {
             secondaryCategoryUuids
                 .split(";")
-                .mapNotNull { categoryDataSource.getCategoryByUuidOrNullBlocking(it) }
+                .map { secondaryUuid ->
+                    categoryDataSource.getCategoryByUuidBlocking(secondaryUuid)
+                        ?: error("Secondary category not found for exercise '$uuid': '$secondaryUuid'")
+                }
         }
 
         return DBExerciseObject(
