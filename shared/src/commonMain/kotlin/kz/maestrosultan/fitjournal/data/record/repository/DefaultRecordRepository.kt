@@ -157,9 +157,13 @@ class DefaultRecordRepository(
         if (rows.isEmpty()) return emptyList()
         return rows
             .groupBy { it.set.workoutExerciseUuid }
-            .map { (weUuid, group) ->
+            .mapNotNull { (weUuid, group) ->
                 val first = group.first()
-                val recordDate = LocalDate.parse(first.recordDate)
+                // Defensive: a malformed stored date (e.g. a legacy "…Z" value
+                // written before the pull-side normalization) must not throw and
+                // sink the whole occurrence list — skip just that occurrence.
+                val recordDate = runCatching { LocalDate.parse(first.recordDate) }.getOrNull()
+                    ?: return@mapNotNull null
                 WorkoutExercise(
                     id = weUuid,
                     userId = userId,
