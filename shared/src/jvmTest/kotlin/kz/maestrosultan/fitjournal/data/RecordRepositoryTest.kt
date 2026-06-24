@@ -92,6 +92,84 @@ class RecordRepositoryTest {
     }
 
     @Test
+    fun previousWeightHint_isPerPosition_notLastSetOnEverySet(): Unit = runBlocking {
+        // Regression: copying / repeating a workout (and the previous-set hint
+        // in general) used to take the prior occurrence's LAST set and stamp
+        // its weight onto every set. Each set must instead show the weight from
+        // the matching position last time.
+        val exId = seedCatalogExercise()
+        val prevDate = LocalDate(2026, 1, 10)
+        val curDate = LocalDate(2026, 1, 17)
+
+        // Previous occurrence: 3 sets at distinct weights.
+        repo.addExercisesToDate(userId, journalId, prevDate, listOf(exId))
+        val prevWeId = repo.getRecordsByDate(userId, journalId, prevDate).single().exercises.single().id
+        repo.addSet(userId, journalId, prevWeId, 100.0, 10, null, null, DifficultyType.LIGHT)
+        repo.addSet(userId, journalId, prevWeId, 110.0, 8, null, null, DifficultyType.MEDIUM)
+        repo.addSet(userId, journalId, prevWeId, 120.0, 6, null, null, DifficultyType.HARD)
+
+        // Current occurrence: 4 sets — values irrelevant, we assert the hint.
+        repo.addExercisesToDate(userId, journalId, curDate, listOf(exId))
+        val curWeId = repo.getRecordsByDate(userId, journalId, curDate).single().exercises.single().id
+        repeat(4) { repo.addSet(userId, journalId, curWeId, 0.0, 1, null, null, DifficultyType.NONE) }
+
+        val sets = repo.getRecordsByDate(userId, journalId, curDate).single().exercises.single().sets
+        // set N ← prior occurrence's set N; the 4th overflows → falls back to last (120).
+        assertEquals(listOf(100.0, 110.0, 120.0, 120.0), sets.map { it.previousWeight })
+        assertEquals(DifficultyType.LIGHT, sets.first().previousDifficultyType)
+    }
+
+    @Test
+    fun mergeRecords_intoSuperset_doesNotCollideOnSetUuids(): Unit = runBlocking {
+        // Regression: creating a superset crashed with `UNIQUE constraint
+        // failed: workoutSets.uuid`. mergeRecords re-parented the second
+        // record's sets onto a new exercise uuid but reused the set uuids;
+        // softDeleteWorkoutRecord only tombstones the record row, so those
+        // set rows physically remained and the reinsert hit the PK.
+        val exId = seedCatalogExercise()
+        repo.addExercisesToDate(userId, journalId, date, listOf(exId, exId))
+        val records = repo.getRecordsByDate(userId, journalId, date).sortedBy { it.position }
+        assertEquals(2, records.size)
+        val (first, second) = records
+        // Both records need sets — the crash only fires when the merged-in
+        // exercise carries sets to reinsert.
+        repo.addSet(userId, journalId, first.exercises.single().id, 100.0, 5, null, null, DifficultyType.MEDIUM)
+        repo.addSet(userId, journalId, second.exercises.single().id, 60.0, 12, null, null, DifficultyType.LIGHT)
+        repo.addSet(userId, journalId, second.exercises.single().id, 70.0, 10, null, null, DifficultyType.HARD)
+
+        val merged = repo.mergeRecords(userId, journalId, first, second)
+
+        // Second record tombstoned → one live superset record with both exercises.
+        assertEquals(1, merged.size)
+        val superset = merged.single()
+        assertEquals(2, superset.exercises.size)
+        val allSetIds = superset.exercises.flatMap { it.sets }.map { it.id }
+        assertEquals(3, allSetIds.size)
+        assertEquals(allSetIds.size, allSetIds.toSet().size, "merged set uuids must be unique")
+    }
+
+    @Test
+    fun removeExerciseFromSuperset_thenLastExercise_tombstonesRecord(): Unit = runBlocking {
+        val exId = seedCatalogExercise()
+        repo.addExercisesToDate(userId, journalId, date, listOf(exId, exId))
+        val records = repo.getRecordsByDate(userId, journalId, date).sortedBy { it.position }
+        val (first, second) = records
+        repo.addSet(userId, journalId, second.exercises.single().id, 60.0, 12, null, null, DifficultyType.LIGHT)
+        val superset = repo.mergeRecords(userId, journalId, first, second).single()
+        assertEquals(2, superset.exercises.size)
+
+        // Remove one exercise → record survives with the other.
+        val afterFirstRemoval = repo.removeExerciseFromRecord(userId, journalId, superset, superset.exercises.first())
+        assertEquals(1, afterFirstRemoval.size)
+        val remaining = afterFirstRemoval.single()
+        assertEquals(1, remaining.exercises.size)
+
+        // Remove the last exercise → record tombstoned, nothing live for the date.
+        val afterLastRemoval = repo.removeExerciseFromRecord(userId, journalId, remaining, remaining.exercises.single())
+        assertTrue(afterLastRemoval.isEmpty(), "removing the last exercise leaves no live record")
+    }
+
+    @Test
     fun deleteRecord_tombstones_andKeepsPendingForSync(): Unit = runBlocking {
         val exId = seedCatalogExercise()
         repo.addExercisesToDate(userId, journalId, date, listOf(exId))

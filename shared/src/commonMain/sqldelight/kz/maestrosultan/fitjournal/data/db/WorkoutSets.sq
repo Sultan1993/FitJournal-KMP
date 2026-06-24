@@ -159,17 +159,16 @@ AND NOT EXISTS (
     )
 );
 
--- Last set (highest position) for each of the given workoutExercises.
--- Companion to getLastWorkoutExercisesForExercisesBeforeDate.
-getLastSetsForWorkoutExercises:
+-- All sets (position-ordered) for each of the given workoutExercises.
+-- Companion to getLastWorkoutExercisesForExercisesBeforeDate: feeds the
+-- per-position previous-set hint so set N of the current exercise maps to
+-- set N of the most recent prior occurrence (not that occurrence's last
+-- set stamped onto every set — see DefaultRecordRepository.mapExercise).
+getSetsForWorkoutExercises:
 SELECT *
 FROM workoutSets
 WHERE workoutExerciseUuid IN ?
-AND position = (
-    SELECT MAX(s2.position)
-    FROM workoutSets s2
-    WHERE s2.workoutExerciseUuid = workoutSets.workoutExerciseUuid
-);
+ORDER BY position ASC;
 
 -- All set writes go through `replaceWorkoutRecord` (whole-tree replace),
 -- so only INSERT is needed at this layer. Updates / deletes are

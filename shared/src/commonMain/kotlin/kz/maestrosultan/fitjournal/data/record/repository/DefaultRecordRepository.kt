@@ -473,9 +473,15 @@ class DefaultRecordRepository(
         val mergedTail = secondTree.exercises.mapIndexed { idx, exWithSets ->
             // Re-parent each merged exercise: new uuid (so AWS doesn't
             // confuse it with the source record's child) + updated
-            // workoutRecordUuid + bumped position.
+            // workoutRecordUuid + bumped position. Sets need fresh uuids too:
+            // softDeleteWorkoutRecord only tombstones the source record row,
+            // so the source's workoutSets rows physically remain — reusing
+            // their uuids collides on the PK (UNIQUE constraint failed:
+            // workoutSets.uuid) when replaceWorkoutRecord reinserts them.
             val newExUuid = randomUuid()
-            val newSets = exWithSets.sets.map { it.copy(workoutExerciseUuid = newExUuid) }
+            val newSets = exWithSets.sets.map {
+                it.copy(uuid = randomUuid(), workoutExerciseUuid = newExUuid)
+            }
             DBWorkoutExerciseWithSets(
                 exercise = exWithSets.exercise.copy(
                     uuid = newExUuid,
@@ -684,17 +690,19 @@ class DefaultRecordRepository(
     }
 
     /**
-     * Builds `weUuid -> previousSet?` for every workoutExercise inside
-     * [trees]. For each catalog exercise, "previous" is the LAST set of
-     * the most recent prior occurrence in chronological order
-     * `(record.date DESC, record.position DESC, we.position DESC)`.
-     * Most lookups resolve in-memory from the already-loaded trees.
-     * The remaining "oldest in window per exercise" cases fall through
-     * to [WorkoutsDBDataSource.getLastSetForExerciseBeforeDate].
+     * Builds `weUuid -> previousSets` (position-ordered) for every
+     * workoutExercise inside [trees]. For each catalog exercise, "previous"
+     * is the most recent prior occurrence in chronological order
+     * `(record.date DESC, record.position DESC, we.position DESC)`; its full
+     * set list is returned so [mapExercise] can match the hint per position
+     * (set N ← prior occurrence's set N) instead of stamping the last set
+     * onto every set. Most lookups resolve in-memory from the already-loaded
+     * trees. The remaining "oldest in window per exercise" cases fall through
+     * to [WorkoutsDBDataSource.getPreviousSetsForExercisesBeforeDate].
      */
     private suspend fun buildPreviousSetMap(
         trees: List<DBWorkoutRecord>,
-    ): Map<String, DBWorkoutSetObject?> {
+    ): Map<String, List<DBWorkoutSetObject>> {
         // Flatten and group by catalog exerciseUuid so each group is a
         // chronological chain of occurrences for one exercise.
         data class WeContext(
@@ -705,7 +713,7 @@ class DefaultRecordRepository(
             .flatMap { tree -> tree.exercises.map { WeContext(tree, it) } }
             .groupBy { it.exWithSets.exercise.exerciseUuid }
 
-        val previousByWeUuid = HashMap<String, DBWorkoutSetObject?>(
+        val previousByWeUuid = HashMap<String, List<DBWorkoutSetObject>>(
             byExerciseUuid.values.sumOf { it.size }
         )
         val boundary = ArrayList<WeContext>()
@@ -713,7 +721,7 @@ class DefaultRecordRepository(
         for ((_, contexts) in byExerciseUuid) {
             // Sort newest → oldest so each entry's "previous" is the
             // NEXT one in the sorted list. Ordering matches
-            // `getLastSetForExerciseBeforeDate`'s tiebreaker chain.
+            // `getLastWorkoutExercisesForExercisesBeforeDate`'s tiebreaker chain.
             val sorted = contexts.sortedWith(
                 compareByDescending<WeContext> { it.tree.row.date }
                     .thenByDescending { it.tree.row.position }
@@ -724,7 +732,7 @@ class DefaultRecordRepository(
                 val previous = sorted.getOrNull(i + 1)
                 if (previous != null) {
                     previousByWeUuid[current.exWithSets.exercise.uuid] =
-                        previous.exWithSets.sets.maxByOrNull { it.position }
+                        previous.exWithSets.sets.sortedBy { it.position }
                 } else {
                     // Oldest occurrence in this window — the real previous
                     // (if any) is outside the loaded trees. Defer to SQL.
@@ -738,15 +746,16 @@ class DefaultRecordRepository(
         // per exercise. userId/journalId are constant across a single read.
         for ((date, contexts) in boundary.groupBy { it.tree.row.date }) {
             val sample = contexts.first()
-            val previousByExerciseUuid = workoutsDB.getLastSetsForExercisesBeforeDate(
+            val previousByExerciseUuid = workoutsDB.getPreviousSetsForExercisesBeforeDate(
                 exerciseUuids = contexts.map { it.exWithSets.exercise.exerciseUuid }.distinct(),
                 userId = sample.tree.row.userId,
                 journalId = sample.tree.row.journalId,
                 beforeDateString = date,
             )
             for (b in contexts) {
-                previousByWeUuid[b.exWithSets.exercise.uuid] =
-                    previousByExerciseUuid[b.exWithSets.exercise.exerciseUuid]
+                previousByExerciseUuid[b.exWithSets.exercise.exerciseUuid]?.let {
+                    previousByWeUuid[b.exWithSets.exercise.uuid] = it
+                }
             }
         }
 
@@ -756,7 +765,7 @@ class DefaultRecordRepository(
     private fun toDomain(
         tree: DBWorkoutRecord,
         exerciseLookup: Map<String, Exercise>,
-        previousSetMap: Map<String, DBWorkoutSetObject?>,
+        previousSetMap: Map<String, List<DBWorkoutSetObject>>,
     ): WorkoutRecord {
         val recordDate = LocalDate.parse(tree.row.date)
         val mappedExercises = tree.exercises.mapNotNull { exWithSets ->
@@ -791,16 +800,19 @@ class DefaultRecordRepository(
         journalId: String,
         recordDate: LocalDate,
         exerciseLookup: Map<String, Exercise>,
-        previousSetMap: Map<String, DBWorkoutSetObject?>,
+        previousSetMap: Map<String, List<DBWorkoutSetObject>>,
     ): WorkoutExercise {
         // O(1) lookup against the per-call exercise dict (one SELECT off
         // the catalog table, shaped for resolution).
         val domainExercise = exerciseLookup[exWithSets.exercise.exerciseUuid]
             ?: error("Catalog exercise not found: ${exWithSets.exercise.exerciseUuid}")
-        // Pre-computed by `buildPreviousSetMap` — no per-we SQL call.
-        // All sets in this workoutExercise share the same previous values
-        // (matches pre-FJ-2.0 semantics).
-        val previousSet = previousSetMap[exWithSets.exercise.uuid]
+        // Pre-computed by `buildPreviousSetMap` — no per-we SQL call. Match the
+        // hint per position so set N shows the prior occurrence's set N (the
+        // weight you lifted on that set last time). Positions overflowing the
+        // prior occurrence (more sets this time) fall back to its last set.
+        val previousSets = previousSetMap[exWithSets.exercise.uuid].orEmpty()
+        val previousByPosition = previousSets.associateBy { it.position }
+        val previousLastSet = previousSets.maxByOrNull { it.position }
         val sets = exWithSets.sets.map { set ->
             mapSet(
                 set = set,
@@ -808,7 +820,7 @@ class DefaultRecordRepository(
                 journalId = journalId,
                 recordDate = recordDate,
                 resultType = domainExercise.resultType,
-                previousSet = previousSet,
+                previousSet = previousByPosition[set.position] ?: previousLastSet,
             )
         }
         return WorkoutExercise(

@@ -158,14 +158,16 @@ class WorkoutsDBDataSource(
     }
 
     // Batched variant: for catalog exercises sharing one cutoff date, returns
-    // the previous set (last set of the most recent prior workoutExercise) per
-    // exercise uuid — two queries total instead of one per exercise.
-    suspend fun getLastSetsForExercisesBeforeDate(
+    // ALL sets (position-ordered) of the most recent prior workoutExercise per
+    // exercise uuid — two queries total instead of one per exercise. The full
+    // set list lets the caller map the previous-set hint per position (set N ←
+    // prior occurrence's set N) rather than stamping the last set everywhere.
+    suspend fun getPreviousSetsForExercisesBeforeDate(
         exerciseUuids: Collection<String>,
         userId: String,
         journalId: String,
         beforeDateString: String,
-    ): Map<String, DBWorkoutSetObject> = withContext(Dispatchers.IO) {
+    ): Map<String, List<DBWorkoutSetObject>> = withContext(Dispatchers.IO) {
         if (exerciseUuids.isEmpty()) return@withContext emptyMap()
         val weRows = setsDao
             .getLastWorkoutExercisesForExercisesBeforeDate(exerciseUuids, userId, journalId, beforeDateString)
@@ -173,10 +175,10 @@ class WorkoutsDBDataSource(
         if (weRows.isEmpty()) return@withContext emptyMap()
         val weUuidToExerciseUuid = weRows.associate { it.weUuid to it.exerciseUuid }
         setsDao
-            .getLastSetsForWorkoutExercises(weUuidToExerciseUuid.keys)
+            .getSetsForWorkoutExercises(weUuidToExerciseUuid.keys)
             .executeAsList()
-            .mapNotNull { row -> weUuidToExerciseUuid[row.workoutExerciseUuid]?.let { it to row.map() } }
-            .toMap()
+            .mapNotNull { row -> weUuidToExerciseUuid[row.workoutExerciseUuid]?.let { exUuid -> exUuid to row.map() } }
+            .groupBy({ it.first }, { it.second })
     }
 
     private fun childrenOf(workoutRecordUuid: String): List<DBWorkoutExerciseWithSets> {
