@@ -33,7 +33,7 @@ object ColorTokens {
 
     // Brand
     val brand = ColorToken(0xFF7C72F2, 0xFF7C72F2)
-    val brandSubtle = ColorToken(0xFFF2F1FE, 0xFF191730)
+    val brandSubtle = ColorToken(0xFFE5E1FC, 0xFF2B2650)
     val accent = ColorToken(0xFFFBEAB2, 0xFFFBEAB2)
 
     // Surfaces
