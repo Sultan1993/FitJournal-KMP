@@ -38,10 +38,10 @@ object ColorTokens {
 
     // Surfaces
     val background = ColorToken(0xFFFFFFFF, 0xFF000000)
-    val surface = ColorToken(0xFFF4F6FA, 0xFF1C1C1E)
+    val surface = ColorToken(0xFFF1F3F9, 0xFF18181F)
 
     /** Floating chrome (alerts, action sheets) — sits above [surface] in dark mode. */
-    val surfaceElevated = ColorToken(0xFFFFFFFF, 0xFF2C2C2E)
+    val surfaceElevated = ColorToken(0xFFFFFFFF, 0xFF26262E)
 
     // Text — solid colors, three steps.
     val textPrimary = ColorToken(0xFF040415, 0xFFFFFFFF)
