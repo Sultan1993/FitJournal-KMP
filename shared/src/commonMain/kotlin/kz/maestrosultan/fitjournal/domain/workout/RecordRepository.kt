@@ -157,10 +157,11 @@ interface RecordRepository {
 
     /**
      * Combines [secondRecord]'s exercises into [firstRecord] and tombstones
-     * [secondRecord]. Returns the freshly-mapped trees for the calendar
-     * day [firstRecord] lives on so the caller can update the UI in one
-     * shot. Empty list when either record is missing.
+     * [secondRecord], atomically. Returns the freshly-mapped trees for the
+     * calendar day [firstRecord] lives on so the caller can update the UI in
+     * one shot. Empty list when either record is missing.
      */
+    @Throws(Exception::class)
     suspend fun mergeRecords(
         userId: String,
         journalId: String,
@@ -169,10 +170,13 @@ interface RecordRepository {
     ): List<WorkoutRecord>
 
     /**
-     * Removes [exercise] from [record]. If it was the last exercise the
-     * record itself is tombstoned. Returns the freshly-mapped trees for
-     * the calendar day [record] lives on.
+     * "Remove from superset": splits [exercise] out of [record] into its own
+     * new record right after it (the inverse of [mergeRecords]), atomically.
+     * Removing the only exercise of a single-exercise record is a no-op —
+     * deleting a whole record is [deleteRecord]'s job. Returns the freshly-
+     * mapped trees for the calendar day [record] lives on.
      */
+    @Throws(Exception::class)
     suspend fun removeExerciseFromRecord(
         userId: String,
         journalId: String,
@@ -199,6 +203,7 @@ interface RecordRepository {
 
     /** @return true if the target set existed and was updated; false if it
      *  was already gone (no write is performed in that case). */
+    @Throws(Exception::class)
     suspend fun updateSet(
         userId: String,
         journalId: String,
@@ -213,6 +218,7 @@ interface RecordRepository {
 
     /** @return true if the target set existed and was deleted; false if it
      *  was already gone (no write is performed in that case). */
+    @Throws(Exception::class)
     suspend fun deleteSet(
         userId: String,
         journalId: String,
