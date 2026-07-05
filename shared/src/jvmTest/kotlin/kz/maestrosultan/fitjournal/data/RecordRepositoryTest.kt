@@ -266,6 +266,28 @@ class RecordRepositoryTest {
     }
 
     @Test
+    fun deleteMiddleSet_ofThree_keepsOthersInOrder_andRenumbers(): Unit = runBlocking {
+        val exId = seedCatalogExercise()
+        repo.addExercisesToDate(userId, journalId, date, listOf(exId))
+        val weId = repo.getRecordsByDate(userId, journalId, date).single().exercises.single().id
+        repo.addSet(userId, journalId, weId, 100.0, 10, null, null, DifficultyType.LIGHT)
+        repo.addSet(userId, journalId, weId, 110.0, 8, null, null, DifficultyType.MEDIUM)
+        repo.addSet(userId, journalId, weId, 120.0, 6, null, null, DifficultyType.HARD)
+
+        val middle = repo.getRecordsByDate(userId, journalId, date).single().exercises.single().sets[1]
+        assertEquals(true, repo.deleteSet(userId, journalId, weId, middle.id))
+
+        val sets = repo.getRecordsByDate(userId, journalId, date).single().exercises.single().sets
+        assertEquals(listOf(100.0, 120.0), sets.map { it.weight }, "middle removed, survivors keep order")
+
+        // A new set lands after the survivors — proves positions renumbered to
+        // 0,1 (otherwise it would collide with a survivor still at position 2).
+        repo.addSet(userId, journalId, weId, 130.0, 5, null, null, DifficultyType.NONE)
+        val after = repo.getRecordsByDate(userId, journalId, date).single().exercises.single().sets
+        assertEquals(listOf(100.0, 120.0, 130.0), after.map { it.weight })
+    }
+
+    @Test
     fun deleteRecord_tombstones_andKeepsPendingForSync(): Unit = runBlocking {
         val exId = seedCatalogExercise()
         repo.addExercisesToDate(userId, journalId, date, listOf(exId))
