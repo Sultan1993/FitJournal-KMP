@@ -256,17 +256,51 @@ class WorkoutsDBDataSource(
     // marks pendingUpload=1), never their children.
     suspend fun splitWorkoutRecord(
         source: DBWorkoutRecord,
-        siblingRowsToUpdate: List<DBWorkoutRecordRow>,
         newRecord: DBWorkoutRecord,
+        shiftedUpdatedDate: Instant,
     ) = withContext(Dispatchers.IO) {
         recordsDao.transaction {
             updateRecordRow(source.row)
             exercisesDao.deleteWorkoutExercisesByRecord(source.row.uuid)
             insertChildren(source)
-            for (row in siblingRowsToUpdate) {
-                updateRecordRow(row)
-            }
+            // Same-day records after the source shift +1 to make room for
+            // the split-off record. Read INSIDE the transaction — a sync
+            // pull landing between an outside read and the commit would
+            // make the shift write stale positions.
+            recordsDao
+                .getWorkoutRecordsByJournal(source.row.userId, source.row.journalId, EPOCH, FAR_FUTURE)
+                .executeAsList()
+                .map { it.map() }
+                .filter {
+                    it.date == source.row.date &&
+                        it.uuid != source.row.uuid &&
+                        it.position > source.row.position
+                }
+                .forEach { row ->
+                    updateRecordRow(row.copy(position = row.position + 1, updatedDate = shiftedUpdatedDate))
+                }
             insertRecord(newRecord)
+        }
+    }
+
+    // Atomic superset merge — replaces the target record's children AND
+    // tombstones the absorbed record in one transaction. As two separate
+    // transactions, a crash between them left both records live with the
+    // absorbed exercises duplicated (and both queued for push).
+    suspend fun mergeWorkoutRecords(
+        merged: DBWorkoutRecord,
+        tombstoneUuid: String,
+        deletedAt: Instant = Clock.System.now(),
+    ) = withContext(Dispatchers.IO) {
+        recordsDao.transaction {
+            updateRecordRow(merged.row)
+            exercisesDao.deleteWorkoutExercisesByRecord(merged.row.uuid)
+            insertChildren(merged)
+            recordsDao.softDeleteWorkoutRecord(
+                deletedAt = deletedAt.toStoredString(),
+                updatedDate = deletedAt.toStoredString(),
+                uuid = tombstoneUuid,
+            )
         }
     }
 

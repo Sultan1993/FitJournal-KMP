@@ -221,6 +221,29 @@ class RecordRepositoryTest {
     }
 
     @Test
+    fun removingMiddleExercise_ofThreeMemberSuperset_keepsSurvivorOrder(): Unit = runBlocking {
+        val exId = seedCatalogExercise()
+        repo.addExercisesToDate(userId, journalId, date, listOf(exId, exId, exId))
+        val records = repo.getRecordsByDate(userId, journalId, date).sortedBy { it.position }
+        val two = repo.mergeRecords(userId, journalId, records[0], records[1])
+            .single { it.exercises.size == 2 }
+        val third = repo.getRecordsByDate(userId, journalId, date).single { it.id != two.id }
+        val superset = repo.mergeRecords(userId, journalId, two, third)
+            .single { it.exercises.size == 3 }
+        val (first, middle, last) = superset.exercises
+
+        val after = repo.removeExerciseFromRecord(userId, journalId, superset, middle)
+
+        val sorted = after.sortedBy { it.position }
+        assertEquals(2, sorted.size)
+        val source = sorted.single { it.id == superset.id }
+        val split = sorted.single { it.id != superset.id }
+        // Domain exercises come back position-ordered — order proves the renumbering.
+        assertEquals(listOf(first.id, last.id), source.exercises.map { it.id }, "survivors keep order")
+        assertEquals(middle.id, split.exercises.single().id)
+    }
+
+    @Test
     fun deleteRecord_tombstones_andKeepsPendingForSync(): Unit = runBlocking {
         val exId = seedCatalogExercise()
         repo.addExercisesToDate(userId, journalId, date, listOf(exId))

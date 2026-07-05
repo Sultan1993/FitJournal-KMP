@@ -492,13 +492,15 @@ class DefaultRecordRepository(
             )
         }
         val mergedExercises = firstTree.exercises + mergedTail
-        workoutsDB.replaceWorkoutRecord(
-            firstTree.copy(
+        // One transaction: absorbing + tombstoning must not be separable
+        // (a crash between them would leave duplicate live copies).
+        workoutsDB.mergeWorkoutRecords(
+            merged = firstTree.copy(
                 row = firstTree.row.copy(updatedDate = Clock.System.now()),
                 exercises = mergedExercises,
             ),
+            tombstoneUuid = secondRecord.id,
         )
-        workoutsDB.softDeleteWorkoutRecord(secondRecord.id)
 
         val dateStr = firstRecord.date.toString()
         val exerciseLookup = exerciseLookupForRead(userId)
@@ -524,25 +526,18 @@ class DefaultRecordRepository(
             val repositioned = remaining.mapIndexed { idx, exWithSets ->
                 exWithSets.copy(exercise = exWithSets.exercise.copy(position = idx))
             }
-            // Make room right after the source record on the same day.
-            val shiftedSiblings = workoutsDB.getWorkoutRecordsByJournal(userId, journalId)
-                .filter {
-                    it.row.date == tree.row.date &&
-                        it.row.uuid != tree.row.uuid &&
-                        it.row.position > tree.row.position
-                }
-                .map { it.row.copy(position = it.row.position + 1, updatedDate = now) }
             // The split-off exercise keeps its uuid and sets in a new record.
-            // splitWorkoutRecord runs the whole reposition+shift+insert in ONE
-            // transaction — the removed exercise must never be observable as
-            // missing from both records (crash / concurrent sync push).
+            // splitWorkoutRecord runs reposition + same-day sibling shift +
+            // insert in ONE transaction (siblings are read inside it) — the
+            // removed exercise must never be observable as missing from both
+            // records (crash / concurrent sync push).
             val newRecordUuid = randomUuid()
             workoutsDB.splitWorkoutRecord(
                 source = tree.copy(
                     row = tree.row.copy(updatedDate = now),
                     exercises = repositioned,
                 ),
-                siblingRowsToUpdate = shiftedSiblings,
+                shiftedUpdatedDate = now,
                 newRecord = DBWorkoutRecord(
                     row = newRecordRow(
                         newRecordUuid,
