@@ -240,16 +240,33 @@ class WorkoutsDBDataSource(
 
     suspend fun replaceWorkoutRecord(record: DBWorkoutRecord) = withContext(Dispatchers.IO) {
         recordsDao.transaction {
-            recordsDao.updateWorkoutRecord(
-                position = record.row.position.toLong(),
-                comment = record.row.comment,
-                startedAt = record.row.startedAt?.toStoredString(),
-                durationSec = record.row.durationSec?.toLong(),
-                updatedDate = record.row.updatedDate.toStoredString(),
-                uuid = record.row.uuid,
-            )
+            updateRecordRow(record.row)
             exercisesDao.deleteWorkoutExercisesByRecord(record.row.uuid)
             insertChildren(record)
+        }
+    }
+
+    // Atomic "remove from superset" split. The removed exercise's rows are
+    // deleted (by replacing the source record's children) and reinserted
+    // under the new record with their original uuids — if those steps ran as
+    // separate transactions, a crash or a concurrently ticking sync push
+    // could observe (and upload) the state where the exercise exists in
+    // NEITHER record, i.e. permanent data loss. One transaction closes that
+    // window. Sibling shifts only touch the record row (updateWorkoutRecord
+    // marks pendingUpload=1), never their children.
+    suspend fun splitWorkoutRecord(
+        source: DBWorkoutRecord,
+        siblingRowsToUpdate: List<DBWorkoutRecordRow>,
+        newRecord: DBWorkoutRecord,
+    ) = withContext(Dispatchers.IO) {
+        recordsDao.transaction {
+            updateRecordRow(source.row)
+            exercisesDao.deleteWorkoutExercisesByRecord(source.row.uuid)
+            insertChildren(source)
+            for (row in siblingRowsToUpdate) {
+                updateRecordRow(row)
+            }
+            insertRecord(newRecord)
         }
     }
 
@@ -318,6 +335,17 @@ class WorkoutsDBDataSource(
         recordsDao.transaction {
             recordsDao.deleteWorkoutRecordsByUserId(userId)
         }
+    }
+
+    private fun updateRecordRow(row: DBWorkoutRecordRow) {
+        recordsDao.updateWorkoutRecord(
+            position = row.position.toLong(),
+            comment = row.comment,
+            startedAt = row.startedAt?.toStoredString(),
+            durationSec = row.durationSec?.toLong(),
+            updatedDate = row.updatedDate.toStoredString(),
+            uuid = row.uuid,
+        )
     }
 
     private fun insertRecord(record: DBWorkoutRecord) {

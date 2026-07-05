@@ -521,49 +521,42 @@ class DefaultRecordRepository(
         // A record with a single exercise isn't a superset — nothing to split.
         if (removed != null && remaining.isNotEmpty()) {
             val now = Clock.System.now()
-            // Take the exercise out of the source record. replaceWorkoutRecord
-            // deletes+reinserts the record's children, freeing the removed
-            // exercise/set uuids for re-parenting below.
             val repositioned = remaining.mapIndexed { idx, exWithSets ->
                 exWithSets.copy(exercise = exWithSets.exercise.copy(position = idx))
             }
-            workoutsDB.replaceWorkoutRecord(
-                tree.copy(
-                    row = tree.row.copy(updatedDate = now),
-                    exercises = repositioned,
-                ),
-            )
             // Make room right after the source record on the same day.
-            workoutsDB.getWorkoutRecordsByJournal(userId, journalId)
+            val shiftedSiblings = workoutsDB.getWorkoutRecordsByJournal(userId, journalId)
                 .filter {
                     it.row.date == tree.row.date &&
                         it.row.uuid != tree.row.uuid &&
                         it.row.position > tree.row.position
                 }
-                .forEach {
-                    workoutsDB.replaceWorkoutRecord(
-                        it.copy(row = it.row.copy(position = it.row.position + 1, updatedDate = now)),
-                    )
-                }
+                .map { it.row.copy(position = it.row.position + 1, updatedDate = now) }
             // The split-off exercise keeps its uuid and sets in a new record.
+            // splitWorkoutRecord runs the whole reposition+shift+insert in ONE
+            // transaction — the removed exercise must never be observable as
+            // missing from both records (crash / concurrent sync push).
             val newRecordUuid = randomUuid()
-            workoutsDB.createWorkoutRecordsIfMissing(
-                listOf(
-                    DBWorkoutRecord(
-                        row = newRecordRow(
-                            newRecordUuid,
-                            userId,
-                            journalId,
-                            tree.row.date,
-                            tree.row.position + 1,
-                            now,
-                        ),
-                        exercises = listOf(
-                            removed.copy(
-                                exercise = removed.exercise.copy(
-                                    workoutRecordUuid = newRecordUuid,
-                                    position = 0,
-                                ),
+            workoutsDB.splitWorkoutRecord(
+                source = tree.copy(
+                    row = tree.row.copy(updatedDate = now),
+                    exercises = repositioned,
+                ),
+                siblingRowsToUpdate = shiftedSiblings,
+                newRecord = DBWorkoutRecord(
+                    row = newRecordRow(
+                        newRecordUuid,
+                        userId,
+                        journalId,
+                        tree.row.date,
+                        tree.row.position + 1,
+                        now,
+                    ),
+                    exercises = listOf(
+                        removed.copy(
+                            exercise = removed.exercise.copy(
+                                workoutRecordUuid = newRecordUuid,
+                                position = 0,
                             ),
                         ),
                     ),

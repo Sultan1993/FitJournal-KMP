@@ -180,11 +180,44 @@ class RecordRepositoryTest {
             "split keeps the exercise's sets",
         )
         assertEquals(source.position + 1, split.position, "split lands right after the source record")
+        val pending = workoutsDB.getPendingUploads(userId).map { it.uuid }
+        assertTrue(source.id in pending, "shrunk source record must be queued for push")
+        assertTrue(split.id in pending, "split-off record must be queued for push")
+        assertNull(workoutsDB.getWorkoutRecordById(split.id)?.row?.remoteId, "split-off record is a new row, no remoteId yet")
 
         // Removing the only exercise of a non-superset record is a no-op
         // (a 1-exercise record isn't a superset; deletion is deleteRecord's job).
         val afterNoOp = repo.removeExerciseFromRecord(userId, journalId, split, split.exercises.single())
         assertEquals(2, afterNoOp.size, "no-op: nothing deleted")
+    }
+
+    @Test
+    fun removeExerciseFromSuperset_shiftsLaterSameDayRecords(): Unit = runBlocking {
+        // The split inserts a new record at source.position + 1 — any later
+        // same-day record must shift +1 (and be re-queued for push) so the
+        // day's ordering stays: source, split-off, everything after.
+        val exId = seedCatalogExercise()
+        repo.addExercisesToDate(userId, journalId, date, listOf(exId, exId, exId))
+        val records = repo.getRecordsByDate(userId, journalId, date).sortedBy { it.position }
+        assertEquals(3, records.size)
+        val superset = repo.mergeRecords(userId, journalId, records[0], records[1])
+            .single { it.exercises.size == 2 }
+        val third = repo.getRecordsByDate(userId, journalId, date).single { it.id == records[2].id }
+        val thirdPositionBefore = third.position
+
+        val after = repo.removeExerciseFromRecord(userId, journalId, superset, superset.exercises.last())
+
+        assertEquals(3, after.size, "source + split + shifted third record")
+        val sorted = after.sortedBy { it.position }
+        assertEquals(superset.id, sorted[0].id, "source record stays first")
+        assertEquals(superset.exercises.first().id, sorted[0].exercises.single().id)
+        assertEquals(superset.exercises.last().id, sorted[1].exercises.single().id, "split-off lands second")
+        assertEquals(third.id, sorted[2].id, "later record stays after the split-off")
+        assertEquals(thirdPositionBefore + 1, sorted[2].position, "later record shifted +1")
+        assertTrue(
+            workoutsDB.getPendingUploads(userId).any { it.uuid == third.id },
+            "shifted record must be re-queued for push",
+        )
     }
 
     @Test

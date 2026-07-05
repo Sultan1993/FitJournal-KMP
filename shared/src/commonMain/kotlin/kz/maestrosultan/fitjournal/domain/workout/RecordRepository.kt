@@ -69,6 +69,7 @@ interface RecordRepository {
      * `WorkoutSet`s in (userId, journalId) belonging to [exerciseId]
      * (catalog uuid). Avoids loading and filtering the entire journal tree.
      */
+    @Throws(Exception::class)
     suspend fun getSetsForExercise(
         userId: String,
         journalId: String,
@@ -87,6 +88,7 @@ interface RecordRepository {
      * then by we.position. `WorkoutSet.previous*` fields are left null
      * — the history / stats cells don't render them.
      */
+    @Throws(Exception::class)
     suspend fun getExerciseOccurrences(
         userId: String,
         journalId: String,
