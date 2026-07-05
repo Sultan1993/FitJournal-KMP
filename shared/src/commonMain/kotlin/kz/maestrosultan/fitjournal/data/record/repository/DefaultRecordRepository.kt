@@ -632,14 +632,16 @@ class DefaultRecordRepository(
         distance: Double?,
         duration: Int?,
         difficultyType: DifficultyType,
-    ) {
-        val tree = findTreeContainingExercise(userId, journalId, workoutExerciseId) ?: return
+    ): Boolean {
+        val tree = findTreeContainingExercise(userId, journalId, workoutExerciseId) ?: return false
+        var matched = false
         val updatedExercises = tree.exercises.map { exWithSets ->
             if (exWithSets.exercise.uuid != workoutExerciseId) return@map exWithSets
             val updatedSets = exWithSets.sets.map { set ->
                 if (set.uuid != setId) {
                     set
                 } else {
+                    matched = true
                     set.copy(
                         weight = weight,
                         reps = reps,
@@ -651,12 +653,17 @@ class DefaultRecordRepository(
             }
             exWithSets.copy(sets = updatedSets)
         }
+        // The set was already gone (e.g. deleted by a concurrent sync pull):
+        // don't write — a no-op replaceWorkoutRecord would still bump
+        // updatedDate/pendingUpload and push a spurious, stale record.
+        if (!matched) return false
         workoutsDB.replaceWorkoutRecord(
             tree.copy(
                 row = tree.row.copy(updatedDate = Clock.System.now()),
                 exercises = updatedExercises,
             ),
         )
+        return true
     }
 
     override suspend fun deleteSet(
@@ -664,21 +671,25 @@ class DefaultRecordRepository(
         journalId: String,
         workoutExerciseId: String,
         setId: String,
-    ) {
-        val tree = findTreeContainingExercise(userId, journalId, workoutExerciseId) ?: return
+    ): Boolean {
+        val tree = findTreeContainingExercise(userId, journalId, workoutExerciseId) ?: return false
+        var matched = false
         val updatedExercises = tree.exercises.map { exWithSets ->
             if (exWithSets.exercise.uuid != workoutExerciseId) return@map exWithSets
             val survivors = exWithSets.sets.filterNot { it.uuid == setId }
+            if (survivors.size != exWithSets.sets.size) matched = true
             // Re-position survivors so positions stay contiguous.
             val repositioned = survivors.mapIndexed { idx, set -> set.copy(position = idx) }
             exWithSets.copy(sets = repositioned)
         }
+        if (!matched) return false
         workoutsDB.replaceWorkoutRecord(
             tree.copy(
                 row = tree.row.copy(updatedDate = Clock.System.now()),
                 exercises = updatedExercises,
             ),
         )
+        return true
     }
 
     // ─── Mapping ───────────────────────────────────────────────────────

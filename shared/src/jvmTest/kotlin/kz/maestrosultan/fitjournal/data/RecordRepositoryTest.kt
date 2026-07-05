@@ -75,6 +75,28 @@ class RecordRepositoryTest {
     }
 
     @Test
+    fun updateOrDeleteMissingSet_returnsFalse_andDoesNotQueuePush(): Unit = runBlocking {
+        val exId = seedCatalogExercise()
+        repo.addExercisesToDate(userId, journalId, date, listOf(exId))
+        val rec = repo.getRecordsByDate(userId, journalId, date).single()
+        val weId = rec.exercises.single().id
+        // Drain the record's initial pendingUpload so we can assert the no-op
+        // doesn't re-queue it.
+        workoutsDB.markUploaded(rec.id, "remote-1")
+        assertTrue(workoutsDB.getPendingUploads(userId).none { it.uuid == rec.id })
+
+        val updated = repo.updateSet(userId, journalId, weId, "ghost-set", 100.0, 5, null, null, DifficultyType.HARD)
+        val deleted = repo.deleteSet(userId, journalId, weId, "ghost-set")
+
+        assertEquals(false, updated, "updating a vanished set is a no-op")
+        assertEquals(false, deleted, "deleting a vanished set is a no-op")
+        assertTrue(
+            workoutsDB.getPendingUploads(userId).none { it.uuid == rec.id },
+            "a no-op set write must not re-queue the record for push",
+        )
+    }
+
+    @Test
     fun addingTwoSets_requiresFkCascade_andKeepsBoth(): Unit = runBlocking {
         // Each addSet round-trips through replaceWorkoutRecord (delete children
         // → reinsert, reusing the workoutExercise uuid). Without ON DELETE

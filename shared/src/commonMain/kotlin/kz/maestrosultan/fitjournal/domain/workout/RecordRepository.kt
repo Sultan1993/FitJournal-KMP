@@ -197,6 +197,8 @@ interface RecordRepository {
         difficultyType: DifficultyType,
     )
 
+    /** @return true if the target set existed and was updated; false if it
+     *  was already gone (no write is performed in that case). */
     suspend fun updateSet(
         userId: String,
         journalId: String,
@@ -207,12 +209,14 @@ interface RecordRepository {
         distance: Double?,
         duration: Int?,
         difficultyType: DifficultyType,
-    )
+    ): Boolean
 
+    /** @return true if the target set existed and was deleted; false if it
+     *  was already gone (no write is performed in that case). */
     suspend fun deleteSet(
         userId: String,
         journalId: String,
         workoutExerciseId: String,
         setId: String,
-    )
+    ): Boolean
 }
