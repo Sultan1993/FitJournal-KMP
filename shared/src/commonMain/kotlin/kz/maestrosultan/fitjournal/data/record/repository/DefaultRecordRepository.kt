@@ -514,20 +514,59 @@ class DefaultRecordRepository(
         exercise: WorkoutExercise,
     ): List<WorkoutRecord> {
         val tree = workoutsDB.getWorkoutRecordById(record.id) ?: return emptyList()
+        val removed = tree.exercises.firstOrNull { it.exercise.uuid == exercise.id }
         val remaining = tree.exercises.filterNot { it.exercise.uuid == exercise.id }
-        if (remaining.isEmpty()) {
-            // Last exercise removed → tombstone the (now empty) record
-            // so it doesn't show up as a content-less workout.
-            workoutsDB.softDeleteWorkoutRecord(record.id)
-        } else {
-            // Re-position survivors so positions stay contiguous.
+        // "Remove from superset" is a SPLIT (mergeRecords' inverse), not a delete:
+        // the exercise leaves the shared record into its own record right after it.
+        // A record with a single exercise isn't a superset — nothing to split.
+        if (removed != null && remaining.isNotEmpty()) {
+            val now = Clock.System.now()
+            // Take the exercise out of the source record. replaceWorkoutRecord
+            // deletes+reinserts the record's children, freeing the removed
+            // exercise/set uuids for re-parenting below.
             val repositioned = remaining.mapIndexed { idx, exWithSets ->
                 exWithSets.copy(exercise = exWithSets.exercise.copy(position = idx))
             }
             workoutsDB.replaceWorkoutRecord(
                 tree.copy(
-                    row = tree.row.copy(updatedDate = Clock.System.now()),
+                    row = tree.row.copy(updatedDate = now),
                     exercises = repositioned,
+                ),
+            )
+            // Make room right after the source record on the same day.
+            workoutsDB.getWorkoutRecordsByJournal(userId, journalId)
+                .filter {
+                    it.row.date == tree.row.date &&
+                        it.row.uuid != tree.row.uuid &&
+                        it.row.position > tree.row.position
+                }
+                .forEach {
+                    workoutsDB.replaceWorkoutRecord(
+                        it.copy(row = it.row.copy(position = it.row.position + 1, updatedDate = now)),
+                    )
+                }
+            // The split-off exercise keeps its uuid and sets in a new record.
+            val newRecordUuid = randomUuid()
+            workoutsDB.createWorkoutRecordsIfMissing(
+                listOf(
+                    DBWorkoutRecord(
+                        row = newRecordRow(
+                            newRecordUuid,
+                            userId,
+                            journalId,
+                            tree.row.date,
+                            tree.row.position + 1,
+                            now,
+                        ),
+                        exercises = listOf(
+                            removed.copy(
+                                exercise = removed.exercise.copy(
+                                    workoutRecordUuid = newRecordUuid,
+                                    position = 0,
+                                ),
+                            ),
+                        ),
+                    ),
                 ),
             )
         }

@@ -15,6 +15,7 @@ import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class RecordRepositoryTest {
@@ -149,7 +150,10 @@ class RecordRepositoryTest {
     }
 
     @Test
-    fun removeExerciseFromSuperset_thenLastExercise_tombstonesRecord(): Unit = runBlocking {
+    fun removeExerciseFromSuperset_splitsIntoOwnRecord(): Unit = runBlocking {
+        // Regression: "Remove from superset" used to DELETE the exercise (and
+        // tombstone the record when it was the last one) instead of splitting
+        // it into its own record — user-visible data loss.
         val exId = seedCatalogExercise()
         repo.addExercisesToDate(userId, journalId, date, listOf(exId, exId))
         val records = repo.getRecordsByDate(userId, journalId, date).sortedBy { it.position }
@@ -157,16 +161,30 @@ class RecordRepositoryTest {
         repo.addSet(userId, journalId, second.exercises.single().id, 60.0, 12, null, null, DifficultyType.LIGHT)
         val superset = repo.mergeRecords(userId, journalId, first, second).single()
         assertEquals(2, superset.exercises.size)
+        val removedExercise = superset.exercises.last()
+        val removedSetValues = removedExercise.sets.map { it.weight to it.reps }
 
-        // Remove one exercise → record survives with the other.
-        val afterFirstRemoval = repo.removeExerciseFromRecord(userId, journalId, superset, superset.exercises.first())
-        assertEquals(1, afterFirstRemoval.size)
-        val remaining = afterFirstRemoval.single()
-        assertEquals(1, remaining.exercises.size)
+        // Remove one exercise → the superset SPLITS: two live records,
+        // the split-off one right after the source, sets intact.
+        val afterRemoval = repo.removeExerciseFromRecord(userId, journalId, superset, removedExercise)
+        assertEquals(2, afterRemoval.size, "split must leave two live records")
+        val sorted = afterRemoval.sortedBy { it.position }
+        val source = sorted.first { it.id == superset.id }
+        val split = sorted.single { it.id != superset.id }
+        assertEquals(1, source.exercises.size)
+        assertEquals(1, split.exercises.size)
+        assertEquals(removedExercise.id, split.exercises.single().id, "split keeps the exercise")
+        assertEquals(
+            removedSetValues,
+            split.exercises.single().sets.map { it.weight to it.reps },
+            "split keeps the exercise's sets",
+        )
+        assertEquals(source.position + 1, split.position, "split lands right after the source record")
 
-        // Remove the last exercise → record tombstoned, nothing live for the date.
-        val afterLastRemoval = repo.removeExerciseFromRecord(userId, journalId, remaining, remaining.exercises.single())
-        assertTrue(afterLastRemoval.isEmpty(), "removing the last exercise leaves no live record")
+        // Removing the only exercise of a non-superset record is a no-op
+        // (a 1-exercise record isn't a superset; deletion is deleteRecord's job).
+        val afterNoOp = repo.removeExerciseFromRecord(userId, journalId, split, split.exercises.single())
+        assertEquals(2, afterNoOp.size, "no-op: nothing deleted")
     }
 
     @Test
@@ -184,7 +202,9 @@ class RecordRepositoryTest {
     }
 
     @Test
-    fun removingLastExercise_tombstonesTheRecord(): Unit = runBlocking {
+    fun removingOnlyExercise_isNoOp_recordSurvives(): Unit = runBlocking {
+        // Under split semantics, removeExerciseFromRecord on a 1-exercise
+        // record does nothing — record deletion is deleteRecord's job.
         val exId = seedCatalogExercise()
         repo.addExercisesToDate(userId, journalId, date, listOf(exId))
         val rec = repo.getRecordsByDate(userId, journalId, date).single()
@@ -192,7 +212,8 @@ class RecordRepositoryTest {
 
         val remaining = repo.removeExerciseFromRecord(userId, journalId, rec, we)
 
-        assertTrue(remaining.isEmpty(), "removing the only exercise leaves no live record for the date")
-        assertNotNull(workoutsDB.getWorkoutRecordByIdIncludingDeleted(rec.id)?.row?.deletedAt)
+        assertEquals(1, remaining.size, "record must survive")
+        assertEquals(1, remaining.single().exercises.size, "exercise must survive")
+        assertNull(workoutsDB.getWorkoutRecordByIdIncludingDeleted(rec.id)?.row?.deletedAt)
     }
 }
