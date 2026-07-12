@@ -47,7 +47,7 @@ interface RecordRepository {
     ): List<WorkoutRecord>
 
     /**
-     * Most recent workouts (capped at last 1 year). Drives the linear
+     * Most recent workouts (capped at last 3 years). Drives the linear
      * workout-history list. Older sessions remain reachable via calendar
      * pickers but don't render here.
      *

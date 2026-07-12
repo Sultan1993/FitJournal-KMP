@@ -2,7 +2,9 @@ package kz.maestrosultan.fitjournal.data.record.repository
 
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.datetime.DateTimeUnit
@@ -115,17 +117,20 @@ class DefaultRecordRepository(
         journalId: String,
     ): List<WorkoutRecord> {
         val exerciseLookup = exerciseLookupForRead(userId)
-        // Caps at the last 1 year. The partial index on
+        // Caps at the last 3 years. Data older than that has little value in
+        // the linear feed; older sessions stay reachable via the (uncapped)
+        // calendar reads. The partial index on
         // (userId, journalId, date DESC) WHERE deletedAt IS NULL plus the
-        // JOIN-based bulk read load the whole window in one shot — no
-        // pagination needed even on heavy users (1000+ records).
+        // JOIN-based bulk read load the whole window in one shot, and
+        // toDomainList maps it off the UI thread — so even a multi-year
+        // window never blocks the UI regardless of row count.
         val today = todayInSystemTz()
-        val oneYearAgo = today.minusYearsSafe(1).toString()
+        val windowStart = today.minusYearsSafe(3).toString()
         val to = "9999-12-31"
-        val trees = workoutsDB.getWorkoutRecordsByJournal(userId, journalId, oneYearAgo, to)
+        val trees = workoutsDB.getWorkoutRecordsByJournal(userId, journalId, windowStart, to)
         // Workout-history list cells don't render previous-set hints —
         // skip the bulk compute + boundary SQL fallback entirely. Saves
-        // ~5ms on a 1-year window for a heavy user and avoids ~30
+        // ~5ms on a 3-year window for a heavy user and avoids ~30
         // single-purpose `getLastSetForExerciseBeforeDate` calls.
         return toDomainList(trees, exerciseLookup, includePreviousSet = false)
     }
@@ -141,7 +146,7 @@ class DefaultRecordRepository(
         val dbExercise = exercisesDB.getExerciseByUuid(exerciseId)
             ?: return emptyList()
         val domainExercise = mapper(dbExercise)
-        // 1 SQL: every set for this exercise in the 1-year window, with
+        // 1 SQL: every set for this exercise in the 3-year window, with
         // recordDate + workoutExercise.comment surfaced via the mapper.
         // Group by workoutExerciseUuid in Kotlin to rebuild the
         // per-occurrence shape History/Stats expect.
@@ -222,13 +227,13 @@ class DefaultRecordRepository(
     }
 
     /**
-     * 1-year window (`[oneYearAgo, far-future)`). Matches the app-wide
+     * 3-year window (`[threeYearsAgo, far-future)`). Matches the app-wide
      * windowing rule applied by `getRecentRecords` so the exercise
      * details page never surfaces history older than the rest of the
      * app shows.
      */
     private fun exerciseDetailsWindow(): Pair<String, String> {
-        val from = todayInSystemTz().minusYearsSafe(1).toString()
+        val from = todayInSystemTz().minusYearsSafe(3).toString()
         val to = "9999-12-31"
         return from to to
     }
@@ -712,8 +717,16 @@ class DefaultRecordRepository(
         trees: List<DBWorkoutRecord>,
         exerciseLookup: Map<String, Exercise>,
         includePreviousSet: Boolean = true,
-    ): List<WorkoutRecord> {
-        if (trees.isEmpty()) return emptyList()
+    ): List<WorkoutRecord> = withContext(Dispatchers.Default) {
+        // The CPU mapping (O(records×exercises×sets)) and buildPreviousSetMap's
+        // in-memory sort/group are the dominant cost of every tree read. Force
+        // them onto Default so they never run on the caller's dispatcher —
+        // several Android callers reach this via a dispatcher-less
+        // viewModelScope.launch (Main) or an eager flowOf(useCase()) that a
+        // downstream .flowOn() can't rescue. Nested datasource SQL still hops
+        // to IO. This is the single guard that keeps any record read — at any
+        // row count — off the UI thread on both platforms.
+        if (trees.isEmpty()) return@withContext emptyList()
         val previousSetMap = if (includePreviousSet) {
             buildPreviousSetMap(trees)
         } else {
@@ -724,7 +737,7 @@ class DefaultRecordRepository(
             val mapped = runCatching { toDomain(tree, exerciseLookup, previousSetMap) }.getOrNull()
             if (mapped != null) out.add(mapped)
         }
-        return out
+        out
     }
 
     /**
