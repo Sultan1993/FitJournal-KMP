@@ -21,8 +21,8 @@ kotlin {
         optIn.add("kotlin.time.ExperimentalTime")
     }
 
-    // KMP plugin handles Android config; no separate `android { }` block.
-    androidLibrary {
+    // KMP Android library target (AGP 9.3 renamed `androidLibrary` → `android`).
+    android {
         namespace = "kz.maestrosultan.fitjournal.multiplatform"
         compileSdk = libs.versions.compileSDK.get().toInt()
         minSdk = libs.versions.minSDK.get().toInt()
@@ -56,50 +56,39 @@ kotlin {
         }
     }
 
+    // Modern KMP source-set accessor DSL (the `val x by getting` delegate form
+    // is deprecated as of Gradle 9.6 — incompatible with Gradle 10).
     sourceSets {
-        val commonMain by getting {
-            dependencies {
-                implementation(libs.kotlin.datetime)
-                implementation(libs.kotlinx.coroutines.core)
-                implementation(libs.kotlinx.serialization.json)
-                implementation(libs.sqldelight.coroutines)
-                // SKIE handles Swift interop; no explicit annotations needed.
-            }
+        commonMain.dependencies {
+            implementation(libs.kotlin.datetime)
+            implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.sqldelight.coroutines)
+            // SKIE handles Swift interop; no explicit annotations needed.
         }
 
-        val commonTest by getting {
-            dependencies {
-                implementation(kotlin("test"))
-            }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
         }
 
         // Android
-        val androidMain by getting {
-            dependencies {
-                implementation(libs.sqldelight.android)
-            }
+        androidMain.dependencies {
+            implementation(libs.sqldelight.android)
         }
 
-        // iOS
-        val iosArm64Main by getting
-        val iosSimulatorArm64Main by getting
-        val iosMain by getting {
-            dependencies {
-                implementation(libs.sqldelight.native)
-            }
+        // iOS — iosArm64Main / iosSimulatorArm64Main come from the default
+        // hierarchy template; the shared iosMain intermediate carries the deps.
+        iosMain.dependencies {
+            implementation(libs.sqldelight.native)
         }
 
         // JVM (test harness only)
-        val jvmMain by getting {
-            dependencies {
-                implementation("app.cash.sqldelight:sqlite-driver:2.1.0")
-            }
+        jvmMain.dependencies {
+            implementation(libs.sqldelight.sqlite.driver)
         }
-        val jvmTest by getting {
-            dependencies {
-                implementation(kotlin("test"))
-                implementation(libs.kotlinx.coroutines.core)
-            }
+        jvmTest.dependencies {
+            implementation(kotlin("test"))
+            implementation(libs.kotlinx.coroutines.core)
         }
     }
 }
