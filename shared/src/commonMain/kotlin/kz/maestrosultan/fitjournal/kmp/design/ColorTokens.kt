@@ -36,12 +36,25 @@ object ColorTokens {
     val brandSubtle = ColorToken(0xFFE5E1FC, 0xFF2B2650)
     val accent = ColorToken(0xFFFBEAB2, 0xFFFBEAB2)
 
-    // Surfaces
+    // Surfaces — dark-mode elevation order (lighter = higher):
+    //   background < sheet < surface(card) < surfaceElevated.
     val background = ColorToken(0xFFFFFFFF, 0xFF000000)
-    val surface = ColorToken(0xFFF1F3F9, 0xFF18181F)
 
-    /** Floating chrome (alerts, action sheets) — sits above [surface] in dark mode. */
-    val surfaceElevated = ColorToken(0xFFFFFFFF, 0xFF26262E)
+    /**
+     * Bottom sheets / modal popups. Light = same as [background] (the dimmed
+     * screen behind separates them). Dark = lifted off pure black so the sheet
+     * doesn't blend into the barely-visible dim.
+     */
+    val sheet = ColorToken(0xFFFFFFFF, 0xFF18181F)
+
+    /** Cards. Above both [background] and [sheet] in dark, so a card reads as raised on either. */
+    val surface = ColorToken(0xFFF1F3F9, 0xFF26262E)
+
+    /**
+     * Nested/elevated fills (Focus pills, picker segments) + floating chrome
+     * (alerts, action sheets) — one step above [surface] in dark.
+     */
+    val surfaceElevated = ColorToken(0xFFFFFFFF, 0xFF2E2E38)
 
     // Text — solid colors, three steps.
     val textPrimary = ColorToken(0xFF040415, 0xFFFFFFFF)
