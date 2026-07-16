@@ -131,14 +131,17 @@ interface RecordRepository {
     )
 
     /**
-     * Replaces the contents of [recordId] with a single new workoutExercise
-     * pointing at catalog [newExerciseId], dropping the record's previous
-     * exercises and sets. Bumps `pendingUpload=1`.
+     * Replaces the single workoutExercise [targetWorkoutExerciseId] inside
+     * [recordId] with a fresh one pointing at catalog [newExerciseId], dropping
+     * that member's sets and keeping its slot. Any OTHER members of a superset
+     * record are left untouched. No-op if the target member is absent (e.g. a
+     * concurrent edit already changed it). Bumps `pendingUpload=1`.
      */
     suspend fun replaceExerciseInRecord(
         userId: String,
         journalId: String,
         recordId: String,
+        targetWorkoutExerciseId: String,
         newExerciseId: String,
     )
 

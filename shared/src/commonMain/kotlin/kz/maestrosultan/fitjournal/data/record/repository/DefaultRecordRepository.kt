@@ -310,28 +310,29 @@ class DefaultRecordRepository(
         userId: String,
         journalId: String,
         recordId: String,
+        targetWorkoutExerciseId: String,
         newExerciseId: String,
     ) {
         val tree = workoutsDB.getWorkoutRecordById(recordId) ?: return
-        val newFirst = DBWorkoutExerciseWithSets(
+        // Replace exactly the targeted member, in place, keeping its slot and
+        // every other member of a superset. No-op if it's already gone.
+        val targetIndex = tree.exercises.indexOfFirst { it.exercise.uuid == targetWorkoutExerciseId }
+        if (targetIndex < 0) return
+        val replacement = DBWorkoutExerciseWithSets(
             exercise = DBWorkoutExerciseObject(
                 uuid = randomUuid(),
                 workoutRecordUuid = tree.row.uuid,
                 exerciseUuid = newExerciseId,
-                position = 0,
+                position = tree.exercises[targetIndex].exercise.position,
                 comment = null,
             ),
             sets = emptyList(),
         )
-        // Replace the first exercise; keep any others (a superset record)
-        // re-positioned after it, matching the iOS import repository.
-        val tail = tree.exercises.drop(1).mapIndexed { index, exWithSets ->
-            exWithSets.copy(exercise = exWithSets.exercise.copy(position = index + 1))
-        }
+        val exercises = tree.exercises.toMutableList().also { it[targetIndex] = replacement }
         workoutsDB.replaceWorkoutRecord(
             tree.copy(
                 row = tree.row.copy(updatedDate = Clock.System.now()),
-                exercises = listOf(newFirst) + tail,
+                exercises = exercises,
             ),
         )
     }

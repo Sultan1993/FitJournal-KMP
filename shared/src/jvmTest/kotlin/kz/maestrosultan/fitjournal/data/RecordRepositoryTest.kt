@@ -172,6 +172,36 @@ class RecordRepositoryTest {
     }
 
     @Test
+    fun replaceExerciseInRecord_swapsOnlyTargetMember_keepsSuperset(): Unit = runBlocking {
+        // Data-loss regression: replacing a superset member used to always
+        // rebuild the FIRST exercise, destroying the wrong member and its sets.
+        val exA = seedCatalogExercise()
+        val exB = seedCatalogExercise()
+        val exC = seedCatalogExercise()
+        repo.addExercisesToDate(userId, journalId, date, listOf(exA, exB))
+        val records = repo.getRecordsByDate(userId, journalId, date).sortedBy { it.position }
+        val (first, second) = records
+        repo.addSet(userId, journalId, first.exercises.single().id, 100.0, 5, null, null, DifficultyType.MEDIUM)
+        repo.addSet(userId, journalId, second.exercises.single().id, 60.0, 12, null, null, DifficultyType.LIGHT)
+        val superset = repo.mergeRecords(userId, journalId, first, second).single()
+        assertEquals(2, superset.exercises.size)
+        val memberB = superset.exercises.first { it.exercise.uuid == exB }
+
+        // Replace member B (NOT the first) with catalog exercise C.
+        repo.replaceExerciseInRecord(userId, journalId, superset.id, memberB.id, exC)
+
+        val updated = repo.getRecordsByDate(userId, journalId, date).single()
+        assertEquals(2, updated.exercises.size, "superset must keep both members")
+        val newA = updated.exercises.first { it.exercise.uuid == exA }
+        assertEquals(1, newA.sets.size, "the untouched member must keep its sets")
+        assertEquals(100.0, newA.sets.single().weight)
+        assertTrue(updated.exercises.none { it.exercise.uuid == exB }, "old member B must be gone")
+        val newC = updated.exercises.first { it.exercise.uuid == exC }
+        assertEquals(0, newC.sets.size, "the replaced member starts with no sets")
+        assertTrue(newC.id != memberB.id, "replacement gets a new workoutExerciseId")
+    }
+
+    @Test
     fun removeExerciseFromSuperset_splitsIntoOwnRecord(): Unit = runBlocking {
         // Regression: "Remove from superset" used to DELETE the exercise (and
         // tombstone the record when it was the last one) instead of splitting

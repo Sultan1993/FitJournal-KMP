@@ -79,7 +79,12 @@ AND wr.journalId = ?
 AND wr.date >= ?
 AND wr.date < ?
 AND wr.deletedAt IS NULL
-ORDER BY wr.date DESC, we.position ASC, ws.position ASC;
+-- `wr.position DESC` tiebreaks two records on the SAME day so the LATER one
+-- (higher position) sorts first — otherwise "last session" / History can show
+-- the earlier same-day occurrence (undefined rowid order). `wr.uuid` is a final
+-- deterministic tiebreak for the rare multi-device same-date/same-position
+-- collision (matches getWorkoutRecordsByJournal / getLastSetForExerciseBeforeDate).
+ORDER BY wr.date DESC, wr.position DESC, wr.uuid ASC, we.position ASC, ws.position ASC;
 
 -- "Most recent set with this exercise BEFORE the given date" — drives the
 -- previousWeight / previousDistance / previousDifficultyType hints on a
