@@ -4,12 +4,14 @@ package kz.maestrosultan.fitjournal.domain.calculation
  * Estimates a one-rep max (1RM) and a rep-percentage table from a single
  * working set's `weight × reps`.
  *
- * Formula: Brzycki — `1RM = weight × 36 / (37 - reps)` — chosen because
- * it stays sane up to ~10 reps where the linear formulae blow up. The
- * percentage rows match what most strength programs print (95% for 2RM,
- * 90% for 3RM, etc.); the iOS pre-FJ-2.0 build used a slightly different
- * table — we standardised on the Android values because they match the
- * canonical strength-coaching consensus more closely.
+ * Formula: Epley — `1RM = weight × (1 + reps / 30)` — linear, so it never
+ * blows up and needs no rep clamp (Brzycki, the previous choice, runs away
+ * past ~10 reps: ~164% of the load at 15 reps). Epley also tracks the
+ * percentage table below, which the old Brzycki 1RM did not.
+ *
+ * The percentage rows are the static strength-coaching chart most programs
+ * print (100% for 1RM, 95% for 2RM, 90% for 3RM, …), anchored so the 1-rep
+ * row is exactly the estimated 1RM.
  */
 object OneRepMaxCalculator {
 
@@ -22,16 +24,10 @@ object OneRepMaxCalculator {
         // would yield a table of all-zero rows — return empty so the UI can
         // show "no estimate" instead of a misleading 0-kg table.
         if (weight <= 0.0 || reps <= 0) return emptyList()
-        // Clamp to the validity range of Brzycki. At reps ≥ 37 the
-        // denominator hits zero or goes negative — the formula was never
-        // intended past ~10 reps anyway. Outside [1, 10] we cap at 10
-        // rather than refusing the call so the UI table still has data
-        // to render for users who logged a high-rep set.
-        val clampedReps = reps.coerceIn(1, 10)
-        val oneRm = weight * (36.0 / (37.0 - clampedReps.toDouble()))
+        val oneRm = weight * (1.0 + reps / 30.0)
         return PERCENTAGES.mapIndexed { index, percent ->
             val repCount = index + 1
-            val computedWeight = if (index == 0) oneRm else (percent * oneRm) / 100.0
+            val computedWeight = (percent * oneRm) / 100.0
             OneRepMaxItem(
                 repCount = repCount,
                 // Round instead of truncate — `.toInt()` was dropping fractional
