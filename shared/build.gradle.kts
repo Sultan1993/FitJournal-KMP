@@ -44,14 +44,15 @@ kotlin {
             baseName = moduleName
             export(libs.kotlin.stdlib)
             xcf.add(this)
-            // Match the iOS app's `IPHONEOS_DEPLOYMENT_TARGET = 17.0`. Kotlin
-            // 2.3.20 defaults K/N's iOS deployment target to 14.0; Xcode 26.4
-            // / Swift 6.3.1 rejects the resulting `.swiftmodule` as "built
-            // for incompatible target" and falls back to a partial
-            // swiftinterface compile, dropping symbols. Pinning to 17 here
-            // realigns it.
+            // MUST equal the iOS app's `IPHONEOS_DEPLOYMENT_TARGET` (currently
+            // 18.0 — iOS 17 dropped 2026-07). Kotlin 2.3.20 defaults K/N's iOS
+            // deployment target to 14.0; when the framework's swiftmodule target
+            // doesn't match the app's, Swift (Xcode 26.4+/6.3.x) rejects it as
+            // "built for incompatible target" and falls back to a partial
+            // swiftinterface compile, dropping every SKIE-bridged symbol. Bump
+            // this in lockstep whenever the app's deployment target changes.
             freeCompilerArgs += listOf(
-                "-Xoverride-konan-properties=osVersionMin.ios_arm64=17.0;osVersionMin.ios_simulator_arm64=17.0",
+                "-Xoverride-konan-properties=osVersionMin.ios_arm64=18.0;osVersionMin.ios_simulator_arm64=18.0",
             )
         }
     }
