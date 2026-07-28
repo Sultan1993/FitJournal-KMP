@@ -1,7 +1,6 @@
 package kz.maestrosultan.fitjournal.data.record.payload
 
 import kotlinx.serialization.Serializable
-import kz.maestrosultan.fitjournal.domain.workout.DifficultyType
 
 /**
  * One set performed for a workout exercise.
@@ -39,9 +38,6 @@ data class WorkoutSetPayload(
 
     /** Duration in seconds. Null when not used. */
     val duration: Int? = null,
-
-    /** Subjective intensity tag. */
-    val difficultyType: DifficultyType = DifficultyType.NONE,
 
     /** False = planned but not yet performed (e.g., from a template). */
     val completed: Boolean = true,

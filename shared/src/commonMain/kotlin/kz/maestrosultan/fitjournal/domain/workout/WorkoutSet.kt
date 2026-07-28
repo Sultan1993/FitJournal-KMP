@@ -24,7 +24,6 @@ data class WorkoutSet(
     val reps: Int?,
     val distance: Double?,
     val duration: Int?,
-    val difficultyType: DifficultyType,
     val resultType: ResultType,
 ) {
 

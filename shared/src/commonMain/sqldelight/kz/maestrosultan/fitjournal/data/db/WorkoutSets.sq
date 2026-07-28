@@ -147,8 +147,11 @@ ORDER BY position ASC;
 -- handled by the parent record's DELETE-and-reinsert step plus FK
 -- CASCADE.
 createWorkoutSet:
-INSERT INTO workoutSets(uuid, workoutExerciseUuid, position, weight, reps, distance, duration, difficultyType, completed)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+-- difficultyType is omitted deliberately: the column survives for old rows
+-- (dropping it needs a migration) but nothing reads it since the set-difficulty
+-- UI was removed. NOT NULL DEFAULT 0 covers the omission.
+INSERT INTO workoutSets(uuid, workoutExerciseUuid, position, weight, reps, distance, duration, completed)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 
 -- Full wipe used on FJ1.x → FJ2.0 upgrade before hydration.
 wipeAll:

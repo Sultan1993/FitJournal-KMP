@@ -61,7 +61,6 @@ data class DBWorkoutSetObject(
     val reps: Int?,
     val distance: Double?,
     val duration: Int?,
-    val difficultyType: Int,
     val completed: Boolean,
 )
 
@@ -116,6 +115,5 @@ fun WorkoutSets.map(): DBWorkoutSetObject = DBWorkoutSetObject(
     reps = reps?.toInt(),
     distance = distance,
     duration = duration?.toInt(),
-    difficultyType = difficultyType.toInt(),
     completed = completed,
 )

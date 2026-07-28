@@ -4,7 +4,6 @@ import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.domain.exercise.Category
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.exercise.Exercise
-import kz.maestrosultan.fitjournal.domain.workout.DifficultyType
 import kz.maestrosultan.fitjournal.domain.workout.LastOccurrence
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
@@ -40,7 +39,6 @@ class DisplaySetValuesTest {
         reps = reps,
         distance = distance,
         duration = duration,
-        difficultyType = DifficultyType.NONE,
         resultType = resultType,
     )
 

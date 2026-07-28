@@ -12,7 +12,7 @@ import kotlinx.serialization.json.Json
  *   newer clients silently drop fields they don't know. Forward-compat for
  *   adding fields without breaking old apps.
  * - **`coerceInputValues = true`** — unknown enum values (e.g. a future
- *   `DifficultyType.EXTREME` written by a new client) decode to the field's
+ *   a new enum case written by a newer client) decode to the field's
  *   default rather than throwing. Old client renders sanely; data is preserved
  *   on round-trip if the blob is re-uploaded by the same old client (since
  *   we'd be writing a fallback value back to AWS, the new value would be lost

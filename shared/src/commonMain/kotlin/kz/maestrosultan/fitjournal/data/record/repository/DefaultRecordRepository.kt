@@ -14,7 +14,6 @@ import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import kz.maestrosultan.fitjournal.domain.exercise.Exercise
-import kz.maestrosultan.fitjournal.domain.workout.DifficultyType
 import kz.maestrosultan.fitjournal.domain.workout.LastOccurrence
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
@@ -224,7 +223,6 @@ class DefaultRecordRepository(
                 reps = set.reps,
                 distance = set.distance,
                 duration = set.duration,
-                difficultyType = DifficultyType.create(set.difficultyType),
                 resultType = ResultType.WEIGHT_REPS,
             )
         }
@@ -386,7 +384,6 @@ class DefaultRecordRepository(
                                 reps = null,
                                 distance = null,
                                 duration = null,
-                                difficultyType = DifficultyType.NONE.id,
                                 completed = false,
                             )
                         },
@@ -613,7 +610,6 @@ class DefaultRecordRepository(
         reps: Int?,
         distance: Double?,
         duration: Int?,
-        difficultyType: DifficultyType,
     ) {
         val tree = findTreeContainingExercise(userId, journalId, workoutExerciseId) ?: return
         val updatedExercises = tree.exercises.map { exWithSets ->
@@ -626,7 +622,6 @@ class DefaultRecordRepository(
                 reps = reps,
                 distance = distance,
                 duration = duration,
-                difficultyType = difficultyType.id,
                 completed = true,
             )
             exWithSets.copy(sets = exWithSets.sets + newSet)
@@ -648,7 +643,6 @@ class DefaultRecordRepository(
         reps: Int?,
         distance: Double?,
         duration: Int?,
-        difficultyType: DifficultyType,
     ): Boolean {
         val tree = findTreeContainingExercise(userId, journalId, workoutExerciseId) ?: return false
         var matched = false
@@ -664,8 +658,7 @@ class DefaultRecordRepository(
                         reps = reps,
                         distance = distance,
                         duration = duration,
-                        difficultyType = difficultyType.id,
-                    )
+                            )
                 }
             }
             exWithSets.copy(sets = updatedSets)
@@ -931,7 +924,6 @@ class DefaultRecordRepository(
         reps = set.reps,
         distance = set.distance,
         duration = set.duration,
-        difficultyType = DifficultyType.create(set.difficultyType),
         resultType = resultType,
     )
 

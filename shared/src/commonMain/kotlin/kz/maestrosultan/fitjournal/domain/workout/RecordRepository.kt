@@ -2,7 +2,6 @@ package kz.maestrosultan.fitjournal.domain.workout
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.LocalDate
-import kz.maestrosultan.fitjournal.domain.workout.DifficultyType
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSet
@@ -127,7 +126,7 @@ interface RecordRepository {
     /**
      * Copies [records] onto [date] as brand-new records (fresh uuids).
      * Each source exercise is recreated with its set count preserved but
-     * `weight`/`distance` cleared and difficulty reset — a "repeat this
+     * `weight`/`distance`/reps/duration cleared — a "repeat this
      * session" template. The copied session then shows up as the next read's
      * `WorkoutExercise.lastOccurrence`, so the cleared rows render per-position
      * hints with no extra work.
@@ -217,7 +216,6 @@ interface RecordRepository {
         reps: Int?,
         distance: Double?,
         duration: Int?,
-        difficultyType: DifficultyType,
     )
 
     /** @return true if the target set existed and was updated; false if it
@@ -232,7 +230,6 @@ interface RecordRepository {
         reps: Int?,
         distance: Double?,
         duration: Int?,
-        difficultyType: DifficultyType,
     ): Boolean
 
     /** @return true if the target set existed and was deleted; false if it

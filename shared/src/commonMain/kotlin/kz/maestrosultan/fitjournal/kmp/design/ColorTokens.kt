@@ -72,9 +72,4 @@ object ColorTokens {
     // Feedback
     val positive = ColorToken(0xFF2D9E64, 0xFF2D9E64)
     val negative = ColorToken(0xFFEB6363, 0xFFEB6363)
-
-    // Set-difficulty indicators (the one place color carries domain meaning).
-    val setLight get() = positive
-    val setNormal get() = brand
-    val setHeavy get() = negative
 }

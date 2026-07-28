@@ -9,7 +9,6 @@ import kz.maestrosultan.fitjournal.data.exercise.repository.DefaultExerciseRepos
 import kz.maestrosultan.fitjournal.data.record.datasource.WorkoutsDBDataSource
 import kz.maestrosultan.fitjournal.data.record.repository.DefaultRecordRepository
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
-import kz.maestrosultan.fitjournal.domain.workout.DifficultyType
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
 import java.util.UUID
 import kotlin.test.Test
@@ -58,17 +57,15 @@ class RecordRepositoryTest {
         repo.addExercisesToDate(userId, journalId, date, listOf(exId))
         val weId = repo.getRecordsByDate(userId, journalId, date).single().exercises.single().id
 
-        repo.addSet(userId, journalId, weId, weight = 100.0, reps = 5, distance = null, duration = null, difficultyType = DifficultyType.MEDIUM)
+        repo.addSet(userId, journalId, weId, weight = 100.0, reps = 5, distance = null, duration = null)
         var set = repo.getRecordsByDate(userId, journalId, date).single().exercises.single().sets.single()
         assertEquals(100.0, set.weight)
         assertEquals(5, set.reps)
-        assertEquals(DifficultyType.MEDIUM, set.difficultyType)
 
-        repo.updateSet(userId, journalId, weId, set.id, weight = 110.0, reps = 3, distance = null, duration = null, difficultyType = DifficultyType.HARD)
+        repo.updateSet(userId, journalId, weId, set.id, weight = 110.0, reps = 3, distance = null, duration = null)
         set = repo.getRecordsByDate(userId, journalId, date).single().exercises.single().sets.single()
         assertEquals(110.0, set.weight)
         assertEquals(3, set.reps)
-        assertEquals(DifficultyType.HARD, set.difficultyType)
 
         repo.deleteSet(userId, journalId, weId, set.id)
         assertEquals(0, repo.getRecordsByDate(userId, journalId, date).single().exercises.single().sets.size)
@@ -85,7 +82,7 @@ class RecordRepositoryTest {
         workoutsDB.markUploaded(rec.id, "remote-1")
         assertTrue(workoutsDB.getPendingUploads(userId).none { it.uuid == rec.id })
 
-        val updated = repo.updateSet(userId, journalId, weId, "ghost-set", 100.0, 5, null, null, DifficultyType.HARD)
+        val updated = repo.updateSet(userId, journalId, weId, "ghost-set", 100.0, 5, null, null)
         val deleted = repo.deleteSet(userId, journalId, weId, "ghost-set")
 
         assertEquals(false, updated, "updating a vanished set is a no-op")
@@ -106,8 +103,8 @@ class RecordRepositoryTest {
         repo.addExercisesToDate(userId, journalId, date, listOf(exId))
         val weId = repo.getRecordsByDate(userId, journalId, date).single().exercises.single().id
 
-        repo.addSet(userId, journalId, weId, 60.0, 10, null, null, DifficultyType.LIGHT)
-        repo.addSet(userId, journalId, weId, 80.0, 8, null, null, DifficultyType.MEDIUM)
+        repo.addSet(userId, journalId, weId, 60.0, 10, null, null)
+        repo.addSet(userId, journalId, weId, 80.0, 8, null, null)
 
         val sets = repo.getRecordsByDate(userId, journalId, date).single().exercises.single().sets
         assertEquals(2, sets.size)
@@ -127,14 +124,14 @@ class RecordRepositoryTest {
         // Previous occurrence: 3 sets at distinct weights.
         repo.addExercisesToDate(userId, journalId, prevDate, listOf(exId))
         val prevWeId = repo.getRecordsByDate(userId, journalId, prevDate).single().exercises.single().id
-        repo.addSet(userId, journalId, prevWeId, 100.0, 10, null, null, DifficultyType.LIGHT)
-        repo.addSet(userId, journalId, prevWeId, 110.0, 8, null, null, DifficultyType.MEDIUM)
-        repo.addSet(userId, journalId, prevWeId, 120.0, 6, null, null, DifficultyType.HARD)
+        repo.addSet(userId, journalId, prevWeId, 100.0, 10, null, null)
+        repo.addSet(userId, journalId, prevWeId, 110.0, 8, null, null)
+        repo.addSet(userId, journalId, prevWeId, 120.0, 6, null, null)
 
         // Current occurrence: 4 sets — values irrelevant, we assert the hint.
         repo.addExercisesToDate(userId, journalId, curDate, listOf(exId))
         val curWeId = repo.getRecordsByDate(userId, journalId, curDate).single().exercises.single().id
-        repeat(4) { repo.addSet(userId, journalId, curWeId, 0.0, 1, null, null, DifficultyType.NONE) }
+        repeat(4) { repo.addSet(userId, journalId, curWeId, 0.0, 1, null, null) }
 
         val exercise = repo.getRecordsByDate(userId, journalId, curDate).single().exercises.single()
         val last = requireNotNull(exercise.lastOccurrence) { "prior occurrence should be attached" }
@@ -144,7 +141,6 @@ class RecordRepositoryTest {
             listOf(100.0, 110.0, 120.0, 120.0),
             exercise.sets.indices.map { last.setAt(it)?.weight },
         )
-        assertEquals(DifficultyType.LIGHT, last.setAt(0)?.difficultyType)
         // The overflow rule is the bit that regressed before — assert it explicitly
         // rather than only via the 4th element above.
         assertEquals(120.0, last.setAt(99)?.weight)
@@ -166,13 +162,13 @@ class RecordRepositoryTest {
 
         repo.addExercisesToDate(userId, journalId, jul24, listOf(exId))
         val we24 = repo.getRecordsByDate(userId, journalId, jul24).single().exercises.single().id
-        repeat(3) { repo.addSet(userId, journalId, we24, 20.0, 12, null, null, DifficultyType.NONE) }
+        repeat(3) { repo.addSet(userId, journalId, we24, 20.0, 12, null, null) }
 
         repo.addExercisesToDate(userId, journalId, jul27, listOf(exId))
         val we27 = repo.getRecordsByDate(userId, journalId, jul27).single().exercises.single().id
-        repo.addSet(userId, journalId, we27, 22.0, 10, null, null, DifficultyType.NONE)
-        repo.addSet(userId, journalId, we27, 22.0, 9, null, null, DifficultyType.NONE)
-        repo.addSet(userId, journalId, we27, 22.0, 9, null, null, DifficultyType.NONE)
+        repo.addSet(userId, journalId, we27, 22.0, 10, null, null)
+        repo.addSet(userId, journalId, we27, 22.0, 9, null, null)
+        repo.addSet(userId, journalId, we27, 22.0, 9, null, null)
 
         val source = repo.getRecordsByDate(userId, journalId, jul24)
         repo.addRecordsToDate(userId, journalId, today, source)
@@ -203,9 +199,9 @@ class RecordRepositoryTest {
         val (first, second) = records
         // Both records need sets — the crash only fires when the merged-in
         // exercise carries sets to reinsert.
-        repo.addSet(userId, journalId, first.exercises.single().id, 100.0, 5, null, null, DifficultyType.MEDIUM)
-        repo.addSet(userId, journalId, second.exercises.single().id, 60.0, 12, null, null, DifficultyType.LIGHT)
-        repo.addSet(userId, journalId, second.exercises.single().id, 70.0, 10, null, null, DifficultyType.HARD)
+        repo.addSet(userId, journalId, first.exercises.single().id, 100.0, 5, null, null)
+        repo.addSet(userId, journalId, second.exercises.single().id, 60.0, 12, null, null)
+        repo.addSet(userId, journalId, second.exercises.single().id, 70.0, 10, null, null)
 
         val merged = repo.mergeRecords(userId, journalId, first, second)
 
@@ -228,8 +224,8 @@ class RecordRepositoryTest {
         repo.addExercisesToDate(userId, journalId, date, listOf(exA, exB))
         val records = repo.getRecordsByDate(userId, journalId, date).sortedBy { it.position }
         val (first, second) = records
-        repo.addSet(userId, journalId, first.exercises.single().id, 100.0, 5, null, null, DifficultyType.MEDIUM)
-        repo.addSet(userId, journalId, second.exercises.single().id, 60.0, 12, null, null, DifficultyType.LIGHT)
+        repo.addSet(userId, journalId, first.exercises.single().id, 100.0, 5, null, null)
+        repo.addSet(userId, journalId, second.exercises.single().id, 60.0, 12, null, null)
         val superset = repo.mergeRecords(userId, journalId, first, second).single()
         assertEquals(2, superset.exercises.size)
         val memberB = superset.exercises.first { it.exercise.uuid == exB }
@@ -257,7 +253,7 @@ class RecordRepositoryTest {
         repo.addExercisesToDate(userId, journalId, date, listOf(exId, exId))
         val records = repo.getRecordsByDate(userId, journalId, date).sortedBy { it.position }
         val (first, second) = records
-        repo.addSet(userId, journalId, second.exercises.single().id, 60.0, 12, null, null, DifficultyType.LIGHT)
+        repo.addSet(userId, journalId, second.exercises.single().id, 60.0, 12, null, null)
         val superset = repo.mergeRecords(userId, journalId, first, second).single()
         assertEquals(2, superset.exercises.size)
         val removedExercise = superset.exercises.last()
@@ -347,9 +343,9 @@ class RecordRepositoryTest {
         val exId = seedCatalogExercise()
         repo.addExercisesToDate(userId, journalId, date, listOf(exId))
         val weId = repo.getRecordsByDate(userId, journalId, date).single().exercises.single().id
-        repo.addSet(userId, journalId, weId, 100.0, 10, null, null, DifficultyType.LIGHT)
-        repo.addSet(userId, journalId, weId, 110.0, 8, null, null, DifficultyType.MEDIUM)
-        repo.addSet(userId, journalId, weId, 120.0, 6, null, null, DifficultyType.HARD)
+        repo.addSet(userId, journalId, weId, 100.0, 10, null, null)
+        repo.addSet(userId, journalId, weId, 110.0, 8, null, null)
+        repo.addSet(userId, journalId, weId, 120.0, 6, null, null)
 
         val middle = repo.getRecordsByDate(userId, journalId, date).single().exercises.single().sets[1]
         assertEquals(true, repo.deleteSet(userId, journalId, weId, middle.id))
@@ -359,7 +355,7 @@ class RecordRepositoryTest {
 
         // A new set lands after the survivors — proves positions renumbered to
         // 0,1 (otherwise it would collide with a survivor still at position 2).
-        repo.addSet(userId, journalId, weId, 130.0, 5, null, null, DifficultyType.NONE)
+        repo.addSet(userId, journalId, weId, 130.0, 5, null, null)
         val after = repo.getRecordsByDate(userId, journalId, date).single().exercises.single().sets
         assertEquals(listOf(100.0, 120.0, 130.0), after.map { it.weight })
     }
