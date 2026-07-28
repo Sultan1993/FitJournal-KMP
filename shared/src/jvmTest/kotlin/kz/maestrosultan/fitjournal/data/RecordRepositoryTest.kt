@@ -115,7 +115,7 @@ class RecordRepositoryTest {
     }
 
     @Test
-    fun previousWeightHint_isPerPosition_notLastSetOnEverySet(): Unit = runBlocking {
+    fun lastOccurrence_alignsPerPosition_notLastSetOnEverySet(): Unit = runBlocking {
         // Regression: copying / repeating a workout (and the previous-set hint
         // in general) used to take the prior occurrence's LAST set and stamp
         // its weight onto every set. Each set must instead show the weight from
@@ -136,10 +136,57 @@ class RecordRepositoryTest {
         val curWeId = repo.getRecordsByDate(userId, journalId, curDate).single().exercises.single().id
         repeat(4) { repo.addSet(userId, journalId, curWeId, 0.0, 1, null, null, DifficultyType.NONE) }
 
-        val sets = repo.getRecordsByDate(userId, journalId, curDate).single().exercises.single().sets
+        val exercise = repo.getRecordsByDate(userId, journalId, curDate).single().exercises.single()
+        val last = requireNotNull(exercise.lastOccurrence) { "prior occurrence should be attached" }
+        assertEquals(prevDate, last.date)
         // set N ← prior occurrence's set N; the 4th overflows → falls back to last (120).
-        assertEquals(listOf(100.0, 110.0, 120.0, 120.0), sets.map { it.previousWeight })
-        assertEquals(DifficultyType.LIGHT, sets.first().previousDifficultyType)
+        assertEquals(
+            listOf(100.0, 110.0, 120.0, 120.0),
+            exercise.sets.indices.map { last.setAt(it)?.weight },
+        )
+        assertEquals(DifficultyType.LIGHT, last.setAt(0)?.difficultyType)
+        // The overflow rule is the bit that regressed before — assert it explicitly
+        // rather than only via the 4th element above.
+        assertEquals(120.0, last.setAt(99)?.weight)
+        // A negative position clamps to the FIRST set. Without the clamp it falls
+        // through to the overflow branch and returns the heaviest set instead.
+        assertEquals(100.0, last.setAt(-1)?.weight)
+    }
+
+    @Test
+    fun copyingAnOlderWorkout_showsTheLatestSessionWhole_notAHybrid(): Unit = runBlocking {
+        // The reported bug, end to end. Trained 24 July at 20×12 ×3, then 27 July
+        // at 22×10 / 22×9 / 22×9. Importing the 24th onto today used to carry the
+        // 24th's REPS while the ghost weight came from the 27th (the most recent
+        // occurrence), rendering "22 kg × 12" — a set that never happened.
+        val exId = seedCatalogExercise()
+        val jul24 = LocalDate(2026, 7, 24)
+        val jul27 = LocalDate(2026, 7, 27)
+        val today = LocalDate(2026, 7, 28)
+
+        repo.addExercisesToDate(userId, journalId, jul24, listOf(exId))
+        val we24 = repo.getRecordsByDate(userId, journalId, jul24).single().exercises.single().id
+        repeat(3) { repo.addSet(userId, journalId, we24, 20.0, 12, null, null, DifficultyType.NONE) }
+
+        repo.addExercisesToDate(userId, journalId, jul27, listOf(exId))
+        val we27 = repo.getRecordsByDate(userId, journalId, jul27).single().exercises.single().id
+        repo.addSet(userId, journalId, we27, 22.0, 10, null, null, DifficultyType.NONE)
+        repo.addSet(userId, journalId, we27, 22.0, 9, null, null, DifficultyType.NONE)
+        repo.addSet(userId, journalId, we27, 22.0, 9, null, null, DifficultyType.NONE)
+
+        val source = repo.getRecordsByDate(userId, journalId, jul24)
+        repo.addRecordsToDate(userId, journalId, today, source)
+
+        val copied = repo.getRecordsByDate(userId, journalId, today).single().exercises.single()
+        // The copy keeps the set COUNT and nothing else — no reps carried over.
+        assertEquals(3, copied.sets.size)
+        assertTrue(copied.sets.all { it.weight == null && it.reps == null }, "a copied row must be empty")
+
+        // So every row renders the 27th's pair, whole.
+        assertEquals(jul27, copied.lastOccurrence?.date)
+        val shown = copied.sets.indices.map { copied.displayValuesAt(it, false) }
+        assertEquals(listOf(22.0, 22.0, 22.0), shown.map { it.value })
+        assertEquals(listOf(10, 9, 9), shown.map { it.reps })
     }
 
     @Test

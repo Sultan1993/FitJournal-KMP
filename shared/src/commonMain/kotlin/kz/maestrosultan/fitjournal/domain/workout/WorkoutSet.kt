@@ -9,12 +9,11 @@ import kotlinx.datetime.LocalDate
  * because "I worked out on May 8" is a calendar concept independent of
  * which timezone the user happened to be in.
  *
- * `previousWeight` / `previousDistance` / `previousDifficultyType` are
- * pre-computed values from the user's most recent matching set. They
- * live on the domain entity (rather than being recomputed in the cell)
- * because the lookup hits SQLite during the parent record's hydration —
- * doing it lazily on every cell render reads the same row dozens of
- * times per scroll.
+ * This entity is ONLY what happened in this set. The values to aim at live on
+ * the parent [WorkoutExercise] as [LastOccurrence] — one fact per exercise
+ * rather than five derived adjectives per set, which also keeps
+ * `LastOccurrence.sets` a plain `List<WorkoutSet>` with no risk of infinite
+ * nesting.
  */
 data class WorkoutSet(
     val id: String,
@@ -27,7 +26,13 @@ data class WorkoutSet(
     val duration: Int?,
     val difficultyType: DifficultyType,
     val resultType: ResultType,
-    val previousWeight: Double?,
-    val previousDistance: Double?,
-    val previousDifficultyType: DifficultyType,
-)
+) {
+
+    /** The big number: weight for WEIGHT_REPS, distance for DISTANCE_DURATION. */
+    val displayValue: Double?
+        get() = if (resultType == ResultType.DISTANCE_DURATION) distance else weight
+
+    /** Its companion: reps for WEIGHT_REPS, duration in minutes for DISTANCE_DURATION. */
+    val displayReps: Int?
+        get() = if (resultType == ResultType.DISTANCE_DURATION) duration else reps
+}

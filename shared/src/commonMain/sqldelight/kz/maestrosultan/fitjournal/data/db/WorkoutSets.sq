@@ -83,64 +83,31 @@ AND wr.deletedAt IS NULL
 -- (higher position) sorts first — otherwise "last session" / History can show
 -- the earlier same-day occurrence (undefined rowid order). `wr.uuid` is a final
 -- deterministic tiebreak for the rare multi-device same-date/same-position
--- collision (matches getWorkoutRecordsByJournal / getLastSetForExerciseBeforeDate).
+-- collision (matches getWorkoutRecordsByJournal).
 ORDER BY wr.date DESC, wr.position DESC, wr.uuid ASC, we.position ASC, ws.position ASC;
 
--- "Most recent set with this exercise BEFORE the given date" — drives the
--- previousWeight / previousDistance / previousDifficultyType hints on a
--- set cell ("you did 100kg×10 last time"). Pre-FJ-2.0 these values were
--- stored on the Parse WorkoutSet row at write time; the new SQLite schema
--- doesn't carry them, so we compute on read instead. Returns the LAST
--- set of the most recent prior workoutExercise that points at this
--- catalog exercise, or nothing. Caller passes the current record's
--- date string (`yyyy-MM-dd`); strict `<` keeps sets from the same
--- record out of their own previous lookup.
+-- "The most recent prior occurrence of each of these exercises, before the
+-- given date" — the boundary-case source for `WorkoutExercise.lastOccurrence`
+-- ("you did 100kg×10 last time"). Pre-FJ-2.0 these hints were stored columns on
+-- the Parse WorkoutSet row, written at log time; the SQLite schema doesn't carry
+-- them, so we derive on read instead.
 --
--- Rewritten as a scalar-subquery + index lookup so frequent catalog
--- exercises (e.g. "push-up", 500+ historical occurrences) don't
--- materialize every candidate set. The inner subquery finds just the
--- winning `workoutExercise.uuid` (joining 3 tables but not pulling
--- workoutSets), then the outer query hits the
--- `idx_workoutSets_exercise(workoutExerciseUuid, position)` composite
--- in reverse for an O(1) index seek + early termination.
+-- For a set of catalog exercises sharing ONE cutoff date, returns the winning
+-- workoutExercise.uuid + its record date per exercise — one query instead of the
+-- per-exercise N+1 loop `DefaultRecordRepository.buildLastOccurrenceMap` would
+-- otherwise need for exercises with no in-memory predecessor. Expressed as NOT
+-- EXISTS rather than a window function so it runs on the SqliteDialect 3.18
+-- baseline. Pair with getSetsForWorkoutExercises to fetch the sets themselves.
 --
--- Correctness: the LAST set (max position) of the LATEST prior we IS
--- the latest set in time, because positions are per-we, not global.
--- Edge case — no prior occurrence: subquery returns NULL, outer
--- WHERE `= NULL` is always false, query yields 0 rows. Matches the
--- previous "no previous hint" behavior.
-getLastSetForExerciseBeforeDate:
-SELECT *
-FROM workoutSets
-WHERE workoutExerciseUuid = (
-    SELECT we.uuid
-    FROM workoutExercises we
-    JOIN workoutRecords wr ON wr.uuid = we.workoutRecordUuid
-    WHERE we.exerciseUuid = ?
-    AND wr.userId = ?
-    AND wr.journalId = ?
-    AND wr.date < ?
-    AND wr.deletedAt IS NULL
-    -- `wr.position DESC` tiebreak picks the LATER record in the day
-    -- when a user logs multiple workouts on the same date. Previous
-    -- query tiebroke by we.position alone which is meaningless
-    -- across records (position is per-record).
-    ORDER BY wr.date DESC, wr.position DESC, we.position DESC
-    LIMIT 1
-)
-ORDER BY position DESC
-LIMIT 1;
-
--- Batched variant of getLastSetForExerciseBeforeDate: for a set of catalog
--- exercises sharing ONE cutoff date, returns the most recent prior
--- workoutExercise.uuid per exercise. Replaces the per-exercise N+1 loop in
--- `DefaultRecordRepository.buildPreviousSetMap` for the boundary cases (a
--- single-day read → one query instead of one-per-exercise). Same tiebreaker
--- chain as the scalar query above, expressed as NOT EXISTS (no window
--- functions, so it runs on the SqliteDialect 3.18 baseline). Pair with
--- getLastSetsForWorkoutExercises.
+-- Tiebreakers: `wr.position DESC` picks the LATER record when a user logs
+-- multiple workouts on one date (we.position alone is meaningless across
+-- records — it's per-record). Strict `<` on the date keeps an exercise out of
+-- its own lookup.
+--
+-- Edge case — no prior occurrence: yields no row for that exercise, and the
+-- caller leaves `lastOccurrence` null.
 getLastWorkoutExercisesForExercisesBeforeDate:
-SELECT we.exerciseUuid AS exerciseUuid, we.uuid AS weUuid
+SELECT we.exerciseUuid AS exerciseUuid, we.uuid AS weUuid, wr.date AS recordDate
 FROM workoutExercises we
 JOIN workoutRecords wr ON wr.uuid = we.workoutRecordUuid
 WHERE we.exerciseUuid IN :exerciseUuids

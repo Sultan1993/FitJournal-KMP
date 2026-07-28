@@ -13,6 +13,7 @@ import kz.maestrosultan.fitjournal.data.db.WorkoutExercisesQueries
 import kz.maestrosultan.fitjournal.data.db.WorkoutRecordsQueries
 import kz.maestrosultan.fitjournal.data.db.WorkoutSetsQueries
 import kz.maestrosultan.fitjournal.data.time.toStoredString
+import kz.maestrosultan.fitjournal.data.record.entity.DBLastOccurrence
 import kz.maestrosultan.fitjournal.data.record.entity.DBWorkoutExerciseObject
 import kz.maestrosultan.fitjournal.data.record.entity.DBWorkoutExerciseWithSets
 import kz.maestrosultan.fitjournal.data.record.entity.DBWorkoutRecord
@@ -145,40 +146,34 @@ class WorkoutsDBDataSource(
             .executeAsList()
     }
 
-    suspend fun getLastSetForExerciseBeforeDate(
-        exerciseUuid: String,
-        userId: String,
-        journalId: String,
-        beforeDateString: String,
-    ): DBWorkoutSetObject? = withContext(Dispatchers.IO) {
-        setsDao
-            .getLastSetForExerciseBeforeDate(exerciseUuid, userId, journalId, beforeDateString)
-            .executeAsOneOrNull()
-            ?.map()
-    }
-
-    // Batched variant: for catalog exercises sharing one cutoff date, returns
-    // ALL sets (position-ordered) of the most recent prior workoutExercise per
-    // exercise uuid — two queries total instead of one per exercise. The full
-    // set list lets the caller map the previous-set hint per position (set N ←
-    // prior occurrence's set N) rather than stamping the last set everywhere.
-    suspend fun getPreviousSetsForExercisesBeforeDate(
+    // For catalog exercises sharing one cutoff date, returns ALL sets
+    // (position-ordered) of the most recent prior workoutExercise per exercise
+    // uuid — two queries total, not one per exercise. The full set list lets the
+    // caller align the hint per position (set N ← prior occurrence's set N)
+    // rather than stamping the last set everywhere.
+    suspend fun getLastOccurrenceForExercisesBeforeDate(
         exerciseUuids: Collection<String>,
         userId: String,
         journalId: String,
         beforeDateString: String,
-    ): Map<String, List<DBWorkoutSetObject>> = withContext(Dispatchers.IO) {
+    ): Map<String, DBLastOccurrence> = withContext(Dispatchers.IO) {
         if (exerciseUuids.isEmpty()) return@withContext emptyMap()
         val weRows = setsDao
             .getLastWorkoutExercisesForExercisesBeforeDate(exerciseUuids, userId, journalId, beforeDateString)
             .executeAsList()
         if (weRows.isEmpty()) return@withContext emptyMap()
         val weUuidToExerciseUuid = weRows.associate { it.weUuid to it.exerciseUuid }
-        setsDao
+        // The occurrence's own record date — needed so the domain LastOccurrence
+        // can say WHEN, not just what.
+        val exerciseUuidToDate = weRows.associate { it.exerciseUuid to it.recordDate }
+        val setsByExerciseUuid = setsDao
             .getSetsForWorkoutExercises(weUuidToExerciseUuid.keys)
             .executeAsList()
             .mapNotNull { row -> weUuidToExerciseUuid[row.workoutExerciseUuid]?.let { exUuid -> exUuid to row.map() } }
             .groupBy({ it.first }, { it.second })
+        setsByExerciseUuid.mapNotNull { (exUuid, sets) ->
+            exerciseUuidToDate[exUuid]?.let { date -> exUuid to DBLastOccurrence(date, sets) }
+        }.toMap()
     }
 
     private fun childrenOf(workoutRecordUuid: String): List<DBWorkoutExerciseWithSets> {
