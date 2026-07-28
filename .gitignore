@@ -43,3 +43,6 @@ google-services.json
 # Android Profiling
 *.hprof
 .kotlin
+
+# superlazy-review scratch output (two-model code review)
+.superlazy-review/
