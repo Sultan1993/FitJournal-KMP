@@ -75,7 +75,10 @@ class DefaultRecordRepository(
     ): List<WorkoutRecord> {
         val exerciseLookup = exerciseLookupForRead(userId)
         val trees = workoutsDB.getWorkoutRecordsByJournal(userId, journalId)
-        return toDomainList(trees, exerciseLookup)
+        // The only unbounded read in the app. Consumers are the workload
+        // aggregate and the workoutExercise-comment editor — neither renders
+        // hints, so skip the compute AND the boundary SQL fallback.
+        return toDomainList(trees, exerciseLookup, includeLastOccurrence = false)
     }
 
     override suspend fun getRecordsByDate(
@@ -114,7 +117,8 @@ class DefaultRecordRepository(
             "$year-$nm-01"
         }
         val trees = workoutsDB.getWorkoutRecordsByJournal(userId, journalId, from, to)
-        return toDomainList(trees, exerciseLookup)
+        // Calendar dots only — no hints rendered, so skip the computation.
+        return toDomainList(trees, exerciseLookup, includeLastOccurrence = false)
     }
 
     override suspend fun getRecentRecords(
@@ -133,10 +137,9 @@ class DefaultRecordRepository(
         val windowStart = today.minusYearsSafe(3).toString()
         val to = "9999-12-31"
         val trees = workoutsDB.getWorkoutRecordsByJournal(userId, journalId, windowStart, to)
-        // Workout-history list cells don't render previous-set hints —
-        // skip the bulk compute + boundary SQL fallback entirely. Saves
-        // ~5ms on a 3-year window for a heavy user and avoids ~30
-        // single-purpose `getLastSetForExerciseBeforeDate` calls.
+        // Workout-history list cells don't render hints — skip the bulk
+        // compute + boundary SQL fallback entirely. Saves ~5ms on a 3-year
+        // window for a heavy user.
         return toDomainList(trees, exerciseLookup, includeLastOccurrence = false)
     }
 
@@ -341,7 +344,7 @@ class DefaultRecordRepository(
     /**
      * Recreates [sources] as fresh records on [date]. Sets keep their
      * reps/duration but drop weight/distance and difficulty (a re-do
-     * template); previous-set hints are computed on read, not stored.
+     * template); the hints come from `lastOccurrence`, computed on read.
      */
     private suspend fun insertCopiedRecords(
         userId: String,
@@ -712,15 +715,16 @@ class DefaultRecordRepository(
      * exercise whose oldest occurrence lies at the window boundary).
      * Set to false on list / aggregate paths (workout history, workload
      * muscle data) where the hint is never rendered — those callers save
-     * the entire previous-set computation including the boundary SQL
-     * calls. Detail paths (`getRecordsByDate`) leave it true.
+     * the entire lastOccurrence computation including the boundary SQL
+     * calls. Only the logging paths (`getRecordsByDate` + its Flow) leave it
+     * true — everything else (workload, calendar, history feed) opts out.
      */
     private suspend fun toDomainList(
         trees: List<DBWorkoutRecord>,
         exerciseLookup: Map<String, Exercise>,
         includeLastOccurrence: Boolean = true,
     ): List<WorkoutRecord> = withContext(Dispatchers.Default) {
-        // The CPU mapping (O(records×exercises×sets)) and buildTargetSetMap's
+        // The CPU mapping (O(records×exercises×sets)) and buildLastOccurrenceMap's
         // in-memory sort/group are the dominant cost of every tree read. Force
         // them onto Default so they never run on the caller's dispatcher —
         // several Android callers reach this via a dispatcher-less
@@ -743,15 +747,15 @@ class DefaultRecordRepository(
     }
 
     /**
-     * Builds `weUuid -> targetSets` (position-ordered) for every
-     * workoutExercise inside [trees]. For each catalog exercise, "previous"
-     * is the most recent prior occurrence in chronological order
+     * Builds `weUuid -> DBLastOccurrence` for every workoutExercise inside
+     * [trees]. For each catalog exercise, the last occurrence is the most recent
+     * prior one in chronological order
      * `(record.date DESC, record.position DESC, we.position DESC)`; its full
-     * set list is returned so [mapExercise] can match the hint per position
+     * set list is carried so `LastOccurrence.setAt` can align per position
      * (set N ← prior occurrence's set N) instead of stamping the last set
      * onto every set. Most lookups resolve in-memory from the already-loaded
      * trees. The remaining "oldest in window per exercise" cases fall through
-     * to [WorkoutsDBDataSource.getTargetSetsForExercisesBeforeDate].
+     * to [WorkoutsDBDataSource.getLastOccurrenceForExercisesBeforeDate].
      */
     private suspend fun buildLastOccurrenceMap(
         trees: List<DBWorkoutRecord>,

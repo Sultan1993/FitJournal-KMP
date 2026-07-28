@@ -146,23 +146,11 @@ class WorkoutsDBDataSource(
             .executeAsList()
     }
 
-    suspend fun getLastSetForExerciseBeforeDate(
-        exerciseUuid: String,
-        userId: String,
-        journalId: String,
-        beforeDateString: String,
-    ): DBWorkoutSetObject? = withContext(Dispatchers.IO) {
-        setsDao
-            .getLastSetForExerciseBeforeDate(exerciseUuid, userId, journalId, beforeDateString)
-            .executeAsOneOrNull()
-            ?.map()
-    }
-
-    // Batched variant: for catalog exercises sharing one cutoff date, returns
-    // ALL sets (position-ordered) of the most recent prior workoutExercise per
-    // exercise uuid — two queries total instead of one per exercise. The full
-    // set list lets the caller map the previous-set hint per position (set N ←
-    // prior occurrence's set N) rather than stamping the last set everywhere.
+    // For catalog exercises sharing one cutoff date, returns ALL sets
+    // (position-ordered) of the most recent prior workoutExercise per exercise
+    // uuid — two queries total, not one per exercise. The full set list lets the
+    // caller align the hint per position (set N ← prior occurrence's set N)
+    // rather than stamping the last set everywhere.
     suspend fun getLastOccurrenceForExercisesBeforeDate(
         exerciseUuids: Collection<String>,
         userId: String,

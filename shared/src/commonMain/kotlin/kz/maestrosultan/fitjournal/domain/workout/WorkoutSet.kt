@@ -26,4 +26,13 @@ data class WorkoutSet(
     val duration: Int?,
     val difficultyType: DifficultyType,
     val resultType: ResultType,
-)
+) {
+
+    /** The big number: weight for WEIGHT_REPS, distance for DISTANCE_DURATION. */
+    val displayValue: Double?
+        get() = if (resultType == ResultType.DISTANCE_DURATION) distance else weight
+
+    /** Its companion: reps for WEIGHT_REPS, duration in minutes for DISTANCE_DURATION. */
+    val displayReps: Int?
+        get() = if (resultType == ResultType.DISTANCE_DURATION) duration else reps
+}

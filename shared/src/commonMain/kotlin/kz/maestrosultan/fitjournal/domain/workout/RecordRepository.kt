@@ -31,7 +31,17 @@ interface RecordRepository {
      */
     fun observeRecordsChanged(userId: String, journalId: String): Flow<String>
 
+    /**
+     * Every record in the journal, unbounded. `WorkoutExercise.lastOccurrence`
+     * is left null — see [getRecordsByDate] if you need hints.
+     */
     suspend fun getAllRecords(userId: String, journalId: String): List<WorkoutRecord>
+
+    /**
+     * The one read that populates `WorkoutExercise.lastOccurrence` (with its
+     * Flow variant) — it backs the logging flow, which is the only consumer of
+     * "what did I do last time".
+     */
 
     suspend fun getRecordsByDate(
         userId: String,
@@ -39,6 +49,10 @@ interface RecordRepository {
         date: LocalDate,
     ): List<WorkoutRecord>
 
+    /**
+     * Calendar-month window, for the calendar's has-workout dots.
+     * `WorkoutExercise.lastOccurrence` is left null.
+     */
     suspend fun getRecordsByMonth(
         userId: String,
         journalId: String,
@@ -84,8 +98,9 @@ interface RecordRepository {
      * cares about a single catalog exercise.
      *
      * Sorted newest → oldest by record date, then by record position,
-     * then by we.position. `WorkoutSet.target*` fields are left null
-     * — the history / stats cells don't render them.
+     * then by we.position. `WorkoutExercise.lastOccurrence` is left null —
+     * this read IS the history, so a per-exercise "last time" would be
+     * circular.
      */
     @Throws(Exception::class)
     suspend fun getExerciseOccurrences(
@@ -113,7 +128,9 @@ interface RecordRepository {
      * Copies [records] onto [date] as brand-new records (fresh uuids).
      * Each source exercise is recreated with its set count preserved but
      * `weight`/`distance` cleared and difficulty reset — a "repeat this
-     * session" template. Previous-set hints surface automatically on read.
+     * session" template. The copied session then shows up as the next read's
+     * `WorkoutExercise.lastOccurrence`, so the cleared rows render per-position
+     * hints with no extra work.
      */
     suspend fun addRecordsToDate(
         userId: String,
