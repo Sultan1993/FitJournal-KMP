@@ -342,9 +342,16 @@ class DefaultRecordRepository(
     }
 
     /**
-     * Recreates [sources] as fresh records on [date]. Sets keep their
-     * reps/duration but drop weight/distance and difficulty (a re-do
-     * template); the hints come from `lastOccurrence`, computed on read.
+     * Recreates [sources] as fresh records on [date], preserving the exercise
+     * list, their comments and each exercise's SET COUNT — but no values.
+     *
+     * Reps/duration are cleared along with weight/distance, deliberately. They
+     * used to be carried over, which made a copied row a hybrid: its reps came
+     * from the copied date while its ghost weight came from `lastOccurrence`
+     * (the most recent session, often a different day). Importing 24 July after
+     * training on 27 July rendered "22 kg × 12" — 22 kg from the 27th, 12 reps
+     * from the 24th, a set that never happened. An empty row instead shows the
+     * last real session's pair, whole.
      */
     private suspend fun insertCopiedRecords(
         userId: String,
@@ -376,9 +383,9 @@ class DefaultRecordRepository(
                                 workoutExerciseUuid = weUuid,
                                 position = setIndex,
                                 weight = null,
-                                reps = srcSet.reps,
+                                reps = null,
                                 distance = null,
-                                duration = srcSet.duration,
+                                duration = null,
                                 difficultyType = DifficultyType.NONE.id,
                                 completed = false,
                             )

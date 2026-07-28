@@ -154,6 +154,42 @@ class RecordRepositoryTest {
     }
 
     @Test
+    fun copyingAnOlderWorkout_showsTheLatestSessionWhole_notAHybrid(): Unit = runBlocking {
+        // The reported bug, end to end. Trained 24 July at 20×12 ×3, then 27 July
+        // at 22×10 / 22×9 / 22×9. Importing the 24th onto today used to carry the
+        // 24th's REPS while the ghost weight came from the 27th (the most recent
+        // occurrence), rendering "22 kg × 12" — a set that never happened.
+        val exId = seedCatalogExercise()
+        val jul24 = LocalDate(2026, 7, 24)
+        val jul27 = LocalDate(2026, 7, 27)
+        val today = LocalDate(2026, 7, 28)
+
+        repo.addExercisesToDate(userId, journalId, jul24, listOf(exId))
+        val we24 = repo.getRecordsByDate(userId, journalId, jul24).single().exercises.single().id
+        repeat(3) { repo.addSet(userId, journalId, we24, 20.0, 12, null, null, DifficultyType.NONE) }
+
+        repo.addExercisesToDate(userId, journalId, jul27, listOf(exId))
+        val we27 = repo.getRecordsByDate(userId, journalId, jul27).single().exercises.single().id
+        repo.addSet(userId, journalId, we27, 22.0, 10, null, null, DifficultyType.NONE)
+        repo.addSet(userId, journalId, we27, 22.0, 9, null, null, DifficultyType.NONE)
+        repo.addSet(userId, journalId, we27, 22.0, 9, null, null, DifficultyType.NONE)
+
+        val source = repo.getRecordsByDate(userId, journalId, jul24)
+        repo.addRecordsToDate(userId, journalId, today, source)
+
+        val copied = repo.getRecordsByDate(userId, journalId, today).single().exercises.single()
+        // The copy keeps the set COUNT and nothing else — no reps carried over.
+        assertEquals(3, copied.sets.size)
+        assertTrue(copied.sets.all { it.weight == null && it.reps == null }, "a copied row must be empty")
+
+        // So every row renders the 27th's pair, whole.
+        assertEquals(jul27, copied.lastOccurrence?.date)
+        val shown = copied.sets.indices.map { copied.displayValuesAt(it, false) }
+        assertEquals(listOf(22.0, 22.0, 22.0), shown.map { it.value })
+        assertEquals(listOf(10, 9, 9), shown.map { it.reps })
+    }
+
+    @Test
     fun mergeRecords_intoSuperset_doesNotCollideOnSetUuids(): Unit = runBlocking {
         // Regression: creating a superset crashed with `UNIQUE constraint
         // failed: workoutSets.uuid`. mergeRecords re-parented the second

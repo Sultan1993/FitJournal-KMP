@@ -102,19 +102,36 @@ class DisplaySetValuesTest {
     }
 
     @Test
-    fun copiedTemplateKeepsItsOwnPlannedReps() {
-        // addRecordsToDate preserves reps and clears weight. Those reps are the
-        // user's plan, so they outrank last time's.
+    fun aRepsOnlyRowIsNeverGivenSomeoneElsesWeight() {
+        // The reported bug: importing 24 July after training on 27 July showed
+        // "22 kg × 12" — 22 from the 27th's ghost, 12 carried by the import.
+        // addRecordsToDate now clears reps too, so a copied row can't get here;
+        // a row that DOES have its own reps (bodyweight work, legacy Parse data)
+        // must show them alone rather than borrow a weight.
         val ex = exercise(
             sets = listOf(set("s1", weight = null, reps = 12)),
             lastOccurrence = LastOccurrence(
                 date = priorDate,
-                sets = listOf(set("p1", weight = 90.0, reps = 5)),
+                sets = listOf(set("p1", weight = 22.0, reps = 9)),
             ),
         )
         val display = ex.displayValuesAt(0, false)
-        assertEquals(90.0, display.value)
+        assertNull(display.value, "own reps must not be paired with a hinted weight")
         assertEquals(12, display.reps)
+    }
+
+    @Test
+    fun anEmptyCopiedRowShowsTheLastSessionWhole() {
+        // What the import produces now: no values at all → the full ghost pair.
+        val ex = exercise(
+            sets = listOf(set("s1"), set("s2")),
+            lastOccurrence = LastOccurrence(
+                date = priorDate,
+                sets = listOf(set("p1", weight = 22.0, reps = 10), set("p2", weight = 22.0, reps = 9)),
+            ),
+        )
+        assertEquals(22.0 to 10, ex.displayValuesAt(0, false).let { it.value to it.reps })
+        assertEquals(22.0 to 9, ex.displayValuesAt(1, false).let { it.value to it.reps })
     }
 
     @Test
