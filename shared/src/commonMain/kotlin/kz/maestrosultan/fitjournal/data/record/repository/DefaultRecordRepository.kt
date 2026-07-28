@@ -56,7 +56,7 @@ import kz.maestrosultan.fitjournal.data.record.entity.DBWorkoutSetObject
  * parent so the SyncWorker re-encodes the full JSON tree on push.
  *
  * No network calls. The legacy `WorkoutRecordsRemoteDataSource` is only
- * consumed by the one-shot `WorkoutsMigrator` import.
+ * (was consumed by the one-shot Parse `WorkoutsMigrator` import, now deleted).
  */
 class DefaultRecordRepository(
     private val workoutsDB: WorkoutsDBDataSource,

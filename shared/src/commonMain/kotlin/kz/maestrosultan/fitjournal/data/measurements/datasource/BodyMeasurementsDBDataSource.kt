@@ -75,7 +75,7 @@ class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
 
     /**
      * Insert if uuid not already present. Returns true on insert, false on
-     * skip. Used by `DefaultBodyMeasurementsMigrator` so re-running after a
+     * skip. Was used by the Parse body-measurements migrator so re-running after a
      * partial crash doesn't duplicate. New rows ship with
      * `pendingUpload=true` so SyncOrchestrator pushes them on its next tick.
      */

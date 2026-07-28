@@ -229,7 +229,7 @@ class ExercisesDBDataSource(
 
     /**
      * Insert if uuid not already present. Returns true on insert, false on
-     * skip. Used by `DefaultExercisesMigrator` so re-running after a
+     * skip. Was used by the Parse `DefaultExercisesMigrator` so re-running after a
      * partial crash doesn't duplicate AND doesn't overwrite a user's
      * already-edited custom (which would have `pendingUpload=1`).
      *

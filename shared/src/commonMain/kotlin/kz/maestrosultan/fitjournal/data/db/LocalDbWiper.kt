@@ -8,7 +8,7 @@ import kotlinx.coroutines.withContext
  * Drops every row in every user-scoped local SQLite table in a single
  * transaction. Used exactly once at the start of the FJ2.0 migration gate
  * to clear stale FJ1.x rows keyed by the legacy Parse `objectId` userId
- * — after the wipe, AWSUserMigrator swaps `User.userId` to the awsUserId
+ * — after the wipe, AWSUserMigrator stamps `User.userId` to the awsUserId
  * and `LocalDbHydrationMigrator` repopulates the DB from AWS under the
  * new key. The wipe is unconditional: every row in every table is dropped
  * (not scoped to a userId), because matching the FJ1.x parseUserId
