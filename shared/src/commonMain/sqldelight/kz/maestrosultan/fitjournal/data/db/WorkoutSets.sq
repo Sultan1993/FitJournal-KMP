@@ -87,7 +87,7 @@ AND wr.deletedAt IS NULL
 ORDER BY wr.date DESC, wr.position DESC, wr.uuid ASC, we.position ASC, ws.position ASC;
 
 -- "Most recent set with this exercise BEFORE the given date" — drives the
--- previousWeight / previousDistance / previousDifficultyType hints on a
+-- targetWeight / targetDistance / targetDifficultyType hints on a
 -- set cell ("you did 100kg×10 last time"). Pre-FJ-2.0 these values were
 -- stored on the Parse WorkoutSet row at write time; the new SQLite schema
 -- doesn't carry them, so we compute on read instead. Returns the LAST
@@ -134,13 +134,13 @@ LIMIT 1;
 -- Batched variant of getLastSetForExerciseBeforeDate: for a set of catalog
 -- exercises sharing ONE cutoff date, returns the most recent prior
 -- workoutExercise.uuid per exercise. Replaces the per-exercise N+1 loop in
--- `DefaultRecordRepository.buildPreviousSetMap` for the boundary cases (a
+-- `DefaultRecordRepository.buildTargetSetMap` for the boundary cases (a
 -- single-day read → one query instead of one-per-exercise). Same tiebreaker
 -- chain as the scalar query above, expressed as NOT EXISTS (no window
 -- functions, so it runs on the SqliteDialect 3.18 baseline). Pair with
 -- getLastSetsForWorkoutExercises.
 getLastWorkoutExercisesForExercisesBeforeDate:
-SELECT we.exerciseUuid AS exerciseUuid, we.uuid AS weUuid
+SELECT we.exerciseUuid AS exerciseUuid, we.uuid AS weUuid, wr.date AS recordDate
 FROM workoutExercises we
 JOIN workoutRecords wr ON wr.uuid = we.workoutRecordUuid
 WHERE we.exerciseUuid IN :exerciseUuids

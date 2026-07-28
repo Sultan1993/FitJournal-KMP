@@ -115,7 +115,7 @@ class RecordRepositoryTest {
     }
 
     @Test
-    fun previousWeightHint_isPerPosition_notLastSetOnEverySet(): Unit = runBlocking {
+    fun lastOccurrence_alignsPerPosition_notLastSetOnEverySet(): Unit = runBlocking {
         // Regression: copying / repeating a workout (and the previous-set hint
         // in general) used to take the prior occurrence's LAST set and stamp
         // its weight onto every set. Each set must instead show the weight from
@@ -136,10 +136,21 @@ class RecordRepositoryTest {
         val curWeId = repo.getRecordsByDate(userId, journalId, curDate).single().exercises.single().id
         repeat(4) { repo.addSet(userId, journalId, curWeId, 0.0, 1, null, null, DifficultyType.NONE) }
 
-        val sets = repo.getRecordsByDate(userId, journalId, curDate).single().exercises.single().sets
+        val exercise = repo.getRecordsByDate(userId, journalId, curDate).single().exercises.single()
+        val last = requireNotNull(exercise.lastOccurrence) { "prior occurrence should be attached" }
+        assertEquals(prevDate, last.date)
         // set N ← prior occurrence's set N; the 4th overflows → falls back to last (120).
-        assertEquals(listOf(100.0, 110.0, 120.0, 120.0), sets.map { it.previousWeight })
-        assertEquals(DifficultyType.LIGHT, sets.first().previousDifficultyType)
+        assertEquals(
+            listOf(100.0, 110.0, 120.0, 120.0),
+            exercise.sets.indices.map { last.setAt(it)?.weight },
+        )
+        assertEquals(DifficultyType.LIGHT, last.setAt(0)?.difficultyType)
+        // The overflow rule is the bit that regressed before — assert it explicitly
+        // rather than only via the 4th element above.
+        assertEquals(120.0, last.setAt(99)?.weight)
+        // A negative position clamps to the FIRST set. Without the clamp it falls
+        // through to the overflow branch and returns the heaviest set instead.
+        assertEquals(100.0, last.setAt(-1)?.weight)
     }
 
     @Test

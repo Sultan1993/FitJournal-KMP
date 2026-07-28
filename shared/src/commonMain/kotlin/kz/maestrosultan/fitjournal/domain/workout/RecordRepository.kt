@@ -51,13 +51,12 @@ interface RecordRepository {
      * workout-history list. Older sessions remain reachable via calendar
      * pickers but don't render here.
      *
-     * `WorkoutSet.previousWeight` / `previousDistance` /
-     * `previousDifficultyType` on the returned records are intentionally
-     * left null — the workout-history list cells don't render those
-     * hints, and computing them would add a bounded but real cost
-     * (in-memory sort + ~30 SQL fallback calls for boundary cases).
-     * Detail-screen consumers must use [getRecordsByDate] / its Flow
-     * variant, which populates them.
+     * `WorkoutExercise.lastOccurrence` on the returned records is intentionally
+     * left null — the workout-history list cells don't render hints, and
+     * computing it would add a bounded but real cost (in-memory sort + ~30 SQL
+     * fallback calls for boundary cases). Consumers that need "what did I do
+     * last time" must use [getRecordsByDate] / its Flow variant, which
+     * populates it.
      */
     suspend fun getRecentRecords(
         userId: String,
@@ -85,7 +84,7 @@ interface RecordRepository {
      * cares about a single catalog exercise.
      *
      * Sorted newest → oldest by record date, then by record position,
-     * then by we.position. `WorkoutSet.previous*` fields are left null
+     * then by we.position. `WorkoutSet.target*` fields are left null
      * — the history / stats cells don't render them.
      */
     @Throws(Exception::class)

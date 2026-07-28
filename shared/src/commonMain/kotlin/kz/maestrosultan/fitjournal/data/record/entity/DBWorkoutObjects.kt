@@ -7,6 +7,16 @@ import kz.maestrosultan.fitjournal.data.db.WorkoutSets
 import kz.maestrosultan.fitjournal.data.time.parseStoredInstant
 
 /**
+ * The most recent prior occurrence of one catalog exercise, at the data layer:
+ * its record date (`yyyy-MM-dd`, as stored) plus its position-ordered sets.
+ * Maps to the domain `LastOccurrence`.
+ */
+data class DBLastOccurrence(
+    val recordDate: String,
+    val sets: List<DBWorkoutSetObject>,
+)
+
+/**
  * The SQL row of `workoutRecords`. Internal: just the parent row, no
  * children. Most callers want [DBWorkoutRecord] (the full domain
  * record). Use this only on internal hydration paths and for sync push
