@@ -10,12 +10,24 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import kz.maestrosultan.fitjournal.data.db.BodyMeasurementsQueries
 import kz.maestrosultan.fitjournal.data.db.JournalsQueries
+import kz.maestrosultan.fitjournal.data.db.WorkoutRecordsQueries
 import kz.maestrosultan.fitjournal.data.journal.entity.DBJournalObject
 import kz.maestrosultan.fitjournal.data.journal.entity.map
 import kz.maestrosultan.fitjournal.data.time.toStoredString
 
-class JournalsDBDataSource(private val dao: JournalsQueries) {
+/**
+ * @param recordsDao / @param measurementsDao are here only for
+ * [softDeleteJournalCascade]. A journal's children live in other tables with no
+ * FOREIGN KEY back to `journals`, so the cascade has to be written by hand — and
+ * it has to be one transaction, which means one owner holding all three Queries.
+ */
+class JournalsDBDataSource(
+    private val dao: JournalsQueries,
+    private val recordsDao: WorkoutRecordsQueries,
+    private val measurementsDao: BodyMeasurementsQueries,
+) {
 
     suspend fun getJournals(userId: String): List<DBJournalObject> = withContext(Dispatchers.IO) {
         dao.getJournals(userId).executeAsList().map { it.map() }
@@ -173,6 +185,54 @@ class JournalsDBDataSource(private val dao: JournalsQueries) {
             updatedDate = updatedDate.toStoredString(),
             uuid = uuid,
         )
+    }
+
+    /**
+     * Soft-delete a journal AND everything scoped to it, atomically.
+     *
+     * Deleting the journal row alone is not enough: `workoutRecords` and
+     * `bodyMeasurements` carry `journalId` with no FK, so the children outlive
+     * the parent. That is not merely untidy — the sync pull treats a tombstoned
+     * parent as invalid and reparents surviving workout records into the
+     * personal journal, so a deleted journal's workouts reappear there on the
+     * next device to sync. Measurements have no reparent path and just become
+     * unreachable.
+     *
+     * One transaction because a partial cascade has no retry: the journal row
+     * would already be tombstoned, so [softDeleteJournal]'s `deletedAt IS NULL`
+     * predicate makes a second attempt a no-op and the live children are
+     * stranded permanently. Every statement stamps `pendingUpload = 1` so the
+     * tombstones reach AWS on the next tick.
+     */
+    suspend fun softDeleteJournalCascade(
+        uuid: String,
+        userId: String,
+        deletedAt: Instant = Clock.System.now(),
+        updatedDate: Instant = deletedAt,
+    ) = withContext(Dispatchers.IO) {
+        val deletedAtText = deletedAt.toStoredString()
+        val updatedDateText = updatedDate.toStoredString()
+        // Transactions are per-connection in SQLDelight, so opening on one
+        // Queries object covers statements issued through the others.
+        dao.transaction {
+            recordsDao.softDeleteWorkoutRecordsByJournal(
+                deletedAt = deletedAtText,
+                updatedDate = updatedDateText,
+                userId = userId,
+                journalId = uuid,
+            )
+            measurementsDao.softDeleteBodyMeasurementsByJournal(
+                deletedAt = deletedAtText,
+                updatedDate = updatedDateText,
+                userId = userId,
+                journalId = uuid,
+            )
+            dao.softDeleteJournal(
+                deletedAt = deletedAtText,
+                updatedDate = updatedDateText,
+                uuid = uuid,
+            )
+        }
     }
 
     suspend fun softDeleteJournalsByUserId(

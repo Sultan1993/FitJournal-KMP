@@ -102,6 +102,18 @@ SET deletedAt = ?, updatedDate = ?, pendingUpload = 1
 WHERE uuid = ?
 AND deletedAt IS NULL;
 
+-- Cascade for journal deletion. Measurements are journal-scoped but have no
+-- FOREIGN KEY to `journals`, so deleting a journal used to strand them: no
+-- reparent path exists for this table (unlike workoutRecords), so they simply
+-- became unreachable — every read scopes to a journalId the picker can no
+-- longer offer. Leads with `userId` to use `idx_bodyMeasurements_journal_live`.
+softDeleteBodyMeasurementsByJournal:
+UPDATE bodyMeasurements
+SET deletedAt = ?, updatedDate = ?, pendingUpload = 1
+WHERE userId = ?
+AND journalId = ?
+AND deletedAt IS NULL;
+
 -- Hard purge by user. Used by the delete-account flow.
 deleteBodyMeasurementsByUserId:
 DELETE FROM bodyMeasurements

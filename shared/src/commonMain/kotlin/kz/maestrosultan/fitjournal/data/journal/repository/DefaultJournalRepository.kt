@@ -78,8 +78,16 @@ class DefaultJournalRepository(
     }
 
     override suspend fun deleteJournal(uuid: String) {
+        // Live-only read: a missing or already-tombstoned journal has nothing to
+        // cascade, and re-running would only re-stamp `deletedAt`.
+        val journal = localDataSource.getJournalById(uuid) ?: return
         val now = Clock.System.now()
-        localDataSource.softDeleteJournal(uuid = uuid, deletedAt = now, updatedDate = now)
+        localDataSource.softDeleteJournalCascade(
+            uuid = uuid,
+            userId = journal.userId,
+            deletedAt = now,
+            updatedDate = now,
+        )
     }
 
     override suspend fun deleteUserJournals(userId: String) {

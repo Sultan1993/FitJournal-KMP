@@ -130,6 +130,20 @@ SET deletedAt = ?, updatedDate = ?, pendingUpload = 1
 WHERE uuid = ?
 AND deletedAt IS NULL;
 
+-- Cascade for journal deletion. `journalId` has no FOREIGN KEY (the only FK
+-- chain here is sets → exercises → records), so deleting a journal used to
+-- leave its records live: invisible locally, but the sync pull treats a
+-- tombstoned parent as invalid and REPARENTS them into the personal journal,
+-- so they resurfaced there on the next device. Leads with `userId` to use
+-- `idx_workoutRecords_live_journal`. Live rows only, so re-deleting a journal
+-- is a no-op rather than a `deletedAt` shift.
+softDeleteWorkoutRecordsByJournal:
+UPDATE workoutRecords
+SET deletedAt = ?, updatedDate = ?, pendingUpload = 1
+WHERE userId = ?
+AND journalId = ?
+AND deletedAt IS NULL;
+
 -- Hard purge by user. Only used by the delete-account flow.
 deleteWorkoutRecordsByUserId:
 DELETE FROM workoutRecords
