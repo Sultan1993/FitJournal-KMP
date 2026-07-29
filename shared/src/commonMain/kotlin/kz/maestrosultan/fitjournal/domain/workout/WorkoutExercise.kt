@@ -45,19 +45,32 @@ data class WorkoutExercise(
      */
     fun displayValuesAt(position: Int, fallBackToPreviousSet: Boolean): DisplaySetValues {
         val own = sets.getOrNull(position)
-        // Rule 1. `displayReps` alone counts: a reps-only row (bodyweight work,
-        // or a legacy Parse row with no weight) is real data, so it must not be
-        // dressed up with someone else's weight.
-        if (own != null && (own.displayValue != null || own.displayReps != null)) {
+        // Rule 1. [WorkoutSet.hasOwnNumbers], NOT `isLogged`: reps alone counts
+        // here, so a reps-only row renders from itself and never gets topped up
+        // with someone else's weight. (`isLogged` is the stricter "worth showing
+        // at all" test and belongs to the read-only surfaces, not to this.)
+        if (own != null && own.hasOwnNumbers) {
             return DisplaySetValues(value = own.displayValue, reps = own.displayReps)
         }
         // Rule 2.
         val source = listOfNotNull(
             lastOccurrence?.setAt(position),
             if (fallBackToPreviousSet) sets.getOrNull(position - 1) else null,
-        ).firstOrNull { it.displayValue != null || it.displayReps != null }
+        ).firstOrNull { it.hasOwnNumbers }
         return DisplaySetValues(value = source?.displayValue, reps = source?.displayReps)
     }
+
+    /**
+     * True when at least one set recorded its defining number — see
+     * [WorkoutSet.isLogged].
+     *
+     * The test for "is this occurrence worth showing in history". Note it is NOT
+     * `sets.isNotEmpty()`, which both platforms used to filter on: an occurrence
+     * can hold several sets and still record nothing, which is how history ended
+     * up rendering rows of "— × 12" for sessions with no load on them.
+     */
+    val hasLoggedSets: Boolean
+        get() = sets.any { it.isLogged }
 }
 
 /**

@@ -104,8 +104,8 @@ class DisplaySetValuesTest {
         // The reported bug: importing 24 July after training on 27 July showed
         // "22 kg × 12" — 22 from the 27th's ghost, 12 carried by the import.
         // addRecordsToDate now clears reps too, so a copied row can't get here;
-        // a row that DOES have its own reps (bodyweight work, legacy Parse data)
-        // must show them alone rather than borrow a weight.
+        // a row that DOES have its own reps must show them alone rather than
+        // borrow a weight.
         val ex = exercise(
             sets = listOf(set("s1", weight = null, reps = 12)),
             lastOccurrence = LastOccurrence(
@@ -188,5 +188,111 @@ class DisplaySetValuesTest {
         )
         val display = ex.displayValuesAt(0, false)
         assertEquals(5.0 to 30, display.value to display.reps)
+    }
+
+    // ── isLogged / hasLoggedSets — what history is allowed to render ──────
+
+    @Test
+    fun aSetIsLoggedOnlyWhenItsDefiningValueIsPresent() {
+        // weight for WEIGHT_REPS, distance for DISTANCE_DURATION.
+        assertEquals(false, set("empty").isLogged)
+        assertEquals(true, set("w", weight = 100.0).isLogged)
+        // Reps alone is NOT a logged set. "12 reps of Leg Press" with no load
+        // recorded is an unfinished row, not history — it renders "— × 12".
+        assertEquals(false, set("r", reps = 8).isLogged)
+    }
+
+    @Test
+    fun zeroIsALoggedValue_onlyNullIsNot() {
+        // The app cannot log a null value, so null means the user never entered
+        // one. 0 is a value they did enter — 3.2% of production sets — and what
+        // they meant by it is not this predicate's business. The trap is that 0
+        // is falsy in both languages this crosses: any `> 0` or truthiness
+        // rewrite would silently discard all of them.
+        assertEquals(true, set("z", weight = 0.0, reps = 12).isLogged)
+        assertEquals(true, set("zNoReps", weight = 0.0).isLogged)
+        assertEquals(
+            true,
+            set("cardio0", distance = 0.0, resultType = ResultType.DISTANCE_DURATION).isLogged,
+        )
+        // …and the whole occurrence is worth showing.
+        assertEquals(true, exercise(sets = listOf(set("z", weight = 0.0, reps = 12))).hasLoggedSets)
+    }
+
+    @Test
+    fun isLoggedAndHasOwnNumbersAreDifferentQuestions() {
+        // These two were briefly the same definition, which made Rule 1 below
+        // start treating a reps-only row as empty and blend a ghost weight into
+        // it — the "22 kg x 12" bug. Pinned apart on purpose.
+        val repsOnly = set("r", reps = 12)
+        assertEquals(true, repsOnly.hasOwnNumbers, "it does have a number of its own")
+        assertEquals(false, repsOnly.isLogged, "but not the one that makes it history")
+    }
+
+    @Test
+    fun repsOnlyRowStillRendersFromItself_neverFromAGhost() {
+        // The guarantee that must survive the isLogged change: this row shows
+        // its own 12 reps with no value, NOT last session's 22 kg beside them.
+        val ex = exercise(
+            sets = listOf(set("s1", reps = 12)),
+            lastOccurrence = LastOccurrence(
+                date = priorDate,
+                sets = listOf(set("p1", weight = 22.0, reps = 10)),
+            ),
+        )
+        val d = ex.displayValuesAt(0, false)
+        assertNull(d.value, "must not borrow the ghost weight")
+        assertEquals(12, d.reps)
+    }
+
+    @Test
+    fun cardioSetReadsDistance_notWeight() {
+        val cardio = set("c", distance = 5.0, resultType = ResultType.DISTANCE_DURATION)
+        assertEquals(true, cardio.isLogged)
+        // Weight on a cardio row is not what it displays, so it does not qualify.
+        val mislabelled = set("m", weight = 100.0, resultType = ResultType.DISTANCE_DURATION)
+        assertEquals(false, mislabelled.isLogged)
+        // Duration without distance is an unfinished cardio row by the same rule.
+        val durationOnly = set("d", duration = 1800, resultType = ResultType.DISTANCE_DURATION)
+        assertEquals(false, durationOnly.isLogged)
+    }
+
+    @Test
+    fun occurrenceWithNoValuesAnywhere_hasNothingToShow() {
+        // The reported bug: history filtered on `sets.isNotEmpty()`, so three
+        // rows carrying only rep counts rendered a card of "— x 12" rows.
+        val ex = exercise(sets = listOf(set("s1"), set("s2", reps = 12), set("s3", reps = 10)))
+        assertEquals(3, ex.sets.size, "the rows are real; none records a load")
+        assertEquals(false, ex.hasLoggedSets, "so there is nothing to render")
+    }
+
+    @Test
+    fun occurrenceWithOneLoggedSetAmongUnfinishedOnes_isWorthShowing() {
+        val ex = exercise(sets = listOf(set("s1"), set("s2", weight = 60.0, reps = 8), set("s3", reps = 5)))
+        assertEquals(true, ex.hasLoggedSets)
+    }
+
+    @Test
+    fun filteringUnloggedSets_mustKeepOriginalIndexForDisplayValues() {
+        // The trap in the history rail: displayValuesAt resolves against the
+        // FULL sets list. Render the logged rows but renumber the lookup and
+        // every row after a gap reads its neighbour's numbers.
+        val ex = exercise(
+            sets = listOf(set("s1", reps = 5), set("s2", weight = 60.0, reps = 10)),
+        )
+        val logged = ex.sets.withIndex().filter { it.value.isLogged }
+        assertEquals(1, logged.size)
+
+        val (originalIndex, _) = logged.single()
+        assertEquals(1, originalIndex, "the surviving set is at index 1, not 0")
+
+        val right = ex.displayValuesAt(originalIndex, false)
+        assertEquals(60.0, right.value)
+        assertEquals(10, right.reps)
+
+        // Wrong: look up by the filtered position — reads the unlogged row.
+        val wrong = ex.displayValuesAt(0, false)
+        assertNull(wrong.value, "index 0 is the unfinished row, not the logged set")
+        assertEquals(5, wrong.reps)
     }
 }
