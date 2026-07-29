@@ -7,7 +7,11 @@ import kotlinx.serialization.Serializable
  * Serialized as one element of `AWSWorkoutRecord.exercisesJson`.
  *
  * JSON contract: field names/shapes must match across iOS/Android via Serializable.
- * Adding fields requires defaults; removing/renaming breaks old clients — use schemaVersion to gate.
+ * Adding a field requires a default (an old client must still decode a payload
+ * that omits it). Removing one is safe — `ignoreUnknownKeys` covers the historical
+ * blobs. RENAMING is the trap: it is an add plus a remove, so the new name needs a
+ * default too. `schemaVersion` is stamped but compared nowhere, so it gates nothing
+ * — see WorkoutPayloadCodec.
  */
 @Serializable
 data class WorkoutExercisePayload(

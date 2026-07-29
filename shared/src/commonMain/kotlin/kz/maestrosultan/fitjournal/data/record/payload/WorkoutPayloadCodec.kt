@@ -8,20 +8,34 @@ import kotlinx.serialization.json.Json
  *
  * Centralizes lenient-parsing rules so every read site behaves the same:
  *
- * - **`ignoreUnknownKeys = true`** — old clients reading payloads written by
- *   newer clients silently drop fields they don't know. Forward-compat for
- *   adding fields without breaking old apps.
- * - **`coerceInputValues = true`** — unknown enum values (e.g. a future
- *   a new enum case written by a newer client) decode to the field's
- *   default rather than throwing. Old client renders sanely; data is preserved
- *   on round-trip if the blob is re-uploaded by the same old client (since
- *   we'd be writing a fallback value back to AWS, the new value would be lost
- *   — that's acceptable because old clients shouldn't be writing data they
- *   don't fully understand. Use `AWSWorkoutRecord.schemaVersion` to gate this).
+ * - **`ignoreUnknownKeys = true`** — a client reading a payload written by a
+ *   NEWER client silently drops fields it doesn't know. This is also what lets a
+ *   field be removed: every historical blob still carrying it keeps decoding.
+ * - **`coerceInputValues = true`** — an out-of-range value (an enum case a newer
+ *   client introduced, an explicit null on a non-null field) decodes to the
+ *   field's default rather than throwing. Note the round-trip cost: if that old
+ *   client re-uploads the blob it writes the fallback back, losing the newer
+ *   value.
  * - **`encodeDefaults = false`** — null/default fields are omitted from the
  *   output JSON. Keeps the blob small.
  * - **`explicitNulls = false`** — same idea, treats explicit `null` and
  *   absence as equivalent in the output.
+ *
+ * ### What actually keeps this compatible
+ *
+ * Two properties, and neither is `schemaVersion`. That field is stamped on every
+ * record and synced, but it is **compared nowhere** in either app — so it cannot
+ * gate anything, and an earlier version of this KDoc telling you to "use
+ * schemaVersion to gate" described a mechanism that was never built.
+ *
+ *  1. `ignoreUnknownKeys` — a new client can read an old payload.
+ *  2. **Every field has a default** — an old client can read a new payload that
+ *     omits a field it still expects.
+ *
+ * So REMOVING a field is safe, and so is adding one WITH a default. Adding a
+ * field WITHOUT a default is the unsafe edit: it breaks property 2 for every
+ * client already in the field, and nothing in the build will tell you.
+ * `WorkoutPayloadCodecTest` pins both directions.
  */
 object WorkoutPayloadCodec {
 

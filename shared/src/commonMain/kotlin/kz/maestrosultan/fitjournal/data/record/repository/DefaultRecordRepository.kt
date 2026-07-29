@@ -658,7 +658,7 @@ class DefaultRecordRepository(
                         reps = reps,
                         distance = distance,
                         duration = duration,
-                            )
+                    )
                 }
             }
             exWithSets.copy(sets = updatedSets)
