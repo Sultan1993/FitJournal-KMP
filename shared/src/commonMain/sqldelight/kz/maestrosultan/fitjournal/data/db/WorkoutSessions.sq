@@ -1,8 +1,9 @@
--- One workout session per (user, journal, calendar day). `endedAt IS NULL`
--- means running; at most one running row per user app-wide (repository
--- invariant, transaction-enforced). Local-only in iteration 1: no AWS
--- counterpart, so no remoteId/pendingUpload/deletedAt — iteration 2 adds
--- them (10.sqm) when the AWS model defines their semantics.
+-- One workout session per (user, journal, calendar day) — a repository
+-- invariant, not (as of 10.sqm) a schema one; see the index comment below.
+-- `endedAt IS NULL` means running; at most one running row per user
+-- app-wide (repository invariant, transaction-enforced). Local-only in
+-- iteration 1: no AWS counterpart, so no remoteId/pendingUpload/deletedAt —
+-- a later iteration adds them when the AWS model defines their semantics.
 -- date = LocalDate.toString(); startedAt/endedAt = Instant ISO-8601 TEXT.
 CREATE TABLE workoutSessions (
     uuid TEXT PRIMARY KEY NOT NULL,
@@ -13,16 +14,25 @@ CREATE TABLE workoutSessions (
     endedAt TEXT
 );
 
--- One session per journal-day; backstop for the repository logic.
-CREATE UNIQUE INDEX idx_workoutSessions_journal_day
+-- Plain (non-unique) index: groundwork for possible multiple sessions per
+-- journal-day. One-session-per-day is still enforced above the schema, by
+-- the repository (`startSession` returns the existing row for that
+-- journal-day) — the schema no longer forbids a second one.
+CREATE INDEX idx_workoutSessions_journal_day
 ON workoutSessions(userId, journalId, date);
 -- Hot path: "is anything running" on every list render.
 CREATE INDEX idx_workoutSessions_running
 ON workoutSessions(userId) WHERE endedAt IS NULL;
 
+-- ORDER BY is defensive, same reasoning as [getRunningSession] below: now
+-- that the journal-day index is non-unique, the schema alone can't
+-- guarantee one row. The repository is what keeps it to one row per day;
+-- this ORDER BY just makes sure a bug there can't also make the read
+-- nondeterministic.
 getSession:
 SELECT * FROM workoutSessions
 WHERE userId = ? AND journalId = ? AND date = ?
+ORDER BY startedAt DESC
 LIMIT 1;
 
 -- ORDER BY is defensive: the invariant says one row, but a bug must not

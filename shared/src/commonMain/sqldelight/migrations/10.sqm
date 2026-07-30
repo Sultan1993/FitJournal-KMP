@@ -1,0 +1,8 @@
+DROP INDEX idx_workoutSessions_journal_day;
+CREATE INDEX idx_workoutSessions_journal_day
+ON workoutSessions(userId, journalId, date);
+
+ALTER TABLE workoutRecords ADD COLUMN sessionId TEXT;
+
+CREATE INDEX idx_workoutRecords_session
+ON workoutRecords(sessionId) WHERE sessionId IS NOT NULL;

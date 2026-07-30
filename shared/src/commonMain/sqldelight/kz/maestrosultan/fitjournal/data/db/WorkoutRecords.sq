@@ -14,7 +14,15 @@ CREATE TABLE workoutRecords (
     pendingUpload INTEGER AS Boolean NOT NULL DEFAULT 1,
     schemaVersion INTEGER NOT NULL DEFAULT 1,
     createdDate TEXT NOT NULL,
-    updatedDate TEXT NOT NULL
+    updatedDate TEXT NOT NULL,
+    -- Groundwork, currently unwritten: nothing sets this yet (no INSERT/UPDATE
+    -- statement in this file threads a value into it, and no repository/use
+    -- case reads or writes it). It exists so that linking a record to a
+    -- workoutSession later (see WorkoutSessions.sq) needs no migration and no
+    -- AppSync redeploy. Nullable is deliberate, not a placeholder for later
+    -- tightening: logging without pressing Start is legal, and those records
+    -- genuinely belong to no session.
+    sessionId TEXT
 );
 
 -- Sole hot-path index: every UI read scopes to (userId, journalId), filters
@@ -26,6 +34,10 @@ CREATE INDEX idx_workoutRecords_live_journal ON workoutRecords(userId, journalId
 -- Sync push drain. Partial on `pendingUpload = 1` so the index scales
 -- with the (typically empty) backlog, not the whole table.
 CREATE INDEX idx_workoutRecords_pending ON workoutRecords(uuid) WHERE pendingUpload = 1;
+-- Groundwork alongside `sessionId` above — unused until something writes
+-- the column. Partial on `sessionId IS NOT NULL` so it costs nothing while
+-- every row's value is NULL.
+CREATE INDEX idx_workoutRecords_session ON workoutRecords(sessionId) WHERE sessionId IS NOT NULL;
 
 -- Records in (user, journal). Date filter is half-open: `from` inclusive,
 -- `to` exclusive. Callers that want "everything" pass an epoch lower
@@ -107,6 +119,9 @@ WHERE uuid = ?;
 -- and re-created by the orchestrator from the decoded payload.
 -- Callers must check `pendingUpload=1` on the existing row first to honor
 -- the local-wins escape hatch.
+-- INSERT OR REPLACE + no `sessionId` column listed means a sync pull always
+-- resets `sessionId` to NULL on this row. Fine while nothing writes it; once
+-- a writer exists, it must handle this (e.g. re-thread the local value).
 upsertWorkoutRecordFromRemote:
 INSERT OR REPLACE INTO workoutRecords(uuid, remoteId, userId, journalId, date, position, comment, startedAt, durationSec, deletedAt, pendingUpload, schemaVersion, createdDate, updatedDate)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?);
@@ -117,6 +132,9 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?);
 -- during a destructive schema migration). We rewrite `journalId` to the
 -- user's personal journal and mark dirty so push corrects AWS on the
 -- next tick.
+-- INSERT OR REPLACE + no `sessionId` column listed means a sync pull always
+-- resets `sessionId` to NULL on this row. Fine while nothing writes it; once
+-- a writer exists, it must handle this (e.g. re-thread the local value).
 upsertWorkoutRecordFromRemoteAsPending:
 INSERT OR REPLACE INTO workoutRecords(uuid, remoteId, userId, journalId, date, position, comment, startedAt, durationSec, deletedAt, pendingUpload, schemaVersion, createdDate, updatedDate)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?);
