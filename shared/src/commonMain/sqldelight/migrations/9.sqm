@@ -1,0 +1,13 @@
+CREATE TABLE workoutSessions (
+    uuid TEXT PRIMARY KEY NOT NULL,
+    userId TEXT NOT NULL,
+    journalId TEXT NOT NULL,
+    date TEXT NOT NULL,
+    startedAt TEXT NOT NULL,
+    endedAt TEXT
+);
+
+CREATE UNIQUE INDEX idx_workoutSessions_journal_day
+ON workoutSessions(userId, journalId, date);
+CREATE INDEX idx_workoutSessions_running
+ON workoutSessions(userId) WHERE endedAt IS NULL;

@@ -38,6 +38,7 @@ class DefaultLocalDbWiper(
             database.workoutSetsQueries.wipeAll()
             database.workoutExercisesQueries.wipeAll()
             database.workoutRecordsQueries.wipeAll()
+            database.workoutSessionsQueries.wipeAll()
             database.journalsQueries.wipeAll()
             database.notesQueries.wipeAll()
             database.bodyMeasurementsQueries.wipeAll()

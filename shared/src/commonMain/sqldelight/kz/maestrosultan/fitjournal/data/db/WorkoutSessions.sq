@@ -1,0 +1,54 @@
+-- One workout session per (user, journal, calendar day). `endedAt IS NULL`
+-- means running; at most one running row per user app-wide (repository
+-- invariant, transaction-enforced). Local-only in iteration 1: no AWS
+-- counterpart, so no remoteId/pendingUpload/deletedAt — iteration 2 adds
+-- them (10.sqm) when the AWS model defines their semantics.
+-- date = LocalDate.toString(); startedAt/endedAt = Instant ISO-8601 TEXT.
+CREATE TABLE workoutSessions (
+    uuid TEXT PRIMARY KEY NOT NULL,
+    userId TEXT NOT NULL,
+    journalId TEXT NOT NULL,
+    date TEXT NOT NULL,
+    startedAt TEXT NOT NULL,
+    endedAt TEXT
+);
+
+-- One session per journal-day; backstop for the repository logic.
+CREATE UNIQUE INDEX idx_workoutSessions_journal_day
+ON workoutSessions(userId, journalId, date);
+-- Hot path: "is anything running" on every list render.
+CREATE INDEX idx_workoutSessions_running
+ON workoutSessions(userId) WHERE endedAt IS NULL;
+
+getSession:
+SELECT * FROM workoutSessions
+WHERE userId = ? AND journalId = ? AND date = ?
+LIMIT 1;
+
+-- ORDER BY is defensive: the invariant says one row, but a bug must not
+-- make the answer nondeterministic.
+getRunningSession:
+SELECT * FROM workoutSessions
+WHERE userId = ? AND endedAt IS NULL
+ORDER BY startedAt DESC
+LIMIT 1;
+
+createSession:
+INSERT INTO workoutSessions(uuid, userId, journalId, date, startedAt, endedAt)
+VALUES (?, ?, ?, ?, ?, NULL);
+
+-- Explicit end AND the stale auto-finish. Running rows only —
+-- a second call is a no-op, never an endedAt shift.
+endSessionById:
+UPDATE workoutSessions
+SET endedAt = ?
+WHERE uuid = ? AND endedAt IS NULL;
+
+-- Hard purge, delete-account flow (mirrors deleteWorkoutRecordsByUserId).
+deleteWorkoutSessionsByUserId:
+DELETE FROM workoutSessions WHERE userId = ?;
+
+-- FJ2.0 wipe-gate parity: keeps DefaultLocalDbWiper's "every user-scoped
+-- table" contract honest.
+wipeAll:
+DELETE FROM workoutSessions;
