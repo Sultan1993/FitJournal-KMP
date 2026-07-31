@@ -1,6 +1,7 @@
 package kz.maestrosultan.fitjournal.data.session.datasource
 
 import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToList
 import app.cash.sqldelight.coroutines.mapToOneOrNull
 import kotlin.time.Instant
 import kotlinx.coroutines.Dispatchers
@@ -15,32 +16,42 @@ import kz.maestrosultan.fitjournal.data.session.entity.map
 import kz.maestrosultan.fitjournal.data.time.toStoredString
 
 /**
- * Local-only datasource for `workoutSessions` (no AWS counterpart in
- * iteration 1). `date` crosses this boundary as the stored TEXT form
- * (`LocalDate.toString()`) so the SQL layer never has to know about
- * calendar types.
+ * Local-only datasource for `workoutSessions` (no AWS sync in this increment).
+ * `date` crosses this boundary as the stored TEXT form (`LocalDate.toString()`)
+ * so the SQL layer never has to know about calendar types. `workoutNumber`
+ * crosses as `Int` and is widened to the column's `Long` at the query call.
  */
 class WorkoutSessionsDBDataSource(
     private val dao: WorkoutSessionsQueries,
 ) {
 
-    suspend fun getSession(
+    suspend fun getSessionByWorkoutNumber(
         userId: String,
         journalId: String,
         date: String,
+        workoutNumber: Int,
     ): DBWorkoutSessionObject? = withContext(Dispatchers.IO) {
-        dao.getSession(userId, journalId, date).executeAsOneOrNull()?.map()
+        dao.getSessionByWorkoutNumber(userId, journalId, date, workoutNumber.toLong())
+            .executeAsOneOrNull()?.map()
     }
 
-    fun getSessionFlow(
+    suspend fun getSessionsForDay(
         userId: String,
         journalId: String,
         date: String,
-    ): Flow<DBWorkoutSessionObject?> =
-        dao.getSession(userId, journalId, date)
+    ): List<DBWorkoutSessionObject> = withContext(Dispatchers.IO) {
+        dao.getSessionsForDay(userId, journalId, date).executeAsList().map { it.map() }
+    }
+
+    fun getSessionsForDayFlow(
+        userId: String,
+        journalId: String,
+        date: String,
+    ): Flow<List<DBWorkoutSessionObject>> =
+        dao.getSessionsForDay(userId, journalId, date)
             .asFlow()
-            .mapToOneOrNull(Dispatchers.IO)
-            .map { row -> row?.map() }
+            .mapToList(Dispatchers.IO)
+            .map { rows -> rows.map { it.map() } }
             .flowOn(Dispatchers.IO)
 
     suspend fun getRunningSession(userId: String): DBWorkoutSessionObject? = withContext(Dispatchers.IO) {
@@ -54,52 +65,64 @@ class WorkoutSessionsDBDataSource(
             .map { row -> row?.map() }
             .flowOn(Dispatchers.IO)
 
+    suspend fun maxWorkoutNumberForDay(
+        userId: String,
+        journalId: String,
+        date: String,
+    ): Int = withContext(Dispatchers.IO) {
+        dao.maxWorkoutNumberForDay(userId, journalId, date).executeAsOne().toInt()
+    }
+
     /**
      * Idempotent start, and the enforcement point for "at most one running
      * session per user app-wide".
      *
-     * All three steps run in ONE synchronous [app.cash.sqldelight.TransacterImpl.transactionWithResult]
-     * block — no `suspend` call inside, because `NativeSqliteDriver` transactions
-     * are bound to the calling thread. Ordering matters:
+     * All steps run in ONE synchronous
+     * [app.cash.sqldelight.TransacterImpl.transactionWithResult] block — no
+     * `suspend` call inside, because `NativeSqliteDriver` transactions are bound
+     * to the calling thread. Ordering matters:
      *
-     * 1. a row already exists for (userId, journalId, date) → return it
-     *    **unchanged**, running or finished (decision 5: finished is final, and
-     *    a double-start must not shift `startedAt`);
-     * 2. otherwise a session is running on some other journal/day → finish it
-     *    with the **true** `now` (decision 4: no cap, no truncation);
-     * 3. insert the new running row and return it.
+     * 1. this page (userId, journalId, date, workoutNumber) already has a session
+     *    -> return it UNCHANGED, running or finished (a double-start must not
+     *    shift `startedAt`, and a finished workout stays finished);
+     * 2. else a DIFFERENT workout is running app-wide -> BLOCKED: return that
+     *    running row without inserting. Unlike the old single-session rule this
+     *    does NOT auto-finish it — one running workout at a time, ended
+     *    explicitly by the user;
+     * 3. else insert the new running row and read it back.
      *
-     * Doing 2 and 3 in separate transactions could leave two running rows (crash
-     * between them) or none (crash after a successful stale-finish), so they are
-     * inseparable.
+     * One transaction so a crash can't leave two running rows. The UNIQUE
+     * (userId, journalId, date, workoutNumber) index is the backstop: step 1
+     * already returned any existing row, so the insert can never collide.
      */
     suspend fun startSession(
         uuid: String,
         userId: String,
         journalId: String,
         date: String,
+        workoutNumber: Int,
         now: Instant,
     ): DBWorkoutSessionObject = withContext(Dispatchers.IO) {
         val nowText = now.toStoredString()
+        val workoutNumberLong = workoutNumber.toLong()
         dao.transactionWithResult {
-            val existing = dao.getSession(userId, journalId, date).executeAsOneOrNull()
+            val existing = dao.getSessionByWorkoutNumber(userId, journalId, date, workoutNumberLong)
+                .executeAsOneOrNull()
             if (existing != null) return@transactionWithResult existing.map()
 
             val running = dao.getRunningSession(userId).executeAsOneOrNull()
-            if (running != null) {
-                dao.endSessionById(endedAt = nowText, uuid = running.uuid)
-            }
+            if (running != null) return@transactionWithResult running.map()
+
             dao.createSession(
                 uuid = uuid,
                 userId = userId,
                 journalId = journalId,
                 date = date,
+                workoutNumber = workoutNumberLong,
                 startedAt = nowText,
             )
-            // Read-your-writes inside the same transaction/connection: the row
-            // we just inserted is guaranteed visible, and the unique index on
-            // (userId, journalId, date) guarantees it is the one we inserted.
-            dao.getSession(userId, journalId, date).executeAsOne().map()
+            // Read-your-writes inside the same transaction/connection.
+            dao.getSessionById(uuid).executeAsOne().map()
         }
     }
 
@@ -119,9 +142,7 @@ class WorkoutSessionsDBDataSource(
             val running = dao.getRunningSession(userId).executeAsOneOrNull()
                 ?: return@transactionWithResult null
             dao.endSessionById(endedAt = nowText, uuid = running.uuid)
-            dao.getSession(running.userId, running.journalId, running.date)
-                .executeAsOneOrNull()
-                ?.map()
+            dao.getSessionById(running.uuid).executeAsOneOrNull()?.map()
         }
     }
 

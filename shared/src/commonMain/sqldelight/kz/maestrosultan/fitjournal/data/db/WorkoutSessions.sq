@@ -1,54 +1,72 @@
--- One workout session per (user, journal, calendar day) — a repository
--- invariant, not (as of 10.sqm) a schema one; see the index comment below.
--- `endedAt IS NULL` means running; at most one running row per user
--- app-wide (repository invariant, transaction-enforced). Local-only in
--- iteration 1: no AWS counterpart, so no remoteId/pendingUpload/deletedAt —
--- a later iteration adds them when the AWS model defines their semantics.
+-- Workout sessions: the start/end timing for one workout. A (user, journal,
+-- calendar day) can hold more than one — `workoutNumber` (1 = first/morning,
+-- 2 = evening, ...) distinguishes them and matches the `workoutNumber` on the
+-- workoutRecords logged during that workout. `endedAt IS NULL` means running;
+-- at most ONE running row per user app-wide (repository invariant,
+-- transaction-enforced — see startSession).
+--
+-- Local-only mirror of the AWSWorkoutSession @model (deployed to staging
+-- 2026-07-31). Sync (remoteId/pendingUpload/deletedAt) is a later increment;
+-- until then a row lives and dies on-device, which is why duration cannot yet
+-- survive reinstall.
+--
 -- date = LocalDate.toString(); startedAt/endedAt = Instant ISO-8601 TEXT.
 CREATE TABLE workoutSessions (
     uuid TEXT PRIMARY KEY NOT NULL,
     userId TEXT NOT NULL,
     journalId TEXT NOT NULL,
     date TEXT NOT NULL,
+    workoutNumber INTEGER NOT NULL,
     startedAt TEXT NOT NULL,
     endedAt TEXT
 );
 
--- Plain (non-unique) index: groundwork for possible multiple sessions per
--- journal-day. One-session-per-day is still enforced above the schema, by
--- the repository (`startSession` returns the existing row for that
--- journal-day) — the schema no longer forbids a second one.
-CREATE INDEX idx_workoutSessions_journal_day
-ON workoutSessions(userId, journalId, date);
+-- One session per page: a (userId, journalId, date, workoutNumber) has at most
+-- one session. UNIQUE so a double-Start on the same page cannot create two rows;
+-- startSession's idempotent branch relies on this being the single matching row.
+CREATE UNIQUE INDEX idx_workoutSessions_page
+ON workoutSessions(userId, journalId, date, workoutNumber);
 -- Hot path: "is anything running" on every list render.
 CREATE INDEX idx_workoutSessions_running
 ON workoutSessions(userId) WHERE endedAt IS NULL;
 
--- ORDER BY is defensive, same reasoning as [getRunningSession] below: now
--- that the journal-day index is non-unique, the schema alone can't
--- guarantee one row. The repository is what keeps it to one row per day;
--- this ORDER BY just makes sure a bug there can't also make the read
--- nondeterministic.
-getSession:
+-- One page's session (running or finished), or none. The UNIQUE index makes this
+-- at most one row.
+getSessionByWorkoutNumber:
+SELECT * FROM workoutSessions
+WHERE userId = ? AND journalId = ? AND date = ? AND workoutNumber = ?;
+
+-- Read-back by primary key (startSession / endRunningSession read-your-writes).
+getSessionById:
+SELECT * FROM workoutSessions WHERE uuid = ?;
+
+-- Every session for a day, ascending by workoutNumber — the pager reads this to
+-- learn which pages carry timing.
+getSessionsForDay:
 SELECT * FROM workoutSessions
 WHERE userId = ? AND journalId = ? AND date = ?
-ORDER BY startedAt DESC
-LIMIT 1;
+ORDER BY workoutNumber ASC;
 
--- ORDER BY is defensive: the invariant says one row, but a bug must not
--- make the answer nondeterministic.
+-- The one running session app-wide (invariant: at most one). ORDER BY is
+-- defensive: a repository bug must not make the answer nondeterministic.
 getRunningSession:
 SELECT * FROM workoutSessions
 WHERE userId = ? AND endedAt IS NULL
 ORDER BY startedAt DESC
 LIMIT 1;
 
-createSession:
-INSERT INTO workoutSessions(uuid, userId, journalId, date, startedAt, endedAt)
-VALUES (?, ?, ?, ?, ?, NULL);
+-- Highest workoutNumber among a day's sessions, 0 if none. The caller maxes this
+-- with the records' highest to pick the next page's number.
+maxWorkoutNumberForDay:
+SELECT coalesce(MAX(workoutNumber), 0) FROM workoutSessions
+WHERE userId = ? AND journalId = ? AND date = ?;
 
--- Explicit end AND the stale auto-finish. Running rows only —
--- a second call is a no-op, never an endedAt shift.
+createSession:
+INSERT INTO workoutSessions(uuid, userId, journalId, date, workoutNumber, startedAt, endedAt)
+VALUES (?, ?, ?, ?, ?, ?, NULL);
+
+-- Explicit end AND the stale auto-finish. Running rows only — a second call is a
+-- no-op, never an endedAt shift.
 endSessionById:
 UPDATE workoutSessions
 SET endedAt = ?

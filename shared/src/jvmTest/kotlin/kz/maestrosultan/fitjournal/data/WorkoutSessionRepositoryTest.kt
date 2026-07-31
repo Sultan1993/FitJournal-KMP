@@ -28,56 +28,120 @@ class WorkoutSessionRepositoryTest {
     private val date = LocalDate(2026, 7, 30)
 
     @Test
-    fun startSession_createsRunningSession_forJournalAndDay(): Unit = runBlocking {
-        val session = repo.startSession(userId, journalId, date)
+    fun startSession_createsRunningSession_asWorkoutOne(): Unit = runBlocking {
+        val session = repo.startSession(userId, journalId, date, workoutNumber = 1)
 
         assertEquals(userId, session.userId)
         assertEquals(journalId, session.journalId)
         assertEquals(date, session.date)
+        assertEquals(1, session.workoutNumber)
         assertEquals(testClock.instant, session.startedAt)
         assertNull(session.endedAt)
         assertTrue(session.isRunning)
-        assertEquals(session, repo.getSession(userId, journalId, date))
+        assertEquals(session, repo.getSessionByWorkoutNumber(userId, journalId, date, 1))
         assertEquals(session, repo.getRunningSession(userId))
     }
 
     @Test
-    fun startSession_isIdempotent_whileRunning_andAfterFinish(): Unit = runBlocking {
-        val first = repo.startSession(userId, journalId, date)
+    fun startSession_isIdempotentPerPage_whileRunning_andStaysFinished(): Unit = runBlocking {
+        val first = repo.startSession(userId, journalId, date, 1)
 
         testClock.instant += 30.seconds
-        val second = repo.startSession(userId, journalId, date)
-        assertEquals(first, second, "double-start while running must return the SAME row, not a new one")
+        val second = repo.startSession(userId, journalId, date, 1)
+        assertEquals(first, second, "double-start on the same page while running must return the SAME row")
 
         testClock.instant += 30.seconds
         val finished = repo.endSession(userId)
         assertTrue(finished != null && !finished.isRunning)
 
         testClock.instant += 30.seconds
-        val afterFinish = repo.startSession(userId, journalId, date)
-        assertEquals(finished, afterFinish, "starting again after finish must return the FINISHED row, not restart it")
+        val afterFinish = repo.startSession(userId, journalId, date, 1)
+        assertEquals(finished, afterFinish, "starting the same page after finish returns the FINISHED row, not a restart")
         assertTrue(!afterFinish.isRunning)
     }
 
     @Test
-    fun startSession_finishesAStaleRunningSession_beforeCreating(): Unit = runBlocking {
-        val staleDate = LocalDate(2026, 7, 29)
-        val staleJournalId = "journal-stale"
-        val stale = repo.startSession(userId, staleJournalId, staleDate)
-        assertTrue(stale.isRunning)
+    fun startSession_isBlocked_whileAnotherWorkoutRuns_doesNotAutoFinish(): Unit = runBlocking {
+        val running = repo.startSession(userId, journalId, date, 1)
+        assertTrue(running.isRunning)
 
         testClock.instant += 3600.seconds
-        val fresh = repo.startSession(userId, journalId, date)
+        // Try to start a SECOND workout the same day while the first is running.
+        val blocked = repo.startSession(userId, journalId, date, 2)
 
-        val staleAfter = repo.getSession(userId, staleJournalId, staleDate)
-        assertEquals(testClock.instant, staleAfter?.endedAt, "stale row's endedAt must be the TRUE now at the second start, no cap")
-        assertTrue(staleAfter != null && !staleAfter.isRunning)
-        assertEquals(fresh, repo.getRunningSession(userId), "the new row must be the only running session")
+        assertEquals(running.id, blocked.id, "blocked start returns the already-running session, not a new one")
+        assertNull(
+            repo.getSessionByWorkoutNumber(userId, journalId, date, 2),
+            "no workout-2 row may be created while a workout is running",
+        )
+        val runningAfter = repo.getSessionByWorkoutNumber(userId, journalId, date, 1)
+        assertTrue(runningAfter != null && runningAfter.isRunning, "the running workout must NOT be auto-finished")
+        assertNull(runningAfter?.endedAt)
+    }
+
+    @Test
+    fun startSession_blocksAcrossDaysAndJournals_whileRunning(): Unit = runBlocking {
+        val running = repo.startSession(userId, "journal-A", LocalDate(2026, 7, 29), 1)
+
+        testClock.instant += 3600.seconds
+        val blocked = repo.startSession(userId, journalId, date, 1)
+
+        assertEquals(running.id, blocked.id, "a running workout blocks starting one on any other day/journal too")
+        assertNull(repo.getSessionByWorkoutNumber(userId, journalId, date, 1))
+    }
+
+    @Test
+    fun secondWorkout_startsAfterFirstFinishes_asWorkoutTwo(): Unit = runBlocking {
+        val first = repo.startSession(userId, journalId, date, 1)
+        testClock.instant += 120.seconds
+        val firstFinished = repo.endSession(userId)
+
+        testClock.instant += 3600.seconds
+        val second = repo.startSession(userId, journalId, date, 2)
+
+        assertEquals(2, second.workoutNumber)
+        assertTrue(second.isRunning)
+        assertEquals(second, repo.getRunningSession(userId))
+
+        // The first workout is untouched: still finished, its own duration intact.
+        val firstAfter = repo.getSessionByWorkoutNumber(userId, journalId, date, 1)
+        assertEquals(firstFinished, firstAfter)
+        assertEquals(first.id, firstAfter?.id)
+        assertTrue(firstAfter != null && !firstAfter.isRunning)
+    }
+
+    @Test
+    fun getSessionsForDay_returnsAllWorkouts_ascendingByNumber(): Unit = runBlocking {
+        repo.startSession(userId, journalId, date, 1)
+        repo.endSession(userId)
+        repo.startSession(userId, journalId, date, 2)
+        repo.endSession(userId)
+        repo.startSession(userId, journalId, date, 3)
+
+        val all = repo.getSessionsForDay(userId, journalId, date)
+        assertEquals(listOf(1, 2, 3), all.map { it.workoutNumber })
+        // The last one is still running; the earlier two are finished.
+        assertEquals(listOf(false, false, true), all.map { it.isRunning })
+    }
+
+    @Test
+    fun maxWorkoutNumberForDay_isZeroWhenEmpty_thenTracksHighest(): Unit = runBlocking {
+        assertEquals(0, repo.maxWorkoutNumberForDay(userId, journalId, date))
+
+        repo.startSession(userId, journalId, date, 1)
+        assertEquals(1, repo.maxWorkoutNumberForDay(userId, journalId, date))
+
+        repo.endSession(userId)
+        repo.startSession(userId, journalId, date, 2)
+        assertEquals(2, repo.maxWorkoutNumberForDay(userId, journalId, date))
+
+        // Scoped to the day: another day is independent.
+        assertEquals(0, repo.maxWorkoutNumberForDay(userId, journalId, LocalDate(2026, 7, 31)))
     }
 
     @Test
     fun endSession_stampsEndedAt_andDurationDerives(): Unit = runBlocking {
-        val started = repo.startSession(userId, journalId, date)
+        val started = repo.startSession(userId, journalId, date, 1)
         testClock.instant += 125.seconds
 
         val ended = repo.endSession(userId)
@@ -87,7 +151,7 @@ class WorkoutSessionRepositoryTest {
         assertEquals(testClock.instant, ended?.endedAt)
         assertTrue(ended != null && !ended.isRunning)
         assertEquals(125L, ended?.durationSec(testClock.instant))
-        // Once finished, duration must stay pinned to endedAt regardless of a later "now".
+        // Once finished, duration stays pinned to endedAt regardless of a later "now".
         assertEquals(125L, ended?.durationSec(testClock.instant + 500.seconds))
     }
 
@@ -104,6 +168,7 @@ class WorkoutSessionRepositoryTest {
             userId = userId,
             journalId = journalId,
             date = date,
+            workoutNumber = 1,
             startedAt = now + 60.seconds,
             endedAt = null,
         )
@@ -114,8 +179,8 @@ class WorkoutSessionRepositoryTest {
     @Test
     fun runningSession_isPerUser_notLeakedAcrossUserIds(): Unit = runBlocking {
         val otherUserId = "user-2"
-        val mine = repo.startSession(userId, journalId, date)
-        val theirs = repo.startSession(otherUserId, journalId, date)
+        val mine = repo.startSession(userId, journalId, date, 1)
+        val theirs = repo.startSession(otherUserId, journalId, date, 1)
 
         assertTrue(mine.id != theirs.id)
         assertEquals(mine, repo.getRunningSession(userId))
@@ -129,12 +194,12 @@ class WorkoutSessionRepositoryTest {
     @Test
     fun deleteUserSessions_purgesOnlyThatUser(): Unit = runBlocking {
         val otherUserId = "user-2"
-        repo.startSession(userId, journalId, date)
-        val theirs = repo.startSession(otherUserId, journalId, date)
+        repo.startSession(userId, journalId, date, 1)
+        val theirs = repo.startSession(otherUserId, journalId, date, 1)
 
         repo.deleteUserSessions(userId)
 
-        assertNull(repo.getSession(userId, journalId, date))
+        assertNull(repo.getSessionByWorkoutNumber(userId, journalId, date, 1))
         assertNull(repo.getRunningSession(userId))
         assertEquals(theirs, repo.getRunningSession(otherUserId), "another user's session must survive the purge")
     }

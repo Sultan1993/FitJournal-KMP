@@ -12,17 +12,17 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutSessionRepository
 
 /**
  * 100% local implementation (offline-first contract): SQLite is the source of
- * truth, there is no AWS model for sessions in iteration 1, and nothing here
+ * truth, there is no AWS sync for sessions in this increment, and nothing here
  * touches the network.
  *
  * Timestamps come from the injected [clock] rather than `Clock.System` inline so
  * the jvmTest suite can step "now" deterministically instead of racing the wall
- * clock. Identifiers come from the shared [randomUuid] so a row created on
- * either platform is byte-identical in shape.
+ * clock. Identifiers come from the shared [randomUuid] so a row created on either
+ * platform is byte-identical in shape.
  *
  * No ordinary path throws: an unbridged Kotlin exception is an uncatchable
- * SIGABRT on iOS (it is merely a catchable crash on Android), so a double-start
- * returns the existing session and ending with nothing running returns `null`.
+ * SIGABRT on iOS (merely a catchable crash on Android), so a double-start returns
+ * the existing session and ending with nothing running returns `null`.
  */
 class DefaultWorkoutSessionRepository(
     private val sessionsDB: WorkoutSessionsDBDataSource,
@@ -32,26 +32,35 @@ class DefaultWorkoutSessionRepository(
     /**
      * Swift-facing entry point. Kotlin default arguments are not a reliable
      * contract across the Objective-C bridge — Kotlin/Native does not emit
-     * per-default-value initializers, so a `clock: Clock = Clock.System`
-     * default would force every Swift call site to construct a Kotlin clock.
-     * iOS therefore gets an explicit one-arg constructor that pins the system
-     * clock here, in common code.
+     * per-default-value initializers, so a `clock: Clock = Clock.System` default
+     * would force every Swift call site to construct a Kotlin clock. iOS
+     * therefore gets an explicit one-arg constructor that pins the system clock
+     * here, in common code.
      */
     constructor(sessionsDB: WorkoutSessionsDBDataSource) : this(sessionsDB, Clock.System)
 
-    override suspend fun getSession(
+    override suspend fun getSessionByWorkoutNumber(
         userId: String,
         journalId: String,
         date: LocalDate,
-    ): WorkoutSession? = sessionsDB.getSession(userId, journalId, date.toString())?.toDomain()
+        workoutNumber: Int,
+    ): WorkoutSession? =
+        sessionsDB.getSessionByWorkoutNumber(userId, journalId, date.toString(), workoutNumber)?.toDomain()
 
-    override fun getSessionFlow(
+    override suspend fun getSessionsForDay(
         userId: String,
         journalId: String,
         date: LocalDate,
-    ): Flow<WorkoutSession?> =
-        sessionsDB.getSessionFlow(userId, journalId, date.toString())
-            .map { row -> row?.toDomain() }
+    ): List<WorkoutSession> =
+        sessionsDB.getSessionsForDay(userId, journalId, date.toString()).map { it.toDomain() }
+
+    override fun getSessionsForDayFlow(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+    ): Flow<List<WorkoutSession>> =
+        sessionsDB.getSessionsForDayFlow(userId, journalId, date.toString())
+            .map { rows -> rows.map { it.toDomain() } }
 
     override suspend fun getRunningSession(userId: String): WorkoutSession? =
         sessionsDB.getRunningSession(userId)?.toDomain()
@@ -60,15 +69,23 @@ class DefaultWorkoutSessionRepository(
         sessionsDB.getRunningSessionFlow(userId)
             .map { row -> row?.toDomain() }
 
+    override suspend fun maxWorkoutNumberForDay(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+    ): Int = sessionsDB.maxWorkoutNumberForDay(userId, journalId, date.toString())
+
     override suspend fun startSession(
         userId: String,
         journalId: String,
         date: LocalDate,
+        workoutNumber: Int,
     ): WorkoutSession = sessionsDB.startSession(
         uuid = randomUuid(),
         userId = userId,
         journalId = journalId,
         date = date.toString(),
+        workoutNumber = workoutNumber,
         now = clock.now(),
     ).toDomain()
 

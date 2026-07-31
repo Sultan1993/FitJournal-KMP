@@ -16,6 +16,7 @@ data class DBWorkoutSessionObject(
     val userId: String,
     val journalId: String,
     val date: LocalDate,
+    val workoutNumber: Int,
     val startedAt: Instant,
     val endedAt: Instant?,
 )
@@ -25,6 +26,7 @@ fun WorkoutSessions.map(): DBWorkoutSessionObject = DBWorkoutSessionObject(
     userId = userId,
     journalId = journalId,
     date = LocalDate.parse(date),
+    workoutNumber = workoutNumber.toInt(),
     startedAt = parseStoredInstant(startedAt),
     endedAt = endedAt?.let(::parseStoredInstant),
 )
@@ -34,6 +36,7 @@ fun DBWorkoutSessionObject.toDomain(): WorkoutSession = WorkoutSession(
     userId = userId,
     journalId = journalId,
     date = date,
+    workoutNumber = workoutNumber,
     startedAt = startedAt,
     endedAt = endedAt,
 )

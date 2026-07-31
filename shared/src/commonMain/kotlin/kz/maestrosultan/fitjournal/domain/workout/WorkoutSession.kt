@@ -8,6 +8,8 @@ data class WorkoutSession(
     val userId: String,
     val journalId: String,
     val date: LocalDate,
+    /** Which workout of the day this times: 1 = first/morning, 2 = evening, … */
+    val workoutNumber: Int,
     val startedAt: Instant,
     val endedAt: Instant?,
 ) {

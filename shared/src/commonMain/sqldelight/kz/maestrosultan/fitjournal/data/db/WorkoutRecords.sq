@@ -15,14 +15,15 @@ CREATE TABLE workoutRecords (
     schemaVersion INTEGER NOT NULL DEFAULT 1,
     createdDate TEXT NOT NULL,
     updatedDate TEXT NOT NULL,
-    -- Groundwork, currently unwritten: nothing sets this yet (no INSERT/UPDATE
-    -- statement in this file threads a value into it, and no repository/use
-    -- case reads or writes it). It exists so that linking a record to a
-    -- workoutSession later (see WorkoutSessions.sq) needs no migration and no
-    -- AppSync redeploy. Nullable is deliberate, not a placeholder for later
-    -- tightening: logging without pressing Start is legal, and those records
-    -- genuinely belong to no session.
-    sessionId TEXT
+    -- Which workout of the day this record belongs to (1 = first/morning,
+    -- 2 = evening, ...). DEFAULT 1 so the migration backfills every existing row
+    -- to workout 1 and logging on the first/only workout needs no explicit
+    -- value. A record's session (its start/end timing) is whichever
+    -- `workoutSessions` row shares its (userId, journalId, date, workoutNumber);
+    -- records with no such row were logged without pressing Start and have no
+    -- session. NOT the reverse of the old `sessionId` groundwork — this is an
+    -- ordinal grouping key, not a foreign key.
+    workoutNumber INTEGER NOT NULL DEFAULT 1
 );
 
 -- Sole hot-path index: every UI read scopes to (userId, journalId), filters
@@ -34,10 +35,10 @@ CREATE INDEX idx_workoutRecords_live_journal ON workoutRecords(userId, journalId
 -- Sync push drain. Partial on `pendingUpload = 1` so the index scales
 -- with the (typically empty) backlog, not the whole table.
 CREATE INDEX idx_workoutRecords_pending ON workoutRecords(uuid) WHERE pendingUpload = 1;
--- Groundwork alongside `sessionId` above — unused until something writes
--- the column. Partial on `sessionId IS NOT NULL` so it costs nothing while
--- every row's value is NULL.
-CREATE INDEX idx_workoutRecords_session ON workoutRecords(sessionId) WHERE sessionId IS NOT NULL;
+-- No dedicated workoutNumber index: the day read already scopes to
+-- (userId, journalId, date) via idx_workoutRecords_live_journal, and grouping a
+-- day's handful of records by workoutNumber is done in memory. Add one only if a
+-- profile shows the day scan is hot on a multi-workout day.
 
 -- Records in (user, journal). Date filter is half-open: `from` inclusive,
 -- `to` exclusive. Callers that want "everything" pass an epoch lower
@@ -119,9 +120,11 @@ WHERE uuid = ?;
 -- and re-created by the orchestrator from the decoded payload.
 -- Callers must check `pendingUpload=1` on the existing row first to honor
 -- the local-wins escape hatch.
--- INSERT OR REPLACE + no `sessionId` column listed means a sync pull always
--- resets `sessionId` to NULL on this row. Fine while nothing writes it; once
--- a writer exists, it must handle this (e.g. re-thread the local value).
+-- INSERT OR REPLACE + no `workoutNumber` column listed means a sync pull resets
+-- workoutNumber to its DEFAULT (1) on this row. workoutNumber IS a synced field
+-- (AWSWorkoutRecord.workoutNumber, deployed 2026-07-31), so the sync increment
+-- MUST add it to this column list and thread the pulled value — otherwise
+-- multi-workout grouping erodes to "everything on workout 1" on every pull.
 upsertWorkoutRecordFromRemote:
 INSERT OR REPLACE INTO workoutRecords(uuid, remoteId, userId, journalId, date, position, comment, startedAt, durationSec, deletedAt, pendingUpload, schemaVersion, createdDate, updatedDate)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?);
@@ -132,9 +135,11 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?);
 -- during a destructive schema migration). We rewrite `journalId` to the
 -- user's personal journal and mark dirty so push corrects AWS on the
 -- next tick.
--- INSERT OR REPLACE + no `sessionId` column listed means a sync pull always
--- resets `sessionId` to NULL on this row. Fine while nothing writes it; once
--- a writer exists, it must handle this (e.g. re-thread the local value).
+-- INSERT OR REPLACE + no `workoutNumber` column listed means a sync pull resets
+-- workoutNumber to its DEFAULT (1) on this row. workoutNumber IS a synced field
+-- (AWSWorkoutRecord.workoutNumber, deployed 2026-07-31), so the sync increment
+-- MUST add it to this column list and thread the pulled value — otherwise
+-- multi-workout grouping erodes to "everything on workout 1" on every pull.
 upsertWorkoutRecordFromRemoteAsPending:
 INSERT OR REPLACE INTO workoutRecords(uuid, remoteId, userId, journalId, date, position, comment, startedAt, durationSec, deletedAt, pendingUpload, schemaVersion, createdDate, updatedDate)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?);

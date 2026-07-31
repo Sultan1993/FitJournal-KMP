@@ -5,21 +5,52 @@ import kotlinx.datetime.LocalDate
 
 /** 100% local (offline-first contract): no AWS imports, no network. */
 interface WorkoutSessionRepository {
-    suspend fun getSession(userId: String, journalId: String, date: LocalDate): WorkoutSession?
-    fun getSessionFlow(userId: String, journalId: String, date: LocalDate): Flow<WorkoutSession?>
+    /** The session timing one page (userId, journalId, date, workoutNumber), or null. */
+    suspend fun getSessionByWorkoutNumber(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+        workoutNumber: Int,
+    ): WorkoutSession?
+
+    /** Every workout of a day, ascending by workoutNumber — the pager's read. */
+    suspend fun getSessionsForDay(userId: String, journalId: String, date: LocalDate): List<WorkoutSession>
+    fun getSessionsForDayFlow(userId: String, journalId: String, date: LocalDate): Flow<List<WorkoutSession>>
+
+    /** The one running session app-wide (invariant: at most one), or null. */
     suspend fun getRunningSession(userId: String): WorkoutSession?
     fun getRunningSessionFlow(userId: String): Flow<WorkoutSession?>
 
     /**
-     * Idempotent, never throws on ordinary paths (iOS SIGABRT rule):
-     * - a session for (userId, journalId, date) already exists (running or
-     *   finished) -> returns it unchanged;
-     * - another session is running (any journal/date) -> finishes it first
-     *   with its true end timestamp (endedAt = now);
-     * - then inserts a new running session (startedAt = now, uuid = randomUuid()).
-     * Stale-finish + insert run in ONE transaction.
+     * Highest workoutNumber among a day's SESSIONS (0 if none). The caller maxes
+     * this with the records' highest (RecordRepository) to pick the next page's
+     * number for "Start another workout".
      */
-    suspend fun startSession(userId: String, journalId: String, date: LocalDate): WorkoutSession
+    suspend fun maxWorkoutNumberForDay(userId: String, journalId: String, date: LocalDate): Int
+
+    /**
+     * Start (or resume) the workout on a specific page. Idempotent, never throws
+     * on ordinary paths (iOS SIGABRT rule):
+     * - the page (userId, journalId, date, workoutNumber) already has a session
+     *   (running OR finished) -> returns it UNCHANGED. A finished workout stays
+     *   finished — adding records to it is editing, not reopening — and a
+     *   double-tap never shifts startedAt.
+     * - else a DIFFERENT workout is already running app-wide -> BLOCKED: returns
+     *   that running session without creating anything. One running workout at a
+     *   time; the UI hides Start while a workout runs, so this only guards a stale
+     *   double-tap. It does NOT auto-finish the running one (that was the old
+     *   single-session rule; now the user ends it explicitly).
+     * - else -> inserts a new running session (startedAt = now) and returns it.
+     *
+     * The caller assigns [workoutNumber]: 1 for the day's first/only workout, or
+     * (max workoutNumber across sessions + records) + 1 for "Start another".
+     */
+    suspend fun startSession(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+        workoutNumber: Int,
+    ): WorkoutSession
 
     /**
      * Ends the user's running session with endedAt = now; returns the finished
