@@ -128,9 +128,25 @@ callbacks to its coordinator/nav graph.
   binds user/journal, callbacks → ComposeNavigator + import, native calendar +
   nav bar retained, rest-timer/tile reconciled from shared running state. **APK
   assembles.** Host owns VM (instance-form + dispose()).
-- **P7 iOS IN PROGRESS**: embed `WorkoutScreenController(viewModel, callbacks)`
-  in the native WorkoutViewController; Swift builds the VM from existing KMP deps
-  + a Swift WorkoutUserContext; callbacks → the coordinator. Then Sol review + finish.
+- **P7 iOS IN PROGRESS** (staged):
+  - **Stage 1 (building now):** `WorkoutCmpViewController` (new, iOS
+    `Workout/Main/Presentation/`) embeds `WorkoutScreenController(viewModel,
+    callbacks)`; `WorkoutCoordinator.openWorkout` builds the shared VM via
+    `createWorkoutViewModel(...resolved UserStore values..., initialDate:)`.
+    Callbacks are STUBS in stage 1 (just proves it builds + renders). deinit →
+    `viewModel.dispose()`. Static title "Today", no calendar yet.
+    Swift call sites: top-level `createWorkoutViewModel(...)`,
+    `WorkoutScreenController(viewModel:callbacks:)`, `WorkoutCallbacks(onOpen…:)`.
+    Closure param types are boxed (KotlinBoolean/KotlinInt) + `ExerciseInfoSection`.
+  - **Stage 2 (TODO):** wire real callbacks — map ids→KMP objects from
+    `viewModel.uiState.value.pages`, then call coordinator nav methods. Reuse:
+    `openExerciseDetails(presentingVC: host, delegate: nil, exerciseId, section)`
+    ALREADY takes UIViewController+optional delegate. For focus/import/note, add
+    host-facing methods (present from the host VC, pass nil refresh delegates —
+    the shared VM auto-refreshes via observeRecordsChanged). Widen
+    `presentExerciseFocus(from:)` + `presentingFocusWorkoutVC` to UIViewController.
+    Then iOS calendar + dynamic title + Live-Activity tile reconciliation.
+  - Then Sol review + finish branch.
 
 ## Known v1 gaps / follow-ups (for morning review)
 - Drag-reorder UI not wired (VM.onReorder ready); swipe-delete not wired (menu delete works).
