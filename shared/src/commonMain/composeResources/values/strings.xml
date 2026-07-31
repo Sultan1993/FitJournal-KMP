@@ -1,0 +1,33 @@
+<resources>
+    <!-- Workout pager / placeholder -->
+    <string name="workout_another_workout_title">Another workout today</string>
+    <string name="workout_another_workout_subtitle">Press + to add exercises — they\'re logged as a separate workout. Leave this page empty and it isn\'t saved.</string>
+
+    <!-- Session bar -->
+    <string name="workout_start">Start workout</string>
+    <string name="workout_end">End workout</string>
+
+    <!-- Exercise card -->
+    <string name="workout_add_set">Add set</string>
+    <string name="workout_add_exercise">Add exercise</string>
+    <string name="workout_last_prefix">Last: %1$s</string>
+    <string name="workout_superset">Superset</string>
+
+    <!-- Exercise menu -->
+    <string name="workout_menu_about">About exercise</string>
+    <string name="workout_menu_history">History</string>
+    <string name="workout_menu_stats">Statistics</string>
+    <string name="workout_menu_note_add">Add note</string>
+    <string name="workout_menu_note_edit">Edit note</string>
+    <string name="workout_menu_replace">Replace exercise</string>
+    <string name="workout_menu_superset_add">Add to superset</string>
+    <string name="workout_menu_superset_remove">Remove from superset</string>
+    <string name="workout_menu_delete">Delete</string>
+
+    <!-- Delete confirm -->
+    <string name="workout_delete_title">Delete this exercise?</string>
+    <string name="workout_delete_message">This can\'t be undone.</string>
+
+    <!-- Common -->
+    <string name="common_cancel">Cancel</string>
+</resources>

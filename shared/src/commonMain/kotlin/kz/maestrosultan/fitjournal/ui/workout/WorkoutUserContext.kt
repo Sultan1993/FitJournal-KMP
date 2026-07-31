@@ -1,5 +1,7 @@
 package kz.maestrosultan.fitjournal.ui.workout
 
+import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
+
 /**
  * Binds the shared Workout presentation to the platform's current user + journal.
  *
@@ -12,4 +14,7 @@ package kz.maestrosultan.fitjournal.ui.workout
 interface WorkoutUserContext {
     suspend fun userId(): String
     suspend fun journalId(): String
+
+    /** Weight/distance unit preference — resolved once, drives set-value formatting. */
+    suspend fun measurementSystem(): MeasurementSystem
 }

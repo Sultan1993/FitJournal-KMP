@@ -103,9 +103,28 @@ callbacks to its coordinator/nav graph.
   FitJournalTheme + FjTheme accessor + Material3 mapping. Compiles.
   - compose-resources default package = `kz.maestrosultan.fitjournal.shared.generated.resources`.
   - Rubik ttf in `commonMain/composeResources/font/` (light/regular/medium/semibold/bold).
-- **P3 folded into P5**: pull workout strings/drawables on demand per component
-  (not a monolithic port of all 115 strings).
-- NEXT: P4 (shared WorkoutViewModel + UiState, wired to KMP use cases).
+- **P3 folded into P5**: pull workout strings/drawables on demand per component.
+- **P4 DONE** (commit 4ab77a4): WorkoutViewModel + WorkoutUiState + WorkoutUserContext
+  + WorkoutValueFormatter. Records/sessions flows → pages; Start/End via KMP use
+  cases; delete/reorder/superset via repo + post-write tick; measurementSystem
+  threaded from the context.
+- **P5+P6 DONE**: full shared UI compiles on Android AND iOS, framework links with
+  SKIE, `WorkoutScreenController` exported to Swift. Files under `ui/`:
+  - common/PageDots; theme/{FjColors,FjType,FitJournalTheme,CategoryColor}
+  - workout/{WorkoutScreen (HorizontalPager+dots+bottom bar, owns VM via
+    `viewModel{}`), WorkoutPageContent (list|placeholder + 3-dot menu),
+    WorkoutCallbacks (host nav seam), WorkoutValueFormatter}
+  - workout/components/{WorkoutSetRow, AnotherWorkoutPlaceholder, ExerciseAvatar
+    (category-colour chip — per-exercise images deferred), WorkoutExerciseItem,
+    WorkoutRecordCard (superset-aware), WorkoutMuscleHeader, WorkoutSessionBar
+    (ticking), WorkoutExerciseMenu (bottom sheet + delete confirm)}
+  - iosMain: WorkoutScreenController(viewModelFactory, callbacks) → ComposeUIViewController
+  - strings.xml (EN only so far — de/ru/uk port pending).
+  v1 simplifications (revisit): no drag-reorder UI (VM.onReorder ready, no trigger),
+  no swipe-delete (delete via menu), category-colour avatar not exercise image,
+  list rows show resolved value (no separate "Last:" hint), EN-only strings.
+- NEXT: P7 (host in both apps: Android replace WorkoutScreen body; iOS embed the
+  ComposeUIViewController in the native WorkoutViewController).
 
 ## Non-obvious constraints / watch-items
 

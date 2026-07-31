@@ -2,6 +2,7 @@ package kz.maestrosultan.fitjournal.ui.workout
 
 import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
+import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSession
 
@@ -45,6 +46,8 @@ data class WorkoutUiState(
     val sessionBar: SessionBarState,
     /** Non-null iff a workout is running app-wide — its start moment drives the ticking bar. */
     val runningSession: WorkoutSession?,
+    /** Weight/distance unit preference for set-value formatting. */
+    val measurementSystem: MeasurementSystem,
 ) {
     val currentPage: WorkoutPage? get() = pages.getOrNull(currentPageIndex)
 
@@ -59,6 +62,7 @@ data class WorkoutUiState(
             currentPageIndex = 0,
             sessionBar = SessionBarState.Hidden,
             runningSession = null,
+            measurementSystem = MeasurementSystem.KG_KM,
         )
     }
 }
