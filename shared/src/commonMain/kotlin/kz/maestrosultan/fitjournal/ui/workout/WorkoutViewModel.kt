@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlin.time.Clock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -223,5 +224,15 @@ class WorkoutViewModel(
             recordRepository.removeExerciseFromRecord(uid, jid, record, exercise)
             syncTrigger.requestTick(SyncReason.PostWrite.WorkoutRecord)
         }
+    }
+
+    /**
+     * Cancel the observation scope. This VM is host-owned (the native nav bar +
+     * calendar drive/observe it), so it is NOT in a ViewModelStore that would call
+     * `clear()` — the host calls this on teardown (Android: host VM `onCleared`;
+     * iOS: coordinator on VC dismissal) to stop the flows and release the VM.
+     */
+    fun dispose() {
+        viewModelScope.cancel()
     }
 }

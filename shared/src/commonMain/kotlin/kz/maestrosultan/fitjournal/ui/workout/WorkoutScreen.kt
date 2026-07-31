@@ -20,7 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import kz.maestrosultan.fitjournal.ui.common.PageDots
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
@@ -34,14 +33,10 @@ import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutSessionBar
  */
 @Composable
 fun WorkoutScreen(
-    viewModelFactory: () -> WorkoutViewModel,
+    viewModel: WorkoutViewModel,
     callbacks: WorkoutCallbacks,
     modifier: Modifier = Modifier,
 ) {
-    // Owned by the host's ViewModelStore (Android: the nav/host owner; iOS:
-    // ComposeUIViewController provides one), so viewModelScope is cancelled when
-    // the screen leaves — the factory captures the platform-built dependencies.
-    val viewModel: WorkoutViewModel = viewModel { viewModelFactory() }
     val state by viewModel.uiState.collectAsState()
     FitJournalTheme {
         WorkoutBody(state = state, viewModel = viewModel, callbacks = callbacks, modifier = modifier)
