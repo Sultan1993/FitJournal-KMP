@@ -69,12 +69,6 @@ class DefaultWorkoutSessionRepository(
         sessionsDB.getRunningSessionFlow(userId)
             .map { row -> row?.toDomain() }
 
-    override suspend fun maxWorkoutNumberForDay(
-        userId: String,
-        journalId: String,
-        date: LocalDate,
-    ): Int = sessionsDB.maxWorkoutNumberForDay(userId, journalId, date.toString())
-
     override suspend fun startSession(
         userId: String,
         journalId: String,

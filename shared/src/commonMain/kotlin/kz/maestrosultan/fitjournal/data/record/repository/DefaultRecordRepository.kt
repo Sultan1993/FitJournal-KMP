@@ -263,16 +263,17 @@ class DefaultRecordRepository(
         userId: String,
         journalId: String,
         date: LocalDate,
+        workoutNumber: Int,
         exerciseIds: List<String>,
     ) {
         if (exerciseIds.isEmpty()) return
-        val lastPosition = lastRecordPositionForDate(userId, journalId, date)
+        val lastPosition = lastRecordPositionForDate(userId, journalId, date, workoutNumber)
         val now = Clock.System.now()
         val dateStr = date.toString()
         val trees = exerciseIds.mapIndexed { index, exerciseId ->
             val recordUuid = randomUuid()
             DBWorkoutRecord(
-                row = newRecordRow(recordUuid, userId, journalId, dateStr, lastPosition + index + 1, now),
+                row = newRecordRow(recordUuid, userId, journalId, dateStr, lastPosition + index + 1, workoutNumber, now),
                 exercises = listOf(
                     DBWorkoutExerciseWithSets(
                         exercise = DBWorkoutExerciseObject(
@@ -358,13 +359,25 @@ class DefaultRecordRepository(
         sources: List<WorkoutRecord>,
     ) {
         if (sources.isEmpty()) return
-        val lastPosition = lastRecordPositionForDate(userId, journalId, date)
         val now = Clock.System.now()
         val dateStr = date.toString()
-        val trees = sources.mapIndexed { index, source ->
+        // Preserve each source's workoutNumber ("copy as is": a 2-workout day
+        // copies back as 2 workouts). Position is page-relative, so append per
+        // workout — seed each workout's counter from the target date's existing
+        // records for that number, then increment as we lay copies down in order.
+        val from = dateStr
+        val to = date.plusDaysSafe(1).toString()
+        val nextPosition = mutableMapOf<Int, Int>()
+        workoutsDB.getWorkoutRecordsByJournal(userId, journalId, from, to).forEach { row ->
+            val wn = row.row.workoutNumber
+            nextPosition[wn] = maxOf(nextPosition[wn] ?: -1, row.row.position)
+        }
+        val trees = sources.map { source ->
             val recordUuid = randomUuid()
+            val position = (nextPosition[source.workoutNumber] ?: -1) + 1
+            nextPosition[source.workoutNumber] = position
             DBWorkoutRecord(
-                row = newRecordRow(recordUuid, userId, journalId, dateStr, lastPosition + index + 1, now),
+                row = newRecordRow(recordUuid, userId, journalId, dateStr, position, source.workoutNumber, now),
                 exercises = source.exercises.mapIndexed { exIndex, srcEx ->
                     val weUuid = randomUuid()
                     DBWorkoutExerciseWithSets(
@@ -394,16 +407,22 @@ class DefaultRecordRepository(
         workoutsDB.createWorkoutRecordsIfMissing(trees)
     }
 
+    /**
+     * Highest `position` among the live records on [date] that belong to
+     * [workoutNumber] — position is page-relative, so this scopes to the one
+     * workout. -1 when that workout has no records yet, so the first new record
+     * lands at position 0.
+     */
     private suspend fun lastRecordPositionForDate(
         userId: String,
         journalId: String,
         date: LocalDate,
+        workoutNumber: Int,
     ): Int {
         val from = date.toString()
         val to = date.plusDaysSafe(1).toString()
-        // -1 when the date has no records, so the first new record lands at
-        // position 0 (matches the iOS import repository's base).
         return workoutsDB.getWorkoutRecordsByJournal(userId, journalId, from, to)
+            .filter { it.row.workoutNumber == workoutNumber }
             .maxOfOrNull { it.row.position } ?: -1
     }
 
@@ -413,6 +432,7 @@ class DefaultRecordRepository(
         journalId: String,
         date: String,
         position: Int,
+        workoutNumber: Int,
         now: Instant,
     ): DBWorkoutRecordRow = DBWorkoutRecordRow(
         uuid = uuid,
@@ -429,6 +449,7 @@ class DefaultRecordRepository(
         schemaVersion = 1,
         createdDate = now,
         updatedDate = now,
+        workoutNumber = workoutNumber,
     )
 
     override suspend fun saveWorkoutExerciseComment(
@@ -559,6 +580,7 @@ class DefaultRecordRepository(
                         journalId,
                         tree.row.date,
                         tree.row.position + 1,
+                        tree.row.workoutNumber,
                         now,
                     ),
                     exercises = listOf(
@@ -846,6 +868,7 @@ class DefaultRecordRepository(
             userId = tree.row.userId,
             journalId = tree.row.journalId,
             position = tree.row.position,
+            workoutNumber = tree.row.workoutNumber,
             date = recordDate,
             exercises = mappedExercises,
             createdDate = tree.row.createdDate,

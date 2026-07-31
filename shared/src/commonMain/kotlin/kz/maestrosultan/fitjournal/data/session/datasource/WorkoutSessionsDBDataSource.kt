@@ -65,14 +65,6 @@ class WorkoutSessionsDBDataSource(
             .map { row -> row?.map() }
             .flowOn(Dispatchers.IO)
 
-    suspend fun maxWorkoutNumberForDay(
-        userId: String,
-        journalId: String,
-        date: String,
-    ): Int = withContext(Dispatchers.IO) {
-        dao.maxWorkoutNumberForDay(userId, journalId, date).executeAsOne().toInt()
-    }
-
     /**
      * Idempotent start, and the enforcement point for "at most one running
      * session per user app-wide".

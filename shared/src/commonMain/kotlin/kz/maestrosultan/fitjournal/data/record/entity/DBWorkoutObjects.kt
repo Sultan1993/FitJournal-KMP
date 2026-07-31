@@ -43,6 +43,8 @@ data class DBWorkoutRecordRow(
     val schemaVersion: Int,
     val createdDate: Instant,
     val updatedDate: Instant,
+    /** Which workout of the day (1-based); `position` is relative to it. */
+    val workoutNumber: Int,
 )
 
 data class DBWorkoutExerciseObject(
@@ -97,6 +99,7 @@ fun WorkoutRecords.map(): DBWorkoutRecordRow = DBWorkoutRecordRow(
     schemaVersion = schemaVersion.toInt(),
     createdDate = parseStoredInstant(createdDate),
     updatedDate = parseStoredInstant(updatedDate),
+    workoutNumber = workoutNumber.toInt(),
 )
 
 fun WorkoutExercises.map(): DBWorkoutExerciseObject = DBWorkoutExerciseObject(

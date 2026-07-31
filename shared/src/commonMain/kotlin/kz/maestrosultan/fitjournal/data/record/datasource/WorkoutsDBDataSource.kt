@@ -257,16 +257,19 @@ class WorkoutsDBDataSource(
             updateRecordRow(source.row)
             exercisesDao.deleteWorkoutExercisesByRecord(source.row.uuid)
             insertChildren(source)
-            // Same-day records after the source shift +1 to make room for
-            // the split-off record. Read INSIDE the transaction — a sync
-            // pull landing between an outside read and the commit would
-            // make the shift write stale positions.
+            // Records in the SAME workout after the source shift +1 to make room
+            // for the split-off record. Scoped to source.workoutNumber because
+            // position is page-relative — a record in another workout of the same
+            // day shares the position range and must not shift. Read INSIDE the
+            // transaction — a sync pull landing between an outside read and the
+            // commit would make the shift write stale positions.
             recordsDao
                 .getWorkoutRecordsByJournal(source.row.userId, source.row.journalId, EPOCH, FAR_FUTURE)
                 .executeAsList()
                 .map { it.map() }
                 .filter {
                     it.date == source.row.date &&
+                        it.workoutNumber == source.row.workoutNumber &&
                         it.uuid != source.row.uuid &&
                         it.position > source.row.position
                 }
@@ -390,6 +393,7 @@ class WorkoutsDBDataSource(
             pendingUpload = record.row.pendingUpload,
             createdDate = record.row.createdDate.toStoredString(),
             updatedDate = record.row.updatedDate.toStoredString(),
+            workoutNumber = record.row.workoutNumber.toLong(),
         )
         insertChildren(record)
     }

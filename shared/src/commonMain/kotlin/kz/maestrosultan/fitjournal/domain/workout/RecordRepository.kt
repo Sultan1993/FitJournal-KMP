@@ -111,15 +111,18 @@ interface RecordRepository {
     // ─── Writes ────────────────────────────────────────────────────────
 
     /**
-     * Creates one new record per catalog exercise on [date], each holding
-     * that exercise with no sets. New records are appended after any
-     * existing records for the date. Parents get `pendingUpload=1`.
-     * This is the offline-first "add exercises from the catalog" write.
+     * Creates one new record per catalog exercise on [date] under
+     * [workoutNumber] (which workout of the day the caller is viewing —
+     * 1 for the first/only one), each holding that exercise with no sets. New
+     * records are appended after any existing records already in that workout
+     * (position is page-relative). Parents get `pendingUpload=1`. This is the
+     * offline-first "add exercises from the catalog" write.
      */
     suspend fun addExercisesToDate(
         userId: String,
         journalId: String,
         date: LocalDate,
+        workoutNumber: Int,
         exerciseIds: List<String>,
     )
 

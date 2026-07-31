@@ -55,12 +55,6 @@ WHERE userId = ? AND endedAt IS NULL
 ORDER BY startedAt DESC
 LIMIT 1;
 
--- Highest workoutNumber among a day's sessions, 0 if none. The caller maxes this
--- with the records' highest to pick the next page's number.
-maxWorkoutNumberForDay:
-SELECT coalesce(MAX(workoutNumber), 0) FROM workoutSessions
-WHERE userId = ? AND journalId = ? AND date = ?;
-
 createSession:
 INSERT INTO workoutSessions(uuid, userId, journalId, date, workoutNumber, startedAt, endedAt)
 VALUES (?, ?, ?, ?, ?, ?, NULL);

@@ -22,13 +22,6 @@ interface WorkoutSessionRepository {
     fun getRunningSessionFlow(userId: String): Flow<WorkoutSession?>
 
     /**
-     * Highest workoutNumber among a day's SESSIONS (0 if none). The caller maxes
-     * this with the records' highest (RecordRepository) to pick the next page's
-     * number for "Start another workout".
-     */
-    suspend fun maxWorkoutNumberForDay(userId: String, journalId: String, date: LocalDate): Int
-
-    /**
      * Start (or resume) the workout on a specific page. Idempotent, never throws
      * on ordinary paths (iOS SIGABRT rule):
      * - the page (userId, journalId, date, workoutNumber) already has a session

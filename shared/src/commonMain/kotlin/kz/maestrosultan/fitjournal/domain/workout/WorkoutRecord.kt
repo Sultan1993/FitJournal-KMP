@@ -8,6 +8,8 @@ data class WorkoutRecord(
     val userId: String,
     val journalId: String,
     val position: Int,
+    /** Which workout of the day this belongs to (1-based). `position` is relative to it. */
+    val workoutNumber: Int,
     val date: LocalDate,
     val exercises: List<WorkoutExercise>,
     val createdDate: Instant,

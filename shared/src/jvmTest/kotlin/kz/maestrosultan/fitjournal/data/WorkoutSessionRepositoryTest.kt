@@ -125,21 +125,6 @@ class WorkoutSessionRepositoryTest {
     }
 
     @Test
-    fun maxWorkoutNumberForDay_isZeroWhenEmpty_thenTracksHighest(): Unit = runBlocking {
-        assertEquals(0, repo.maxWorkoutNumberForDay(userId, journalId, date))
-
-        repo.startSession(userId, journalId, date, 1)
-        assertEquals(1, repo.maxWorkoutNumberForDay(userId, journalId, date))
-
-        repo.endSession(userId)
-        repo.startSession(userId, journalId, date, 2)
-        assertEquals(2, repo.maxWorkoutNumberForDay(userId, journalId, date))
-
-        // Scoped to the day: another day is independent.
-        assertEquals(0, repo.maxWorkoutNumberForDay(userId, journalId, LocalDate(2026, 7, 31)))
-    }
-
-    @Test
     fun endSession_stampsEndedAt_andDurationDerives(): Unit = runBlocking {
         val started = repo.startSession(userId, journalId, date, 1)
         testClock.instant += 125.seconds

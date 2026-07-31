@@ -98,6 +98,7 @@ class JournalRepositoryTest {
                         date = day.toString(), position = 0, comment = null, startedAt = null,
                         durationSec = null, deletedAt = null, pendingUpload = true,
                         schemaVersion = 1, createdDate = now, updatedDate = now,
+                        workoutNumber = 1,
                     ),
                     exercises = emptyList(),
                 ),

@@ -14,6 +14,7 @@ class WorkoutRecordOrderingTest {
         userId = "u",
         journalId = "j",
         position = position,
+        workoutNumber = 1,
         date = LocalDate(2026, 1, 1),
         exercises = emptyList(),
         createdDate = Instant.fromEpochSeconds(0),

@@ -29,3 +29,9 @@ ON workoutSessions(userId) WHERE endedAt IS NULL;
 -- default to add a NOT NULL column to a populated table). ADD COLUMN appends at
 -- the end, which is why workoutNumber is the last column in WorkoutRecords.sq.
 ALTER TABLE workoutRecords ADD COLUMN workoutNumber INTEGER NOT NULL DEFAULT 1;
+
+-- Position is now page-relative (0-based within each workout), so the day-order
+-- index gains workoutNumber before position. 8.sqm created the old
+-- (…, date DESC, position ASC) form; drop and recreate to match WorkoutRecords.sq.
+DROP INDEX idx_workoutRecords_live_journal;
+CREATE INDEX idx_workoutRecords_live_journal ON workoutRecords(userId, journalId, date DESC, workoutNumber ASC, position ASC) WHERE deletedAt IS NULL;

@@ -40,7 +40,7 @@ class RecordRepositoryTest {
     @Test
     fun createRecord_viaAddExercises_readsBack_andIsPendingUpload(): Unit = runBlocking {
         val exId = seedCatalogExercise()
-        repo.addExercisesToDate(userId, journalId, date, listOf(exId))
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId))
 
         val records = repo.getRecordsByDate(userId, journalId, date)
         assertEquals(1, records.size)
@@ -54,7 +54,7 @@ class RecordRepositoryTest {
     @Test
     fun addSet_thenUpdate_thenDelete(): Unit = runBlocking {
         val exId = seedCatalogExercise()
-        repo.addExercisesToDate(userId, journalId, date, listOf(exId))
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId))
         val weId = repo.getRecordsByDate(userId, journalId, date).single().exercises.single().id
 
         repo.addSet(userId, journalId, weId, weight = 100.0, reps = 5, distance = null, duration = null)
@@ -74,7 +74,7 @@ class RecordRepositoryTest {
     @Test
     fun updateOrDeleteMissingSet_returnsFalse_andDoesNotQueuePush(): Unit = runBlocking {
         val exId = seedCatalogExercise()
-        repo.addExercisesToDate(userId, journalId, date, listOf(exId))
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId))
         val rec = repo.getRecordsByDate(userId, journalId, date).single()
         val weId = rec.exercises.single().id
         // Drain the record's initial pendingUpload so we can assert the no-op
@@ -100,7 +100,7 @@ class RecordRepositoryTest {
         // CASCADE the prior set is orphaned and the reinsert hits a PK
         // conflict — so two sets surviving proves the cascade is active.
         val exId = seedCatalogExercise()
-        repo.addExercisesToDate(userId, journalId, date, listOf(exId))
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId))
         val weId = repo.getRecordsByDate(userId, journalId, date).single().exercises.single().id
 
         repo.addSet(userId, journalId, weId, 60.0, 10, null, null)
@@ -122,14 +122,14 @@ class RecordRepositoryTest {
         val curDate = LocalDate(2026, 1, 17)
 
         // Previous occurrence: 3 sets at distinct weights.
-        repo.addExercisesToDate(userId, journalId, prevDate, listOf(exId))
+        repo.addExercisesToDate(userId, journalId, prevDate, 1, listOf(exId))
         val prevWeId = repo.getRecordsByDate(userId, journalId, prevDate).single().exercises.single().id
         repo.addSet(userId, journalId, prevWeId, 100.0, 10, null, null)
         repo.addSet(userId, journalId, prevWeId, 110.0, 8, null, null)
         repo.addSet(userId, journalId, prevWeId, 120.0, 6, null, null)
 
         // Current occurrence: 4 sets — values irrelevant, we assert the hint.
-        repo.addExercisesToDate(userId, journalId, curDate, listOf(exId))
+        repo.addExercisesToDate(userId, journalId, curDate, 1, listOf(exId))
         val curWeId = repo.getRecordsByDate(userId, journalId, curDate).single().exercises.single().id
         repeat(4) { repo.addSet(userId, journalId, curWeId, 0.0, 1, null, null) }
 
@@ -160,11 +160,11 @@ class RecordRepositoryTest {
         val jul27 = LocalDate(2026, 7, 27)
         val today = LocalDate(2026, 7, 28)
 
-        repo.addExercisesToDate(userId, journalId, jul24, listOf(exId))
+        repo.addExercisesToDate(userId, journalId, jul24, 1, listOf(exId))
         val we24 = repo.getRecordsByDate(userId, journalId, jul24).single().exercises.single().id
         repeat(3) { repo.addSet(userId, journalId, we24, 20.0, 12, null, null) }
 
-        repo.addExercisesToDate(userId, journalId, jul27, listOf(exId))
+        repo.addExercisesToDate(userId, journalId, jul27, 1, listOf(exId))
         val we27 = repo.getRecordsByDate(userId, journalId, jul27).single().exercises.single().id
         repo.addSet(userId, journalId, we27, 22.0, 10, null, null)
         repo.addSet(userId, journalId, we27, 22.0, 9, null, null)
@@ -193,7 +193,7 @@ class RecordRepositoryTest {
         // softDeleteWorkoutRecord only tombstones the record row, so those
         // set rows physically remained and the reinsert hit the PK.
         val exId = seedCatalogExercise()
-        repo.addExercisesToDate(userId, journalId, date, listOf(exId, exId))
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId, exId))
         val records = repo.getRecordsByDate(userId, journalId, date).sortedBy { it.position }
         assertEquals(2, records.size)
         val (first, second) = records
@@ -221,7 +221,7 @@ class RecordRepositoryTest {
         val exA = seedCatalogExercise()
         val exB = seedCatalogExercise()
         val exC = seedCatalogExercise()
-        repo.addExercisesToDate(userId, journalId, date, listOf(exA, exB))
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(exA, exB))
         val records = repo.getRecordsByDate(userId, journalId, date).sortedBy { it.position }
         val (first, second) = records
         repo.addSet(userId, journalId, first.exercises.single().id, 100.0, 5, null, null)
@@ -250,7 +250,7 @@ class RecordRepositoryTest {
         // tombstone the record when it was the last one) instead of splitting
         // it into its own record — user-visible data loss.
         val exId = seedCatalogExercise()
-        repo.addExercisesToDate(userId, journalId, date, listOf(exId, exId))
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId, exId))
         val records = repo.getRecordsByDate(userId, journalId, date).sortedBy { it.position }
         val (first, second) = records
         repo.addSet(userId, journalId, second.exercises.single().id, 60.0, 12, null, null)
@@ -292,7 +292,7 @@ class RecordRepositoryTest {
         // same-day record must shift +1 (and be re-queued for push) so the
         // day's ordering stays: source, split-off, everything after.
         val exId = seedCatalogExercise()
-        repo.addExercisesToDate(userId, journalId, date, listOf(exId, exId, exId))
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId, exId, exId))
         val records = repo.getRecordsByDate(userId, journalId, date).sortedBy { it.position }
         assertEquals(3, records.size)
         val superset = repo.mergeRecords(userId, journalId, records[0], records[1])
@@ -318,7 +318,7 @@ class RecordRepositoryTest {
     @Test
     fun removingMiddleExercise_ofThreeMemberSuperset_keepsSurvivorOrder(): Unit = runBlocking {
         val exId = seedCatalogExercise()
-        repo.addExercisesToDate(userId, journalId, date, listOf(exId, exId, exId))
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId, exId, exId))
         val records = repo.getRecordsByDate(userId, journalId, date).sortedBy { it.position }
         val two = repo.mergeRecords(userId, journalId, records[0], records[1])
             .single { it.exercises.size == 2 }
@@ -341,7 +341,7 @@ class RecordRepositoryTest {
     @Test
     fun deleteMiddleSet_ofThree_keepsOthersInOrder_andRenumbers(): Unit = runBlocking {
         val exId = seedCatalogExercise()
-        repo.addExercisesToDate(userId, journalId, date, listOf(exId))
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId))
         val weId = repo.getRecordsByDate(userId, journalId, date).single().exercises.single().id
         repo.addSet(userId, journalId, weId, 100.0, 10, null, null)
         repo.addSet(userId, journalId, weId, 110.0, 8, null, null)
@@ -363,7 +363,7 @@ class RecordRepositoryTest {
     @Test
     fun deleteRecord_tombstones_andKeepsPendingForSync(): Unit = runBlocking {
         val exId = seedCatalogExercise()
-        repo.addExercisesToDate(userId, journalId, date, listOf(exId))
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId))
         val rec = repo.getRecordsByDate(userId, journalId, date).single()
 
         repo.deleteRecord(userId, journalId, rec)
@@ -379,7 +379,7 @@ class RecordRepositoryTest {
         // Under split semantics, removeExerciseFromRecord on a 1-exercise
         // record does nothing — record deletion is deleteRecord's job.
         val exId = seedCatalogExercise()
-        repo.addExercisesToDate(userId, journalId, date, listOf(exId))
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId))
         val rec = repo.getRecordsByDate(userId, journalId, date).single()
         val we = rec.exercises.single()
 
@@ -388,5 +388,57 @@ class RecordRepositoryTest {
         assertEquals(1, remaining.size, "record must survive")
         assertEquals(1, remaining.single().exercises.size, "exercise must survive")
         assertNull(workoutsDB.getWorkoutRecordByIdIncludingDeleted(rec.id)?.row?.deletedAt)
+    }
+
+    @Test
+    fun addExercises_defaultsToWorkout1_andPositionIsPageRelative(): Unit = runBlocking {
+        val exId = seedCatalogExercise()
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId, exId))
+
+        val records = repo.getRecordsByDate(userId, journalId, date)
+        assertEquals(listOf(1, 1), records.map { it.workoutNumber })
+        assertEquals(listOf(0, 1), records.map { it.position }, "first workout's positions are 0-based")
+    }
+
+    @Test
+    fun secondWorkout_isPageRelative_andOrdersAfterWorkout1(): Unit = runBlocking {
+        val exId = seedCatalogExercise()
+        // Two exercises in workout 1, then two in workout 2 the same day.
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId, exId))
+        repo.addExercisesToDate(userId, journalId, date, 2, listOf(exId, exId))
+
+        val records = repo.getRecordsByDate(userId, journalId, date)
+        // Grouped by workoutNumber, position restarts at 0 in workout 2.
+        assertEquals(listOf(1, 1, 2, 2), records.map { it.workoutNumber })
+        assertEquals(listOf(0, 1, 0, 1), records.map { it.position })
+    }
+
+    @Test
+    fun addingToWorkout1_afterWorkout2Exists_appendsWithinWorkout1(): Unit = runBlocking {
+        val exId = seedCatalogExercise()
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId))
+        repo.addExercisesToDate(userId, journalId, date, 2, listOf(exId))
+        // Go back and add to workout 1 — page-relative, so it appends at pos 1
+        // within workout 1, NOT at a day-global next position.
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId))
+
+        val w1 = repo.getRecordsByDate(userId, journalId, date).filter { it.workoutNumber == 1 }
+        assertEquals(listOf(0, 1), w1.map { it.position }, "second workout-1 record appends at pos 1, not a day-global value")
+    }
+
+    @Test
+    fun copy_preservesSourceWorkoutNumber(): Unit = runBlocking {
+        val exId = seedCatalogExercise()
+        val src = LocalDate(2026, 1, 10)
+        val target = LocalDate(2026, 2, 20)
+        // A 2-workout source day.
+        repo.addExercisesToDate(userId, journalId, src, 1, listOf(exId))
+        repo.addExercisesToDate(userId, journalId, src, 2, listOf(exId))
+
+        repo.addRecordsToDate(userId, journalId, target, repo.getRecordsByDate(userId, journalId, src))
+
+        val copied = repo.getRecordsByDate(userId, journalId, target)
+        assertEquals(listOf(1, 2), copied.map { it.workoutNumber }, "a 2-workout day copies back as 2 workouts")
+        assertEquals(listOf(0, 0), copied.map { it.position }, "each copied workout starts page-relative at 0")
     }
 }

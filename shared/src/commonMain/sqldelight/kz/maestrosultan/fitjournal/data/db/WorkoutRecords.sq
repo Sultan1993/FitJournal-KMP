@@ -27,18 +27,16 @@ CREATE TABLE workoutRecords (
 );
 
 -- Sole hot-path index: every UI read scopes to (userId, journalId), filters
--- live, orders by date DESC then position ASC. Partial on
--- `deletedAt IS NULL` keeps it tight. The previous `(userId, date)` and
--- `(journalId)` indices were redundant on a single-user-per-device app
--- where every read is journal-scoped already.
-CREATE INDEX idx_workoutRecords_live_journal ON workoutRecords(userId, journalId, date DESC, position ASC) WHERE deletedAt IS NULL;
+-- live, orders by date DESC, then workoutNumber ASC, then position ASC. Partial
+-- on `deletedAt IS NULL` keeps it tight. `workoutNumber` sits before `position`
+-- because position is page-relative (0-based within each workout), so it only
+-- orders records inside their own workout — the full day order is
+-- (date, workoutNumber, position). The previous `(userId, date)` and
+-- `(journalId)` indices were redundant on a single-user-per-device app.
+CREATE INDEX idx_workoutRecords_live_journal ON workoutRecords(userId, journalId, date DESC, workoutNumber ASC, position ASC) WHERE deletedAt IS NULL;
 -- Sync push drain. Partial on `pendingUpload = 1` so the index scales
 -- with the (typically empty) backlog, not the whole table.
 CREATE INDEX idx_workoutRecords_pending ON workoutRecords(uuid) WHERE pendingUpload = 1;
--- No dedicated workoutNumber index: the day read already scopes to
--- (userId, journalId, date) via idx_workoutRecords_live_journal, and grouping a
--- day's handful of records by workoutNumber is done in memory. Add one only if a
--- profile shows the day scan is hot on a multi-workout day.
 
 -- Records in (user, journal). Date filter is half-open: `from` inclusive,
 -- `to` exclusive. Callers that want "everything" pass an epoch lower
@@ -52,12 +50,13 @@ AND journalId = ?
 AND date >= ?
 AND date < ?
 AND deletedAt IS NULL
--- `uuid` is the final tiebreaker so ordering is deterministic even when two
--- records share a position (each device assigns position as local max+1, so
--- AWS sync can deliver same-position records from another device). Without it
--- same-position rows render in arbitrary rowid order and superset "next record"
--- becomes ambiguous.
-ORDER BY date DESC, position ASC, uuid ASC;
+-- Order: date DESC, then workoutNumber ASC (group each day's workouts), then
+-- position ASC within a workout. `uuid` is the final tiebreaker so ordering is
+-- deterministic even when two records share a (workoutNumber, position) — each
+-- device assigns position as local max+1, so AWS sync can deliver same-position
+-- records from another device. Without it same-position rows render in arbitrary
+-- rowid order and superset "next record" becomes ambiguous.
+ORDER BY date DESC, workoutNumber ASC, position ASC, uuid ASC;
 
 
 -- Single-record read for UI/repo. Filters tombstones — a soft-deleted
@@ -99,8 +98,8 @@ WHERE userId = ?
 AND journalId = ?;
 
 createWorkoutRecord:
-INSERT INTO workoutRecords(uuid, remoteId, userId, journalId, date, position, comment, startedAt, durationSec, pendingUpload, createdDate, updatedDate)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO workoutRecords(uuid, remoteId, userId, journalId, date, position, comment, startedAt, durationSec, pendingUpload, createdDate, updatedDate, workoutNumber)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- Live-only update. Tombstoned rows are no-ops — a UI write should
 -- never land on a deleted record, and the predicate makes that explicit.
