@@ -6,6 +6,11 @@ plugins {
     alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.sqldelight)
     alias(libs.plugins.skie)
+    // Compose Multiplatform: the shared module now also carries UI (the Workout
+    // screen, first of many). Compiler comes from kotlin.plugin.compose (Kotlin
+    // 2.3.21); the `compose` plugin brings the runtime + `compose.*` DSL.
+    alias(libs.plugins.compose)
+    alias(libs.plugins.compose.compiler)
 }
 
 group = "kz.maestrosultan.fitjournal"
@@ -66,6 +71,16 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.sqldelight.coroutines)
             // SKIE handles Swift interop; no explicit annotations needed.
+
+            // Compose Multiplatform UI (kept in commonMain per the "one huge
+            // module" directive — clean layering enforced by package discipline:
+            // domain/ and data/ must NEVER import androidx.compose.*).
+            implementation(compose.runtime)
+            implementation(compose.foundation)
+            implementation(compose.material3)
+            implementation(compose.ui)
+            implementation(libs.androidx.lifecycle.viewmodel.compose)
+            implementation(libs.androidx.lifecycle.runtime.compose)
         }
 
         commonTest.dependencies {
