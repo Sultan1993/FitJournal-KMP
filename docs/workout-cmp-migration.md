@@ -123,8 +123,28 @@ callbacks to its coordinator/nav graph.
   v1 simplifications (revisit): no drag-reorder UI (VM.onReorder ready, no trigger),
   no swipe-delete (delete via menu), category-colour avatar not exercise image,
   list rows show resolved value (no separate "Last:" hint), EN-only strings.
-- NEXT: P7 (host in both apps: Android replace WorkoutScreen body; iOS embed the
-  ComposeUIViewController in the native WorkoutViewController).
+- **P7 Android DONE** (shared b8b5438, android 0e3bd3c1): shared screen hosted;
+  `WorkoutCmpHostViewModel` (Hilt) owns the shared VM, `AndroidWorkoutUserContext`
+  binds user/journal, callbacks → ComposeNavigator + import, native calendar +
+  nav bar retained, rest-timer/tile reconciled from shared running state. **APK
+  assembles.** Host owns VM (instance-form + dispose()).
+- **P7 iOS IN PROGRESS**: embed `WorkoutScreenController(viewModel, callbacks)`
+  in the native WorkoutViewController; Swift builds the VM from existing KMP deps
+  + a Swift WorkoutUserContext; callbacks → the coordinator. Then Sol review + finish.
+
+## Known v1 gaps / follow-ups (for morning review)
+- Drag-reorder UI not wired (VM.onReorder ready); swipe-delete not wired (menu delete works).
+- Exercise avatar = category-colour chip, not the per-exercise image.
+- "+" add-exercise always targets the current page BUT the import flow doesn't yet
+  thread workoutNumber → new exercises still land on workout 1 (import-pager
+  deferred item). So multi-workout DATA can't be created from the UI yet; the pager
+  renders correctly when such data exists.
+- "Add from workout" (copy previous day) path dropped from "+" (only "from list").
+- Nav-bar subtitle: Android computes exercises•sets from the current page (no
+  session-duration segment yet).
+- Strings EN-only (de/ru/uk port pending). No "Last: …" hint in list rows.
+- Old Android RecyclerView Workout code (adapters/cells/WorkoutViewModel/WorkoutContract)
+  is now ORPHANED (dead) — safe to delete in a cleanup pass.
 
 ## Non-obvious constraints / watch-items
 
