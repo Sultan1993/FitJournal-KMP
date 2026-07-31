@@ -7,23 +7,24 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
+import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
+import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 
 /**
- * P1 infra proof only — the smallest theme-free Compose surface. Confirms the
- * shared module compiles Compose on Android + iOS and that the framework embeds.
- * Deleted once the real WorkoutScreen renders.
+ * P1/P2 infra proof — exercises the theme (token colors + Rubik typography) end
+ * to end. Deleted once the real WorkoutScreen renders.
  */
 @Composable
 fun HelloCompose() {
-    Box(
-        modifier = Modifier.fillMaxSize().background(Color(0xFFF3F1FB)),
-        contentAlignment = Alignment.Center,
-    ) {
-        BasicText(
-            text = "Compose Multiplatform is live 🎉",
-            style = TextStyle(color = Color(0xFF6C5CE7)),
-        )
+    FitJournalTheme {
+        Box(
+            modifier = Modifier.fillMaxSize().background(FjTheme.colors.background),
+            contentAlignment = Alignment.Center,
+        ) {
+            BasicText(
+                text = "Compose Multiplatform is live 🎉",
+                style = FjTheme.typography.screenTitle.copy(color = FjTheme.colors.brand),
+            )
+        }
     }
 }

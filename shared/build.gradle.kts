@@ -79,6 +79,7 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.material3)
             implementation(compose.ui)
+            implementation(compose.components.resources)
             implementation(libs.androidx.lifecycle.viewmodel.compose)
             implementation(libs.androidx.lifecycle.runtime.compose)
         }
@@ -134,3 +135,7 @@ skie {
         disableUpload.set(true)
     }
 }
+
+// Compose Multiplatform resources: defaults are fine. Files live in
+// shared/src/commonMain/composeResources/{font,drawable,values}. The generated
+// accessor is `<default-package>.generated.resources.Res`.

@@ -95,8 +95,17 @@ callbacks to its coordinator/nav graph.
 
 ## Status
 
-- 2026-08-01: setup DONE — worktrees, provisioning, baseline green, versions
-  resolved. Starting P1 (infra proof).
+- 2026-08-01: setup DONE — worktrees, provisioning, baseline green, versions resolved.
+- **P1 DONE** (commit 3aef31d): Compose in :shared builds Android + iOS, SKIE
+  coexists, `HelloComposeController()` exported to Swift. Infra proven.
+- **P2 DONE**: design system. `ui/theme/` — FjColors (bridges the EXISTING shared
+  `kmp/design/ColorTokens`), FjTypography (Rubik via compose-resources fonts),
+  FitJournalTheme + FjTheme accessor + Material3 mapping. Compiles.
+  - compose-resources default package = `kz.maestrosultan.fitjournal.shared.generated.resources`.
+  - Rubik ttf in `commonMain/composeResources/font/` (light/regular/medium/semibold/bold).
+- **P3 folded into P5**: pull workout strings/drawables on demand per component
+  (not a monolithic port of all 115 strings).
+- NEXT: P4 (shared WorkoutViewModel + UiState, wired to KMP use cases).
 
 ## Non-obvious constraints / watch-items
 
