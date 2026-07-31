@@ -39,6 +39,7 @@ sealed class SyncReason(val tag: String) {
         object BodyMeasurement : PostWrite("body_measurement")
         object PhotoMeasurement : PostWrite("photo_measurement")
         object WorkoutRecord : PostWrite("workout_record")
+        object WorkoutSession : PostWrite("workout_session")
         object User : PostWrite("user")
     }
 
