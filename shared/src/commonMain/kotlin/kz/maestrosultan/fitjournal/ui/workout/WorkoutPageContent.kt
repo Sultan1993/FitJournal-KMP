@@ -33,29 +33,26 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 /**
  * One pager page. The ephemeral placeholder page (or any empty real page)
  * renders the "Another workout today" empty state; otherwise the muscle header +
- * a scrolling list of record cards, with the 3-dot menu hoisted here.
+ * a scrolling list of record cards, with the 3-dot menu hoisted here. Every
+ * interaction goes out through [dispatch] — no per-callback plumbing.
  *
  * Records reorder by long-press-drag: the visible order is an optimistic local
  * copy of [WorkoutPage.records] (re-seeded whenever the page's records change),
  * moved by key so the non-draggable header's index offset can't corrupt the
- * move, and persisted via [onReorder] on drop.
+ * move, and persisted via [WorkoutAction.Reorder] on drop.
  */
 @Composable
 fun WorkoutPageContent(
     page: WorkoutPage,
     measurementSystem: MeasurementSystem,
-    callbacks: WorkoutCallbacks,
-    onDeleteRecord: (WorkoutRecord) -> Unit,
-    onAddToSuperset: (WorkoutRecord) -> Unit,
-    onRemoveFromSuperset: (record: WorkoutRecord, exercise: WorkoutExercise) -> Unit,
-    onReorder: (orderedRecordIds: List<String>) -> Unit,
+    dispatch: (WorkoutAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (page.isPlaceholder || page.records.isEmpty()) {
         AnotherWorkoutPlaceholder(
             title = stringResource(Res.string.workout_another_workout_title),
             subtitle = stringResource(Res.string.workout_another_workout_subtitle),
-            onAddClick = { callbacks.onAddExercise(page.workoutNumber) },
+            onAddClick = { dispatch(WorkoutAction.AddExercise(page.workoutNumber)) },
             modifier = modifier,
         )
         return
@@ -92,14 +89,18 @@ fun WorkoutPageContent(
                 WorkoutRecordCard(
                     record = record,
                     measurementSystem = measurementSystem,
-                    onSetClick = { exerciseId, setId -> callbacks.onOpenExerciseFocus(exerciseId, setId, false) },
-                    onAddSet = { exerciseId -> callbacks.onOpenExerciseFocus(exerciseId, null, true) },
+                    onSetClick = { exerciseId, setId ->
+                        dispatch(WorkoutAction.OpenExerciseFocus(exerciseId, setId, false))
+                    },
+                    onAddSet = { exerciseId ->
+                        dispatch(WorkoutAction.OpenExerciseFocus(exerciseId, null, true))
+                    },
                     onExerciseMenu = { exercise -> menuTarget = MenuTarget(record, exercise) },
                     modifier = Modifier
                         .padding(horizontal = 16.dp, vertical = 6.dp)
                         // Long-press to drag so the card's set taps / menu still fire.
                         .longPressDraggableHandle(
-                            onDragStopped = { onReorder(orderedRecords.map { it.id }) },
+                            onDragStopped = { dispatch(WorkoutAction.Reorder(orderedRecords.map { it.id })) },
                         ),
                 )
             }
@@ -115,14 +116,14 @@ fun WorkoutPageContent(
             hasNote = !exercise.comment.isNullOrBlank(),
             isSuperset = record.isSuperset,
             canAddToSuperset = !record.isSuperset && page.records.any { it.position > record.position },
-            onAbout = { close(); callbacks.onOpenExerciseInfo(exercise.exercise.uuid, ExerciseInfoSection.About) },
-            onHistory = { close(); callbacks.onOpenExerciseInfo(exercise.exercise.uuid, ExerciseInfoSection.History) },
-            onStats = { close(); callbacks.onOpenExerciseInfo(exercise.exercise.uuid, ExerciseInfoSection.Stats) },
-            onNote = { close(); callbacks.onEditNote(exercise.id) },
-            onReplace = { close(); callbacks.onReplaceExercise(exercise.id) },
-            onAddToSuperset = { close(); onAddToSuperset(record) },
-            onRemoveFromSuperset = { close(); onRemoveFromSuperset(record, exercise) },
-            onDelete = { close(); onDeleteRecord(record) },
+            onAbout = { close(); dispatch(WorkoutAction.OpenExerciseInfo(exercise.exercise.uuid, ExerciseInfoSection.About)) },
+            onHistory = { close(); dispatch(WorkoutAction.OpenExerciseInfo(exercise.exercise.uuid, ExerciseInfoSection.History)) },
+            onStats = { close(); dispatch(WorkoutAction.OpenExerciseInfo(exercise.exercise.uuid, ExerciseInfoSection.Stats)) },
+            onNote = { close(); dispatch(WorkoutAction.EditNote(exercise.id)) },
+            onReplace = { close(); dispatch(WorkoutAction.ReplaceExercise(exercise.id)) },
+            onAddToSuperset = { close(); dispatch(WorkoutAction.AddToSuperset(record)) },
+            onRemoveFromSuperset = { close(); dispatch(WorkoutAction.RemoveFromSuperset(record, exercise)) },
+            onDelete = { close(); dispatch(WorkoutAction.DeleteRecord(record)) },
             onDismiss = close,
         )
     }

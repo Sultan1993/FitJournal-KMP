@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import kotlin.time.Clock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -28,19 +30,23 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutSession
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSessionRepository
 import kz.maestrosultan.fitjournal.domain.workout.usecase.EndWorkoutUseCase
 import kz.maestrosultan.fitjournal.domain.workout.usecase.StartWorkoutUseCase
+import kz.maestrosultan.fitjournal.ui.mvi.MviModel
 
 /**
- * Shared presentation for the Workout body — the ONE ViewModel both apps use.
+ * Shared presentation for the Workout body — the ONE ViewModel both apps use, in
+ * the [MviModel] shape: one entry point ([dispatch]) and two outputs ([viewState]
+ * + one-shot [viewEffect]). The shared Compose body and the native nav shell both
+ * interact only through [dispatch]; nothing calls this any other way.
  *
  * Renders the day's workouts as a pager (records grouped by workoutNumber + a
  * trailing placeholder), the Start/End session bar, and per-record edits. It is
  * pure rendering + local reads/writes against the KMP repositories; NAVIGATION
- * (set editor, exercise details, import, calendar) is delegated to the host via
- * hoisted callbacks on the composable, so this stays free of any platform nav.
+ * (set editor, exercise details, import) and the end-confirm sheet leave as
+ * [WorkoutEffect]s the native host performs, so this stays free of platform nav.
  *
  * Session-lifecycle side effects that ARE platform-specific (rest timer, live
- * tile) are NOT here — the host observes [uiState].runningSession and reconciles
- * its own tile/timer.
+ * tile) are NOT here — the host observes [viewState].runningSession and
+ * reconciles its own tile/timer.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class WorkoutViewModel(
@@ -53,7 +59,7 @@ class WorkoutViewModel(
     initialDate: LocalDate,
     private val clock: Clock = Clock.System,
     private val timeZone: TimeZone = TimeZone.currentSystemDefault(),
-) : ViewModel() {
+) : ViewModel(), MviModel<WorkoutUiState, WorkoutEffect, WorkoutAction> {
 
     private val selectedDate = MutableStateFlow(initialDate)
     private val currentPageIndex = MutableStateFlow(0)
@@ -63,9 +69,15 @@ class WorkoutViewModel(
     private val _uiState = MutableStateFlow(
         WorkoutUiState.initial(initialDate, isToday = initialDate == today()),
     )
-    val uiState: StateFlow<WorkoutUiState> = _uiState.asStateFlow()
+    override val viewState: StateFlow<WorkoutUiState> = _uiState.asStateFlow()
 
-    // Resolved once (repositories are id-parameterised — see WorkoutUserContext).
+    // One-shot navigation / end-confirm outputs. Buffered single-consumer channel
+    // (the host) via receiveAsFlow, so an effect emitted before the host starts
+    // collecting isn't dropped — see kotlin-flow-state-event-modeling.
+    private val _effects = Channel<WorkoutEffect>(Channel.BUFFERED)
+    override val viewEffect: Flow<WorkoutEffect> = _effects.receiveAsFlow()
+
+    // Resolved once from the shared UserSession (repositories are id-parameterised).
     private var userId: String? = null
     private var journalId: String? = null
     private var measurementSystem: MeasurementSystem = MeasurementSystem.KG_KM
@@ -78,6 +90,35 @@ class WorkoutViewModel(
             measurementSystem = session.measurementSystem
             observe(session.userId, session.journalId)
         }
+    }
+
+    // ─── MVI entry point ────────────────────────────────────────────────
+
+    override fun dispatch(action: WorkoutAction) {
+        when (action) {
+            is WorkoutAction.SelectDate -> onDateSelected(action.date)
+            is WorkoutAction.SelectPage -> onPageSelected(action.index)
+            WorkoutAction.ToggleCalendar -> onToggleCalendar()
+            is WorkoutAction.CalendarMonthChanged -> onCalendarMonthChanged(action.year, action.month)
+            WorkoutAction.StartSession -> onStartSession()
+            WorkoutAction.RequestEndSession -> emit(WorkoutEffect.RequestEndSession)
+            WorkoutAction.EndSession -> onEndSession()
+            is WorkoutAction.DeleteRecord -> onDeleteRecord(action.record)
+            is WorkoutAction.Reorder -> onReorder(action.orderedRecordIds)
+            is WorkoutAction.AddToSuperset -> onAddToSuperset(action.record)
+            is WorkoutAction.RemoveFromSuperset -> onRemoveFromSuperset(action.record, action.exercise)
+            is WorkoutAction.OpenExerciseFocus ->
+                emit(WorkoutEffect.OpenExerciseFocus(action.workoutExerciseId, action.workoutSetId, action.startAddingSet))
+            is WorkoutAction.OpenExerciseInfo ->
+                emit(WorkoutEffect.OpenExerciseInfo(action.exerciseId, action.section))
+            is WorkoutAction.EditNote -> emit(WorkoutEffect.EditNote(action.workoutExerciseId))
+            is WorkoutAction.ReplaceExercise -> emit(WorkoutEffect.ReplaceExercise(action.workoutExerciseId))
+            is WorkoutAction.AddExercise -> emit(WorkoutEffect.AddExercise(action.workoutNumber))
+        }
+    }
+
+    private fun emit(effect: WorkoutEffect) {
+        _effects.trySend(effect)
     }
 
     private fun today(): LocalDate = clock.todayIn(timeZone)
@@ -185,16 +226,16 @@ class WorkoutViewModel(
         return real + placeholder
     }
 
-    // ─── Actions ────────────────────────────────────────────────────────
+    // ─── Actions (private — every interaction arrives via [dispatch]) ────
 
-    fun onDateSelected(date: LocalDate) {
+    private fun onDateSelected(date: LocalDate) {
         calendarVisible.value = false
         currentPageIndex.value = 0
         selectedDate.value = date
     }
 
     /** Nav-bar calendar icon: open/close the month overlay; load its dots on open. */
-    fun onToggleCalendar() {
+    private fun onToggleCalendar() {
         val show = !calendarVisible.value
         calendarVisible.value = show
         if (show) {
@@ -204,7 +245,7 @@ class WorkoutViewModel(
     }
 
     /** The calendar scrolled to a new month — reload which days have workouts. */
-    fun onCalendarMonthChanged(year: Int, month: Int) = loadWorkoutDays(year, month)
+    private fun onCalendarMonthChanged(year: Int, month: Int) = loadWorkoutDays(year, month)
 
     private fun loadWorkoutDays(year: Int, month: Int) {
         val uid = userId ?: return
@@ -215,12 +256,12 @@ class WorkoutViewModel(
         }
     }
 
-    fun onPageSelected(index: Int) {
+    private fun onPageSelected(index: Int) {
         currentPageIndex.value = index
     }
 
     /** Start (or resume) the workout the user is viewing — its page's workoutNumber. */
-    fun onStartSession() {
+    private fun onStartSession() {
         val uid = userId ?: return
         val jid = journalId ?: return
         val page = _uiState.value.currentPage ?: return
@@ -228,12 +269,12 @@ class WorkoutViewModel(
         viewModelScope.launch { startWorkout(uid, jid, date, page.workoutNumber) }
     }
 
-    fun onEndSession() {
+    private fun onEndSession() {
         val uid = userId ?: return
         viewModelScope.launch { endWorkout(uid) }
     }
 
-    fun onDeleteRecord(record: WorkoutRecord) {
+    private fun onDeleteRecord(record: WorkoutRecord) {
         val uid = userId ?: return
         val jid = journalId ?: return
         viewModelScope.launch {
@@ -243,7 +284,7 @@ class WorkoutViewModel(
     }
 
     /** Persist a within-page reorder ([orderedRecordIds] = the page's records, new order). */
-    fun onReorder(orderedRecordIds: List<String>) {
+    private fun onReorder(orderedRecordIds: List<String>) {
         val uid = userId ?: return
         val jid = journalId ?: return
         val page = _uiState.value.currentPage ?: return
@@ -256,7 +297,7 @@ class WorkoutViewModel(
     }
 
     /** Merge [record] with the next record on its page into a superset. */
-    fun onAddToSuperset(record: WorkoutRecord) {
+    private fun onAddToSuperset(record: WorkoutRecord) {
         val uid = userId ?: return
         val jid = journalId ?: return
         val page = _uiState.value.currentPage ?: return
@@ -269,7 +310,7 @@ class WorkoutViewModel(
         }
     }
 
-    fun onRemoveFromSuperset(record: WorkoutRecord, exercise: WorkoutExercise) {
+    private fun onRemoveFromSuperset(record: WorkoutRecord, exercise: WorkoutExercise) {
         val uid = userId ?: return
         val jid = journalId ?: return
         viewModelScope.launch {

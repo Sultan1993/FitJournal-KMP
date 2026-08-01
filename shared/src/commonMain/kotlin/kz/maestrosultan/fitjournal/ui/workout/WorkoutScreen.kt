@@ -30,25 +30,24 @@ import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutSessionBar
  * The shared Workout body — a full-width pager over the day's workouts (+ the
  * ephemeral "another workout" placeholder), page dots up top, and the Start/End
  * bar + add button along the bottom. Hosted inside each app's native nav shell;
- * all navigation is delegated through [callbacks].
+ * every interaction goes through [WorkoutViewModel.dispatch], and navigation
+ * leaves as [WorkoutEffect]s the host collects.
  */
 @Composable
 fun WorkoutScreen(
     viewModel: WorkoutViewModel,
-    callbacks: WorkoutCallbacks,
     modifier: Modifier = Modifier,
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.viewState.collectAsState()
     FitJournalTheme {
-        WorkoutBody(state = state, viewModel = viewModel, callbacks = callbacks, modifier = modifier)
+        WorkoutBody(state = state, dispatch = viewModel::dispatch, modifier = modifier)
     }
 }
 
 @Composable
 private fun WorkoutBody(
     state: WorkoutUiState,
-    viewModel: WorkoutViewModel,
-    callbacks: WorkoutCallbacks,
+    dispatch: (WorkoutAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val pageCount = state.pages.size
@@ -66,7 +65,7 @@ private fun WorkoutBody(
     }
     // Pager swipe → VM (settled only, so mid-swipe frames don't thrash state).
     LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.settledPage }.collect(viewModel::onPageSelected)
+        snapshotFlow { pagerState.settledPage }.collect { dispatch(WorkoutAction.SelectPage(it)) }
     }
 
     Box(modifier = modifier.fillMaxSize().background(FjTheme.colors.background)) {
@@ -79,11 +78,7 @@ private fun WorkoutBody(
                 WorkoutPageContent(
                     page = state.pages[index],
                     measurementSystem = state.measurementSystem,
-                    callbacks = callbacks,
-                    onDeleteRecord = viewModel::onDeleteRecord,
-                    onAddToSuperset = viewModel::onAddToSuperset,
-                    onRemoveFromSuperset = viewModel::onRemoveFromSuperset,
-                    onReorder = viewModel::onReorder,
+                    dispatch = dispatch,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -92,7 +87,7 @@ private fun WorkoutBody(
         PageDots(
             count = pageCount,
             currentPage = pagerState.currentPage,
-            onDotClick = viewModel::onPageSelected,
+            onDotClick = { dispatch(WorkoutAction.SelectPage(it)) },
             modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp),
         )
 
@@ -105,26 +100,26 @@ private fun WorkoutBody(
             WorkoutSessionBar(
                 state = state.sessionBar,
                 runningSince = state.runningSince,
-                onStart = viewModel::onStartSession,
-                onEnd = callbacks.onEndSessionRequested,
+                onStart = { dispatch(WorkoutAction.StartSession) },
+                onEnd = { dispatch(WorkoutAction.RequestEndSession) },
                 // Leave room for the add button at the trailing edge.
                 modifier = Modifier.align(Alignment.CenterStart).fillMaxWidth().padding(end = 68.dp),
             )
             AddButton(
-                onClick = { state.currentPage?.let { callbacks.onAddExercise(it.workoutNumber) } },
+                onClick = { state.currentPage?.let { dispatch(WorkoutAction.AddExercise(it.workoutNumber)) } },
                 modifier = Modifier.align(Alignment.CenterEnd),
             )
         }
 
         // Month-calendar overlay, toggled from the native nav-bar icon
-        // (viewModel.onToggleCalendar). Selecting a day closes it (the VM clears
+        // (dispatch(ToggleCalendar)). Selecting a day closes it (the VM clears
         // calendarVisible); re-tapping the nav icon also closes it.
         if (state.calendarVisible) {
             WorkoutCalendar(
                 selectedDate = state.selectedDate,
                 workoutDays = state.workoutDays,
-                onDateSelected = viewModel::onDateSelected,
-                onMonthChanged = viewModel::onCalendarMonthChanged,
+                onDateSelected = { dispatch(WorkoutAction.SelectDate(it)) },
+                onMonthChanged = { year, month -> dispatch(WorkoutAction.CalendarMonthChanged(year, month)) },
                 modifier = Modifier.fillMaxSize().background(FjTheme.colors.background),
             )
         }
