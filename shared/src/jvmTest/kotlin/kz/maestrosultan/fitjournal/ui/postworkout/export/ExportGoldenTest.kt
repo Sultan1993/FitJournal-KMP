@@ -11,6 +11,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
@@ -36,9 +37,15 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kz.maestrosultan.fitjournal.ui.postworkout.composer.CardPalette
+import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareCardBlock
 import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareCardCanvas
-import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareCardPlaceholderData
-import kz.maestrosultan.fitjournal.ui.postworkout.composer.SharePlaceholderBlock
+import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareCardData
+import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareExerciseRow
+import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareLayoutKind
+import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareMuscleBar
+import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareStat
+import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareWordmark
+import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 
 /**
  * Golden gate for the spec-D10 export mechanism (Task 14 spike).
@@ -64,21 +71,37 @@ import kz.maestrosultan.fitjournal.ui.postworkout.composer.SharePlaceholderBlock
  * composed AFTER the export host inside the same Box, so it occludes the
  * export node's top-left region — the export capture being complete anyway is
  * the occluded-layer proof of spec D10.
+ *
+ * FONT SYMMETRY (load-bearing): `FitJournalTheme` wraps BOTH card instances
+ * ONCE, at the top of `setContent`. Rubik arrives through compose-resources,
+ * which resolves asynchronously — two separate theme instances would be two
+ * separate loads that can complete on different frames, and a card rendered in
+ * the fallback font against one rendered in Rubik is a guaranteed (and
+ * meaningless) WYSIWYG failure. One theme = one load = both captures always
+ * agree, whichever frame the font lands on.
  */
 @OptIn(ExperimentalTestApi::class)
 class ExportGoldenTest {
 
     @Test
     fun export_brandBackdrop_is1080x1920_opaque_andMatchesUpsampled540() =
-        runWysiwygCase(Backdrop.Brand)
+        runWysiwygCase(Backdrop.Brand, ShareLayoutKind.Stats)
 
     @Test
     fun export_gradientBackdrop_is1080x1920_opaque_andMatchesUpsampled540() =
-        runWysiwygCase(Backdrop.Gradient)
+        runWysiwygCase(Backdrop.Gradient, ShareLayoutKind.Stats)
 
     @Test
     fun export_transparentBackdrop_keepsAlpha_andMatchesUpsampled540() =
-        runWysiwygCase(Backdrop.Transparent)
+        runWysiwygCase(Backdrop.Transparent, ShareLayoutKind.Stats)
+
+    /**
+     * The text-densest layout, at the same thresholds: eight capped rows of
+     * 12-13.5sp type are where a proportional-scaling bug would show up first.
+     */
+    @Test
+    fun export_receiptLayout_is1080x1920_opaque_andMatchesUpsampled540() =
+        runWysiwygCase(Backdrop.Brand, ShareLayoutKind.Receipt)
 
     @Test
     fun exportHost_deliversFailure_whenCardDrawThrows() =
@@ -109,20 +132,44 @@ class ExportGoldenTest {
 
     private enum class Backdrop { Brand, Gradient, Transparent }
 
-    /** Deterministic placeholder-card state: 6-exercise session, PR-ish content. */
-    private val fixtureData = ShareCardPlaceholderData(
-        muscleLine = "Chest · Triceps · Front Delts",
-        bigNumber = "12 480",
-        bigNumberLabel = "kg total volume · New PR",
+    /**
+     * Deterministic card state: a 9-exercise push session with no PR. Nine rows
+     * is deliberate — it trips the Receipt row cap, so the Receipt fixture
+     * renders the full first-5 / "+2 more" / last-2 shape.
+     */
+    private val fixtureData = ShareCardData(
+        title = "Chest · Triceps · Front Delts",
+        tonnageValue = "12,480",
+        tonnageUnit = "kg",
         stats = listOf(
-            "54:12" to "Duration",
-            "6" to "Exercises",
-            "21" to "Sets",
+            ShareStat("54:12", "Duration"),
+            ShareStat("29", "Sets"),
+            ShareStat("9", "Exercises"),
+        ),
+        exercises = listOf(
+            ShareExerciseRow("Bench press", "5 sets", tonnageText = "4,320 kg"),
+            ShareExerciseRow("Incline dumbbell press", "4 sets", tonnageText = "2,880 kg"),
+            ShareExerciseRow("Cable fly", "4 sets", tonnageText = "1,560 kg"),
+            ShareExerciseRow("Dips", "3 sets", repsText = "36 reps"),
+            ShareExerciseRow("Skull crusher", "3 sets", tonnageText = "1,020 kg"),
+            ShareExerciseRow("Rope pushdown", "3 sets", tonnageText = "1,140 kg"),
+            ShareExerciseRow("Lateral raise", "3 sets", tonnageText = "780 kg"),
+            ShareExerciseRow("Front raise", "2 sets", tonnageText = "480 kg"),
+            ShareExerciseRow("Push-up", "2 sets", repsText = "44 reps"),
+        ),
+        moreLabel = "+2 more",
+        receiptFooter = "29 sets · 1:04",
+        musclesHeadline = "29 sets",
+        musclesFooter = "12,480 kg · 9 exercises · 1:04",
+        muscles = listOf(
+            ShareMuscleBar("CHEST", 1f),
+            ShareMuscleBar("TRICEP", 0.62f),
+            ShareMuscleBar("DELTS", 0.38f),
         ),
     )
 
     @Composable
-    private fun FixtureCard(backdrop: Backdrop) {
+    private fun FixtureCard(backdrop: Backdrop, layout: ShareLayoutKind) {
         val backdropModifier = when (backdrop) {
             Backdrop.Brand -> Modifier.background(Color(0xFF7C72F2))
             Backdrop.Gradient -> Modifier.background(
@@ -130,6 +177,10 @@ class ExportGoldenTest {
             )
             Backdrop.Transparent -> Modifier
         }
+        // Fixture-local on purpose: these pairings exercise BOTH palette modes
+        // through the export pipeline. They are NOT the production mapping —
+        // that is `ComposerBackdrop.cardPalette`, whose Brand assignment is
+        // still an open design question (see its KDoc).
         val palette = when (backdrop) {
             Backdrop.Transparent -> CardPalette.DarkOnLight
             else -> CardPalette.PhotoWhite
@@ -140,35 +191,46 @@ class ExportGoldenTest {
                 .fillMaxSize()
                 .then(backdropModifier),
         ) {
-            SharePlaceholderBlock(
-                data = fixtureData,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(dp(28f)),
-            )
+            Box(Modifier.fillMaxSize()) {
+                ShareWordmark(
+                    Modifier
+                        .align(Alignment.TopStart)
+                        .padding(dp(28f)),
+                )
+                ShareCardBlock(
+                    layout = layout,
+                    data = fixtureData,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(dp(28f)),
+                )
+            }
         }
     }
 
     // ------------------------------------------------------------- WYSIWYG run
 
-    private fun runWysiwygCase(backdrop: Backdrop) =
+    private fun runWysiwygCase(backdrop: Backdrop, layout: ShareLayoutKind) =
         runDesktopComposeUiTest(EXPORT_WIDTH, EXPORT_HEIGHT) {
             var exportResult: ExportResult? = null
             var smallBitmap: ImageBitmap? = null
             setContent {
-                Box {
-                    // Composed first => drawn first => occluded by the pane below.
-                    CardExportHost(
-                        request = ExportRequest(id = 1L, reason = ExportReason.Share),
-                        card = { FixtureCard(backdrop) },
-                        onResult = { exportResult = it },
-                    )
-                    TestCapturePane(
-                        widthPx = SMALL_WIDTH,
-                        heightPx = SMALL_HEIGHT,
-                        onBitmap = { smallBitmap = it },
-                    ) {
-                        FixtureCard(backdrop)
+                // ONE theme for both instances — see the FONT SYMMETRY note.
+                FitJournalTheme(darkTheme = false) {
+                    Box {
+                        // Composed first => drawn first => occluded by the pane below.
+                        CardExportHost(
+                            request = ExportRequest(id = 1L, reason = ExportReason.Share),
+                            card = { FixtureCard(backdrop, layout) },
+                            onResult = { exportResult = it },
+                        )
+                        TestCapturePane(
+                            widthPx = SMALL_WIDTH,
+                            heightPx = SMALL_HEIGHT,
+                            onBitmap = { smallBitmap = it },
+                        ) {
+                            FixtureCard(backdrop, layout)
+                        }
                     }
                 }
             }
@@ -228,18 +290,25 @@ class ExportGoldenTest {
             // or shifted block moves whole glyph/box INTERIORS off the edge
             // mask, blowing up the mean, the outside-edge p99, and the mask
             // coverage together (flat regions currently differ by < 1/255).
+            //
+            // The 3.5-3.7% coverage figure was measured against the Task 14
+            // placeholder block; the real layouts carry more type (the Receipt
+            // most of all), so expect a higher — but still small — mask. The
+            // 15% ceiling stays as-is: it is the "this is text antialiasing,
+            // not a shifted layout" boundary, not a per-fixture baseline.
+            val fixture = "$backdrop/$layout"
             assertTrue(
                 metrics.meanAbsRgb <= 6f,
-                "$backdrop: mean |dRGB| ${metrics.meanAbsRgb} exceeds 6/255",
+                "$fixture: mean |dRGB| ${metrics.meanAbsRgb} exceeds 6/255",
             )
             assertTrue(
                 metrics.edgeCoverage <= 0.15f,
-                "$backdrop: dilated edge mask covers ${metrics.edgeCoverage * 100}% " +
+                "$fixture: dilated edge mask covers ${metrics.edgeCoverage * 100}% " +
                     "of pixels (limit 15%) — structural noise, not antialiasing",
             )
             assertTrue(
                 metrics.outsideEdgeP99 <= 24,
-                "$backdrop: outside-edge p99 max-channel delta ${metrics.outsideEdgeP99} " +
+                "$fixture: outside-edge p99 max-channel delta ${metrics.outsideEdgeP99} " +
                     "exceeds 24/255 (edge mask ${metrics.edgeCoverage * 100}% of pixels, " +
                     "overall frac>24 ${metrics.fracAbove24 * 100}%)",
             )

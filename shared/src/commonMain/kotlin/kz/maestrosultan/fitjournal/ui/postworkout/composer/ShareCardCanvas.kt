@@ -1,15 +1,17 @@
 package kz.maestrosultan.fitjournal.ui.postworkout.composer
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,13 +20,59 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import kotlin.math.roundToLong
+import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
+import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
+import kz.maestrosultan.fitjournal.domain.workout.ResultType
+import kz.maestrosultan.fitjournal.domain.workout.summary.SessionSummary
+import kz.maestrosultan.fitjournal.shared.generated.resources.Res
+import kz.maestrosultan.fitjournal.shared.generated.resources.category_code_abs
+import kz.maestrosultan.fitjournal.shared.generated.resources.category_code_back
+import kz.maestrosultan.fitjournal.shared.generated.resources.category_code_biceps
+import kz.maestrosultan.fitjournal.shared.generated.resources.category_code_calves
+import kz.maestrosultan.fitjournal.shared.generated.resources.category_code_cardio
+import kz.maestrosultan.fitjournal.shared.generated.resources.category_code_chest
+import kz.maestrosultan.fitjournal.shared.generated.resources.category_code_forearms
+import kz.maestrosultan.fitjournal.shared.generated.resources.category_code_glutes
+import kz.maestrosultan.fitjournal.shared.generated.resources.category_code_hamstrings
+import kz.maestrosultan.fitjournal.shared.generated.resources.category_code_other
+import kz.maestrosultan.fitjournal.shared.generated.resources.category_code_quadriceps
+import kz.maestrosultan.fitjournal.shared.generated.resources.category_code_shoulders
+import kz.maestrosultan.fitjournal.shared.generated.resources.category_code_trapezius
+import kz.maestrosultan.fitjournal.shared.generated.resources.category_code_triceps
+import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_exercises
+import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_more_format
+import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_new_best
+import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_reps_format
+import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_sets
+import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_stat_best_set
+import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_stat_duration
+import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_stat_exercises
+import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_stat_sets
+import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_stat_total_reps
+import kz.maestrosultan.fitjournal.ui.postworkout.composer.layouts.MusclesLayout
+import kz.maestrosultan.fitjournal.ui.postworkout.composer.layouts.NewBestLayout
+import kz.maestrosultan.fitjournal.ui.postworkout.composer.layouts.ReceiptLayout
+import kz.maestrosultan.fitjournal.ui.postworkout.composer.layouts.StatsLayout
+import kz.maestrosultan.fitjournal.ui.postworkout.composer.layouts.receiptHiddenCount
+import kz.maestrosultan.fitjournal.ui.postworkout.seams.LocaleFormatters
+import kz.maestrosultan.fitjournal.ui.postworkout.seams.formatDuration
+import kz.maestrosultan.fitjournal.ui.theme.FjTheme
+import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Width in dp the card designs are authored against. Every metric inside the
@@ -35,21 +83,61 @@ import androidx.compose.ui.unit.sp
  */
 internal const val ShareCardReferenceWidth = 402f
 
+/** Card text separator, matching the summary screen's " · " joins. */
+internal const val ShareCardSeparator = " · "
+
 /**
  * Receiver scope for [ShareCardCanvas] content: converts design-reference
- * metrics into scaled units and exposes the [CardPalette] the layout should
- * draw with.
+ * metrics into scaled units, exposes the [CardPalette] the layout should draw
+ * with, and owns the ONE text-style construction path every layout derives
+ * from.
+ *
+ * Layouts must never build a [FontFamily] of their own (no `rubikFamily()`
+ * calls, no `FontFamily` parameters): [fontFamily] is resolved once by
+ * [ShareCardCanvas] off `FjTheme.typography`, so the live preview and the
+ * export instance can never drift onto different fonts.
  */
 @Immutable
 internal class ShareCardScope internal constructor(
     val scale: Float,
     val palette: CardPalette,
+    /** Product font (Rubik), resolved once from the theme by [ShareCardCanvas]. */
+    val fontFamily: FontFamily?,
 ) {
     /** Reference dp (as authored at 402dp width) -> scaled [Dp]. */
     fun dp(ref: Float): Dp = (ref * scale).dp
 
     /** Reference sp (as authored at 402dp width) -> scaled [TextUnit]. */
     fun sp(ref: Float): TextUnit = (ref * scale).sp
+
+    /**
+     * THE text-style factory for card content. [size] is the reference sp;
+     * [letterSpacingEm] / [lineHeightEm] are em-relative on purpose — em scales
+     * with the font size, so a proportionally scaled card keeps identical
+     * tracking and leading at every canvas width.
+     */
+    fun textStyle(
+        size: Float,
+        weight: FontWeight = FontWeight.Normal,
+        color: Color = palette.textPrimary,
+        letterSpacingEm: Float = 0f,
+        lineHeightEm: Float = 0f,
+    ): TextStyle = TextStyle(
+        fontFamily = fontFamily,
+        fontWeight = weight,
+        fontSize = sp(size),
+        color = color,
+        letterSpacing = letterSpacingEm.em,
+        lineHeight = if (lineHeightEm > 0f) lineHeightEm.em else TextUnit.Unspecified,
+    )
+
+    /**
+     * The palette's text color at one of the spec's graded opacities (the
+     * "white/80", "white/66" runs). Palette-driven so a single layout
+     * definition renders correctly in BOTH modes: over a photo the base is
+     * white, on a light surface it is the `#040415` family.
+     */
+    fun textColor(opacity: Float): Color = palette.textPrimary.copy(alpha = opacity)
 }
 
 /**
@@ -64,6 +152,8 @@ internal class ShareCardScope internal constructor(
  *   [ShareCardScope.dp] / [ShareCardScope.sp].
  * - Font scale is forced to 1 in BOTH live and export modes so a user's
  *   accessibility font size can never desync the preview from the export.
+ * - MUST be composed inside `FitJournalTheme` — the card font is read from
+ *   `FjTheme.typography` here, once, and handed to the layouts on the scope.
  */
 @Composable
 internal fun ShareCardCanvas(
@@ -71,9 +161,10 @@ internal fun ShareCardCanvas(
     modifier: Modifier = Modifier,
     content: @Composable ShareCardScope.() -> Unit,
 ) {
+    val fontFamily = FjTheme.typography.body.fontFamily
     BoxWithConstraints(modifier = modifier) {
         val scale = maxWidth.value / ShareCardReferenceWidth
-        val scope = remember(scale, palette) { ShareCardScope(scale, palette) }
+        val scope = remember(scale, palette, fontFamily) { ShareCardScope(scale, palette, fontFamily) }
         val density = LocalDensity.current
         CompositionLocalProvider(
             LocalDensity provides Density(density.density, fontScale = 1f),
@@ -83,88 +174,378 @@ internal fun ShareCardCanvas(
     }
 }
 
-/** Plain data the spike placeholder renders — no ViewModel dependency. */
-internal data class ShareCardPlaceholderData(
-    val muscleLine: String,
-    val bigNumber: String,
-    val bigNumberLabel: String,
-    /** `value to label` triples rendered as equal-width stat columns. */
-    val stats: List<Pair<String, String>>,
-)
+/**
+ * Palette mode per backdrop (spec §7.4): a photo needs white text at graded
+ * opacities; the flat Brand and Transparent backdrops render the dark-on-light
+ * mode (brand dots/bars, `#040415`-family text).
+ *
+ * OPEN CONFLICT — needs a design ruling before this ships:
+ *  - [CardPalette]'s own KDoc says the opposite, that [CardPalette.PhotoWhite]
+ *    covers "a photo, brand fill, or scrim". Spec §7.4 is followed here.
+ *  - [CardPalette.DarkOnLight]'s accent is the brand purple `#7C72F2`, which is
+ *    exactly `ShareComposerScreen`'s `BrandBackdropFill`. On the Brand backdrop
+ *    the wordmark square and the Muscles bars therefore draw brand-on-brand and
+ *    disappear. Either the Brand backdrop is meant to be a LIGHT brand tint
+ *    rather than the saturated fill, or Brand belongs on [CardPalette.PhotoWhite]
+ *    with the rest of the dark backdrops.
+ */
+internal val ComposerBackdrop.cardPalette: CardPalette
+    get() = when (this) {
+        is ComposerBackdrop.Photo -> CardPalette.PhotoWhite
+        ComposerBackdrop.Brand, ComposerBackdrop.Transparent -> CardPalette.DarkOnLight
+    }
+
+// ─────────────────────────────────────────────────────── card content
 
 /**
- * Deterministic placeholder block for the export spike: wordmark square +
- * "FitJournal", a muscle line, a big number, a divider, and stat columns.
- * The real card layouts (Stats/Receipt/Muscles/NewBest) replace this in a
- * later task; the golden test pins the capture mechanism against it.
+ * The layout-kind dispatch: renders the selected share-card layout, cross-faded
+ * so switching layouts in the composer reads as one card changing shape rather
+ * than a hard cut.
+ *
+ * ONLY the layout body is inside the crossfade. The backdrop, the scrim and the
+ * pinned [ShareWordmark] are composed by the caller as siblings of this block —
+ * they are card chrome, identical across layouts, and fading them would make
+ * the whole card blink on every layout tap.
+ *
+ * The caller anchors the block (spec §7.4: bottom-left) through [modifier];
+ * the layouts themselves only describe their content column.
  */
 @Composable
-internal fun ShareCardScope.SharePlaceholderBlock(
-    data: ShareCardPlaceholderData,
+internal fun ShareCardScope.ShareCardBlock(
+    layout: ShareLayoutKind,
+    data: ShareCardData,
     modifier: Modifier = Modifier,
 ) {
-    Column(
+    Crossfade(
+        targetState = layout,
         modifier = modifier,
-        verticalArrangement = Arrangement.Bottom,
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(dp(8f)),
-        ) {
-            Box(
-                Modifier
-                    .size(dp(22f))
-                    .background(palette.accent, RoundedCornerShape(dp(6f))),
-            )
-            Text(
-                text = "FitJournal",
-                color = palette.textPrimary,
-                fontSize = sp(17f),
-                fontWeight = FontWeight.SemiBold,
-            )
-        }
-        Spacer(Modifier.height(dp(18f)))
-        Text(
-            text = data.muscleLine,
-            color = palette.textSecondary,
-            fontSize = sp(15f),
-        )
-        Spacer(Modifier.height(dp(6f)))
-        Text(
-            text = data.bigNumber,
-            color = palette.textPrimary,
-            fontSize = sp(56f),
-            fontWeight = FontWeight.Bold,
-        )
-        Text(
-            text = data.bigNumberLabel,
-            color = palette.textSecondary,
-            fontSize = sp(13f),
-        )
-        Spacer(Modifier.height(dp(20f)))
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(dp(1f))
-                .background(palette.divider),
-        )
-        Spacer(Modifier.height(dp(14f)))
-        Row(Modifier.fillMaxWidth()) {
-            data.stats.forEach { (value, label) ->
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        text = value,
-                        color = palette.textPrimary,
-                        fontSize = sp(22f),
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = label,
-                        color = palette.textTertiary,
-                        fontSize = sp(11f),
-                    )
-                }
+        animationSpec = tween(durationMillis = LayoutCrossfadeMillis),
+        label = "share-card-layout",
+    ) { kind ->
+        when (kind) {
+            ShareLayoutKind.Stats -> StatsLayout(data)
+            ShareLayoutKind.Receipt -> ReceiptLayout(data)
+            ShareLayoutKind.Muscles -> MusclesLayout(data)
+            // NewBest exists only with a PR; the ViewModel refuses to select it
+            // otherwise, and a restored stale preference already falls back —
+            // this is the last defensive net, never the normal path.
+            ShareLayoutKind.NewBest -> {
+                val best = data.newBest
+                if (best != null) NewBestLayout(best) else StatsLayout(data)
             }
         }
     }
+}
+
+/** Layout switch duration (spec W6): long enough to read as a morph, short enough to feel instant. */
+private const val LayoutCrossfadeMillis = 200
+
+/**
+ * The pinned FitJournal wordmark: a rounded accent square + the product name.
+ * A SEPARATE element from [ShareCardBlock] on purpose — it survives layout
+ * switches untouched and stays put when the user drags the card block.
+ */
+@Composable
+internal fun ShareCardScope.ShareWordmark(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(dp(6f)),
+    ) {
+        Box(
+            Modifier
+                .size(dp(15f))
+                .background(palette.accent, RoundedCornerShape(dp(4.5f))),
+        )
+        Text(
+            text = "FitJournal",
+            style = textStyle(11.5f, FontWeight.SemiBold),
+        )
+    }
+}
+
+/** The 1dp hairline that separates a card's hero block from its stat/footer row. */
+@Composable
+internal fun ShareCardScope.CardDivider(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(dp(1f))
+            .background(palette.divider),
+    )
+}
+
+/**
+ * "Journal rail" ornament closing the Receipt header (spec §7.4.2) — a hairline
+ * with binding dots, the paper-journal motif the Receipt layout is named for.
+ *
+ * INTERPRETATION NOTE: the spec pins the two sizes ("1.5 line", "8 dots") but
+ * not the dot count; three reads as a binding without crowding the header.
+ * Adjust the count here if the design frame disagrees — the rail has no other
+ * caller.
+ */
+@Composable
+internal fun ShareCardScope.JournalRail(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(dp(5f)),
+    ) {
+        Box(
+            Modifier
+                .width(dp(22f))
+                .height(dp(1.5f))
+                .background(textColor(0.30f)),
+        )
+        repeat(RailDotCount) {
+            Box(
+                Modifier
+                    .size(dp(8f))
+                    .background(palette.accent, RoundedCornerShape(dp(4f))),
+            )
+        }
+    }
+}
+
+private const val RailDotCount = 3
+
+// ─────────────────────────────────────────────────────── card data
+
+/**
+ * Everything the four share-card layouts render — display-ready and
+ * ViewModel-free, so golden fixtures and unit tests construct it directly.
+ *
+ * Every string here is ALREADY localized and formatted (by [shareCardData] in
+ * production). The layouts deliberately resolve no resources of their own: the
+ * export instance and the live preview are two separate compositions, and an
+ * asynchronously resolving `stringResource` could land on different frames in
+ * each — which would break WYSIWYG. Counts stay raw only where a layout needs
+ * them for geometry ([ShareMuscleBar.fraction]) or for a rendering rule
+ * ([ShareNewBest.reps]).
+ */
+@Immutable
+internal data class ShareCardData(
+    /** Card headline — the composer's editable title ("Chest · Triceps · Abs"). */
+    val title: String,
+    /** Hero number without its unit, thousands-grouped ("12,480"). */
+    val tonnageValue: String,
+    /** Its unit label ("kg" / "lb"). */
+    val tonnageUnit: String,
+    /** Stats layout columns, in the composer's `statsPick` order. */
+    val stats: List<ShareStat> = emptyList(),
+    /** Receipt rows in day order — the FULL list; the layout applies the row cap. */
+    val exercises: List<ShareExerciseRow> = emptyList(),
+    /** Formatted "+N more" for the Receipt collapse row; null when nothing is hidden. */
+    val moreLabel: String? = null,
+    /** Receipt footer, start side ("22 sets · 1:04"). */
+    val receiptFooter: String = "",
+    /** Muscles headline, big run ("22 sets"). */
+    val musclesHeadline: String = "",
+    /** Muscles headline, small run ("5 muscle groups"); blank omits the run. */
+    val musclesSubline: String = "",
+    /** Muscles footer ("14,850 kg · 6 exercises · 1:04"). */
+    val musclesFooter: String = "",
+    /** Ranked muscle bars (SessionSummary order — the layout ramps opacity by index). */
+    val muscles: List<ShareMuscleBar> = emptyList(),
+    /** Non-null only when the session set a PR; NewBest has nothing to draw without it. */
+    val newBest: ShareNewBest? = null,
+)
+
+/** One Stats-layout column. */
+@Immutable
+internal data class ShareStat(val value: String, val label: String)
+
+/**
+ * One Receipt row. The trailing aggregate is carried as its separate candidates
+ * rather than one pre-joined string so the SPEC'S FALLBACK CHAIN lives in the
+ * layout (one definition, both platforms): weighted work wins, bodyweight work
+ * falls back to total reps, distance-duration work to distance else duration.
+ */
+@Immutable
+internal data class ShareExerciseRow(
+    val name: String,
+    /** Pluralized logged-set count ("4 sets"); blank omits the count. */
+    val setsText: String,
+    /** Weighted work ("4,320 kg"). */
+    val tonnageText: String? = null,
+    /** Bodyweight fallback ("48 reps"). */
+    val repsText: String? = null,
+    /** Distance-duration work ("8 km"). */
+    val distanceText: String? = null,
+    /** Distance-duration work with no distance ("0:24"). */
+    val durationText: String? = null,
+)
+
+/** One bar of the Muscles chart. */
+@Immutable
+internal data class ShareMuscleBar(
+    /** Uppercase short code ("CHEST", "DELTS"). */
+    val code: String,
+    /** loggedSets / the most-trained muscle's loggedSets, in (0, 1]. */
+    val fraction: Float,
+)
+
+/** The NewBest layout's PR block. */
+@Immutable
+internal data class ShareNewBest(
+    /** Badge caption ("NEW BEST"). */
+    val badge: String,
+    val exerciseName: String,
+    /** Record weight without its unit ("110"). */
+    val value: String,
+    /** Its unit label ("kg" / "lb"). */
+    val unit: String,
+    /** null means a weight-only set — the layout omits the "× n" run entirely. */
+    val reps: Int?,
+    /** The prior best being beaten, struck through ("100 kg"). */
+    val previousText: String,
+    /** The gain ("+10 kg"). */
+    val deltaText: String,
+    /**
+     * Relative-time phrase for the previous best ("3 weeks ago"); null omits it.
+     * ALWAYS null today — `values/strings.xml` carries no relative-time keys yet
+     * (see the report for the ones to add).
+     */
+    val sinceText: String? = null,
+)
+
+/**
+ * Builds [ShareCardData] from the finished session's summary plus the
+ * composer's editable title and stat pick. Composable only because it resolves
+ * string resources — it holds no state and reads no ViewModel, so tests and
+ * golden fixtures skip it and construct [ShareCardData] directly.
+ */
+@Composable
+internal fun shareCardData(
+    summary: SessionSummary,
+    title: String,
+    statsPick: List<StatKind>,
+    units: MeasurementSystem,
+): ShareCardData {
+    val session = summary.session
+    // A finished session always carries endedAt; falling back to startedAt
+    // yields 0:00 rather than dragging a clock read into composition.
+    val durationText = formatDuration(session.durationSec(session.endedAt ?: session.startedAt))
+    val weightUnit = weightUnitLabel(units)
+    val setsText = pluralStringResource(Res.plurals.postworkout_sets, summary.loggedSets, summary.loggedSets)
+    val exercisesText =
+        pluralStringResource(Res.plurals.postworkout_exercises, summary.exerciseCount, summary.exerciseCount)
+    val tonnageValue = groupedTonnage(summary.tonnageKg)
+    val tonnageText = "$tonnageValue $weightUnit"
+
+    val hidden = receiptHiddenCount(summary.exercises.size)
+
+    val maxMuscleSets = summary.muscles.maxOfOrNull { it.loggedSets } ?: 0
+
+    return ShareCardData(
+        title = title,
+        tonnageValue = tonnageValue,
+        tonnageUnit = weightUnit,
+        stats = statsPick.map { kind ->
+            ShareStat(
+                value = when (kind) {
+                    StatKind.Duration -> durationText
+                    StatKind.Sets -> summary.loggedSets.toString()
+                    StatKind.Exercises -> summary.exerciseCount.toString()
+                    StatKind.BestSet -> summary.best
+                        ?.let { WorkoutValueFormatter.value(it.weightKg, ResultType.WEIGHT_REPS, units) }
+                        ?: WorkoutValueFormatter.EMPTY
+                    // KNOWN GAP: ExerciseLine.totalReps is populated for
+                    // bodyweight lines only, so this counts bodyweight reps.
+                    // A true session-wide rep total needs a SessionSummary field.
+                    StatKind.TotalReps -> summary.exercises.sumOf { it.totalReps ?: 0 }.toString()
+                },
+                label = stringResource(kind.labelRes),
+            )
+        },
+        exercises = summary.exercises.map { line ->
+            ShareExerciseRow(
+                name = line.name,
+                setsText = pluralStringResource(Res.plurals.postworkout_sets, line.loggedSets, line.loggedSets),
+                tonnageText = line.tonnageKg?.let { "${groupedTonnage(it)} $weightUnit" },
+                repsText = line.totalReps?.let { stringResource(Res.string.postworkout_reps_format, it) },
+                distanceText = line.totalDistance
+                    ?.let { WorkoutValueFormatter.value(it, ResultType.DISTANCE_DURATION, units) },
+                durationText = line.totalDurationSec?.let { formatDuration(it.toLong()) },
+            )
+        },
+        moreLabel = if (hidden > 0) stringResource(Res.string.postworkout_more_format, hidden) else null,
+        receiptFooter = setsText + ShareCardSeparator + durationText,
+        musclesHeadline = setsText,
+        // MISSING RESOURCE: no "N muscle groups" plural exists in
+        // values/strings.xml, and inventing one here would ship an
+        // untranslated string to de/ru/uk. The run is omitted until the key
+        // lands (see the report).
+        musclesSubline = "",
+        musclesFooter = tonnageText + ShareCardSeparator + exercisesText + ShareCardSeparator + durationText,
+        muscles = summary.muscles.map { load ->
+            ShareMuscleBar(
+                code = stringResource(load.category.codeRes),
+                fraction = if (maxMuscleSets > 0) load.loggedSets.toFloat() / maxMuscleSets else 0f,
+            )
+        },
+        newBest = summary.best?.let { best ->
+            val record = WorkoutValueFormatter.value(best.weightKg, ResultType.WEIGHT_REPS, units)
+            ShareNewBest(
+                badge = stringResource(Res.string.postworkout_new_best),
+                exerciseName = best.exerciseName,
+                value = record.substringBeforeLast(' '),
+                unit = record.substringAfterLast(' '),
+                reps = best.reps,
+                previousText = WorkoutValueFormatter.value(best.previousBestKg, ResultType.WEIGHT_REPS, units),
+                deltaText = "+" + WorkoutValueFormatter.value(
+                    best.weightKg - best.previousBestKg,
+                    ResultType.WEIGHT_REPS,
+                    units,
+                ),
+                // MISSING RESOURCE: no relative-time keys yet (see the report).
+                sinceText = null,
+            )
+        },
+    )
+}
+
+/** Thousands-grouped tonnage ("14,850") — the card never shows fractional kilos. */
+private fun groupedTonnage(kg: Double): String = LocaleFormatters.formatGrouped(kg.roundToLong())
+
+/**
+ * Single source for the weight unit label, borrowed off [WorkoutValueFormatter]
+ * so the card can never disagree with the rest of the app about kg vs lb.
+ */
+private fun weightUnitLabel(units: MeasurementSystem): String =
+    WorkoutValueFormatter.value(0.0, ResultType.WEIGHT_REPS, units).substringAfterLast(' ')
+
+/** `postworkout_stat_*` — the composer's own stat-picker labels. */
+private val StatKind.labelRes: StringResource
+    get() = when (this) {
+        StatKind.Duration -> Res.string.postworkout_stat_duration
+        StatKind.Sets -> Res.string.postworkout_stat_sets
+        StatKind.Exercises -> Res.string.postworkout_stat_exercises
+        StatKind.BestSet -> Res.string.postworkout_stat_best_set
+        StatKind.TotalReps -> Res.string.postworkout_stat_total_reps
+    }
+
+/** `category_code_<identifier>` — the uppercase short codes the muscle bars label with. */
+private val CategoryType.codeRes: StringResource
+    get() = when (this) {
+        CategoryType.CHEST -> Res.string.category_code_chest
+        CategoryType.BACK -> Res.string.category_code_back
+        CategoryType.BICEPS -> Res.string.category_code_biceps
+        CategoryType.TRICEPS -> Res.string.category_code_triceps
+        CategoryType.FOREARMS -> Res.string.category_code_forearms
+        CategoryType.SHOULDERS -> Res.string.category_code_shoulders
+        CategoryType.TRAPEZIUS -> Res.string.category_code_trapezius
+        CategoryType.QUADRICEPS -> Res.string.category_code_quadriceps
+        CategoryType.HAMSTRINGS -> Res.string.category_code_hamstrings
+        CategoryType.GLUTES -> Res.string.category_code_glutes
+        CategoryType.CALVES -> Res.string.category_code_calves
+        CategoryType.ABS -> Res.string.category_code_abs
+        CategoryType.CARDIO -> Res.string.category_code_cardio
+        CategoryType.OTHER -> Res.string.category_code_other
+    }
+
+/** Spacer helper used by the layout files (keeps their imports to the essentials). */
+@Composable
+internal fun ShareCardScope.CardSpacer(ref: Float) {
+    Spacer(Modifier.height(dp(ref)))
 }
