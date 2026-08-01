@@ -136,4 +136,8 @@
     <string name="workout_add_title">Додати вправи</string>
     <string name="workout_add_from_list">Зі списку вправ</string>
     <string name="workout_add_from_workout">Скопіювати тренування</string>
+
+    <!-- Copy-from-workout picker -->
+    <string name="import_workout_add">Додати до тренування</string>
+    <string name="import_workout_empty">Немає тренувань цього дня</string>
 </resources>

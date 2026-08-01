@@ -131,4 +131,8 @@
     <string name="workout_add_title">Add exercises</string>
     <string name="workout_add_from_list">From exercise list</string>
     <string name="workout_add_from_workout">Copy from a workout</string>
+
+    <!-- Copy-from-workout picker -->
+    <string name="import_workout_add">Add to workout</string>
+    <string name="import_workout_empty">No workouts on this day</string>
 </resources>
