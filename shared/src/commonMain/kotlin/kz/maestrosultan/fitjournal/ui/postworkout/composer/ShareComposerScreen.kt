@@ -325,6 +325,10 @@ private fun ComposerCardContent(
         ShareCardCanvas(
             palette = state.backdrop.cardPalette,
             modifier = Modifier.fillMaxSize(),
+            // A freeform block can sit anywhere over the photo, where no fixed
+            // scrim band can reach it — so its own glyphs carry the contrast
+            // (spec §7.5). Anchored blocks keep the scrim and stay shadow-free.
+            bakeTextShadow = state.transform != null,
             content = card,
         )
     }

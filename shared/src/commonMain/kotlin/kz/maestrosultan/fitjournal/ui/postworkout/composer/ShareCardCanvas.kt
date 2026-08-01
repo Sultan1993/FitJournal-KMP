@@ -1,15 +1,26 @@
 package kz.maestrosultan.fitjournal.ui.postworkout.composer
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateRotation
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,16 +28,35 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEvent
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChanged
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -51,6 +81,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.category_code_quad
 import kz.maestrosultan.fitjournal.shared.generated.resources.category_code_shoulders
 import kz.maestrosultan.fitjournal.shared.generated.resources.category_code_trapezius
 import kz.maestrosultan.fitjournal.shared.generated.resources.category_code_triceps
+import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_drag_to_remove
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_exercises
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_more_format
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_new_best
@@ -67,6 +98,7 @@ import kz.maestrosultan.fitjournal.ui.postworkout.composer.layouts.ReceiptLayout
 import kz.maestrosultan.fitjournal.ui.postworkout.composer.layouts.StatsLayout
 import kz.maestrosultan.fitjournal.ui.postworkout.composer.layouts.receiptHiddenCount
 import kz.maestrosultan.fitjournal.ui.postworkout.seams.LocaleFormatters
+import kz.maestrosultan.fitjournal.ui.postworkout.seams.PostWorkoutHaptics
 import kz.maestrosultan.fitjournal.ui.postworkout.seams.formatDuration
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
@@ -103,6 +135,17 @@ internal class ShareCardScope internal constructor(
     val palette: CardPalette,
     /** Product font (Rubik), resolved once from the theme by [ShareCardCanvas]. */
     val fontFamily: FontFamily?,
+    /**
+     * Baked into every card text style when non-null (spec §7.5). A freeform
+     * block can be dragged anywhere over the photo, so the scrim — which only
+     * ever darkens a fixed band — cannot keep it legible; the legibility has to
+     * move into the glyphs themselves.
+     *
+     * It lives on the scope rather than in the layouts precisely because
+     * [textStyle] is the single construction path: switching it on here reaches
+     * all four layouts at once, and no layout can forget it or invent its own.
+     */
+    val textShadow: Shadow? = null,
 ) {
     /** Reference dp (as authored at 402dp width) -> scaled [Dp]. */
     fun dp(ref: Float): Dp = (ref * scale).dp
@@ -129,6 +172,7 @@ internal class ShareCardScope internal constructor(
         color = color,
         letterSpacing = letterSpacingEm.em,
         lineHeight = if (lineHeightEm > 0f) lineHeightEm.em else TextUnit.Unspecified,
+        shadow = textShadow,
     )
 
     /**
@@ -159,12 +203,26 @@ internal class ShareCardScope internal constructor(
 internal fun ShareCardCanvas(
     palette: CardPalette,
     modifier: Modifier = Modifier,
+    bakeTextShadow: Boolean = false,
     content: @Composable ShareCardScope.() -> Unit,
 ) {
     val fontFamily = FjTheme.typography.body.fontFamily
     BoxWithConstraints(modifier = modifier) {
         val scale = maxWidth.value / ShareCardReferenceWidth
-        val scope = remember(scale, palette, fontFamily) { ShareCardScope(scale, palette, fontFamily) }
+        // Scaled with the card like every other metric: an unscaled blur would
+        // be a hairline on the preview and invisible on the 1080-wide export.
+        val shadow = if (bakeTextShadow) {
+            Shadow(
+                color = Color.Black.copy(alpha = TextShadowAlpha),
+                offset = Offset(0f, TextShadowOffsetRef * scale),
+                blurRadius = TextShadowBlurRef * scale,
+            )
+        } else {
+            null
+        }
+        val scope = remember(scale, palette, fontFamily, shadow) {
+            ShareCardScope(scale, palette, fontFamily, shadow)
+        }
         val density = LocalDensity.current
         CompositionLocalProvider(
             LocalDensity provides Density(density.density, fontScale = 1f),
@@ -239,6 +297,392 @@ internal fun ShareCardScope.ShareCardBlock(
 
 /** Layout switch duration (spec W6): long enough to read as a morph, short enough to feel instant. */
 private const val LayoutCrossfadeMillis = 200
+
+// ──────────────────────────────────────────────────── freeform block (W7)
+
+/** Card-body inset from the canvas edges, at the 402 reference (design W6: 22/315). */
+private const val CardInsetRef = 28f
+
+/** Gap between the pinned wordmark and the anchored block below it. */
+private const val WordmarkGapRef = 10f
+
+/** Wordmark row height, matching [ShareWordmark]'s accent square. */
+private const val WordmarkHeightRef = 15f
+
+private const val TextShadowAlpha = 0.5f
+private const val TextShadowOffsetRef = 1f
+private const val TextShadowBlurRef = 8f
+
+/**
+ * Editor chrome — authored in REAL dp, deliberately NOT the card's reference dp.
+ * The card scales with the canvas because it gets exported; these are touch
+ * targets and hairlines that only ever exist on screen, so the trash target has
+ * to stay a 44 dp target on a narrow phone instead of shrinking with the
+ * preview. None of them is ever drawn in export mode.
+ */
+private val TrashDiameter = 44.dp
+private val TrashBottomInset = 18.dp
+private val TrashLabelGap = 5.dp
+private val TrashIconSize = 17.dp
+private val SelectionInset = 10.dp
+private val SelectionRadius = 14.dp
+private val SelectionStroke = 1.5.dp
+private val SelectionDash = 5.dp
+private val GuideStroke = 1.dp
+
+/**
+ * Guide colour from the W7 frame — a warm cream rather than the palette accent
+ * the spec names.
+ *
+ * DEVIATION, flagged for review: on a photo backdrop `palette.accent` is pure
+ * white, which is also the card's own text colour, so accent-coloured guides
+ * would be nearly invisible against the very block they are aligning.
+ */
+private val GuideColor = Color(0xFFFBEAB2).copy(alpha = 0.85f)
+
+private val TrashFill = Color(0xFF040415).copy(alpha = 0.55f)
+private val TrashBorder = Color.White.copy(alpha = 0.40f)
+private val TrashIconColor = Color.White
+private val TrashLabelColor = Color.White.copy(alpha = 0.70f)
+private val SelectionColor = Color.White.copy(alpha = 0.60f)
+
+/** Alpha the block drops to while it hovers the trash target. */
+private const val OverTrashAlpha = 0.6f
+
+/**
+ * The complete card body: the movable block plus the pinned wordmark, in both
+ * the anchored (W6) and freeform (W7) placements.
+ *
+ * This is what a host passes as [ShareComposerScreen]'s `card` slot, and the
+ * export instance renders the very same call with [exportMode] on — which is
+ * what makes the PNG match the preview rather than merely resemble it.
+ *
+ * ### Anchored and freeform are one code path
+ *
+ * Both placements are a translation of the same centered block, differing only
+ * in which centre they translate to. That is not a micro-optimisation: if the
+ * anchored block were a differently-parented composable, the first drag would
+ * re-parent it mid-gesture and the pointer stream would restart, so the gesture
+ * that converts anchored → freeform would be dropped. Here the first drag just
+ * seeds a [BlockTransform] from the anchored centre and keeps going.
+ *
+ * ### Why the transform is read in the draw phase
+ *
+ * A drag updates [BlockTransform] on every pointer event. Those updates are
+ * read only inside `graphicsLayer` / `drawBehind` lambdas, so a gesture
+ * invalidates draw and never recomposes the card — the four layouts, their
+ * string resources and their text measurement all stay put while the finger
+ * moves.
+ */
+@Composable
+internal fun ShareCardScope.ShareCardBody(
+    layout: ShareLayoutKind,
+    data: ShareCardData,
+    transform: BlockTransform?,
+    blockRemoved: Boolean,
+    haptics: PostWorkoutHaptics,
+    onTransformChanged: (BlockTransform) -> Unit,
+    onRemoveBlock: () -> Unit,
+    modifier: Modifier = Modifier,
+    exportMode: Boolean = false,
+) {
+    val density = LocalDensity.current
+    val densityPxPerDp = density.density
+    var canvas by remember { mutableStateOf(IntSize.Zero) }
+    var block by remember { mutableStateOf(IntSize.Zero) }
+
+    // The in-flight transform. Re-seeded whenever the committed one changes
+    // IDENTITY — which our own commits never do, because the ViewModel copies
+    // the very instance back into state. So a drag is never clobbered
+    // mid-gesture, while an external "Reset layout" (a null) lands at once.
+    val live = remember(transform) { mutableStateOf(transform) }
+    var gesturing by remember { mutableStateOf(false) }
+    var overTrash by remember { mutableStateOf(false) }
+    var guideX by remember { mutableStateOf(false) }
+    var guideY by remember { mutableStateOf(false) }
+
+    val insetPx = with(density) { dp(CardInsetRef).toPx() }
+    val wordmarkOffsetPx = with(density) { dp(WordmarkHeightRef + WordmarkGapRef).toPx() }
+
+    Box(modifier.onSizeChanged { canvas = it }) {
+        if (!blockRemoved) {
+            val anchored: () -> CenterPx = {
+                CenterPx(
+                    x = insetPx + block.width / 2f,
+                    y = canvas.height - insetPx - block.height / 2f,
+                )
+            }
+            ShareCardBlock(
+                layout = layout,
+                data = data,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .width(dp(ShareCardReferenceWidth - CardInsetRef * 2))
+                    .onSizeChanged { block = it }
+                    .graphicsLayer {
+                        val t = live.value
+                        val center = if (t != null) {
+                            denormalizeCenter(t, canvas.width.toFloat(), canvas.height.toFloat())
+                        } else {
+                            anchored()
+                        }
+                        translationX = center.x - block.width / 2f
+                        translationY = center.y - block.height / 2f
+                        scaleX = t?.scale ?: 1f
+                        scaleY = t?.scale ?: 1f
+                        rotationZ = t?.rotationDeg ?: 0f
+                        // Until the first measurement lands, a translation of
+                        // "centre minus half of zero" would flash the block in
+                        // the top-left corner for one frame.
+                        alpha = when {
+                            block == IntSize.Zero || canvas == IntSize.Zero -> 0f
+                            overTrash -> OverTrashAlpha
+                            else -> 1f
+                        }
+                    }
+                    .drawBehind {
+                        if (exportMode || !gesturing) return@drawBehind
+                        val inset = SelectionInset.toPx()
+                        drawRoundRect(
+                            color = SelectionColor,
+                            topLeft = Offset(-inset, -inset),
+                            size = Size(size.width + inset * 2, size.height + inset * 2),
+                            cornerRadius = CornerRadius(SelectionRadius.toPx()),
+                            style = Stroke(
+                                width = SelectionStroke.toPx(),
+                                pathEffect = PathEffect.dashPathEffect(
+                                    floatArrayOf(SelectionDash.toPx(), SelectionDash.toPx()),
+                                ),
+                            ),
+                        )
+                    }
+                    .then(
+                        if (exportMode) {
+                            Modifier
+                        } else {
+                            Modifier.pointerInput(Unit) {
+                                awaitEachGesture {
+                                    awaitFirstDown(requireUnconsumed = false)
+                                    gesturing = true
+                                    var event: PointerEvent
+                                    var canceled = false
+                                    do {
+                                        event = awaitPointerEvent()
+                                        canceled = event.changes.any { it.isConsumed }
+                                        if (canceled) break
+                                        val zoom = event.calculateZoom()
+                                        val rotation = event.calculateRotation()
+                                        val pan = event.calculatePan()
+                                        if (zoom == 1f && rotation == 0f && pan == Offset.Zero) continue
+
+                                        val w = canvas.width.toFloat()
+                                        val h = canvas.height.toFloat()
+                                        val base = live.value ?: run {
+                                            val c = anchored()
+                                            normalizeCenter(
+                                                centerXPx = c.x,
+                                                centerYPx = c.y,
+                                                canvasWidthPx = w,
+                                                canvasHeightPx = h,
+                                                scale = 1f,
+                                                rotationDeg = 0f,
+                                            )
+                                        }
+                                        val moved = applyGesture(
+                                            transform = base,
+                                            panXPx = pan.x,
+                                            panYPx = pan.y,
+                                            zoom = zoom,
+                                            rotationDeltaDeg = rotation,
+                                            canvasWidthPx = w,
+                                            canvasHeightPx = h,
+                                        )
+                                        val position = snapPosition(moved, w, h, densityPxPerDp)
+                                        val angle = snapRotation(position.transform.rotationDeg)
+
+                                        // One tick per ENGAGE, not per event: a
+                                        // buzz on every frame the block sits on
+                                        // the centre line is a stuck motor.
+                                        if ((position.snappedX && !guideX) ||
+                                            (position.snappedY && !guideY) ||
+                                            (angle.snapped && angle.rotationDeg != base.rotationDeg)
+                                        ) {
+                                            haptics.tick()
+                                        }
+                                        guideX = position.snappedX
+                                        guideY = position.snappedY
+
+                                        val next = position.transform.copy(rotationDeg = angle.rotationDeg)
+                                        live.value = next
+                                        overTrash = isOverTrash(
+                                            blockCenterXPx = next.cx * w,
+                                            blockCenterYPx = next.cy * h,
+                                            trashCenterXPx = w / 2f,
+                                            trashCenterYPx = h - TrashBottomInset.toPx() -
+                                                TrashDiameter.toPx() / 2f,
+                                            densityPxPerDp = densityPxPerDp,
+                                        )
+                                        event.changes.forEach { if (it.positionChanged()) it.consume() }
+                                    } while (event.changes.any { it.pressed })
+
+                                    gesturing = false
+                                    guideX = false
+                                    guideY = false
+                                    val settled = live.value
+                                    when {
+                                        canceled -> Unit
+                                        overTrash && settled != null -> {
+                                            haptics.tick()
+                                            onRemoveBlock()
+                                        }
+                                        settled != null && settled != transform ->
+                                            onTransformChanged(settled)
+                                    }
+                                    overTrash = false
+                                }
+                            }
+                        },
+                    ),
+            )
+        }
+
+        // Never moves with the block (spec §7.5: the wordmark survives both a
+        // drag and a delete). Anchored, it rides directly above the block; once
+        // the block is freeform or gone, it takes the corner itself.
+        ShareWordmark(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = dp(CardInsetRef), bottom = dp(CardInsetRef))
+                .graphicsLayer {
+                    translationY = if (live.value == null && !blockRemoved) {
+                        -(block.height + wordmarkOffsetPx)
+                    } else {
+                        0f
+                    }
+                },
+        )
+
+        if (!exportMode) {
+            SnapGuides(
+                visible = { gesturing },
+                showVertical = { guideX },
+                showHorizontal = { guideY },
+                modifier = Modifier.matchParentSize(),
+            )
+            TrashTarget(
+                visible = gesturing && !blockRemoved,
+                armed = { overTrash },
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
+        }
+    }
+}
+
+/**
+ * The centre-line guides. Every input is a lambda so engaging a guide costs a
+ * draw and nothing more — this composable sits in the gesture-hot path.
+ */
+@Composable
+private fun SnapGuides(
+    visible: () -> Boolean,
+    showVertical: () -> Boolean,
+    showHorizontal: () -> Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier.drawBehind {
+            if (!visible()) return@drawBehind
+            val stroke = GuideStroke.toPx()
+            if (showVertical()) {
+                drawLine(
+                    color = GuideColor,
+                    start = Offset(size.width / 2f, 0f),
+                    end = Offset(size.width / 2f, size.height),
+                    strokeWidth = stroke,
+                )
+            }
+            if (showHorizontal()) {
+                drawLine(
+                    color = GuideColor,
+                    start = Offset(0f, size.height / 2f),
+                    end = Offset(size.width, size.height / 2f),
+                    strokeWidth = stroke,
+                )
+            }
+        },
+    )
+}
+
+/** Drop-to-remove target, shown only while a gesture is in flight. */
+@Composable
+private fun TrashTarget(
+    visible: Boolean,
+    armed: () -> Boolean,
+    modifier: Modifier = Modifier,
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(),
+        exit = fadeOut(),
+        modifier = modifier.padding(bottom = TrashBottomInset),
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(TrashLabelGap),
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(TrashDiameter)
+                    .drawBehind {
+                        val radius = size.minDimension / 2f
+                        drawCircle(color = TrashFill, radius = radius)
+                        drawCircle(
+                            color = if (armed()) TrashIconColor else TrashBorder,
+                            radius = radius - SelectionStroke.toPx() / 2f,
+                            style = Stroke(width = SelectionStroke.toPx()),
+                        )
+                    },
+            ) {
+                TrashIcon()
+            }
+            Text(
+                text = stringResource(Res.string.postworkout_drag_to_remove),
+                style = FjTheme.typography.caption.copy(color = TrashLabelColor),
+            )
+        }
+    }
+}
+
+/** The design frame's trash glyph, drawn rather than shipped as an asset. */
+@Composable
+private fun TrashIcon(modifier: Modifier = Modifier) {
+    Canvas(modifier.size(TrashIconSize)) {
+        val unit = size.minDimension / 24f
+        fun p(x: Float, y: Float) = Offset(x * unit, y * unit)
+        val path = Path().apply {
+            moveTo(p(4f, 7f).x, p(4f, 7f).y)
+            lineTo(p(20f, 7f).x, p(20f, 7f).y)
+            moveTo(p(9f, 7f).x, p(9f, 7f).y)
+            lineTo(p(9f, 4f).x, p(9f, 4f).y)
+            lineTo(p(15f, 4f).x, p(15f, 4f).y)
+            lineTo(p(15f, 7f).x, p(15f, 7f).y)
+            moveTo(p(7f, 7f).x, p(7f, 7f).y)
+            lineTo(p(8f, 20f).x, p(8f, 20f).y)
+            lineTo(p(16f, 20f).x, p(16f, 20f).y)
+            lineTo(p(17f, 7f).x, p(17f, 7f).y)
+        }
+        drawPath(
+            path = path,
+            color = TrashIconColor,
+            style = Stroke(
+                width = 2f * unit,
+                cap = StrokeCap.Round,
+                join = StrokeJoin.Round,
+            ),
+        )
+    }
+}
 
 /**
  * The pinned FitJournal wordmark: a rounded accent square + the product name.

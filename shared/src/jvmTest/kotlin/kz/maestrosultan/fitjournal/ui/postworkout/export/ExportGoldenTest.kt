@@ -36,8 +36,10 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kz.maestrosultan.fitjournal.ui.postworkout.composer.BlockTransform
 import kz.maestrosultan.fitjournal.ui.postworkout.composer.CardPalette
 import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareCardBlock
+import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareCardBody
 import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareCardCanvas
 import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareCardData
 import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareExerciseRow
@@ -45,6 +47,7 @@ import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareLayoutKind
 import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareMuscleBar
 import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareStat
 import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareWordmark
+import kz.maestrosultan.fitjournal.ui.postworkout.seams.PostWorkoutHaptics
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 
 /**
@@ -102,6 +105,20 @@ class ExportGoldenTest {
     @Test
     fun export_receiptLayout_is1080x1920_opaque_andMatchesUpsampled540() =
         runWysiwygCase(Backdrop.Brand, ShareLayoutKind.Receipt)
+
+    /**
+     * A freeform block that runs off the canvas edge (design W7 "Clipped")
+     * exports clipped IDENTICALLY to the preview.
+     *
+     * This is the case that would break if a transform were ever stored in
+     * pixels: the same [BlockTransform] is applied to a 540-wide render and a
+     * 1080-wide one, so a pixel-space offset would put the block in two
+     * different places and the WYSIWYG comparison would blow past the gate.
+     * Normalized placement is what makes one number correct on both canvases.
+     */
+    @Test
+    fun export_clippedFreeformBlock_matchesUpsampled540() =
+        runWysiwygCase(Backdrop.Gradient, ShareLayoutKind.Stats, ClippedTransform)
 
     @Test
     fun exportHost_deliversFailure_whenCardDrawThrows() =
@@ -168,8 +185,24 @@ class ExportGoldenTest {
         ),
     )
 
+    /**
+     * Pushed right and scaled up past the canvas edge, tilted like the design
+     * frame. Chosen so a meaningful part of the block is genuinely cut off —
+     * a transform that still fits would pass even with the clipping broken.
+     */
+    private val ClippedTransform = BlockTransform(
+        cx = 0.78f,
+        cy = 0.42f,
+        scale = 1.6f,
+        rotationDeg = -7f,
+    )
+
     @Composable
-    private fun FixtureCard(backdrop: Backdrop, layout: ShareLayoutKind) {
+    private fun FixtureCard(
+        backdrop: Backdrop,
+        layout: ShareLayoutKind,
+        transform: BlockTransform? = null,
+    ) {
         val backdropModifier = when (backdrop) {
             Backdrop.Brand -> Modifier.background(Color(0xFF7C72F2))
             Backdrop.Gradient -> Modifier.background(
@@ -190,7 +223,25 @@ class ExportGoldenTest {
             modifier = Modifier
                 .fillMaxSize()
                 .then(backdropModifier),
+            bakeTextShadow = transform != null,
         ) {
+            if (transform != null) {
+                // The production composition path, in export mode: gestures and
+                // editor chrome off, placement and clipping identical to the
+                // live canvas.
+                ShareCardBody(
+                    layout = layout,
+                    data = fixtureData,
+                    transform = transform,
+                    blockRemoved = false,
+                    haptics = NoopHaptics,
+                    onTransformChanged = {},
+                    onRemoveBlock = {},
+                    modifier = Modifier.fillMaxSize(),
+                    exportMode = true,
+                )
+                return@ShareCardCanvas
+            }
             Box(Modifier.fillMaxSize()) {
                 ShareWordmark(
                     Modifier
@@ -208,9 +259,18 @@ class ExportGoldenTest {
         }
     }
 
+    private object NoopHaptics : PostWorkoutHaptics {
+        override fun tick() = Unit
+        override fun success() = Unit
+    }
+
     // ------------------------------------------------------------- WYSIWYG run
 
-    private fun runWysiwygCase(backdrop: Backdrop, layout: ShareLayoutKind) =
+    private fun runWysiwygCase(
+        backdrop: Backdrop,
+        layout: ShareLayoutKind,
+        transform: BlockTransform? = null,
+    ) =
         runDesktopComposeUiTest(EXPORT_WIDTH, EXPORT_HEIGHT) {
             var exportResult: ExportResult? = null
             var smallBitmap: ImageBitmap? = null
@@ -221,7 +281,7 @@ class ExportGoldenTest {
                         // Composed first => drawn first => occluded by the pane below.
                         CardExportHost(
                             request = ExportRequest(id = 1L, reason = ExportReason.Share),
-                            card = { FixtureCard(backdrop, layout) },
+                            card = { FixtureCard(backdrop, layout, transform) },
                             onResult = { exportResult = it },
                         )
                         TestCapturePane(
@@ -229,7 +289,7 @@ class ExportGoldenTest {
                             heightPx = SMALL_HEIGHT,
                             onBitmap = { smallBitmap = it },
                         ) {
-                            FixtureCard(backdrop, layout)
+                            FixtureCard(backdrop, layout, transform)
                         }
                     }
                 }
