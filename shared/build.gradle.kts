@@ -86,6 +86,9 @@ kotlin {
 
         commonTest.dependencies {
             implementation(kotlin("test"))
+            implementation(libs.kotlinx.coroutines.test)
+            // v2 runComposeUiTest API; call sites need @OptIn(ExperimentalTestApi::class).
+            implementation(libs.compose.ui.test)
         }
 
         // Android
@@ -106,6 +109,7 @@ kotlin {
         jvmTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.core)
+            implementation(compose.desktop.currentOs)
         }
     }
 }
