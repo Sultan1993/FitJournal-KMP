@@ -21,9 +21,11 @@ object WorkoutValueFormatter {
         return "${trimNumber(value)} $unit"
     }
 
-    /** Its companion: "× 12" reps, or "12 min" duration, or "—". */
+    /** Its companion: "× 12" reps, or "12 min" duration, or "—". null OR 0 is the
+     *  unset sentinel here (matching the native rows) — "× 0" / "0 min" is not a
+     *  real logged companion value. */
     fun reps(reps: Int?, resultType: ResultType): String {
-        reps ?: return EMPTY
+        if (reps == null || reps == 0) return EMPTY
         return when (resultType) {
             ResultType.WEIGHT_REPS -> "× $reps"
             ResultType.DISTANCE_DURATION -> "$reps min"
@@ -43,7 +45,7 @@ object WorkoutValueFormatter {
     private fun trimNumber(d: Double): String {
         val asLong = d.toLong()
         if (d == asLong.toDouble()) return asLong.toString()
-        val twoDecimals = ((d * 100).toLong()) / 100.0
-        return twoDecimals.toString().trimEnd('0').trimEnd('.')
+        val rounded = kotlin.math.round(d * 100) / 100.0
+        return rounded.toString().trimEnd('0').trimEnd('.')
     }
 }

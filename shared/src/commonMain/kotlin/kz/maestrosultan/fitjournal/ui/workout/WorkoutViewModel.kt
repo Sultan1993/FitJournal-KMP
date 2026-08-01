@@ -81,26 +81,30 @@ class WorkoutViewModel(
     private fun today(): LocalDate = clock.todayIn(timeZone)
 
     private suspend fun observe(uid: String, jid: String) {
-        // Records for the selected day, re-read on date change OR any record edit.
-        // flatMapLatest keeps date + records paired so they can't render mismatched.
-        val dateAndRecords: Flow<Pair<LocalDate, List<WorkoutRecord>>> =
-            selectedDate.flatMapLatest { date ->
+        // Both day-scoped reads live inside ONE selectedDate.flatMapLatest so
+        // records and sessions can never be published for different days. Two
+        // separate date pipelines fed into a plain combine would, on a date
+        // switch, briefly pair the NEW day's records with the OLD day's sessions
+        // (combine caches each upstream's latest).
+        val dayData: Flow<DayData> = selectedDate.flatMapLatest { date ->
+            combine(
                 recordRepository.observeRecordsChanged(uid, jid)
-                    .mapLatest { date to recordRepository.getRecordsByDate(uid, jid, date) }
-            }
-        val daySessions: Flow<List<WorkoutSession>> =
-            selectedDate.flatMapLatest { date -> sessionRepository.getSessionsForDayFlow(uid, jid, date) }
+                    .mapLatest { recordRepository.getRecordsByDate(uid, jid, date) },
+                sessionRepository.getSessionsForDayFlow(uid, jid, date),
+            ) { records, sessions -> DayData(date, records, sessions) }
+        }
         val running: Flow<WorkoutSession?> = sessionRepository.getRunningSessionFlow(uid)
 
-        combine(
-            dateAndRecords,
-            daySessions,
-            running,
-            currentPageIndex,
-        ) { (date, records), sessions, run, pageIndex ->
-            buildState(date, records, sessions, run, pageIndex)
+        combine(dayData, running, currentPageIndex) { day, run, pageIndex ->
+            buildState(day.date, day.records, day.sessions, run, pageIndex)
         }.collect { _uiState.value = it }
     }
+
+    private data class DayData(
+        val date: LocalDate,
+        val records: List<WorkoutRecord>,
+        val sessions: List<WorkoutSession>,
+    )
 
     private fun buildState(
         date: LocalDate,
@@ -111,10 +115,16 @@ class WorkoutViewModel(
     ): WorkoutUiState {
         val pages = buildPages(records, daySessions)
         val pageIndex = requestedPageIndex.coerceIn(0, (pages.size - 1).coerceAtLeast(0))
+        val currentPage = pages.getOrNull(pageIndex)
         val isToday = date == today()
         val bar = when {
             running != null -> SessionBarState.Running
-            isToday -> SessionBarState.Start
+            // Start only where the viewed page has NO session yet — the
+            // placeholder, or a page whose records were logged without a session.
+            // A page with a FINISHED session is done: swipe to the placeholder to
+            // start another. Offering Start on a finished page would be a no-op
+            // (startSession returns the finished session unchanged).
+            isToday && currentPage?.session == null -> SessionBarState.Start
             else -> SessionBarState.Hidden
         }
         return WorkoutUiState(
@@ -137,7 +147,14 @@ class WorkoutViewModel(
      */
     private fun buildPages(records: List<WorkoutRecord>, daySessions: List<WorkoutSession>): List<WorkoutPage> {
         val grouped = records.groupBy { it.workoutNumber }
-        val realPageNumbers = grouped.keys.sorted().ifEmpty { listOf(1) }
+        // Real pages come from the UNION of record AND session workout numbers: a
+        // workout started but not yet logged into (session, no records) is still a
+        // real page, and the placeholder must sit AFTER it — matching the session
+        // contract (next number = max across sessions and records). Always page 1.
+        val realPageNumbers = (records.map { it.workoutNumber } + daySessions.map { it.workoutNumber })
+            .distinct()
+            .sorted()
+            .ifEmpty { listOf(1) }
         val real = realPageNumbers.map { workoutNumber ->
             WorkoutPage(
                 workoutNumber = workoutNumber,
