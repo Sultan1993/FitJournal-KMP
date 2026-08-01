@@ -128,7 +128,7 @@ callbacks to its coordinator/nav graph.
   binds user/journal, callbacks → ComposeNavigator + import, native calendar +
   nav bar retained, rest-timer/tile reconciled from shared running state. **APK
   assembles.** Host owns VM (instance-form + dispose()).
-- **P7 iOS IN PROGRESS** (staged):
+- **P7 iOS DONE** (verified by post-workout Stage 0 D15; entry below kept as written):
   - **Stage 1 (building now):** `WorkoutCmpViewController` (new, iOS
     `Workout/Main/Presentation/`) embeds `WorkoutScreenController(viewModel,
     callbacks)`; `WorkoutCoordinator.openWorkout` builds the shared VM via
@@ -153,6 +153,42 @@ callbacks to its coordinator/nav graph.
   date-switch day-mixing, reps-0 em dash, decimal rounding) — ALL fixed in
   `71931fc`. Round 2 → **VERDICT: pass, no new defects**. Both apps build after the
   fixes (Android composite compile 5s; iOS framework re-linked clean).
+
+- **Post-workout Stage 0 (D15) VERIFIED** (2026-08-01, app-level CMP proof — all
+  three items green, one runtime bug found + fixed):
+  - **D15(a) Android app vs compose-enabled `:shared`:** `cd Android &&
+    ./gradlew :app:compileDebugKotlin` → `BUILD SUCCESSFUL` (355 tasks; compiles
+    `WorkoutCmpHostViewModel` against the composite-built `:shared`).
+  - **D15(b) iOS app end-to-end xcodebuild:** `cd iOS && xcodebuild -scheme
+    FitJournal -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
+    build` → `** BUILD SUCCEEDED **`. Run Script "Build KMP framework"
+    (`embedAndSignAppleFrameworkForXcode`) green; app binary arm64-only;
+    embedded `FitJournalKMP.framework` is **78 MB** (Debug, pre-CMP baseline not
+    measured here — flag for the R3 size check on a Release build).
+    **Do NOT use `-destination 'generic/platform=iOS Simulator'`** — it adds an
+    x86_64 slice and `:shared:syncComposeResourcesForIos` fails with "Unknown
+    iOS simulator arch: 'x86_64'" (KMP/CMP is arm64-only). Use a concrete
+    arm64 simulator destination.
+  - **D15(c) iOS runtime compose-resources proof:** app run on the iPhone 17 Pro
+    simulator (iOS 26.5); the CMP Workout screen renders with `Res.string`
+    text (`workout_another_workout_title/subtitle`, `workout_start`) in Rubik
+    (`Res.font` via FjType) — screenshot captured (evidence: transient session capture, durable copy at ../../docs/postworkout-evidence/d15c-workout2.png + d15c-console2.log in the umbrella FitJournal/docs — CMP Workout screen, Rubik Res strings, iPhone 17 Pro sim iOS 26.5). Console shows the screen
+    presented with no uncaught Kotlin exceptions. (Evidence gathered via a
+    temporary auto-present hook in `AppDelegate` — since removed; final tree
+    rebuilt green after removal.)
+  - **Bug found + FIXED (would have crashed production):** first presentation of
+    any `ComposeUIViewController` threw `kotlin.IllegalStateException` from
+    Compose's `PlistSanityCheck` (uncaught Kotlin exception → SIGABRT) because
+    the iOS app's `Info.plist` lacked `CADisableMinimumFrameDurationOnPhone`.
+    P7 iOS had only been build-verified, never launched. Fix: added
+    `<key>CADisableMinimumFrameDurationOnPhone</key><true/>` to
+    `iOS/FitJournal/Info.plist` (the fix Compose prescribes; also the correct
+    setting for ProMotion refresh rates). Verified: screen presents cleanly
+    after the fix.
+  - **New v1 gap found:** compose-resources does NOT unescape Android-style
+    `\'` in `strings.xml` — `workout_another_workout_subtitle` renders literal
+    backslashes ("they\\'re", "isn\\'t") on screen. RESOLVED: post-workout Task 6 de-escaped the shared strings.xml. Original note: remove the escaping from
+    shared `strings.xml` (plain `'` is fine for compose-resources).
 
 **MIGRATION COMPLETE on `feature/workout-cmp` — awaiting user review (not merged).**
 
