@@ -16,9 +16,18 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutSessionRepository
 import kz.maestrosultan.fitjournal.domain.workout.summary.BuildSessionSummaryUseCase
 import kz.maestrosultan.fitjournal.domain.workout.summary.DetectSessionBestUseCase
 import kz.maestrosultan.fitjournal.domain.workout.usecase.EndWorkoutUseCase
+import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareComposerRoute
+import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareComposerViewModel
 import kz.maestrosultan.fitjournal.ui.postworkout.confirm.FinishConfirmSheetContent
 import kz.maestrosultan.fitjournal.ui.postworkout.confirm.FinishConfirmViewModel
+import kz.maestrosultan.fitjournal.ui.postworkout.seams.IosComposerDefaultsBridge
+import kz.maestrosultan.fitjournal.ui.postworkout.seams.IosComposerDefaultsStorage
+import kz.maestrosultan.fitjournal.ui.postworkout.seams.IosPhotoPicker
+import kz.maestrosultan.fitjournal.ui.postworkout.seams.IosPhotoPickerBridge
+import kz.maestrosultan.fitjournal.ui.postworkout.seams.IosSharePresenter
+import kz.maestrosultan.fitjournal.ui.postworkout.seams.IosSharePresenterBridge
 import kz.maestrosultan.fitjournal.ui.postworkout.seams.PostWorkoutHaptics
+import kz.maestrosultan.fitjournal.ui.postworkout.seams.SerializedComposerDefaultsStore
 import kz.maestrosultan.fitjournal.ui.postworkout.success.WorkoutSuccessScreen
 import kz.maestrosultan.fitjournal.ui.postworkout.success.WorkoutSuccessViewModel
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
@@ -38,8 +47,10 @@ import platform.UIKit.UIViewController
  * is a native Liquid Glass bar item — so the theme + background + safe-area
  * insets are applied here rather than inside the shared composables.
  *
- * `ShareComposerController` is deliberately absent: the composer host is a
- * later task.
+ * [ShareComposerController] is the exception to "content-only": the composer
+ * paints its own full-bleed chrome (close chip, tool rail, bottom bar) and is
+ * presented over the success screen, so it takes the whole screen including the
+ * safe areas.
  */
 
 // ─── Controllers ────────────────────────────────────────────────────────
@@ -124,6 +135,38 @@ fun WorkoutSuccessController(
     }
 }
 
+/**
+ * Share composer (design frames W5–W7), presented full-screen over the success
+ * screen.
+ *
+ * [onClosed] fires when the shared ViewModel emits its close event — the chip,
+ * an interactive dismiss routed through `onCloseRequested`, or a finished
+ * share all land there, so the host has exactly one dismissal path and the
+ * composer's defaults are always persisted first.
+ *
+ * The composer is forced dark: its chrome colours are fixed (it sits over a
+ * photo), so following the system theme would only change the typography it
+ * reads from [FitJournalTheme].
+ *
+ * Swift call site: `ShareComposerController(viewModel:onClosed:)`.
+ */
+fun ShareComposerController(
+    viewModel: ShareComposerViewModel,
+    onClosed: () -> Unit,
+): UIViewController = ComposeUIViewController {
+    FitJournalTheme(darkTheme = true) {
+        LaunchedEffect(viewModel) {
+            viewModel.closed.collect { onClosed() }
+        }
+        // No safeDrawingPadding: the card canvas is edge-to-edge by design and
+        // the composer's own chrome carries the insets it needs.
+        ShareComposerRoute(
+            viewModel = viewModel,
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
+}
+
 // ─── Swift-friendly ViewModel factories ─────────────────────────────────
 
 /**
@@ -165,6 +208,30 @@ fun createWorkoutSuccessViewModel(
     result = result,
     buildSummary = buildSessionSummaryUseCase(recordRepository, sessionRepository),
     sessionRepository = sessionRepository,
+)
+
+/**
+ * Builds the composer's ViewModel from the three Swift-implemented bridges.
+ *
+ * The bridges are callback-shaped protocols rather than suspend closures
+ * because Swift cannot satisfy a Kotlin suspend function type — see
+ * `IosComposerSeams.kt`. Everything past this boundary is suspend again.
+ *
+ * Swift: `createShareComposerViewModel(result:photoPicker:sharePresenter:defaults:haptics:)`.
+ */
+fun createShareComposerViewModel(
+    result: FinishResult,
+    photoPicker: IosPhotoPickerBridge,
+    sharePresenter: IosSharePresenterBridge,
+    defaults: IosComposerDefaultsBridge,
+    haptics: PostWorkoutHaptics,
+): ShareComposerViewModel = ShareComposerViewModel(
+    summary = result.summary,
+    context = result.context,
+    defaultsStore = SerializedComposerDefaultsStore(IosComposerDefaultsStorage(defaults)),
+    photoPicker = IosPhotoPicker(photoPicker),
+    sharePresenter = IosSharePresenter(sharePresenter),
+    haptics = haptics,
 )
 
 /** PR detection is composed inside the summary use case — never wired separately. */
