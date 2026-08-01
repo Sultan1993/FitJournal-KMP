@@ -225,6 +225,63 @@ throwaway worktree off the committed HEAD (excludes their WIP). Nothing clobbere
   page's workoutNumber into `addExercisesToDate`. Both platforms.
 - **"Add from workout" (copy previous)** path on the "+" (only "from list" wired).
 
+## Post-workout flow (design W4–W7) — COMPLETE, 2026-08-01
+
+Everything after "Finish workout" is shared CMP: the confirm sheet, the success
+screen, and the full share composer (four card layouts, five editor panels,
+freeform sticker, PNG export). Nav chrome stays native on both platforms — iOS
+keeps its Liquid Glass close circle and `UISheetPresentationController` detent,
+Android its nav destinations and system Back.
+
+**Verified:** `:shared:jvmTest` 237/237 green (incl. the export golden gate),
+`:shared:assemble` green, Android `:app:assembleDebug` green, iOS `xcodebuild`
+green on an arm64 simulator destination.
+
+### Two decisions taken without review — revisit these first
+
+1. **Brand backdrop is a light brand tint (`#E5E1FC`), not the saturated
+   `#7C72F2`.** `CardPalette.DarkOnLight`'s accent IS the brand purple, so on a
+   saturated brand fill the wordmark square and the Muscles bars would draw
+   brand-on-brand and disappear. See `ComposerBackdrop.cardPalette`'s KDoc — the
+   conflict between spec §7.4 and the palette's own doc is recorded there.
+2. **Snap guides use the design frame's warm cream (`#FBEAB2` @85%), not the
+   palette accent the spec names.** Over a photo the accent is pure white, which
+   is also the card's text colour, so accent guides would be invisible against
+   the block they are aligning.
+
+### Non-obvious things worth knowing before touching this
+
+- **Swift cannot satisfy a Kotlin suspend function TYPE.** SKIE bridges suspend
+  *members* into Swift `async`; a `suspend () -> T` *parameter* stays a raw
+  `KotlinSuspendFunction0`. The iOS seams are therefore callback-shaped
+  protocols (`IosPhotoPickerBridge` &co.) that `suspendCancellableCoroutine`
+  converts back. An earlier closure-based signature compiled fine on the Kotlin
+  side and was completely unusable from Swift.
+- **The export instance and the live preview render the same `ShareCardBody`.**
+  WYSIWYG comes from the canvas's proportional layout, never from bitmap
+  scaling; `ExportGoldenTest` pins it by comparing a 540-wide render upsampled
+  to 1080 against the real export, including a clipped-freeform case.
+- **The freeform transform is normalized (fractions of canvas), never pixels.**
+  That single choice is what lets one `BlockTransform` be correct on both the
+  phone canvas and the 1080×1920 export.
+- **Gestures never recompose the card.** The live transform is read only inside
+  `graphicsLayer`/`drawBehind` lambdas, so dragging invalidates draw alone.
+- **`ShareComposerRoute` is the only public composer API.** `ShareCardScope`,
+  the layouts and the freeform block stay module-internal deliberately; widening
+  them would put the same composition in both app modules, in two languages.
+
+### Known gaps in the post-workout flow
+
+- **Spec §10 manual matrix is UNRUN** — light/dark, en+de, airplane mode, PR vs
+  no-PR, 9+ exercise receipt, transparent-export alpha, defaults across two
+  launches, Android API 28 save grant AND denial, share PNG readable by
+  Gmail/Photos. Builds and automated tests are green; nothing has been driven by
+  hand on a device.
+- `StatKind.TotalReps` counts bodyweight reps only.
+- The composer's Save button has no "saved" confirmation state.
+- Text shadows in freeform mode use one blur for all card text; the design frame
+  specifies a larger blur for the hero number specifically.
+
 ## Known v1 gaps / follow-ups (for morning review)
 - Drag-reorder UI not wired (VM.onReorder ready); swipe-delete not wired (menu delete works).
 - Exercise avatar = category-colour chip, not the per-exercise image.
