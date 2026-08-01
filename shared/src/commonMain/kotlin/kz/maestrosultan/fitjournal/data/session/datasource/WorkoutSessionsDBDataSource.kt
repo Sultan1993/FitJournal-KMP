@@ -66,6 +66,23 @@ class WorkoutSessionsDBDataSource(
             .flowOn(Dispatchers.IO)
 
     /**
+     * Completed (`endedAt IS NOT NULL`) sessions in (user, journal) within the
+     * INCLUSIVE `[from, to]` date range (stored TEXT form), excluding
+     * [excludeSessionUuid]. COUNT-only — no rows are materialized.
+     */
+    suspend fun countCompletedSessionsBetween(
+        userId: String,
+        journalId: String,
+        from: String,
+        to: String,
+        excludeSessionUuid: String,
+    ): Int = withContext(Dispatchers.IO) {
+        dao.countCompletedSessionsBetween(userId, journalId, from, to, excludeSessionUuid)
+            .executeAsOne()
+            .toInt()
+    }
+
+    /**
      * Idempotent start, and the enforcement point for "at most one running
      * session per user app-wide".
      *

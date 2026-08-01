@@ -69,6 +69,20 @@ class DefaultWorkoutSessionRepository(
         sessionsDB.getRunningSessionFlow(userId)
             .map { row -> row?.toDomain() }
 
+    override suspend fun countCompletedSessionsBetween(
+        userId: String,
+        journalId: String,
+        from: LocalDate,
+        to: LocalDate,
+        excludeSessionUuid: String,
+    ): Int = sessionsDB.countCompletedSessionsBetween(
+        userId = userId,
+        journalId = journalId,
+        from = from.toString(),
+        to = to.toString(),
+        excludeSessionUuid = excludeSessionUuid,
+    )
+
     override suspend fun startSession(
         userId: String,
         journalId: String,

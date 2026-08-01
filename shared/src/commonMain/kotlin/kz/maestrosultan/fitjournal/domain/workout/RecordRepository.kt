@@ -5,6 +5,7 @@ import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSet
+import kz.maestrosultan.fitjournal.domain.workout.summary.WeightedSetOccurrence
 
 /**
  * Local-first record repository (KMP shared). The single source of truth
@@ -107,6 +108,23 @@ interface RecordRepository {
         journalId: String,
         exerciseId: String,
     ): List<WorkoutExercise>
+
+    /**
+     * Flat weighted-set history for PR detection: every set of catalog
+     * [exerciseUuid] in (userId, journalId) that carries a weight, on live
+     * records dated up to and INCLUDING [upToDate] — each with its parent
+     * record's identity (recordUuid + workoutNumber + date). Weight-less sets
+     * (cardio / never-filled) are excluded at the SQL level. Unordered:
+     * callers aggregate (max weight, per-record grouping), never render rows
+     * directly.
+     */
+    @Throws(Exception::class)
+    suspend fun getWeightedSetHistoryForExercise(
+        userId: String,
+        journalId: String,
+        exerciseUuid: String,
+        upToDate: LocalDate,
+    ): List<WeightedSetOccurrence>
 
     // ─── Writes ────────────────────────────────────────────────────────
 

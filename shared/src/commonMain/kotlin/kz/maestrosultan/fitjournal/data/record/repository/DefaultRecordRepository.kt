@@ -19,6 +19,7 @@ import kz.maestrosultan.fitjournal.domain.workout.ResultType
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSet
+import kz.maestrosultan.fitjournal.domain.workout.summary.WeightedSetOccurrence
 import kz.maestrosultan.fitjournal.data.exercise.datasource.ExercisesDBDataSource
 import kz.maestrosultan.fitjournal.domain.identifier.randomUuid
 import kz.maestrosultan.fitjournal.data.exercise.entity.DBExerciseObject
@@ -227,6 +228,38 @@ class DefaultRecordRepository(
             )
         }
     }
+
+    override suspend fun getWeightedSetHistoryForExercise(
+        userId: String,
+        journalId: String,
+        exerciseUuid: String,
+        upToDate: LocalDate,
+    ): List<WeightedSetOccurrence> = workoutsDB
+        .getWeightedSetHistoryForExercise(
+            userId = userId,
+            journalId = journalId,
+            exerciseUuid = exerciseUuid,
+            upToDate = upToDate.toString(),
+        ) { recordUuid, workoutNumber, recordDate, weight, reps ->
+            WeightedHistoryRow(recordUuid, workoutNumber, recordDate, weight, reps)
+        }
+        .mapNotNull { row ->
+            // SQL already filters `weight IS NOT NULL` — this null-check is the
+            // type-level seam into the non-null domain field, not a second
+            // filter. And a malformed stored date must not throw and sink the
+            // whole history — skip just that row (mirrors
+            // getExerciseOccurrences).
+            val weight = row.weight ?: return@mapNotNull null
+            val date = runCatching { LocalDate.parse(row.recordDate) }.getOrNull()
+                ?: return@mapNotNull null
+            WeightedSetOccurrence(
+                recordUuid = row.recordUuid,
+                workoutNumber = row.workoutNumber,
+                date = date,
+                weightKg = weight,
+                reps = row.reps,
+            )
+        }
 
     /**
      * 3-year window (`[threeYearsAgo, far-future)`). Matches the app-wide
@@ -981,4 +1014,20 @@ private data class OccurrenceRow(
     val set: DBWorkoutSetObject,
     val recordDate: String,
     val workoutExerciseComment: String?,
+)
+
+/**
+ * Repository-internal projection for
+ * [DefaultRecordRepository.getWeightedSetHistoryForExercise] — carries the
+ * joined row across the datasource boundary before the date-parse and the
+ * weight non-null narrowing into the domain
+ * [kz.maestrosultan.fitjournal.domain.workout.summary.WeightedSetOccurrence].
+ * Lives next to its single caller — not a data-layer entity, don't reuse.
+ */
+private data class WeightedHistoryRow(
+    val recordUuid: String,
+    val workoutNumber: Int,
+    val recordDate: String,
+    val weight: Double?,
+    val reps: Int?,
 )

@@ -22,6 +22,22 @@ interface WorkoutSessionRepository {
     fun getRunningSessionFlow(userId: String): Flow<WorkoutSession?>
 
     /**
+     * How many COMPLETED (`endedAt` set) workouts (userId, journalId) holds
+     * with [from] <= date <= [to] — both bounds inclusive — excluding
+     * [excludeSessionUuid]. The week-ordinal read for the post-workout
+     * summary: pass the week's first and last day plus the just-finished
+     * session's id, add 1, and you have "workout N this week". A still-running
+     * session never counts.
+     */
+    suspend fun countCompletedSessionsBetween(
+        userId: String,
+        journalId: String,
+        from: LocalDate,
+        to: LocalDate,
+        excludeSessionUuid: String,
+    ): Int
+
+    /**
      * Start (or resume) the workout on a specific page. Idempotent, never throws
      * on ordinary paths (iOS SIGABRT rule):
      * - the page (userId, journalId, date, workoutNumber) already has a session

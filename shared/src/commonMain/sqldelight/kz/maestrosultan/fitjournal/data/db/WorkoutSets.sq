@@ -142,6 +142,30 @@ FROM workoutSets
 WHERE workoutExerciseUuid IN ?
 ORDER BY position ASC;
 
+-- Flat weighted history of ONE catalog exercise up to and INCLUDING a cutoff
+-- date — the PR-detection read for the post-workout summary. One row per set
+-- that actually carries a weight (`weight IS NOT NULL` drops cardio and
+-- never-filled rows at the SQL level), each with its parent record's identity
+-- (uuid + workoutNumber + date) so a best lift can be attributed to a specific
+-- workout. Inclusive `<=` is deliberate — unlike the lastOccurrence lookups,
+-- the summarized workout's own date is in scope; the caller excludes the
+-- current record by uuid when it must.
+--
+-- Plan: `idx_workoutExercises_exercise` resolves we by exerciseUuid → PK join
+-- to wr (live + date filters) → composite `idx_workoutSets_exercise` walk for
+-- the sets. No ORDER BY: callers aggregate (max weight / per-record grouping),
+-- so row order is irrelevant and SQLite skips the sort step.
+getWeightedSetHistoryForExercise:
+SELECT wr.uuid AS recordUuid, wr.workoutNumber, wr.date, ws.weight, ws.reps
+FROM workoutSets ws
+JOIN workoutExercises we ON we.uuid = ws.workoutExerciseUuid
+JOIN workoutRecords wr ON wr.uuid = we.workoutRecordUuid
+WHERE wr.userId = ? AND wr.journalId = ?
+  AND we.exerciseUuid = ?
+  AND wr.date <= ?
+  AND wr.deletedAt IS NULL
+  AND ws.weight IS NOT NULL;
+
 -- All set writes go through `replaceWorkoutRecord` (whole-tree replace),
 -- so only INSERT is needed at this layer. Updates / deletes are
 -- handled by the parent record's DELETE-and-reinsert step plus FK

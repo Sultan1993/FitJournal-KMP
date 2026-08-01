@@ -55,6 +55,21 @@ WHERE userId = ? AND endedAt IS NULL
 ORDER BY startedAt DESC
 LIMIT 1;
 
+-- Completed workouts in (user, journal) within an INCLUSIVE [from, to] date
+-- range, excluding one session by uuid — the "workout N this week" ordinal for
+-- the post-workout summary, which counts every OTHER finished workout of the
+-- week (the just-finished session itself is the excluded uuid). `endedAt IS
+-- NOT NULL` keeps a still-running workout out of the count. Both bounds are
+-- inclusive (unlike the half-open record windows): callers pass the week's
+-- first and last day, not a next-week sentinel. This table has no deletedAt —
+-- session rows are local-only in this increment and are hard-deleted.
+countCompletedSessionsBetween:
+SELECT COUNT(*) FROM workoutSessions
+WHERE userId = ? AND journalId = ?
+  AND date >= ? AND date <= ?
+  AND endedAt IS NOT NULL
+  AND uuid != ?;
+
 createSession:
 INSERT INTO workoutSessions(uuid, userId, journalId, date, workoutNumber, startedAt, endedAt)
 VALUES (?, ?, ?, ?, ?, ?, NULL);

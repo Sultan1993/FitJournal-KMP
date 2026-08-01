@@ -145,6 +145,40 @@ class WorkoutsDBDataSource(
             .executeAsList()
     }
 
+    /**
+     * One row per WEIGHTED set of [exerciseUuid] in (user, journal) on live
+     * records dated up to and including [upToDate] (stored TEXT form), with
+     * the parent record's identity (uuid, workoutNumber, date) projected from
+     * the JOIN. Weight-less rows are excluded at the SQL level. Caller picks
+     * the row shape via [mapper] — same convention as
+     * [getSetsForExerciseInJournal], so the data layer doesn't grow a one-off
+     * projection type.
+     */
+    suspend fun <T : Any> getWeightedSetHistoryForExercise(
+        userId: String,
+        journalId: String,
+        exerciseUuid: String,
+        upToDate: String,
+        mapper: (
+            recordUuid: String,
+            workoutNumber: Int,
+            recordDate: String,
+            weight: Double?,
+            reps: Int?,
+        ) -> T,
+    ): List<T> = withContext(Dispatchers.IO) {
+        setsDao
+            .getWeightedSetHistoryForExercise(
+                userId,
+                journalId,
+                exerciseUuid,
+                upToDate,
+            ) { recordUuid, workoutNumber, recordDate, weight, reps ->
+                mapper(recordUuid, workoutNumber.toInt(), recordDate, weight, reps?.toInt())
+            }
+            .executeAsList()
+    }
+
     // For catalog exercises sharing one cutoff date, returns ALL sets
     // (position-ordered) of the most recent prior workoutExercise per exercise
     // uuid — two queries total, not one per exercise. The full set list lets the
