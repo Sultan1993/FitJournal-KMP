@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,11 +27,18 @@ import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutExerciseMenu
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutMuscleHeader
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutRecordCard
 import org.jetbrains.compose.resources.stringResource
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
 /**
  * One pager page. The ephemeral placeholder page (or any empty real page)
  * renders the "Another workout today" empty state; otherwise the muscle header +
  * a scrolling list of record cards, with the 3-dot menu hoisted here.
+ *
+ * Records reorder by long-press-drag: the visible order is an optimistic local
+ * copy of [WorkoutPage.records] (re-seeded whenever the page's records change),
+ * moved by key so the non-draggable header's index offset can't corrupt the
+ * move, and persisted via [onReorder] on drop.
  */
 @Composable
 fun WorkoutPageContent(
@@ -40,6 +48,7 @@ fun WorkoutPageContent(
     onDeleteRecord: (WorkoutRecord) -> Unit,
     onAddToSuperset: (WorkoutRecord) -> Unit,
     onRemoveFromSuperset: (record: WorkoutRecord, exercise: WorkoutExercise) -> Unit,
+    onReorder: (orderedRecordIds: List<String>) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (page.isPlaceholder || page.records.isEmpty()) {
@@ -52,25 +61,48 @@ fun WorkoutPageContent(
         return
     }
 
+    // Optimistic order — re-seeded when the persisted records change (including
+    // after our own drop round-trips back through SQLite), otherwise retained
+    // across recompositions so the drag isn't undone mid-gesture.
+    var orderedRecords by remember(page.records) { mutableStateOf(page.records) }
+    val lazyListState = rememberLazyListState()
+    val reorderState = rememberReorderableLazyListState(lazyListState) { from, to ->
+        val fromId = from.key as? String ?: return@rememberReorderableLazyListState
+        val toId = to.key as? String ?: return@rememberReorderableLazyListState
+        orderedRecords = orderedRecords.toMutableList().apply {
+            val fromIndex = indexOfFirst { it.id == fromId }
+            val toIndex = indexOfFirst { it.id == toId }
+            if (fromIndex != -1 && toIndex != -1) add(toIndex, removeAt(fromIndex))
+        }
+    }
+
     var menuTarget by remember { mutableStateOf<MenuTarget?>(null) }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
+        state = lazyListState,
         contentPadding = PaddingValues(top = 8.dp, bottom = 140.dp),
     ) {
         item {
-            WorkoutMuscleHeader(page.records)
+            WorkoutMuscleHeader(orderedRecords)
             Spacer(Modifier.height(12.dp))
         }
-        items(page.records, key = { it.id }) { record ->
-            WorkoutRecordCard(
-                record = record,
-                measurementSystem = measurementSystem,
-                onSetClick = { exerciseId, setId -> callbacks.onOpenExerciseFocus(exerciseId, setId, false) },
-                onAddSet = { exerciseId -> callbacks.onOpenExerciseFocus(exerciseId, null, true) },
-                onExerciseMenu = { exercise -> menuTarget = MenuTarget(record, exercise) },
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-            )
+        items(orderedRecords, key = { it.id }) { record ->
+            ReorderableItem(reorderState, key = record.id) { _ ->
+                WorkoutRecordCard(
+                    record = record,
+                    measurementSystem = measurementSystem,
+                    onSetClick = { exerciseId, setId -> callbacks.onOpenExerciseFocus(exerciseId, setId, false) },
+                    onAddSet = { exerciseId -> callbacks.onOpenExerciseFocus(exerciseId, null, true) },
+                    onExerciseMenu = { exercise -> menuTarget = MenuTarget(record, exercise) },
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                        // Long-press to drag so the card's set taps / menu still fire.
+                        .longPressDraggableHandle(
+                            onDragStopped = { onReorder(orderedRecords.map { it.id }) },
+                        ),
+                )
+            }
         }
     }
 

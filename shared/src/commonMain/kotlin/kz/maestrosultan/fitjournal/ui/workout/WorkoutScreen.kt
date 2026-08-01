@@ -83,6 +83,7 @@ private fun WorkoutBody(
                     onDeleteRecord = viewModel::onDeleteRecord,
                     onAddToSuperset = viewModel::onAddToSuperset,
                     onRemoveFromSuperset = viewModel::onRemoveFromSuperset,
+                    onReorder = viewModel::onReorder,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
