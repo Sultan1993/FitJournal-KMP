@@ -414,6 +414,7 @@ internal fun ShareCardScope.ShareCardBody(
     var overTrash by remember { mutableStateOf(false) }
     var guideX by remember { mutableStateOf(false) }
     var guideY by remember { mutableStateOf(false) }
+    var guideRotation by remember { mutableStateOf(false) }
 
     // Reported by the drawn circle rather than recomputed from the insets: the
     // target is the BOTTOM item of a column that also holds a caption, so a
@@ -528,14 +529,25 @@ internal fun ShareCardScope.ShareCardBody(
                                         // One tick per ENGAGE, not per event: a
                                         // buzz on every frame the block sits on
                                         // the centre line is a stuck motor.
+                                        //
+                                        // All three axes track engagement with a
+                                        // persisted flag. Rotation used to compare
+                                        // the snapped angle against the previous
+                                        // one for inequality, which looks
+                                        // equivalent and is not: a held two-finger
+                                        // rotate re-snaps to a minutely different
+                                        // float every frame, so sub-degree touch
+                                        // jitter re-fired the tick continuously
+                                        // while the block sat visibly still.
                                         if ((position.snappedX && !guideX) ||
                                             (position.snappedY && !guideY) ||
-                                            (angle.snapped && angle.rotationDeg != base.rotationDeg)
+                                            (angle.snapped && !guideRotation)
                                         ) {
                                             haptics.tick()
                                         }
                                         guideX = position.snappedX
                                         guideY = position.snappedY
+                                        guideRotation = angle.snapped
 
                                         val next = position.transform.copy(rotationDeg = angle.rotationDeg)
                                         live.value = next
@@ -553,6 +565,7 @@ internal fun ShareCardScope.ShareCardBody(
                                     gesturing = false
                                     guideX = false
                                     guideY = false
+                                    guideRotation = false
                                     val settled = live.value
                                     when {
                                         canceled -> live.value = transform
