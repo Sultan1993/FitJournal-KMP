@@ -30,6 +30,7 @@ data class FjTypography(
     val label: TextStyle,
     val button: TextStyle,
     val numberLarge: TextStyle,
+    val eyebrow: TextStyle,
 )
 
 @Composable
@@ -60,6 +61,12 @@ fun fjTypography(): FjTypography {
         label = style(11, FontWeight.Medium),
         button = style(16, FontWeight.SemiBold),
         numberLarge = style(17, FontWeight.SemiBold),
+        eyebrow = TextStyle(
+            fontFamily = rubik,
+            fontWeight = FontWeight.Bold,
+            fontSize = 10.5.sp,
+            letterSpacing = 1.05.sp,
+        ),
     )
 }
 

@@ -28,10 +28,20 @@ data class FjColorScheme(
     val positive: Color,
     val negative: Color,
     val isDark: Boolean,
+    val brandRamp: List<Color>,
 )
 
 /** 0xAARRGGBB Long → Compose Color, choosing the light or dark variant. */
 private fun ColorToken.compose(isDark: Boolean): Color = Color(if (isDark) dark else light)
+
+/** Same stops for light and dark — the bar track differentiates via surface. */
+private val BrandRamp = listOf(
+    Color(0xFF7C72F2),
+    Color(0xFF9B93F6),
+    Color(0xFFB9B3F9),
+    Color(0xFFD3CFFB),
+    Color(0xFFE5E1FC),
+)
 
 fun fjColorScheme(dark: Boolean): FjColorScheme = with(ColorTokens) {
     FjColorScheme(
@@ -50,6 +60,7 @@ fun fjColorScheme(dark: Boolean): FjColorScheme = with(ColorTokens) {
         positive = positive.compose(dark),
         negative = negative.compose(dark),
         isDark = dark,
+        brandRamp = BrandRamp,
     )
 }
 
