@@ -16,6 +16,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlin.time.Instant
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -323,6 +324,57 @@ class ShareComposerViewModelTest {
     }
 
     /**
+     * The guard that ignores taps while an export is pending is only safe if a
+     * pending export always resolves — and the host answering is an external
+     * contract. If its composable is torn down mid-flight the result never
+     * comes, and without a watchdog Share and Save stay inert for the rest of
+     * the VM's life.
+     */
+    @Test
+    fun exportRequest_neverAnswered_timesOutToAFailureChip_andShareWorksAgain() = runTest {
+        val vm = createVm()
+        advanceUntilIdle()
+
+        vm.onShare()
+        assertNotNull(vm.state.value.exportRequest)
+
+        // The host never calls onExportResult.
+        advanceTimeBy(11_000)
+        runCurrent()
+
+        assertNull(vm.state.value.exportRequest, "a timed-out request must clear")
+        assertEquals(ComposerChip.ExportFailed, vm.state.value.chip)
+
+        vm.onShare()
+        assertNotNull(vm.state.value.exportRequest, "Share must work again after a timeout")
+    }
+
+    /**
+     * The request guard only stops FUTURE results; an already-accepted export
+     * is mid-delivery when close lands. Left running it presents a share sheet
+     * against a tearing-down host and re-saves defaults in a race with the
+     * close path's own save.
+     */
+    @Test
+    fun closeDuringDelivery_cancelsIt_soNoShareSheetAndOneSave() = runTest {
+        val vm = createVm()
+        advanceUntilIdle()
+        store.saved.clear()
+
+        vm.onShare()
+        val request = assertNotNull(vm.state.value.exportRequest)
+        presenter.shareGate = CompletableDeferred() // hold the presentation open
+        vm.onExportResult(ExportResult.Success(request, PNG))
+        runCurrent()
+
+        vm.onCloseRequested()
+        advanceUntilIdle()
+
+        assertEquals(0, presenter.shareCalls.size, "a cancelled delivery must not present")
+        assertEquals(1, store.saved.size, "only the close path's save may run")
+    }
+
+    /**
      * `CardExportHost` requires an idle (null) request between exports — that
      * gap is what tears the export node down and forces a fresh draw.
      * Replacing a pending request in-place skips it, and the host then reports
@@ -475,13 +527,16 @@ class ShareComposerViewModelTest {
         vm.onShare()
         val stale = assertNotNull(vm.state.value.exportRequest)
         vm.onExportResult(ExportResult.Failure(stale))
-        advanceUntilIdle()
+        runCurrent()
 
         vm.onShare()
         val newest = assertNotNull(vm.state.value.exportRequest)
 
         vm.onExportResult(ExportResult.Success(stale, PNG))
-        advanceUntilIdle()
+        // runCurrent, NOT advanceUntilIdle: idling would run out the export
+        // watchdog and fail `newest`, which is a different behaviour than the
+        // staleness this case is about.
+        runCurrent()
 
         assertEquals(0, presenter.shareCalls.size)
         assertEquals(newest, vm.state.value.exportRequest)
@@ -768,8 +823,16 @@ private class FakeSharePresenter : SharePresenter {
     val shareCalls = mutableListOf<ByteArray>()
     val saveCalls = mutableListOf<ByteArray>()
 
+    /**
+     * Holds a presentation open so a test can land a close mid-delivery. The
+     * real seam suspends until the platform sheet is on screen, which is
+     * exactly the window this models.
+     */
+    var shareGate: CompletableDeferred<Unit>? = null
+
     override suspend fun presentShareSheet(png: ByteArray) {
         shareError?.let { throw it }
+        shareGate?.await()
         shareCalls += png
     }
 

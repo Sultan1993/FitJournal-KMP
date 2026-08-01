@@ -101,6 +101,8 @@ class ShareComposerViewModel internal constructor(
     private var closeRequested = false
     private var chipJob: Job? = null
     private var pickJob: Job? = null
+    private var deliverJob: Job? = null
+    private var exportTimeoutJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -230,6 +232,17 @@ class ShareComposerViewModel internal constructor(
         if (_state.value.exportRequest != null) return
         val request = ExportRequest(id = ++nextExportId, reason = reason)
         _state.update { it.copy(exportRequest = request) }
+        // Watchdog. Ignoring taps while one export is pending is only safe if a
+        // pending export always resolves — and the host answering is an
+        // external contract this ViewModel cannot enforce. If its composable is
+        // torn down mid-flight the result never arrives, and without this the
+        // guard would wedge Share and Save for the rest of the VM's life with
+        // no chip, no error and no way back except closing and reopening.
+        exportTimeoutJob = viewModelScope.launch {
+            delay(EXPORT_TIMEOUT_MS)
+            log("export request ${request.id} was never answered — failing it")
+            onExportResult(ExportResult.Failure(request))
+        }
     }
 
     /**
@@ -241,10 +254,16 @@ class ShareComposerViewModel internal constructor(
         if (closeRequested) return
         val pending = _state.value.exportRequest ?: return
         if (result.request.id != pending.id) return
+        exportTimeoutJob?.cancel()
+        exportTimeoutJob = null
         _state.update { it.copy(exportRequest = null) }
         when (result) {
             is ExportResult.Failure -> showChip(ComposerChip.ExportFailed)
-            is ExportResult.Success -> viewModelScope.launch {
+            // Tracked so onCloseRequested can cancel it. An untracked launch
+            // outlives the close latch and can present a share sheet, write
+            // Photos, or re-save defaults against a tearing-down host — racing
+            // the close path's own save.
+            is ExportResult.Success -> deliverJob = viewModelScope.launch {
                 deliver(result.request.reason, result.png)
             }
         }
@@ -294,6 +313,12 @@ class ShareComposerViewModel internal constructor(
         closeRequested = true
         pickJob?.cancel()
         chipJob?.cancel()
+        exportTimeoutJob?.cancel()
+        // An ALREADY-ACCEPTED export is mid-delivery here: the request guard
+        // only stops future results. Without this it would go on to present a
+        // share sheet or write Photos against a tearing-down host, and re-save
+        // defaults in a race with the save just below.
+        deliverJob?.cancel()
         _state.update { it.copy(exportRequest = null, chip = null) }
         viewModelScope.launch {
             saveDefaults()
@@ -367,6 +392,14 @@ class ShareComposerViewModel internal constructor(
 
     private companion object {
         val CHIP_AUTO_CLEAR: Duration = 2.seconds
+
+        /**
+         * Watchdog for an export the host never answers. Generous on purpose:
+         * a real capture resolves in ~2 frames, so anything approaching this
+         * means the host is gone, not slow. Overshooting only delays a failure
+         * chip; undershooting would abort exports that were about to succeed.
+         */
+        const val EXPORT_TIMEOUT_MS = 10_000L
     }
 }
 
