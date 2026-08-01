@@ -214,8 +214,20 @@ class ShareComposerViewModel internal constructor(
 
     fun onSave() = requestExport(ExportReason.Save)
 
+    /**
+     * Ignores a request while one is still in flight.
+     *
+     * `CardExportHost`'s contract requires every new request to be preceded by
+     * a null (idle) one: the null gap tears the export node down so the next
+     * request gets a guaranteed fresh draw. Replacing a pending request
+     * in-place skips that gap, and the host — seeing no new draw attempt for
+     * the new id — correctly reports Failure. The user would get "Couldn't
+     * export" from an export that had nothing wrong with it, purely for
+     * double-tapping a button that shows no progress.
+     */
     private fun requestExport(reason: ExportReason) {
         if (closeRequested) return
+        if (_state.value.exportRequest != null) return
         val request = ExportRequest(id = ++nextExportId, reason = reason)
         _state.update { it.copy(exportRequest = request) }
     }

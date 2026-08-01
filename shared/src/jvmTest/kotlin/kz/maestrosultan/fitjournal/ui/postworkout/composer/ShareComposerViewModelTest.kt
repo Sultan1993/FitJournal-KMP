@@ -312,10 +312,37 @@ class ShareComposerViewModelTest {
         val first = assertNotNull(vm.state.value.exportRequest)
         assertEquals(ExportReason.Share, first.reason)
 
+        // Ids climb ACROSS exports, so a late result from an earlier request is
+        // still recognisable as stale.
+        vm.onExportResult(ExportResult.Success(first, PNG))
+        advanceUntilIdle()
         vm.onShare()
         val second = assertNotNull(vm.state.value.exportRequest)
         assertNotEquals(first.id, second.id)
         assertTrue(second.id > first.id)
+    }
+
+    /**
+     * `CardExportHost` requires an idle (null) request between exports — that
+     * gap is what tears the export node down and forces a fresh draw.
+     * Replacing a pending request in-place skips it, and the host then reports
+     * Failure for an export that had nothing wrong with it. So a second tap
+     * while one is in flight must be ignored rather than supersede.
+     */
+    @Test
+    fun exportRequest_whilePending_isIgnored_ratherThanSuperseding() = runTest {
+        val vm = createVm()
+        advanceUntilIdle()
+
+        vm.onShare()
+        val pending = assertNotNull(vm.state.value.exportRequest)
+
+        vm.onShare()
+        vm.onSave()
+
+        val still = assertNotNull(vm.state.value.exportRequest)
+        assertEquals(pending.id, still.id)
+        assertEquals(ExportReason.Share, still.reason)
     }
 
     @Test
@@ -442,8 +469,14 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
+        // A pending request can no longer be superseded, so the stale case is a
+        // result arriving for a request that has ALREADY been resolved — a slow
+        // export whose host reports after the user started the next one.
         vm.onShare()
         val stale = assertNotNull(vm.state.value.exportRequest)
+        vm.onExportResult(ExportResult.Failure(stale))
+        advanceUntilIdle()
+
         vm.onShare()
         val newest = assertNotNull(vm.state.value.exportRequest)
 

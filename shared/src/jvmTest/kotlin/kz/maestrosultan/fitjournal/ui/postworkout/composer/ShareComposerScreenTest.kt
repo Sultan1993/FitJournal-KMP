@@ -121,7 +121,7 @@ class ShareComposerScreenTest {
                     onShare = onShare,
                     onSave = onSave,
                     onExportResult = {},
-                    card = {},
+                    card = { _ -> },
                 )
             }
         }

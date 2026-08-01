@@ -391,10 +391,18 @@ internal fun ShareCardScope.ShareCardBody(
     var canvas by remember { mutableStateOf(IntSize.Zero) }
     var block by remember { mutableStateOf(IntSize.Zero) }
 
-    // The in-flight transform. Re-seeded whenever the committed one changes
-    // IDENTITY — which our own commits never do, because the ViewModel copies
-    // the very instance back into state. So a drag is never clobbered
+    // The in-flight transform, re-seeded whenever the committed one changes.
+    //
+    // `remember(key)` compares keys by EQUALITY, not identity, so a commit of
+    // our own settled value is a no-op key and the drag is never clobbered
     // mid-gesture, while an external "Reset layout" (a null) lands at once.
+    //
+    // The equality comparison is also why every exit path has to leave `live`
+    // agreeing with `transform`: a trash drop that parked a stale value here
+    // would survive a later reset-to-null (null == null, no reseed) and
+    // restore the block at the trash position — while the export composition,
+    // seeded from `transform`, drew it anchored. Preview and PNG disagreeing
+    // is the one failure this whole file is built to prevent.
     val live = remember(transform) { mutableStateOf(transform) }
     var gesturing by remember { mutableStateOf(false) }
     var overTrash by remember { mutableStateOf(false) }
@@ -530,9 +538,14 @@ internal fun ShareCardScope.ShareCardBody(
                                     guideY = false
                                     val settled = live.value
                                     when {
-                                        canceled -> Unit
+                                        canceled -> live.value = transform
                                         overTrash && settled != null -> {
                                             haptics.tick()
+                                            // Drop the drag position first: it is
+                                            // never committed, and leaving it here
+                                            // would outlive a later reset (see the
+                                            // note on `live`).
+                                            live.value = transform
                                             onRemoveBlock()
                                         }
                                         settled != null && settled != transform ->

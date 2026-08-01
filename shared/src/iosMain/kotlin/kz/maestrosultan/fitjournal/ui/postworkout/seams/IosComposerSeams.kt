@@ -5,7 +5,9 @@ import kotlin.coroutines.resume
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import platform.Foundation.NSData
 import platform.Foundation.create
 import platform.posix.memcpy
@@ -49,7 +51,13 @@ class IosPhotoPicker(
         val data = suspendCancellableCoroutine { continuation ->
             bridge.pickEncodedPhoto { data -> continuation.resume(data) }
         }
-        return data?.toByteArray()?.decodeToImageBitmap()
+        val bytes = data?.toByteArray() ?: return null
+        // Off the main thread: the only caller is a ViewModel running on
+        // Dispatchers.Main.immediate, and decodeToImageBitmap rasterizes the
+        // whole image (width * height * 4 bytes). A 12-megapixel camera photo
+        // is a ~48 MB allocation plus the decode — several hundred ms of frozen
+        // composer if it lands on the UI thread.
+        return withContext(Dispatchers.Default) { bytes.decodeToImageBitmap() }
     }
 }
 

@@ -31,6 +31,23 @@ fun ShareComposerRoute(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val summary = viewModel.summary
 
+    // Resolved ONCE, here, and handed to both the live and the export
+    // composition as a plain value.
+    //
+    // `shareCardData` reads ~15 compose string resources, and compose-resources
+    // resolves those asynchronously: a fresh composition starts at the default
+    // (empty) and is filled a frame or more later. The export instance is a
+    // SEPARATE composition that `CardExportHost` captures after two frames, so
+    // resolving inside the card slot means the two can legitimately land on
+    // different frames — a PNG with blank stat labels beside a preview that
+    // reads correctly. `ShareCardData`'s own KDoc warns about exactly this.
+    val data = shareCardData(
+        summary = summary,
+        title = state.title,
+        statsPick = state.statsPick,
+        units = viewModel.context.units,
+    )
+
     ShareComposerScreen(
         state = state,
         hasPersonalRecord = summary.best != null,
@@ -47,13 +64,7 @@ fun ShareComposerRoute(
         onSave = viewModel::onSave,
         onExportResult = viewModel::onExportResult,
         modifier = modifier,
-    ) {
-        val data = shareCardData(
-            summary = summary,
-            title = state.title,
-            statsPick = state.statsPick,
-            units = viewModel.context.units,
-        )
+    ) { exportMode ->
         Box(Modifier.fillMaxSize()) {
             ShareCardBody(
                 layout = state.layout,
@@ -64,6 +75,7 @@ fun ShareComposerRoute(
                 onTransformChanged = viewModel::onTransformChanged,
                 onRemoveBlock = viewModel::onRemoveBlock,
                 modifier = Modifier.fillMaxSize(),
+                exportMode = exportMode,
             )
         }
     }

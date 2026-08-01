@@ -100,6 +100,11 @@ import org.jetbrains.compose.resources.stringResource
  * ([ComposerState.transform], [ComposerState.blockRemoved]) is applied there —
  * the shell only reads `transform` to pick the scrim mode.
  *
+ * The slot is invoked TWICE per frame — once for the live preview and once for
+ * the occluded export instance — and is told which it is. That flag is not
+ * cosmetic: without it the export composition attaches live gesture handling
+ * and can record editor chrome into the shared PNG.
+ *
  * [hasPersonalRecord] is the one piece of session shape the shell needs that
  * [ComposerState] does not carry: the Layout editor must not offer NewBest for a
  * session with no PR (`ShareComposerViewModel.onLayoutSelected` refuses it
@@ -122,7 +127,7 @@ internal fun ShareComposerScreen(
     onSave: () -> Unit,
     onExportResult: (ExportResult) -> Unit,
     modifier: Modifier = Modifier,
-    card: @Composable ShareCardScope.() -> Unit,
+    card: @Composable ShareCardScope.(exportMode: Boolean) -> Unit,
 ) {
     Box(
         modifier = modifier
@@ -305,7 +310,7 @@ private fun ComposerCardContent(
     state: ComposerState,
     exportMode: Boolean,
     modifier: Modifier = Modifier,
-    card: @Composable ShareCardScope.() -> Unit,
+    card: @Composable ShareCardScope.(exportMode: Boolean) -> Unit,
 ) {
     Box(modifier = modifier) {
         ComposerBackdrop(
@@ -329,8 +334,9 @@ private fun ComposerCardContent(
             // scrim band can reach it — so its own glyphs carry the contrast
             // (spec §7.5). Anchored blocks keep the scrim and stay shadow-free.
             bakeTextShadow = state.transform != null,
-            content = card,
-        )
+        ) {
+            card(exportMode)
+        }
     }
 }
 

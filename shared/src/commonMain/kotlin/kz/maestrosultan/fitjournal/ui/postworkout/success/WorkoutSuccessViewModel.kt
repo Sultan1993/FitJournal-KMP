@@ -77,10 +77,29 @@ class WorkoutSuccessViewModel internal constructor(
     private val _uiState = MutableStateFlow(WorkoutSuccessUiState(loading = true))
     val uiState: StateFlow<WorkoutSuccessUiState> = _uiState.asStateFlow()
 
+    /**
+     * The summary the share composer must be built from — NOT [FinishResult.summary].
+     *
+     * The confirm sheet builds its snapshot with `includeBest = false` (PR
+     * detection is a per-exercise history scan, far too slow to block the
+     * finish tap), so `result.summary.best` is ALWAYS null. Only the rebuild
+     * below carries the personal record. A composer handed the finish-time
+     * snapshot therefore reports `hasPersonalRecord = false` forever and can
+     * never offer the "New best" layout — one of its four layouts, silently
+     * unreachable.
+     *
+     * Null until the rebuild lands; hosts fall back to the snapshot, which
+     * costs the PR layout on that one share rather than the whole screen.
+     */
+    var finalSummary: SessionSummary? = null
+        private set
+
     init {
         viewModelScope.launch {
             _uiState.value = try {
-                stateFor(rebuildFinalSummary())
+                val rebuilt = rebuildFinalSummary()
+                finalSummary = rebuilt
+                stateFor(rebuilt)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

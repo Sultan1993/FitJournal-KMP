@@ -15,6 +15,7 @@ import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSessionRepository
 import kz.maestrosultan.fitjournal.domain.workout.summary.BuildSessionSummaryUseCase
 import kz.maestrosultan.fitjournal.domain.workout.summary.DetectSessionBestUseCase
+import kz.maestrosultan.fitjournal.domain.workout.summary.SessionSummary
 import kz.maestrosultan.fitjournal.domain.workout.usecase.EndWorkoutUseCase
 import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareComposerRoute
 import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareComposerViewModel
@@ -217,16 +218,24 @@ fun createWorkoutSuccessViewModel(
  * because Swift cannot satisfy a Kotlin suspend function type — see
  * `IosComposerSeams.kt`. Everything past this boundary is suspend again.
  *
- * Swift: `createShareComposerViewModel(result:photoPicker:sharePresenter:defaults:haptics:)`.
+ * [summary] is separate from [result] on purpose: pass
+ * [WorkoutSuccessViewModel.finalSummary] when it has landed, NOT
+ * `result.summary`. The finish-time snapshot is built with `includeBest = false`
+ * so the finish tap doesn't block on a per-exercise history scan, so its `best`
+ * is always null — and a composer built from it can never offer the "New best"
+ * layout.
+ *
+ * Swift: `createShareComposerViewModel(result:summary:photoPicker:sharePresenter:defaults:haptics:)`.
  */
 fun createShareComposerViewModel(
     result: FinishResult,
+    summary: SessionSummary,
     photoPicker: IosPhotoPickerBridge,
     sharePresenter: IosSharePresenterBridge,
     defaults: IosComposerDefaultsBridge,
     haptics: PostWorkoutHaptics,
 ): ShareComposerViewModel = ShareComposerViewModel(
-    summary = result.summary,
+    summary = summary,
     context = result.context,
     defaultsStore = SerializedComposerDefaultsStore(IosComposerDefaultsStorage(defaults)),
     photoPicker = IosPhotoPicker(photoPicker),
