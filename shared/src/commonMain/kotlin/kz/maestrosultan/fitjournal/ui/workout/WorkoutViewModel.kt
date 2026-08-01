@@ -19,6 +19,7 @@ import kotlinx.datetime.todayIn
 import kz.maestrosultan.fitjournal.domain.sync.SyncReason
 import kz.maestrosultan.fitjournal.domain.sync.SyncTrigger
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
+import kz.maestrosultan.fitjournal.domain.user.UserSessionState
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
@@ -48,7 +49,7 @@ class WorkoutViewModel(
     private val startWorkout: StartWorkoutUseCase,
     private val endWorkout: EndWorkoutUseCase,
     private val syncTrigger: SyncTrigger,
-    private val userContext: WorkoutUserContext,
+    awaitSession: suspend () -> UserSessionState,
     initialDate: LocalDate,
     private val clock: Clock = Clock.System,
     private val timeZone: TimeZone = TimeZone.currentSystemDefault(),
@@ -71,12 +72,11 @@ class WorkoutViewModel(
 
     init {
         viewModelScope.launch {
-            val uid = userContext.userId()
-            val jid = userContext.journalId()
-            userId = uid
-            journalId = jid
-            measurementSystem = userContext.measurementSystem()
-            observe(uid, jid)
+            val session = awaitSession()
+            userId = session.userId
+            journalId = session.journalId
+            measurementSystem = session.measurementSystem
+            observe(session.userId, session.journalId)
         }
     }
 

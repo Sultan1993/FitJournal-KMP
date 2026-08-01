@@ -48,15 +48,15 @@ object UserSession {
 }
 
 /**
- * Immutable identity snapshot. Fields are exactly what a shared screen needs and
- * are all cheaply resolved at each platform's identity choke point, so adding a
- * screen doesn't force a new native resolution path. (Per-journal `workoutGoal`
- * is deliberately excluded — it lives on [Journal][kz.maestrosultan.fitjournal.domain.journal.Journal],
- * not on session identity.)
+ * Immutable identity snapshot: the canonical user id, the currently-selected
+ * journal, and the two unit preferences — all cheaply resolved at each platform's
+ * identity choke point, so adding a screen doesn't force a new native resolution
+ * path. (`firebaseUserId` is excluded — auth-only, no screen reads it; per-journal
+ * `workoutGoal` lives on [Journal][kz.maestrosultan.fitjournal.domain.journal.Journal],
+ * not on session identity. Add either here when a screen actually needs it.)
  */
 data class UserSessionState(
     val userId: String,
-    val firebaseUserId: String,
     val journalId: String,
     val measurementSystem: MeasurementSystem,
     val lengthMeasurementSystem: LengthMeasurementSystem,

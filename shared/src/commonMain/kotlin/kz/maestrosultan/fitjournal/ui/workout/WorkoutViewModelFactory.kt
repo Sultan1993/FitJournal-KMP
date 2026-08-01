@@ -1,20 +1,23 @@
 package kz.maestrosultan.fitjournal.ui.workout
 
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.domain.sync.SyncTrigger
-import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
+import kz.maestrosultan.fitjournal.domain.user.UserSession
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSessionRepository
 import kz.maestrosultan.fitjournal.domain.workout.usecase.EndWorkoutUseCase
 import kz.maestrosultan.fitjournal.domain.workout.usecase.StartWorkoutUseCase
 
 /**
- * Swift-friendly factory. Takes the current user/journal/measurement as plain
- * values (iOS reads them synchronously from `UserStore`) and wraps them in a
- * [WorkoutUserContext] internally — so Swift never has to conform to a suspend
- * KMP interface, nor construct a Kotlin `Clock` (the constructor's Clock/TimeZone
- * default to `Clock.System` / current zone). Android uses the constructor +
- * `AndroidWorkoutUserContext` directly (its ids are suspend-resolved).
+ * Swift-friendly factory. Identity is no longer threaded in — the VM resolves it
+ * from the shared [UserSession] (populated by the native layer at sign-in /
+ * bootstrap), so Swift neither conforms to a suspend KMP interface nor reads the
+ * user store here. The `first()` on the non-null session suspends only until
+ * bootstrap has run, then returns immediately (iOS populates it synchronously at
+ * launch). The constructor's Clock/TimeZone still default to `Clock.System` /
+ * current zone, which is the other reason Swift wants this factory.
  *
  * Swift: `WorkoutViewModelFactoryKt.createWorkoutViewModel(...)`.
  */
@@ -24,9 +27,6 @@ fun createWorkoutViewModel(
     startWorkout: StartWorkoutUseCase,
     endWorkout: EndWorkoutUseCase,
     syncTrigger: SyncTrigger,
-    userId: String,
-    journalId: String,
-    measurementSystem: MeasurementSystem,
     initialDate: LocalDate,
 ): WorkoutViewModel = WorkoutViewModel(
     recordRepository = recordRepository,
@@ -34,16 +34,6 @@ fun createWorkoutViewModel(
     startWorkout = startWorkout,
     endWorkout = endWorkout,
     syncTrigger = syncTrigger,
-    userContext = ResolvedWorkoutUserContext(userId, journalId, measurementSystem),
+    awaitSession = { UserSession.state.filterNotNull().first() },
     initialDate = initialDate,
 )
-
-private class ResolvedWorkoutUserContext(
-    private val userId: String,
-    private val journalId: String,
-    private val measurementSystem: MeasurementSystem,
-) : WorkoutUserContext {
-    override suspend fun userId(): String = userId
-    override suspend fun journalId(): String = journalId
-    override suspend fun measurementSystem(): MeasurementSystem = measurementSystem
-}
