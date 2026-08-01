@@ -24,16 +24,38 @@ import platform.posix.memcpy
  * awkwardness is confined to this file instead of every call site.
  */
 
-/** Presents PHPicker and hands back the picked photo's encoded bytes, or null on cancel. */
+/**
+ * Presents PHPicker and hands back the picked photo's encoded bytes, or null on
+ * cancel.
+ *
+ * Returns a [IosCancellable] so a cancelled Kotlin coroutine can tear the
+ * native picker down. Without it, disposing the composer mid-pick left the
+ * PHPicker on screen with nothing waiting for its result.
+ */
 interface IosPhotoPickerBridge {
-    fun pickEncodedPhoto(onResult: (NSData?) -> Unit)
+    fun pickEncodedPhoto(onResult: (NSData?) -> Unit): IosCancellable
+}
+
+/** Handle to in-flight native work, so Kotlin cancellation can reach it. */
+interface IosCancellable {
+    fun cancel()
 }
 
 /** Presents the share sheet and writes to the photo library. */
 interface IosSharePresenterBridge {
-    /** Resumes once the sheet is PRESENTED, not once sharing completes — see [SharePresenter]. */
-    fun presentShareSheet(png: NSData, onPresented: () -> Unit)
-    fun saveToPhotos(png: NSData, onResult: (SaveResult) -> Unit)
+    /**
+     * Resumes once the sheet is PRESENTED, not once sharing completes — see
+     * [SharePresenter].
+     *
+     * [onPresented] carries whether the sheet actually appeared. It used to be
+     * a bare `() -> Unit`, which the Swift side called even when it had bailed
+     * out (no presenting controller, or the temp-file write failed) — so the
+     * ViewModel recorded a success, persisted defaults and showed no error for
+     * a share that never happened. Android reports the same condition as a
+     * failure chip; this is what makes the two agree.
+     */
+    fun presentShareSheet(png: NSData, onPresented: (Boolean) -> Unit): IosCancellable
+    fun saveToPhotos(png: NSData, onResult: (SaveResult) -> Unit): IosCancellable
 }
 
 /** A `UserDefaults` string slot. Synchronous, because `UserDefaults` is. */
@@ -49,7 +71,8 @@ class IosPhotoPicker(
 
     override suspend fun pickPhoto(): ImageBitmap? {
         val data = suspendCancellableCoroutine { continuation ->
-            bridge.pickEncodedPhoto { data -> continuation.resume(data) }
+            val work = bridge.pickEncodedPhoto { data -> continuation.resume(data) }
+            continuation.invokeOnCancellation { work.cancel() }
         }
         val bytes = data?.toByteArray() ?: return null
         // Off the main thread: the only caller is a ViewModel running on
@@ -68,15 +91,21 @@ class IosSharePresenter(
 
     override suspend fun presentShareSheet(png: ByteArray) {
         val data = png.toNSData()
-        suspendCancellableCoroutine { continuation ->
-            bridge.presentShareSheet(data) { continuation.resume(Unit) }
+        val presented = suspendCancellableCoroutine { continuation ->
+            val work = bridge.presentShareSheet(data) { presented -> continuation.resume(presented) }
+            continuation.invokeOnCancellation { work.cancel() }
         }
+        // The seam signals failure by throwing — `SharePresenter` returns Unit,
+        // and the ViewModel's `guarded {}` already turns a throw into the
+        // "Couldn't export" chip. Same user-visible outcome as Android.
+        check(presented) { "share sheet could not be presented" }
     }
 
     override suspend fun saveToPhotos(png: ByteArray): SaveResult {
         val data = png.toNSData()
         return suspendCancellableCoroutine { continuation ->
-            bridge.saveToPhotos(data) { result -> continuation.resume(result) }
+            val work = bridge.saveToPhotos(data) { result -> continuation.resume(result) }
+            continuation.invokeOnCancellation { work.cancel() }
         }
     }
 }
