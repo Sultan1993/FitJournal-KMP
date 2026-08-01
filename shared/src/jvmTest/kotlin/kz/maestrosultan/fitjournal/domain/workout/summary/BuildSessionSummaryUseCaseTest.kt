@@ -249,6 +249,56 @@ class BuildSessionSummaryUseCaseTest {
         assertEquals(SessionBest("Squat", 105.0, 3, 100.0, LocalDate(2026, 1, 10)), summary.best)
     }
 
+    @Test
+    fun includeBestFalse_skipsPrDetection(): Unit = runBlocking {
+        val squat = seedExercise("Squat", CategoryType.QUADRICEPS)
+        repo.addSet(userId, journalId, addOccurrence(squat, LocalDate(2026, 1, 10)), 100.0, 5, null, null)
+        repo.addSet(userId, journalId, addOccurrence(squat, date), 105.0, 3, null, null)
+        val session = sessionRepo.startSession(userId, journalId, date, workoutNumber = 1)
+
+        val summary = buildSummary(session, includeBest = false)
+
+        assertNull(summary.best, "the confirm sheet shows no PR card — detection is skipped entirely")
+        assertEquals(1, summary.exerciseCount, "everything else is still computed")
+    }
+
+    // ─── Ordering + counting edges ────────────────────────────────────────
+
+    @Test
+    fun muscleTies_keepDayOrder(): Unit = runBlocking {
+        val benchWe = addOccurrence(seedExercise("Bench Press", CategoryType.CHEST), date)
+        val squatWe = addOccurrence(seedExercise("Squat", CategoryType.QUADRICEPS), date)
+        repo.addSet(userId, journalId, benchWe, 60.0, 10, null, null)
+        repo.addSet(userId, journalId, squatWe, 100.0, 5, null, null)
+
+        val summary = summarize()
+
+        assertEquals(
+            listOf(MuscleLoad(CategoryType.CHEST, 1), MuscleLoad(CategoryType.QUADRICEPS, 1)),
+            summary.muscles,
+            "equal logged-set counts keep day order (stable sort), CHEST was trained first",
+        )
+    }
+
+    @Test
+    fun exerciseCount_includesPlannedOnlyExercises(): Unit = runBlocking {
+        val squatWe = addOccurrence(seedExercise("Squat", CategoryType.QUADRICEPS), date)
+        val benchWe = addOccurrence(seedExercise("Bench Press", CategoryType.CHEST), date)
+        repo.addSet(userId, journalId, squatWe, 100.0, 5, null, null)
+        repo.addSet(userId, journalId, benchWe, null, 12, null, null) // planned only
+
+        val summary = summarize()
+
+        assertEquals(2, summary.exerciseCount, "a planned-only exercise is still on the day's list")
+        assertEquals(listOf("Squat", "Bench Press"), summary.exercises.map { it.name })
+        assertEquals(1, summary.loggedSets)
+        assertEquals(
+            listOf(MuscleLoad(CategoryType.QUADRICEPS, 1)),
+            summary.muscles,
+            "but it contributes nothing to the muscle ranking",
+        )
+    }
+
     // ─── Empty session ────────────────────────────────────────────────────
 
     @Test

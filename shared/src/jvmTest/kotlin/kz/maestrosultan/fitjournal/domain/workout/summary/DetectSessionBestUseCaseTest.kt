@@ -74,7 +74,7 @@ class DetectSessionBestUseCaseTest {
         val sessionRecords = repo.getRecordsByDate(userId, journalId, date)
             .filter { it.workoutNumber == workoutNumber }
         val sessionRecordUuids = sessionRecords.mapTo(mutableSetOf()) { it.id }
-        return detectBest(userId, journalId, date, sessionRecords, sessionRecordUuids)
+        return detectBest(userId, journalId, date, workoutNumber, sessionRecords, sessionRecordUuids)
     }
 
     @Test
@@ -144,6 +144,23 @@ class DetectSessionBestUseCaseTest {
         // the sessionRecordUuids exclusion keeps it from becoming its own "prior best".
         assertEquals(100.0, best?.previousBestKg, "the session must not compete against itself")
         assertEquals(105.0, best?.weightKg)
+    }
+
+    @Test
+    fun laterSameDayWorkout_isNotHistory_whenRebuildingAnEarlierWorkoutsSummary(): Unit = runBlocking {
+        val squat = seedExercise("Squat", CategoryType.QUADRICEPS)
+        repo.addSet(userId, journalId, addOccurrence(squat, earlier), 90.0, 5, null, null)
+        repo.addSet(userId, journalId, addOccurrence(squat, sessionDate, workoutNumber = 1), 100.0, 5, null, null)
+        repo.addSet(userId, journalId, addOccurrence(squat, sessionDate, workoutNumber = 2), 120.0, 5, null, null)
+
+        val best = detect(workoutNumber = 1)
+
+        // Workout #1's verdict is computed against history strictly before it:
+        // the same-day workout #2 (120 kg) must be ignored, or rebuilding #1's
+        // summary after #2 exists would flip its PR from "yes, beat 90" to "no".
+        assertEquals(100.0, best?.weightKg)
+        assertEquals(90.0, best?.previousBestKg, "a LATER same-day workout is the future, not prior history")
+        assertEquals(earlier, best?.previousBestDate)
     }
 
     @Test

@@ -12,14 +12,18 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutSet
  *
  * Per exercise: session candidates are its LOGGED sets (weight non-null; reps
  * may be null), history is [RecordRepository.getWeightedSetHistoryForExercise]
- * up to and including the session's date MINUS the session's own records
- * ([sessionRecordUuids]) — an earlier same-day workout has a different record
- * uuid, so it legitimately counts as history. Prior best is the heaviest
+ * up to and including the session's date MINUS everything that isn't strictly
+ * before this workout: the session's own records ([sessionRecordUuids]) AND
+ * any LATER same-day workout (same date, higher workoutNumber). The latter
+ * keeps the verdict time-stable — rebuilding workout #1's summary after
+ * workout #2 was logged must not let #2's sets masquerade as "prior" history.
+ * An EARLIER same-day workout has a different record uuid and a lower
+ * workoutNumber, so it legitimately counts. Prior best is the heaviest
  * history set (ties: more reps wins, null reps ranks lowest; then the most
  * recent date). A PR fires only when the session max is STRICTLY greater —
  * matching the record isn't beating it — and a first-ever exercise (no
  * history) never fires. When several exercises set a PR, the largest absolute
- * increase wins.
+ * increase wins; equal increases keep day order (first wins).
  */
 class DetectSessionBestUseCase(
     private val records: RecordRepository,
@@ -29,6 +33,7 @@ class DetectSessionBestUseCase(
         userId: String,
         journalId: String,
         date: LocalDate,
+        workoutNumber: Int,
         sessionRecords: List<WorkoutRecord>,
         sessionRecordUuids: Set<String>,
     ): SessionBest? {
@@ -41,12 +46,19 @@ class DetectSessionBestUseCase(
             val sessionMaxWeight = sessionBestSet.weight ?: continue
             val priorBest = records
                 .getWeightedSetHistoryForExercise(userId, journalId, exerciseUuid, upToDate = date)
-                .filter { it.recordUuid !in sessionRecordUuids }
+                // History is strictly BEFORE this workout: not its own records, and
+                // not a later same-day workout (time-stability when rebuilding after
+                // workout N+1 was logged).
+                .filter {
+                    it.recordUuid !in sessionRecordUuids &&
+                        (it.date != date || it.workoutNumber <= workoutNumber)
+                }
                 .maxWithOrNull(PRIOR_BEST_ORDER)
                 ?: continue // first-ever exercise: nothing to beat, never fires
             if (sessionMaxWeight <= priorBest.weightKg) continue // PR is STRICTLY greater
             val increase = sessionMaxWeight - priorBest.weightKg
-            if (best == null || increase > bestIncrease) {
+            // Strict >, so equal increases keep day order (first wins).
+            if (increase > bestIncrease) {
                 best = SessionBest(
                     exerciseName = candidate.name,
                     weightKg = sessionMaxWeight,

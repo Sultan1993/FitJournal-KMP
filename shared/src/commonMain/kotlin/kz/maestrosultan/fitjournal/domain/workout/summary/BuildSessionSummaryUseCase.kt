@@ -33,7 +33,13 @@ class BuildSessionSummaryUseCase(
     private val detectSessionBest: DetectSessionBestUseCase,
 ) {
 
-    suspend operator fun invoke(session: WorkoutSession): SessionSummary {
+    /**
+     * @param includeBest whether to run [DetectSessionBestUseCase] (per-exercise
+     * history reads). The end-workout confirm sheet passes `false` — it shows no
+     * PR card, so the reads would be wasted; the success screen keeps the
+     * default. When `false`, [SessionSummary.best] is always null.
+     */
+    suspend operator fun invoke(session: WorkoutSession, includeBest: Boolean = true): SessionSummary {
         val sessionRecords = records
             .getRecordsByDate(session.userId, session.journalId, session.date)
             .filter { it.workoutNumber == session.workoutNumber }
@@ -41,6 +47,19 @@ class BuildSessionSummaryUseCase(
         val sessionRecordUuids: Set<String> = sessionRecords.mapTo(LinkedHashSet()) { it.id }
         val dayOrder = sessionRecords.flatMap { it.exercises }
         val exercises = exerciseLines(dayOrder)
+
+        val best = if (includeBest) {
+            detectSessionBest(
+                userId = session.userId,
+                journalId = session.journalId,
+                date = session.date,
+                workoutNumber = session.workoutNumber,
+                sessionRecords = sessionRecords,
+                sessionRecordUuids = sessionRecordUuids,
+            )
+        } else {
+            null
+        }
 
         return SessionSummary(
             session = session,
@@ -50,13 +69,7 @@ class BuildSessionSummaryUseCase(
             loggedSets = dayOrder.sumOf { workoutExercise -> workoutExercise.sets.count { it.isLogged } },
             exerciseCount = exercises.size,
             weekOrdinal = weekOrdinal(session),
-            best = detectSessionBest(
-                userId = session.userId,
-                journalId = session.journalId,
-                date = session.date,
-                sessionRecords = sessionRecords,
-                sessionRecordUuids = sessionRecordUuids,
-            ),
+            best = best,
             sessionRecordUuids = sessionRecordUuids,
         )
     }
