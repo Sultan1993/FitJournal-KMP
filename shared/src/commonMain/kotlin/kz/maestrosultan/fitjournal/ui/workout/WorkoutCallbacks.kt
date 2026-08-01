@@ -8,6 +8,8 @@ enum class ExerciseInfoSection { About, History, Stats }
  * platform coordinator/nav graph. The host wires each lambda to its own flow
  * (set editor, exercise details sheet, note editor, import). [onAddExercise]
  * carries the viewed page's workoutNumber so the import lands on the right workout.
+ * [onEndSessionRequested] fires when the session bar's End is tapped — the host
+ * owns what happens next (e.g. a confirm sheet before actually ending).
  */
 data class WorkoutCallbacks(
     val onOpenExerciseFocus: (workoutExerciseId: String, workoutSetId: String?, startAddingSet: Boolean) -> Unit,
@@ -15,4 +17,5 @@ data class WorkoutCallbacks(
     val onEditNote: (workoutExerciseId: String) -> Unit,
     val onReplaceExercise: (workoutExerciseId: String) -> Unit,
     val onAddExercise: (workoutNumber: Int) -> Unit,
+    val onEndSessionRequested: () -> Unit,
 )

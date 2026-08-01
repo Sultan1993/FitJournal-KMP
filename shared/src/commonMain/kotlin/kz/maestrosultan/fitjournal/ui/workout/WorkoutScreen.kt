@@ -104,7 +104,7 @@ private fun WorkoutBody(
                 state = state.sessionBar,
                 runningSince = state.runningSince,
                 onStart = viewModel::onStartSession,
-                onEnd = viewModel::onEndSession,
+                onEnd = callbacks.onEndSessionRequested,
                 // Leave room for the add button at the trailing edge.
                 modifier = Modifier.align(Alignment.CenterStart).fillMaxWidth().padding(end = 68.dp),
             )
