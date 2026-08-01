@@ -58,7 +58,10 @@ class ShareComposerViewModel internal constructor(
     private val defaultsStore: ComposerDefaultsStore,
     private val photoPicker: PhotoPicker,
     private val sharePresenter: SharePresenter,
-    private val haptics: PostWorkoutHaptics,
+    // Not private: the freeform block ticks on every snap engage, which happens
+    // in the gesture/draw phase the ViewModel never sees, so the route hands
+    // the same instance straight to the canvas.
+    internal val haptics: PostWorkoutHaptics,
     muscleTitleFormatter: MuscleTitleFormatter,
 ) : ViewModel() {
 
