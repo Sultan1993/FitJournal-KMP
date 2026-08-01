@@ -37,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -49,7 +50,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.unit.center
+import androidx.compose.ui.unit.toOffset
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -409,10 +414,21 @@ internal fun ShareCardScope.ShareCardBody(
     var guideX by remember { mutableStateOf(false) }
     var guideY by remember { mutableStateOf(false) }
 
+    // Reported by the drawn circle rather than recomputed from the insets: the
+    // target is the BOTTOM item of a column that also holds a caption, so a
+    // centre derived from the bottom inset alone sits a caption-height too low
+    // and the whole drop zone drifts off the icon the user is aiming at.
+    var trashCenterInRoot by remember { mutableStateOf(Offset.Unspecified) }
+    var canvasOriginInRoot by remember { mutableStateOf(Offset.Zero) }
+
     val insetPx = with(density) { dp(CardInsetRef).toPx() }
     val wordmarkOffsetPx = with(density) { dp(WordmarkHeightRef + WordmarkGapRef).toPx() }
 
-    Box(modifier.onSizeChanged { canvas = it }) {
+    Box(
+        modifier
+            .onSizeChanged { canvas = it }
+            .onGloballyPositioned { canvasOriginInRoot = it.positionInRoot() },
+    ) {
         if (!blockRemoved) {
             val anchored: () -> CenterPx = {
                 CenterPx(
@@ -522,12 +538,12 @@ internal fun ShareCardScope.ShareCardBody(
 
                                         val next = position.transform.copy(rotationDeg = angle.rotationDeg)
                                         live.value = next
-                                        overTrash = isOverTrash(
+                                        val target = trashCenterInRoot - canvasOriginInRoot
+                                        overTrash = trashCenterInRoot.isSpecified && isOverTrash(
                                             blockCenterXPx = next.cx * w,
                                             blockCenterYPx = next.cy * h,
-                                            trashCenterXPx = w / 2f,
-                                            trashCenterYPx = h - TrashBottomInset.toPx() -
-                                                TrashDiameter.toPx() / 2f,
+                                            trashCenterXPx = target.x,
+                                            trashCenterYPx = target.y,
                                             densityPxPerDp = densityPxPerDp,
                                         )
                                         event.changes.forEach { if (it.positionChanged()) it.consume() }
@@ -585,6 +601,7 @@ internal fun ShareCardScope.ShareCardBody(
             TrashTarget(
                 visible = gesturing && !blockRemoved,
                 armed = { overTrash },
+                onCircleCenter = { trashCenterInRoot = it },
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
         }
@@ -631,6 +648,7 @@ private fun SnapGuides(
 private fun TrashTarget(
     visible: Boolean,
     armed: () -> Boolean,
+    onCircleCenter: (Offset) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
@@ -647,6 +665,13 @@ private fun TrashTarget(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .size(TrashDiameter)
+                    // Root coordinates, not parent: AnimatedVisibility and the
+                    // column sit between this and the canvas, so walking the
+                    // parent chain would break the moment that nesting changes.
+                    // The caller subtracts the canvas origin.
+                    .onGloballyPositioned { coordinates ->
+                        onCircleCenter(coordinates.positionInRoot() + coordinates.size.center.toOffset())
+                    }
                     .drawBehind {
                         val radius = size.minDimension / 2f
                         drawCircle(color = TrashFill, radius = radius)
