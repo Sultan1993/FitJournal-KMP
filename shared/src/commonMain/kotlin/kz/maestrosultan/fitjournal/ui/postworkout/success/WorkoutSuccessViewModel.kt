@@ -20,6 +20,7 @@ import kz.maestrosultan.fitjournal.domain.workout.summary.SessionSummary
 import kz.maestrosultan.fitjournal.ui.postworkout.FinishResult
 import kz.maestrosultan.fitjournal.ui.postworkout.format.MuscleTitleFormatter
 import kz.maestrosultan.fitjournal.ui.postworkout.seams.LocaleFormatters
+import kz.maestrosultan.fitjournal.ui.postworkout.seams.formatDuration
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
 
 /**
@@ -42,7 +43,7 @@ import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
  * flag (consumed via [onSuccessHapticPlayed]); the host's PostWorkoutHaptics
  * seam is triggered by the composable, not injected here.
  */
-class WorkoutSuccessViewModel(
+internal class WorkoutSuccessViewModel(
     private val result: FinishResult,
     private val buildSummary: BuildSessionSummaryUseCase,
     private val sessionRepository: WorkoutSessionRepository,
@@ -117,7 +118,7 @@ class WorkoutSuccessViewModel(
             loggedSets = summary.loggedSets,
             exerciseCount = summary.exerciseCount,
             tiles = SuccessTiles(
-                durationText = LocaleFormatters.formatDuration(session.durationSec(now)),
+                durationText = formatDuration(session.durationSec(now)),
                 sets = summary.loggedSets,
                 weekOrdinalText = LocaleFormatters.ordinal(summary.weekOrdinal),
             ),
