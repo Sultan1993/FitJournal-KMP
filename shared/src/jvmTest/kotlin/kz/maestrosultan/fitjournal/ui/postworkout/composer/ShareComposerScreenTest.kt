@@ -108,8 +108,16 @@ class ShareComposerScreenTest {
             FitJournalTheme(darkTheme = true) {
                 ShareComposerScreen(
                     state = state,
+                    hasPersonalRecord = false,
                     onCloseRequested = onCloseRequested,
                     onEditorSelected = onEditorSelected,
+                    onTitleChanged = {},
+                    onLayoutSelected = {},
+                    onResetLayout = {},
+                    onBackdropSelected = {},
+                    onPickPhoto = {},
+                    onStatToggled = {},
+                    onScrimChanged = {},
                     onShare = onShare,
                     onSave = onSave,
                     onExportResult = {},

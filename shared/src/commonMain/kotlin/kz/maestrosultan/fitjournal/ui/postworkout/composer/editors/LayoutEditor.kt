@@ -23,6 +23,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -33,6 +34,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_layout
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_layout_receipt
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_layout_stats
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_reset_layout
+import kz.maestrosultan.fitjournal.ui.postworkout.composer.ComposerTestTags
 import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareLayoutKind
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import org.jetbrains.compose.resources.stringResource
@@ -94,6 +96,7 @@ private fun LayoutThumb(
     ) {
         Box(
             modifier = Modifier
+                .testTag(ComposerTestTags.layoutThumb(kind))
                 .fillMaxWidth()
                 .aspectRatio(ThumbAspect)
                 .clip(ThumbShape)

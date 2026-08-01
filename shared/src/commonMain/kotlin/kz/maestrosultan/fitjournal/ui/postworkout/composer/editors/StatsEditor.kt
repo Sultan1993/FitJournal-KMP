@@ -2,7 +2,6 @@ package kz.maestrosultan.fitjournal.ui.postworkout.composer.editors
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -92,7 +92,10 @@ private fun StatChip(
                 color = if (selected) brand else Color.Transparent,
                 shape = ChipShape,
             )
-            .clickable(onClick = onClick)
+            // selectable, not clickable: a chip's on/off state is the whole
+            // point, and it is otherwise carried only by color + weight — which
+            // screen readers (and tests) cannot see.
+            .selectable(selected = selected, onClick = onClick)
             .padding(horizontal = 8.dp),
         contentAlignment = Alignment.Center,
     ) {

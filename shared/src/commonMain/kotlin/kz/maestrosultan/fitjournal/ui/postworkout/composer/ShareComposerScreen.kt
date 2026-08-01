@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -54,6 +55,13 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_rail_s
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_rail_stats
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_rail_title
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_share_workout
+import kz.maestrosultan.fitjournal.ui.postworkout.composer.editors.BackdropEditor
+import kz.maestrosultan.fitjournal.ui.postworkout.composer.editors.EditorSheet
+import kz.maestrosultan.fitjournal.ui.postworkout.composer.editors.EditorSheetDefaults
+import kz.maestrosultan.fitjournal.ui.postworkout.composer.editors.LayoutEditor
+import kz.maestrosultan.fitjournal.ui.postworkout.composer.editors.ScrimEditor
+import kz.maestrosultan.fitjournal.ui.postworkout.composer.editors.StatsEditor
+import kz.maestrosultan.fitjournal.ui.postworkout.composer.editors.TitleEditor
 import kz.maestrosultan.fitjournal.ui.postworkout.export.CardExportHost
 import kz.maestrosultan.fitjournal.ui.postworkout.export.ExportResult
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
@@ -91,12 +99,25 @@ import org.jetbrains.compose.resources.stringResource
  * layouts arrive as a caller-supplied slot, and block placement / removal
  * ([ComposerState.transform], [ComposerState.blockRemoved]) is applied there —
  * the shell only reads `transform` to pick the scrim mode.
+ *
+ * [hasPersonalRecord] is the one piece of session shape the shell needs that
+ * [ComposerState] does not carry: the Layout editor must not offer NewBest for a
+ * session with no PR (`ShareComposerViewModel.onLayoutSelected` refuses it
+ * anyway, so an offered-but-inert thumbnail would be the bug).
  */
 @Composable
 internal fun ShareComposerScreen(
     state: ComposerState,
+    hasPersonalRecord: Boolean,
     onCloseRequested: () -> Unit,
     onEditorSelected: (ComposerEditor?) -> Unit,
+    onTitleChanged: (String) -> Unit,
+    onLayoutSelected: (ShareLayoutKind) -> Unit,
+    onResetLayout: () -> Unit,
+    onBackdropSelected: (BackdropKind) -> Unit,
+    onPickPhoto: () -> Unit,
+    onStatToggled: (StatKind) -> Unit,
+    onScrimChanged: (Float) -> Unit,
     onShare: () -> Unit,
     onSave: () -> Unit,
     onExportResult: (ExportResult) -> Unit,
@@ -143,6 +164,22 @@ internal fun ShareComposerScreen(
             onSave = onSave,
             modifier = Modifier.fillMaxSize(),
         )
+
+        // Above the chrome: an open panel covers the rail that opened it, and
+        // its dismiss catcher must win over the rail/bottom-bar hit targets.
+        ComposerEditorOverlay(
+            state = state,
+            hasPersonalRecord = hasPersonalRecord,
+            onEditorSelected = onEditorSelected,
+            onTitleChanged = onTitleChanged,
+            onLayoutSelected = onLayoutSelected,
+            onResetLayout = onResetLayout,
+            onBackdropSelected = onBackdropSelected,
+            onPickPhoto = onPickPhoto,
+            onStatToggled = onStatToggled,
+            onScrimChanged = onScrimChanged,
+            modifier = Modifier.fillMaxSize(),
+        )
     }
 }
 
@@ -154,6 +191,101 @@ internal object ComposerTestTags {
     const val Chip: String = "composer_chip"
 
     fun rail(editor: ComposerEditor): String = "composer_rail_${editor.name}"
+
+    /**
+     * The Layout editor's thumbnails. Tagged because the tappable tile and its
+     * caption are separate nodes (the caption sits outside the clickable), so
+     * there is no text handle that actually selects the layout.
+     */
+    fun layoutThumb(layout: ShareLayoutKind): String = "composer_layout_${layout.name}"
+}
+
+// ─── Editor overlay ─────────────────────────────────────────────────────────
+
+/**
+ * The five in-canvas editor panels (spec §7.3).
+ *
+ * All five are composed unconditionally, each gated by its own
+ * [EditorSheet]`.visible`, rather than emitting only `state.activeEditor`'s
+ * panel: a panel that is removed from the composition the moment the editor
+ * closes has nothing left to animate, so closing would be a hard cut. While
+ * invisible an [EditorSheet] composes nothing but an empty [Box], which holds no
+ * pointer input — the canvas and chrome keep every event.
+ *
+ * Every callback is the host's ViewModel method; the panels invent no state.
+ * Both Done and tap-outside route to `onEditorSelected(null)`, which is the
+ * ViewModel's single close entry (it also persists the composer defaults).
+ */
+@Composable
+private fun ComposerEditorOverlay(
+    state: ComposerState,
+    hasPersonalRecord: Boolean,
+    onEditorSelected: (ComposerEditor?) -> Unit,
+    onTitleChanged: (String) -> Unit,
+    onLayoutSelected: (ShareLayoutKind) -> Unit,
+    onResetLayout: () -> Unit,
+    onBackdropSelected: (BackdropKind) -> Unit,
+    onPickPhoto: () -> Unit,
+    onStatToggled: (StatKind) -> Unit,
+    onScrimChanged: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val active = state.activeEditor
+    val close = { onEditorSelected(null) }
+
+    Box(modifier = modifier) {
+        EditorPanel(ComposerEditor.Title, active, close) {
+            TitleEditor(
+                title = state.title,
+                onTitleChange = onTitleChanged,
+                onSubmit = close,
+            )
+        }
+        EditorPanel(ComposerEditor.Layout, active, close) {
+            LayoutEditor(
+                selected = state.layout,
+                onSelect = onLayoutSelected,
+                onResetLayout = onResetLayout,
+                showNewBest = hasPersonalRecord,
+            )
+        }
+        EditorPanel(ComposerEditor.Backdrop, active, close) {
+            BackdropEditor(
+                selected = state.backdrop.kind,
+                onSelect = onBackdropSelected,
+                onPickPhoto = onPickPhoto,
+            )
+        }
+        EditorPanel(ComposerEditor.Stats, active, close) {
+            StatsEditor(
+                selected = state.statsPick,
+                onToggle = onStatToggled,
+            )
+        }
+        EditorPanel(ComposerEditor.Scrim, active, close) {
+            ScrimEditor(
+                scrim = state.scrim,
+                onScrimChange = onScrimChanged,
+            )
+        }
+    }
+}
+
+/** One panel of the overlay, visible only while it is the active editor. */
+@Composable
+private fun EditorPanel(
+    editor: ComposerEditor,
+    activeEditor: ComposerEditor?,
+    onClose: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    EditorSheet(
+        visible = activeEditor == editor,
+        title = EditorSheetDefaults.titleFor(editor),
+        onDone = onClose,
+        onDismissRequest = onClose,
+        content = content,
+    )
 }
 
 // ─── Canvas ─────────────────────────────────────────────────────────────────
