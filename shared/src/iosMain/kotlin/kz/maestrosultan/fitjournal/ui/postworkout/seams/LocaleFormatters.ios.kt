@@ -49,6 +49,15 @@ actual object LocaleFormatters {
         return formatter.stringFromDate(noonUtc.toNSDate())
     }
 
+    actual fun formatDayMonthYear(date: LocalDate): String {
+        val formatter = NSDateFormatter().apply {
+            dateFormat = "d MMMM yyyy"
+            timeZone = TimeZone.UTC.toNSTimeZone()
+        }
+        val noonUtc = date.atTime(hour = 12, minute = 0).toInstant(TimeZone.UTC)
+        return formatter.stringFromDate(noonUtc.toNSDate())
+    }
+
     actual fun ordinal(n: Int): String {
         val formatter = NSNumberFormatter().apply {
             numberStyle = NSNumberFormatterOrdinalStyle

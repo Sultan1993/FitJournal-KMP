@@ -37,6 +37,13 @@ actual object LocaleFormatters {
         return formatter.format(Date(noonUtc.toEpochMilliseconds()))
     }
 
+    actual fun formatDayMonthYear(date: LocalDate): String {
+        val formatter = SimpleDateFormat("d MMMM yyyy", Locale.getDefault())
+        formatter.timeZone = java.util.TimeZone.getTimeZone("UTC")
+        val noonUtc = date.atTime(hour = 12, minute = 0).toInstant(TimeZone.UTC)
+        return formatter.format(Date(noonUtc.toEpochMilliseconds()))
+    }
+
     actual fun ordinal(n: Int): String = when (Locale.getDefault().language) {
         "en" -> {
             val suffix = when {

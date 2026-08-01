@@ -101,7 +101,15 @@ fun WorkoutPageContent(
                         .padding(horizontal = 16.dp, vertical = 6.dp)
                         // Long-press to drag so the card's set taps / menu still fire.
                         .longPressDraggableHandle(
-                            onDragStopped = { dispatch(WorkoutAction.Reorder(orderedRecords.map { it.id })) },
+                            onDragStopped = {
+                                // Only persist a real move — an accidental long-press
+                                // (drag activated, finger never moved) must not rewrite
+                                // positions and fire a sync tick.
+                                val newOrder = orderedRecords.map { it.id }
+                                if (newOrder != page.records.map { it.id }) {
+                                    dispatch(WorkoutAction.Reorder(newOrder))
+                                }
+                            },
                         ),
                 )
             }

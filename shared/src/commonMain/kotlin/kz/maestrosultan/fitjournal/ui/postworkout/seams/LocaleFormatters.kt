@@ -28,6 +28,9 @@ expect object LocaleFormatters {
     /** Localized weekday + day + month, "Wednesday, 22 July" style (no year). */
     fun formatFullDate(date: LocalDate): String
 
+    /** Localized day + month + year, "12 March 2024" style. */
+    fun formatDayMonthYear(date: LocalDate): String
+
     /** Localized ordinal, e.g. 3 -> "3rd". */
     fun ordinal(n: Int): String
 }

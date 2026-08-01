@@ -186,6 +186,48 @@ class RecordRepositoryTest {
     }
 
     @Test
+    fun addRecordsToWorkout_forcesEveryCopyOntoTheTargetPage_appendingPositions(): Unit = runBlocking {
+        // The "copy from a workout onto the tapped page" path: sources spanning
+        // several source workouts all collapse onto ONE target page, appended
+        // after that page's existing rows (no position collision).
+        val exId = seedCatalogExercise()
+        val src = LocalDate(2026, 3, 10)
+        val target = LocalDate(2026, 3, 20)
+
+        repo.addExercisesToDate(userId, journalId, src, 1, listOf(exId))
+        repo.addExercisesToDate(userId, journalId, src, 3, listOf(exId))
+        val source = repo.getRecordsByDate(userId, journalId, src)
+        assertEquals(setOf(1, 3), source.map { it.workoutNumber }.toSet())
+
+        // Target already has a record on workout 2 — copies must APPEND, not collide.
+        repo.addExercisesToDate(userId, journalId, target, 2, listOf(exId))
+
+        repo.addRecordsToWorkout(userId, journalId, target, 2, source)
+
+        val onTarget = repo.getRecordsByDate(userId, journalId, target)
+        assertEquals(3, onTarget.size, "1 pre-existing + 2 copies")
+        assertTrue(onTarget.all { it.workoutNumber == 2 }, "every copy lands on the target page")
+        assertEquals(listOf(0, 1, 2), onTarget.map { it.position }.sorted(), "positions append, no collision")
+    }
+
+    @Test
+    fun addRecordsToDate_stillCopiesAsIs_preservingSourceWorkoutNumbers(): Unit = runBlocking {
+        // The Repeat-workout path (targetWorkoutNumber = null) must be unaffected by
+        // the forced-target variant: a 2-workout source day copies back as 2 workouts.
+        val exId = seedCatalogExercise()
+        val src = LocalDate(2026, 4, 10)
+        val target = LocalDate(2026, 4, 20)
+        repo.addExercisesToDate(userId, journalId, src, 1, listOf(exId))
+        repo.addExercisesToDate(userId, journalId, src, 2, listOf(exId))
+        val source = repo.getRecordsByDate(userId, journalId, src)
+
+        repo.addRecordsToDate(userId, journalId, target, source)
+
+        val onTarget = repo.getRecordsByDate(userId, journalId, target)
+        assertEquals(setOf(1, 2), onTarget.map { it.workoutNumber }.toSet(), "copy-as-is keeps source pages")
+    }
+
+    @Test
     fun mergeRecords_intoSuperset_doesNotCollideOnSetUuids(): Unit = runBlocking {
         // Regression: creating a superset crashed with `UNIQUE constraint
         // failed: workoutSets.uuid`. mergeRecords re-parented the second

@@ -23,9 +23,10 @@ data class ImportWorkoutUiState(
     val pages: List<ImportPage>,
     val currentPageIndex: Int,
     val selectedRecordIds: Set<String>,
+    val importInProgress: Boolean,
     val measurementSystem: MeasurementSystem,
 ) {
-    val canImport: Boolean get() = selectedRecordIds.isNotEmpty()
+    val canImport: Boolean get() = selectedRecordIds.isNotEmpty() && !importInProgress
 
     companion object {
         fun initial(sourceDate: LocalDate) = ImportWorkoutUiState(
@@ -36,6 +37,7 @@ data class ImportWorkoutUiState(
             pages = emptyList(),
             currentPageIndex = 0,
             selectedRecordIds = emptySet(),
+            importInProgress = false,
             measurementSystem = MeasurementSystem.KG_KM,
         )
     }

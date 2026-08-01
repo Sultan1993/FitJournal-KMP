@@ -2,7 +2,8 @@ package kz.maestrosultan.fitjournal.ui.importworkout
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlin.time.Clock
+import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -23,13 +24,13 @@ import kz.maestrosultan.fitjournal.ui.mvi.MviModel
 /**
  * Shared presentation for the "Copy from a workout" picker, in the [MviModel]
  * shape. Shows a source-day calendar, that day's records grouped into a pager
- * (one page per workoutNumber), and per-record selection. Importing copies the
- * selected records onto [destinationDate]'s workout [destinationWorkoutNumber]
- * (the page the + was tapped on) via the local-first [RecordRepository], then
- * emits [ImportWorkoutEffect.Dismiss] for the host to close the picker.
+ * (one page per workoutNumber), and per-record selection (all pre-selected on
+ * load — whole-workout copy is one tap, matching the native pickers). Importing
+ * copies the selected records onto [destinationDate]'s workout
+ * [destinationWorkoutNumber] (the page the + was tapped on) via the local-first
+ * [RecordRepository], then emits [ImportWorkoutEffect.Dismiss].
  *
- * Host-owned (like the Workout VM): the host builds it, collects [viewEffect],
- * and calls [dispose] on teardown.
+ * Host-owned: the host builds it, collects [viewEffect], and calls [dispose].
  */
 class ImportWorkoutViewModel(
     private val recordRepository: RecordRepository,
@@ -47,6 +48,10 @@ class ImportWorkoutViewModel(
 
     private var userId: String? = null
     private var journalId: String? = null
+
+    // The in-flight source-day read; cancelled when the source day changes so an
+    // older read can't publish over a newer one.
+    private var sourceLoadJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -72,7 +77,19 @@ class ImportWorkoutViewModel(
     }
 
     private fun onSelectSourceDate(date: LocalDate) {
-        _uiState.update { it.copy(sourceDate = date, calendarExpanded = false) }
+        // Clear rows + selection and show loading SYNCHRONOUSLY, so the new date's
+        // header can never sit over the old day's (still-importable) rows while the
+        // read is in flight. loadSource republishes when it lands.
+        _uiState.update {
+            it.copy(
+                sourceDate = date,
+                calendarExpanded = false,
+                loading = true,
+                pages = emptyList(),
+                currentPageIndex = 0,
+                selectedRecordIds = emptySet(),
+            )
+        }
         loadSource(date)
     }
 
@@ -88,8 +105,11 @@ class ImportWorkoutViewModel(
     private fun loadSource(date: LocalDate) {
         val uid = userId ?: return
         val jid = journalId ?: return
-        viewModelScope.launch {
+        sourceLoadJob?.cancel()
+        sourceLoadJob = viewModelScope.launch {
             val records = recordRepository.getRecordsByDate(uid, jid, date)
+            // Generation guard: a newer source selection supersedes this read.
+            if (_uiState.value.sourceDate != date) return@launch
             val grouped = records.groupBy { it.workoutNumber }
             val pages = grouped.keys.sorted().map { workoutNumber ->
                 ImportPage(workoutNumber, grouped.getValue(workoutNumber).sortedBy { it.position })
@@ -99,8 +119,9 @@ class ImportWorkoutViewModel(
                     loading = false,
                     pages = pages,
                     currentPageIndex = 0,
-                    // Fresh source day → drop any prior selection (records differ).
-                    selectedRecordIds = emptySet(),
+                    // Pre-select every record — whole-workout copy is one tap, and
+                    // per-record deselect narrows it (native parity).
+                    selectedRecordIds = records.map { r -> r.id }.toSet(),
                 )
             }
         }
@@ -127,15 +148,25 @@ class ImportWorkoutViewModel(
         val uid = userId ?: return
         val jid = journalId ?: return
         val state = _uiState.value
+        if (state.importInProgress) return
+        // Preserve pages order (already workoutNumber-then-position); do NOT re-sort
+        // by position alone, which would interleave a cross-workout selection.
         val selected: List<WorkoutRecord> = state.pages
             .flatMap { it.records }
             .filter { it.id in state.selectedRecordIds }
-            .sortedBy { it.position }
         if (selected.isEmpty()) return
+        _uiState.update { it.copy(importInProgress = true) }
         viewModelScope.launch {
-            recordRepository.addRecordsToWorkout(uid, jid, destinationDate, destinationWorkoutNumber, selected)
-            syncTrigger.requestTick(SyncReason.PostWrite.WorkoutRecord)
-            _effects.trySend(ImportWorkoutEffect.Dismiss)
+            try {
+                recordRepository.addRecordsToWorkout(uid, jid, destinationDate, destinationWorkoutNumber, selected)
+                syncTrigger.requestTick(SyncReason.PostWrite.WorkoutRecord)
+                _effects.trySend(ImportWorkoutEffect.Dismiss)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Let the user retry rather than stranding a disabled button.
+                _uiState.update { it.copy(importInProgress = false) }
+            }
         }
     }
 

@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -31,6 +32,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.import_workout_add
 import kz.maestrosultan.fitjournal.shared.generated.resources.import_workout_empty
 import kz.maestrosultan.fitjournal.ui.common.PageDots
+import kz.maestrosultan.fitjournal.ui.postworkout.seams.LocaleFormatters
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutCalendar
@@ -107,6 +109,12 @@ private fun ImportPager(
     modifier: Modifier = Modifier,
 ) {
     val pages = state.pages
+    if (state.loading) {
+        Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = FjTheme.colors.brand)
+        }
+        return
+    }
     if (pages.isEmpty()) {
         Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             Text(
@@ -179,8 +187,5 @@ private fun ImportButton(
     }
 }
 
-/** "12 March 2024" — enum-derived English month (commonMain has no locale names). */
-private fun LocalDate.displayLabel(): String {
-    val monthName = month.name.lowercase().replaceFirstChar { it.uppercaseChar() }
-    return "$dayOfMonth $monthName $year"
-}
+/** "12 March 2024" style, localized via the platform date-formatter seam. */
+private fun LocalDate.displayLabel(): String = LocaleFormatters.formatDayMonthYear(this)
