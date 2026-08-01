@@ -1,7 +1,7 @@
 <resources>
     <!-- Workout pager / placeholder -->
     <string name="workout_another_workout_title">Another workout today</string>
-    <string name="workout_another_workout_subtitle">Press + to add exercises — they\'re logged as a separate workout. Leave this page empty and it isn\'t saved.</string>
+    <string name="workout_another_workout_subtitle">Press + to add exercises — they're logged as a separate workout. Leave this page empty and it isn't saved.</string>
 
     <!-- Session bar -->
     <string name="workout_start">Start workout</string>
@@ -26,8 +26,90 @@
 
     <!-- Delete confirm -->
     <string name="workout_delete_title">Delete this exercise?</string>
-    <string name="workout_delete_message">This can\'t be undone.</string>
+    <string name="workout_delete_message">This can't be undone.</string>
 
     <!-- Common -->
     <string name="common_cancel">Cancel</string>
+
+    <!-- Post-workout: confirm sheet -->
+    <string name="postworkout_confirm_eyebrow">SESSION</string>
+    <string name="postworkout_confirm_title">Finish workout?</string>
+    <string name="postworkout_confirm_finish">Finish workout</string>
+    <string name="postworkout_confirm_keep_training">Keep training</string>
+    <string name="postworkout_partial_format">%1$d of %2$d</string>
+
+    <!-- Post-workout: success screen -->
+    <string name="postworkout_saved_to_journal">Saved to journal</string>
+    <string name="postworkout_total_volume_caption">Total volume · %1$d sets across %2$d exercises</string>
+    <string name="postworkout_tile_duration">DURATION</string>
+    <string name="postworkout_tile_sets">SETS</string>
+    <string name="postworkout_tile_this_week">THIS WEEK</string>
+    <string name="postworkout_new_best">NEW BEST</string>
+    <string name="postworkout_section_muscles">MUSCLES</string>
+    <string name="postworkout_section_what_you_did">WHAT YOU DID</string>
+    <string name="postworkout_open_record">Open record</string>
+    <string name="postworkout_share_workout">Share workout</string>
+    <string name="postworkout_title_fallback">Workout</string>
+    <string name="postworkout_sets_format">%1$d sets</string>
+    <string name="postworkout_reps_format">%1$d reps</string>
+    <string name="postworkout_stat_pair_format">%1$s · %2$s</string>
+
+    <!-- Post-workout: share composer -->
+    <string name="postworkout_composer_title">Share workout</string>
+    <string name="postworkout_rail_title">Title</string>
+    <string name="postworkout_rail_layout">Layout</string>
+    <string name="postworkout_rail_backdrop">Backdrop</string>
+    <string name="postworkout_rail_stats">Stats</string>
+    <string name="postworkout_rail_scrim">Scrim</string>
+    <string name="postworkout_done">Done</string>
+    <string name="postworkout_backdrop_photo">Photo…</string>
+    <string name="postworkout_backdrop_brand">Brand</string>
+    <string name="postworkout_backdrop_transparent">Transparent</string>
+    <string name="postworkout_layout_stats">Stats</string>
+    <string name="postworkout_layout_receipt">Receipt</string>
+    <string name="postworkout_layout_muscles">Muscles</string>
+    <string name="postworkout_layout_new_best">New best</string>
+    <string name="postworkout_reset_layout">Reset layout</string>
+    <string name="postworkout_stat_duration">Duration</string>
+    <string name="postworkout_stat_sets">Sets</string>
+    <string name="postworkout_stat_exercises">Exercises</string>
+    <string name="postworkout_stat_best_set">Best set</string>
+    <string name="postworkout_stat_total_reps">Total reps</string>
+    <string name="postworkout_more_format">+%1$d more</string>
+    <string name="postworkout_drag_to_remove">Drag here to remove</string>
+    <string name="postworkout_error_export">Couldn't export — try again</string>
+    <string name="postworkout_error_save_permission">Couldn't save — allow storage access in Settings</string>
+    <string name="postworkout_error_save">Couldn't save — try again</string>
+
+    <!-- Category display names (mirror Android category_* / iOS category.* translations) -->
+    <string name="category_name_chest">Chest</string>
+    <string name="category_name_back">Back</string>
+    <string name="category_name_biceps">Biceps</string>
+    <string name="category_name_triceps">Triceps</string>
+    <string name="category_name_forearms">Forearms</string>
+    <string name="category_name_shoulders">Shoulders</string>
+    <string name="category_name_trapezius">Trapezius</string>
+    <string name="category_name_quadriceps">Quadriceps</string>
+    <string name="category_name_hamstrings">Hamstrings</string>
+    <string name="category_name_glutes">Glutes</string>
+    <string name="category_name_calves">Calves</string>
+    <string name="category_name_abs">Abs</string>
+    <string name="category_name_cardio">Cardio</string>
+    <string name="category_name_other">Other</string>
+
+    <!-- Category short bar codes (muscle bars / composer) -->
+    <string name="category_code_chest">CHEST</string>
+    <string name="category_code_back">BACK</string>
+    <string name="category_code_biceps">BICEP</string>
+    <string name="category_code_triceps">TRICEP</string>
+    <string name="category_code_forearms">FOREARM</string>
+    <string name="category_code_shoulders">DELTS</string>
+    <string name="category_code_trapezius">TRAPS</string>
+    <string name="category_code_quadriceps">QUAD</string>
+    <string name="category_code_hamstrings">HAM</string>
+    <string name="category_code_glutes">GLUTE</string>
+    <string name="category_code_calves">CALF</string>
+    <string name="category_code_abs">CORE</string>
+    <string name="category_code_cardio">CARDIO</string>
+    <string name="category_code_other">OTHER</string>
 </resources>

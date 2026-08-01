@@ -1,0 +1,83 @@
+<resources>
+    <!-- Post-workout: confirm sheet -->
+    <string name="postworkout_confirm_eyebrow">ТРЕНУВАННЯ</string>
+    <string name="postworkout_confirm_title">Завершити тренування?</string>
+    <string name="postworkout_confirm_finish">Завершити тренування</string>
+    <string name="postworkout_confirm_keep_training">Продовжити тренування</string>
+    <string name="postworkout_partial_format">%1$d з %2$d</string>
+
+    <!-- Post-workout: success screen -->
+    <string name="postworkout_saved_to_journal">Збережено в журнал</string>
+    <string name="postworkout_total_volume_caption">Загальний обсяг · %1$d підходів у %2$d вправах</string>
+    <string name="postworkout_tile_duration">ТРИВАЛІСТЬ</string>
+    <string name="postworkout_tile_sets">ПІДХОДИ</string>
+    <string name="postworkout_tile_this_week">ЗА ТИЖДЕНЬ</string>
+    <string name="postworkout_new_best">НОВИЙ РЕКОРД</string>
+    <string name="postworkout_section_muscles">М’ЯЗИ</string>
+    <string name="postworkout_section_what_you_did">ЩО ВИ ЗРОБИЛИ</string>
+    <string name="postworkout_open_record">Відкрити запис</string>
+    <string name="postworkout_share_workout">Поділитися</string>
+    <string name="postworkout_title_fallback">Тренування</string>
+    <string name="postworkout_sets_format">%1$d підходів</string>
+    <string name="postworkout_reps_format">%1$d повт.</string>
+    <string name="postworkout_stat_pair_format">%1$s · %2$s</string>
+
+    <!-- Post-workout: share composer -->
+    <string name="postworkout_composer_title">Поділитися тренуванням</string>
+    <string name="postworkout_rail_title">Назва</string>
+    <string name="postworkout_rail_layout">Макет</string>
+    <string name="postworkout_rail_backdrop">Тло</string>
+    <string name="postworkout_rail_stats">Показники</string>
+    <string name="postworkout_rail_scrim">Затемнення</string>
+    <string name="postworkout_done">Готово</string>
+    <string name="postworkout_backdrop_photo">Фото…</string>
+    <string name="postworkout_backdrop_brand">Бренд</string>
+    <string name="postworkout_backdrop_transparent">Прозорий</string>
+    <string name="postworkout_layout_stats">Показники</string>
+    <string name="postworkout_layout_receipt">Чек</string>
+    <string name="postworkout_layout_muscles">М’язи</string>
+    <string name="postworkout_layout_new_best">Новий рекорд</string>
+    <string name="postworkout_reset_layout">Скинути макет</string>
+    <string name="postworkout_stat_duration">Тривалість</string>
+    <string name="postworkout_stat_sets">Підходи</string>
+    <string name="postworkout_stat_exercises">Вправи</string>
+    <string name="postworkout_stat_best_set">Макс. підхід</string>
+    <string name="postworkout_stat_total_reps">Усього повторів</string>
+    <string name="postworkout_more_format">+ще %1$d</string>
+    <string name="postworkout_drag_to_remove">Перетягніть сюди, щоб видалити</string>
+    <string name="postworkout_error_export">Помилка експорту — спробуйте ще раз</string>
+    <string name="postworkout_error_save_permission">Не вдалося зберегти — дозвольте доступ до сховища в налаштуваннях</string>
+    <string name="postworkout_error_save">Не вдалося зберегти — спробуйте ще раз</string>
+
+    <!-- Category display names (mirror Android category_* / iOS category.* translations) -->
+    <string name="category_name_chest">Груди</string>
+    <string name="category_name_back">Спина</string>
+    <string name="category_name_biceps">Біцепс</string>
+    <string name="category_name_triceps">Трицепс</string>
+    <string name="category_name_forearms">Передпліччя</string>
+    <string name="category_name_shoulders">Плечі</string>
+    <string name="category_name_trapezius">Трапеція</string>
+    <string name="category_name_quadriceps">Квадрицепс</string>
+    <string name="category_name_hamstrings">Біцепс стегна</string>
+    <string name="category_name_glutes">Сідничні</string>
+    <string name="category_name_calves">Литки</string>
+    <string name="category_name_abs">Прес</string>
+    <string name="category_name_cardio">Кардіо</string>
+    <string name="category_name_other">Інші</string>
+
+    <!-- Category short bar codes (muscle bars / composer) -->
+    <string name="category_code_chest">ГРУДИ</string>
+    <string name="category_code_back">СПИНА</string>
+    <string name="category_code_biceps">БІЦЕПС</string>
+    <string name="category_code_triceps">ТРИЦЕПС</string>
+    <string name="category_code_forearms">ПЕРЕДПЛ</string>
+    <string name="category_code_shoulders">ПЛЕЧІ</string>
+    <string name="category_code_trapezius">ТРАП</string>
+    <string name="category_code_quadriceps">КВАДР</string>
+    <string name="category_code_hamstrings">Б.СТЕГНА</string>
+    <string name="category_code_glutes">СІДН</string>
+    <string name="category_code_calves">ЛИТКИ</string>
+    <string name="category_code_abs">ПРЕС</string>
+    <string name="category_code_cardio">КАРДІО</string>
+    <string name="category_code_other">ІНШІ</string>
+</resources>

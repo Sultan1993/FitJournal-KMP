@@ -1,0 +1,83 @@
+<resources>
+    <!-- Post-workout: confirm sheet -->
+    <string name="postworkout_confirm_eyebrow">SESSION</string>
+    <string name="postworkout_confirm_title">Training beenden?</string>
+    <string name="postworkout_confirm_finish">Training beenden</string>
+    <string name="postworkout_confirm_keep_training">Weiter trainieren</string>
+    <string name="postworkout_partial_format">%1$d von %2$d</string>
+
+    <!-- Post-workout: success screen -->
+    <string name="postworkout_saved_to_journal">Im Journal gespeichert</string>
+    <string name="postworkout_total_volume_caption">Gesamtvolumen · %1$d Sätze in %2$d Übungen</string>
+    <string name="postworkout_tile_duration">DAUER</string>
+    <string name="postworkout_tile_sets">SÄTZE</string>
+    <string name="postworkout_tile_this_week">DIESE WOCHE</string>
+    <string name="postworkout_new_best">NEUER REKORD</string>
+    <string name="postworkout_section_muscles">MUSKELN</string>
+    <string name="postworkout_section_what_you_did">DEIN TRAINING</string>
+    <string name="postworkout_open_record">Eintrag öffnen</string>
+    <string name="postworkout_share_workout">Training teilen</string>
+    <string name="postworkout_title_fallback">Workout</string>
+    <string name="postworkout_sets_format">%1$d Sätze</string>
+    <string name="postworkout_reps_format">%1$d Wdh.</string>
+    <string name="postworkout_stat_pair_format">%1$s · %2$s</string>
+
+    <!-- Post-workout: share composer -->
+    <string name="postworkout_composer_title">Training teilen</string>
+    <string name="postworkout_rail_title">Titel</string>
+    <string name="postworkout_rail_layout">Layout</string>
+    <string name="postworkout_rail_backdrop">Hintergrund</string>
+    <string name="postworkout_rail_stats">Werte</string>
+    <string name="postworkout_rail_scrim">Abdunkeln</string>
+    <string name="postworkout_done">Fertig</string>
+    <string name="postworkout_backdrop_photo">Foto…</string>
+    <string name="postworkout_backdrop_brand">Marke</string>
+    <string name="postworkout_backdrop_transparent">Transparent</string>
+    <string name="postworkout_layout_stats">Werte</string>
+    <string name="postworkout_layout_receipt">Beleg</string>
+    <string name="postworkout_layout_muscles">Muskeln</string>
+    <string name="postworkout_layout_new_best">Neuer Rekord</string>
+    <string name="postworkout_reset_layout">Layout zurücksetzen</string>
+    <string name="postworkout_stat_duration">Dauer</string>
+    <string name="postworkout_stat_sets">Sätze</string>
+    <string name="postworkout_stat_exercises">Übungen</string>
+    <string name="postworkout_stat_best_set">Max. Satz</string>
+    <string name="postworkout_stat_total_reps">Wdh. gesamt</string>
+    <string name="postworkout_more_format">+%1$d weitere</string>
+    <string name="postworkout_drag_to_remove">Zum Entfernen hierher ziehen</string>
+    <string name="postworkout_error_export">Export fehlgeschlagen – erneut versuchen</string>
+    <string name="postworkout_error_save_permission">Speichern nicht möglich – Speicherzugriff in den Einstellungen erlauben</string>
+    <string name="postworkout_error_save">Speichern fehlgeschlagen – erneut versuchen</string>
+
+    <!-- Category display names (mirror Android category_* / iOS category.* translations) -->
+    <string name="category_name_chest">Brust</string>
+    <string name="category_name_back">Rücken</string>
+    <string name="category_name_biceps">Bizeps</string>
+    <string name="category_name_triceps">Trizeps</string>
+    <string name="category_name_forearms">Unterarme</string>
+    <string name="category_name_shoulders">Schultern</string>
+    <string name="category_name_trapezius">Trapezmuskel</string>
+    <string name="category_name_quadriceps">Quadrizeps</string>
+    <string name="category_name_hamstrings">Beinbeuger</string>
+    <string name="category_name_glutes">Gesäßmuskeln</string>
+    <string name="category_name_calves">Waden</string>
+    <string name="category_name_abs">Bauchmuskeln</string>
+    <string name="category_name_cardio">Cardio</string>
+    <string name="category_name_other">Andere</string>
+
+    <!-- Category short bar codes (muscle bars / composer) -->
+    <string name="category_code_chest">BRUST</string>
+    <string name="category_code_back">RÜCKEN</string>
+    <string name="category_code_biceps">BIZEPS</string>
+    <string name="category_code_triceps">TRIZEPS</string>
+    <string name="category_code_forearms">UNTERARM</string>
+    <string name="category_code_shoulders">SCHULT</string>
+    <string name="category_code_trapezius">TRAPEZ</string>
+    <string name="category_code_quadriceps">QUAD</string>
+    <string name="category_code_hamstrings">BEUGER</string>
+    <string name="category_code_glutes">GESÄSS</string>
+    <string name="category_code_calves">WADEN</string>
+    <string name="category_code_abs">BAUCH</string>
+    <string name="category_code_cardio">CARDIO</string>
+    <string name="category_code_other">ANDERE</string>
+</resources>
