@@ -90,7 +90,7 @@ private const val BarStaggerMillis = 40
  * the ViewModel to clear the flag.
  */
 @Composable
-internal fun WorkoutSuccessScreen(
+fun WorkoutSuccessScreen(
     state: WorkoutSuccessUiState,
     onShare: () -> Unit,
     onOpenRecord: () -> Unit,
