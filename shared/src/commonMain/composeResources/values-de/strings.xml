@@ -1,4 +1,36 @@
 <resources>
+    <!-- Workout pager / placeholder -->
+    <string name="workout_another_workout_title">Noch ein Training heute</string>
+    <string name="workout_another_workout_subtitle">Tippe auf +, um Übungen hinzuzufügen – sie werden als separates Training erfasst. Lässt du diese Seite leer, wird sie nicht gespeichert.</string>
+
+    <!-- Session bar -->
+    <string name="workout_start">Training starten</string>
+    <string name="workout_end">Training beenden</string>
+
+    <!-- Exercise card -->
+    <string name="workout_add_set">Satz hinzufügen</string>
+    <string name="workout_add_exercise">Übung hinzufügen</string>
+    <string name="workout_last_prefix">Zuletzt: %1$s</string>
+    <string name="workout_superset">Supersatz</string>
+
+    <!-- Exercise menu -->
+    <string name="workout_menu_about">Über die Übung</string>
+    <string name="workout_menu_history">Verlauf</string>
+    <string name="workout_menu_stats">Statistiken</string>
+    <string name="workout_menu_note_add">Notiz hinzufügen</string>
+    <string name="workout_menu_note_edit">Notiz bearbeiten</string>
+    <string name="workout_menu_replace">Übung ersetzen</string>
+    <string name="workout_menu_superset_add">Supersatz mit nächster</string>
+    <string name="workout_menu_superset_remove">Aus Supersatz entfernen</string>
+    <string name="workout_menu_delete">Löschen</string>
+
+    <!-- Delete confirm -->
+    <string name="workout_delete_title">Diese Übung löschen?</string>
+    <string name="workout_delete_message">Das kann nicht rückgängig gemacht werden.</string>
+
+    <!-- Common -->
+    <string name="common_cancel">Abbrechen</string>
+
     <!-- Post-workout: confirm sheet -->
     <string name="postworkout_confirm_eyebrow">SESSION</string>
     <string name="postworkout_confirm_title">Training beenden?</string>

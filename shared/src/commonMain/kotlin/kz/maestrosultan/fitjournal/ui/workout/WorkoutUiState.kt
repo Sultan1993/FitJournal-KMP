@@ -48,6 +48,10 @@ data class WorkoutUiState(
     val runningSession: WorkoutSession?,
     /** Weight/distance unit preference for set-value formatting. */
     val measurementSystem: MeasurementSystem,
+    /** The month-calendar overlay is open (toggled from the native nav-bar icon). */
+    val calendarVisible: Boolean,
+    /** Days in the calendar's visible month that have workouts — marked with a dot. */
+    val workoutDays: Set<LocalDate>,
 ) {
     val currentPage: WorkoutPage? get() = pages.getOrNull(currentPageIndex)
 
@@ -63,6 +67,8 @@ data class WorkoutUiState(
             sessionBar = SessionBarState.Hidden,
             runningSession = null,
             measurementSystem = MeasurementSystem.KG_KM,
+            calendarVisible = false,
+            workoutDays = emptySet(),
         )
     }
 }

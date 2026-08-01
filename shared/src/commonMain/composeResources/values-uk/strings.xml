@@ -1,4 +1,36 @@
 <resources>
+    <!-- Workout pager / placeholder -->
+    <string name="workout_another_workout_title">Ще одне тренування сьогодні</string>
+    <string name="workout_another_workout_subtitle">Натисніть +, щоб додати вправи — вони запишуться як окреме тренування. Залиште цю сторінку порожньою, і вона не збережеться.</string>
+
+    <!-- Session bar -->
+    <string name="workout_start">Почати тренування</string>
+    <string name="workout_end">Завершити тренування</string>
+
+    <!-- Exercise card -->
+    <string name="workout_add_set">Додати підхід</string>
+    <string name="workout_add_exercise">Додати вправу</string>
+    <string name="workout_last_prefix">Минулого разу: %1$s</string>
+    <string name="workout_superset">Суперсет</string>
+
+    <!-- Exercise menu -->
+    <string name="workout_menu_about">Про вправу</string>
+    <string name="workout_menu_history">Історія</string>
+    <string name="workout_menu_stats">Статистика</string>
+    <string name="workout_menu_note_add">Додати нотатку</string>
+    <string name="workout_menu_note_edit">Змінити нотатку</string>
+    <string name="workout_menu_replace">Замінити вправу</string>
+    <string name="workout_menu_superset_add">Суперсет із наступним</string>
+    <string name="workout_menu_superset_remove">Прибрати з суперсету</string>
+    <string name="workout_menu_delete">Видалити</string>
+
+    <!-- Delete confirm -->
+    <string name="workout_delete_title">Видалити цю вправу?</string>
+    <string name="workout_delete_message">Цю дію не можна скасувати.</string>
+
+    <!-- Common -->
+    <string name="common_cancel">Скасувати</string>
+
     <!-- Post-workout: confirm sheet -->
     <string name="postworkout_confirm_eyebrow">ТРЕНУВАННЯ</string>
     <string name="postworkout_confirm_title">Завершити тренування?</string>

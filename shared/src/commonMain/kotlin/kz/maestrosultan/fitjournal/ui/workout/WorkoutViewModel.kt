@@ -56,6 +56,8 @@ class WorkoutViewModel(
 
     private val selectedDate = MutableStateFlow(initialDate)
     private val currentPageIndex = MutableStateFlow(0)
+    private val calendarVisible = MutableStateFlow(false)
+    private val workoutDays = MutableStateFlow<Set<LocalDate>>(emptySet())
 
     private val _uiState = MutableStateFlow(
         WorkoutUiState.initial(initialDate, isToday = initialDate == today()),
@@ -95,8 +97,14 @@ class WorkoutViewModel(
         }
         val running: Flow<WorkoutSession?> = sessionRepository.getRunningSessionFlow(uid)
 
-        combine(dayData, running, currentPageIndex) { day, run, pageIndex ->
-            buildState(day.date, day.records, day.sessions, run, pageIndex)
+        combine(
+            dayData,
+            running,
+            currentPageIndex,
+            calendarVisible,
+            workoutDays,
+        ) { day, run, pageIndex, calVisible, calDays ->
+            buildState(day.date, day.records, day.sessions, run, pageIndex, calVisible, calDays)
         }.collect { _uiState.value = it }
     }
 
@@ -112,6 +120,8 @@ class WorkoutViewModel(
         daySessions: List<WorkoutSession>,
         running: WorkoutSession?,
         requestedPageIndex: Int,
+        calendarVisible: Boolean,
+        workoutDays: Set<LocalDate>,
     ): WorkoutUiState {
         val pages = buildPages(records, daySessions)
         val pageIndex = requestedPageIndex.coerceIn(0, (pages.size - 1).coerceAtLeast(0))
@@ -136,6 +146,8 @@ class WorkoutViewModel(
             sessionBar = bar,
             runningSession = running,
             measurementSystem = measurementSystem,
+            calendarVisible = calendarVisible,
+            workoutDays = workoutDays,
         )
     }
 
@@ -176,8 +188,31 @@ class WorkoutViewModel(
     // ─── Actions ────────────────────────────────────────────────────────
 
     fun onDateSelected(date: LocalDate) {
+        calendarVisible.value = false
         currentPageIndex.value = 0
         selectedDate.value = date
+    }
+
+    /** Nav-bar calendar icon: open/close the month overlay; load its dots on open. */
+    fun onToggleCalendar() {
+        val show = !calendarVisible.value
+        calendarVisible.value = show
+        if (show) {
+            val date = _uiState.value.selectedDate
+            loadWorkoutDays(date.year, date.monthNumber)
+        }
+    }
+
+    /** The calendar scrolled to a new month — reload which days have workouts. */
+    fun onCalendarMonthChanged(year: Int, month: Int) = loadWorkoutDays(year, month)
+
+    private fun loadWorkoutDays(year: Int, month: Int) {
+        val uid = userId ?: return
+        val jid = journalId ?: return
+        viewModelScope.launch {
+            val records = recordRepository.getRecordsByMonth(uid, jid, month.toString(), year.toString())
+            workoutDays.value = records.map { it.date }.toSet()
+        }
     }
 
     fun onPageSelected(index: Int) {

@@ -82,6 +82,8 @@ kotlin {
             implementation(compose.components.resources)
             implementation(libs.androidx.lifecycle.viewmodel.compose)
             implementation(libs.androidx.lifecycle.runtime.compose)
+            implementation(libs.calendar.compose)
+            implementation(libs.reorderable)
         }
 
         commonTest.dependencies {
