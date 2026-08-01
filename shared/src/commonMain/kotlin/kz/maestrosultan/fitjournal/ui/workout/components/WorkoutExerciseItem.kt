@@ -47,7 +47,7 @@ fun WorkoutExerciseItem(
     val resultType = exercise.exercise.resultType
     Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            ExerciseAvatar(category = exercise.exercise.primaryCategory.type)
+            ExerciseAvatar(exercise = exercise.exercise)
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
