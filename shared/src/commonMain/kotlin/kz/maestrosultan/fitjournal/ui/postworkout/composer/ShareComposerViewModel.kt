@@ -123,6 +123,10 @@ class ShareComposerViewModel internal constructor(
             val saved = guarded { defaultsStore.load() }
                 .onFailure { log("defaults load failed, using first-run defaults: $it") }
                 .getOrNull()
+            // A slow store can land AFTER close. Without this the restore would
+            // repopulate state the close path just cleared, and race its save —
+            // persisting the restored values over what the user actually had.
+            if (closeRequested) return@launch
             val title = muscleTitleFormatter.title(summary.muscles)
             defaultTitle = title
             _state.update { it.restoredFrom(saved).copy(title = title.take(ComposerState.MAX_TITLE_LENGTH)) }
@@ -382,7 +386,11 @@ class ShareComposerViewModel internal constructor(
             statsPick = saved.statsPick.distinct()
                 .takeIf { it.size == ComposerState.STATS_PICK_SIZE }
                 ?: statsPick,
-            scrim = saved.scrim.coerceIn(0f, 1f),
+            // isFinite first: Float.coerceIn compares with < and >, both false
+            // for NaN, so a corrupt persisted NaN would pass straight through
+            // into the backdrop alpha.
+            scrim = saved.scrim.takeIf { it.isFinite() }?.coerceIn(0f, 1f)
+                ?: ComposerState.FIRST_RUN_SCRIM,
             transform = saved.transform,
             blockRemoved = saved.blockRemoved,
         )

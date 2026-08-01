@@ -270,11 +270,11 @@ class WorkoutSuccessViewModelTest {
         assertEquals("fallback-title", state.title)
         assertNull(state.tonnageText, "zero logged sets — the tonnage block is hidden")
         assertTrue(state.muscles.isEmpty())
-        assertEquals(1, state.exerciseCount, "the planned exercise still rails")
+        assertEquals(0, state.exerciseCount, "nothing was performed, so nothing is counted")
         assertEquals(
             listOf(RailLineUi("Squat", loggedSets = 0, totalSets = 1, aggregate = null)),
             state.exercises,
-            "a never-performed line carries no aggregate",
+            "the planned line still rails, as 0 of 1, carrying no aggregate",
         )
     }
 

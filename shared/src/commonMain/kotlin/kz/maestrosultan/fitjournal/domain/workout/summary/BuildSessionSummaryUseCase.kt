@@ -67,7 +67,12 @@ class BuildSessionSummaryUseCase(
             exercises = exercises,
             tonnageKg = TonnageCalculator.forSets(dayOrder.flatMap { it.sets }.filter { it.isLogged }),
             loggedSets = dayOrder.sumOf { workoutExercise -> workoutExercise.sets.count { it.isLogged } },
-            exerciseCount = exercises.size,
+            // Exercises actually PERFORMED, not everything on the day's list.
+            // Every other figure here already counts logged work only —
+            // loggedSets, tonnage, the muscle ranking — so counting planned-but-
+            // skipped rows here made the one metric that disagreed, and made a
+            // celebration screen claim work that never happened.
+            exerciseCount = exercises.count { it.loggedSets > 0 },
             weekOrdinal = weekOrdinal(session),
             best = best,
             sessionRecordUuids = sessionRecordUuids,

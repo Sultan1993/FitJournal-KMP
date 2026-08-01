@@ -486,13 +486,28 @@ internal fun ShareCardScope.ShareCardBody(
                         if (exportMode) {
                             Modifier
                         } else {
-                            Modifier.pointerInput(Unit) {
+                            // Keyed on the live-state instance, not Unit. A
+                            // reseed (an external "Reset layout") replaces that
+                            // instance, and a handler still capturing the OLD
+                            // one would keep folding gestures into a state
+                            // nothing draws, then commit it on release.
+                            Modifier.pointerInput(live) {
                                 awaitEachGesture {
                                     awaitFirstDown(requireUnconsumed = false)
                                     gesturing = true
+                                    // The UNSNAPPED accumulator. Feeding the
+                                    // snapped value back as the next event's
+                                    // base discards every sub-threshold delta,
+                                    // so once engaged the block could never
+                                    // accumulate enough movement to pull free —
+                                    // it stuck to the guide until the finger
+                                    // lifted. Gestures fold into `raw`; `live`
+                                    // only ever receives what is rendered.
+                                    var raw = live.value
                                     var event: PointerEvent
                                     var canceled = false
-                                    do {
+                                    try {
+                                        do {
                                         event = awaitPointerEvent()
                                         canceled = event.changes.any { it.isConsumed }
                                         if (canceled) break
@@ -503,7 +518,7 @@ internal fun ShareCardScope.ShareCardBody(
 
                                         val w = canvas.width.toFloat()
                                         val h = canvas.height.toFloat()
-                                        val base = live.value ?: run {
+                                        val base = raw ?: run {
                                             val c = anchored()
                                             normalizeCenter(
                                                 centerXPx = c.x,
@@ -523,6 +538,7 @@ internal fun ShareCardScope.ShareCardBody(
                                             canvasWidthPx = w,
                                             canvasHeightPx = h,
                                         )
+                                        raw = moved
                                         val position = snapPosition(moved, w, h, densityPxPerDp)
                                         val angle = snapRotation(position.transform.rotationDeg)
 
@@ -560,28 +576,58 @@ internal fun ShareCardScope.ShareCardBody(
                                             densityPxPerDp = densityPxPerDp,
                                         )
                                         event.changes.forEach { if (it.positionChanged()) it.consume() }
-                                    } while (event.changes.any { it.pressed })
+                                        } while (event.changes.any { it.pressed })
 
-                                    gesturing = false
-                                    guideX = false
-                                    guideY = false
-                                    guideRotation = false
-                                    val settled = live.value
-                                    when {
-                                        canceled -> live.value = transform
-                                        overTrash && settled != null -> {
-                                            haptics.tick()
-                                            // Drop the drag position first: it is
-                                            // never committed, and leaving it here
-                                            // would outlive a later reset (see the
-                                            // note on `live`).
-                                            live.value = transform
-                                            onRemoveBlock()
+                                        val settled = live.value
+                                        // Recomputed HERE rather than trusting
+                                        // the flag the loop left behind: the
+                                        // target centre arrives asynchronously
+                                        // from onGloballyPositioned, and a
+                                        // release with no movement takes the
+                                        // `continue` path above without ever
+                                        // updating it. Deleting the user's card
+                                        // on a stale boolean is not a mistake
+                                        // worth risking.
+                                        val target = trashCenterInRoot - canvasOriginInRoot
+                                        val droppedOnTrash = !canceled &&
+                                            settled != null &&
+                                            trashCenterInRoot.isSpecified &&
+                                            isOverTrash(
+                                                blockCenterXPx = settled.cx * canvas.width,
+                                                blockCenterYPx = settled.cy * canvas.height,
+                                                trashCenterXPx = target.x,
+                                                trashCenterYPx = target.y,
+                                                densityPxPerDp = densityPxPerDp,
+                                            )
+                                        when {
+                                            canceled -> live.value = transform
+                                            droppedOnTrash -> {
+                                                haptics.tick()
+                                                // Drop the drag position first:
+                                                // it is never committed, and
+                                                // leaving it here would outlive
+                                                // a later reset (see `live`).
+                                                live.value = transform
+                                                onRemoveBlock()
+                                            }
+                                            settled != null && settled != transform ->
+                                                onTransformChanged(settled)
                                         }
-                                        settled != null && settled != transform ->
-                                            onTransformChanged(settled)
+                                    } finally {
+                                        // finally, because awaitEachGesture
+                                        // rethrows cancellation when its pointer
+                                        // context goes away — a density change,
+                                        // node detach or handler restart would
+                                        // otherwise leave `gesturing` true
+                                        // forever, freezing the guides and the
+                                        // trash target on screen with no gesture
+                                        // running.
+                                        gesturing = false
+                                        guideX = false
+                                        guideY = false
+                                        guideRotation = false
+                                        overTrash = false
                                     }
-                                    overTrash = false
                                 }
                             }
                         },

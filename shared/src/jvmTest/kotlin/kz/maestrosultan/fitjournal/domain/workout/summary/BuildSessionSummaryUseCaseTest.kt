@@ -304,7 +304,7 @@ class BuildSessionSummaryUseCaseTest {
     }
 
     @Test
-    fun exerciseCount_includesPlannedOnlyExercises(): Unit = runBlocking {
+    fun exerciseCount_countsOnlyExercisesWithLoggedSets(): Unit = runBlocking {
         val squatWe = addOccurrence(seedExercise("Squat", CategoryType.QUADRICEPS), date)
         val benchWe = addOccurrence(seedExercise("Bench Press", CategoryType.CHEST), date)
         repo.addSet(userId, journalId, squatWe, 100.0, 5, null, null)
@@ -312,8 +312,12 @@ class BuildSessionSummaryUseCaseTest {
 
         val summary = summarize()
 
-        assertEquals(2, summary.exerciseCount, "a planned-only exercise is still on the day's list")
-        assertEquals(listOf("Squat", "Bench Press"), summary.exercises.map { it.name })
+        assertEquals(1, summary.exerciseCount, "only exercises actually performed are counted")
+        assertEquals(
+            listOf("Squat", "Bench Press"),
+            summary.exercises.map { it.name },
+            "the planned row stays in the list so the rail can show it as 0 of N",
+        )
         assertEquals(1, summary.loggedSets)
         assertEquals(
             listOf(MuscleLoad(CategoryType.QUADRICEPS, 1)),
