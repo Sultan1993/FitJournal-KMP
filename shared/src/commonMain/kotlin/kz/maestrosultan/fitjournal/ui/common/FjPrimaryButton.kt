@@ -2,7 +2,9 @@ package kz.maestrosultan.fitjournal.ui.common
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -23,12 +25,16 @@ import kz.maestrosultan.fitjournal.ui.theme.FjTheme
  *
  * Label type is the `button` role (Rubik 16), weight-overridden to Medium —
  * the design's CTA is lighter than the role's SemiBold default.
+ *
+ * [leadingIcon] is an optional glyph placed before the label with a 9dp gap
+ * (the share CTA on the success screen); omit it for a plain label CTA.
  */
 @Composable
 fun FjPrimaryButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    leadingIcon: (@Composable () -> Unit)? = null,
 ) {
     Box(
         modifier = modifier
@@ -38,10 +44,16 @@ fun FjPrimaryButton(
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = text,
-            style = FjTheme.typography.button.copy(fontWeight = FontWeight.Medium),
-            color = Color.White,
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(9.dp),
+        ) {
+            leadingIcon?.invoke()
+            Text(
+                text = text,
+                style = FjTheme.typography.button.copy(fontWeight = FontWeight.Medium),
+                color = Color.White,
+            )
+        }
     }
 }

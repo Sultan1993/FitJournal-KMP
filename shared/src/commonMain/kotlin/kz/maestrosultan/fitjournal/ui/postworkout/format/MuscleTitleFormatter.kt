@@ -51,8 +51,11 @@ internal class MuscleTitleFormatter(
     }
 }
 
-/** `category_name_<identifier>` — one key per [CategoryType] in values/strings.xml. */
-private val CategoryType.nameRes: StringResource
+/**
+ * `category_name_<identifier>` — one key per [CategoryType] in values/strings.xml.
+ * Also read by the success screen's muscle bars, so the 14-way map lives here once.
+ */
+internal val CategoryType.nameRes: StringResource
     get() = when (this) {
         CategoryType.CHEST -> Res.string.category_name_chest
         CategoryType.BACK -> Res.string.category_name_back
