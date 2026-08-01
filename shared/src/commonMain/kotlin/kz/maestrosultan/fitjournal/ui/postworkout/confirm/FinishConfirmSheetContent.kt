@@ -29,10 +29,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -48,7 +45,6 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_stat_e
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_stat_sets
 import kz.maestrosultan.fitjournal.ui.common.FjPrimaryButton
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
-import kz.maestrosultan.fitjournal.ui.theme.rubikFamily
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -68,6 +64,9 @@ private val ChecklistWindowHeight = 196.dp
  * [FinishConfirmUiState]; nothing is re-derived here. While [FinishConfirmUiState.loading]
  * the data sections (session card, checklist) are simply not emitted; the
  * fallback shell ([FinishConfirmUiState.isFallback]) renders without the checklist.
+ *
+ * Type comes off [FjTheme.typography]; where the design pins a value no role
+ * carries, the nearest role is `.copy()`-overridden rather than hand-built.
  *
  * [onVisibilityChanged] tracks composition lifetime — `true` on enter, `false`
  * on dispose — so the ViewModel can gate its per-second duration tick.
@@ -89,7 +88,6 @@ fun FinishConfirmSheetContent(
         onDispose { latestOnVisibilityChanged(false) }
     }
 
-    val rubik = rubikFamily()
     Column(
         modifier = modifier.padding(start = 20.dp, top = 10.dp, end = 20.dp, bottom = 26.dp),
     ) {
@@ -98,16 +96,19 @@ fun FinishConfirmSheetContent(
 
         Text(
             text = stringResource(Res.string.postworkout_confirm_title),
-            style = rubikStyle(rubik, 24.sp, FontWeight.Bold),
+            style = FjTheme.typography.screenTitle.copy(
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+            ),
             color = FjTheme.colors.textPrimary,
         )
         Spacer(Modifier.height(16.dp))
 
         if (!state.loading) {
-            SessionCard(state, rubik, Modifier.fillMaxWidth())
+            SessionCard(state, Modifier.fillMaxWidth())
             if (!state.isFallback) {
                 Spacer(Modifier.height(14.dp))
-                ChecklistWindow(state.checklist, rubik, Modifier.fillMaxWidth())
+                ChecklistWindow(state.checklist, Modifier.fillMaxWidth())
             }
         }
 
@@ -127,7 +128,7 @@ fun FinishConfirmSheetContent(
         ) {
             Text(
                 text = stringResource(Res.string.postworkout_confirm_keep_training),
-                style = rubikStyle(rubik, 15.sp, FontWeight.Medium),
+                style = FjTheme.typography.bodyStrong,
                 color = FjTheme.colors.textSecondary,
             )
         }
@@ -147,11 +148,7 @@ private fun Grabber(modifier: Modifier = Modifier) {
 
 /** brandSubtle summary card: eyebrow, tonnage + unit, duration/sets/exercises stats. */
 @Composable
-private fun SessionCard(
-    state: FinishConfirmUiState,
-    rubik: FontFamily,
-    modifier: Modifier = Modifier,
-) {
+private fun SessionCard(state: FinishConfirmUiState, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(22.dp))
@@ -167,43 +164,42 @@ private fun SessionCard(
         Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
             Text(
                 text = state.tonnageValue,
-                style = rubikStyle(rubik, 42.sp, FontWeight.Bold, letterSpacing = (-0.02).em),
+                style = FjTheme.typography.numberLarge.copy(
+                    fontSize = 42.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = (-0.02).em,
+                ),
                 color = FjTheme.colors.textPrimary,
                 modifier = Modifier.alignByBaseline(),
             )
             Text(
                 text = state.tonnageUnit,
-                style = rubikStyle(rubik, 15.sp, FontWeight.Medium),
+                style = FjTheme.typography.bodyStrong,
                 color = FjTheme.colors.textSecondary,
                 modifier = Modifier.alignByBaseline(),
             )
         }
         Spacer(Modifier.height(14.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) {
-            SessionStat(state.durationText, stringResource(Res.string.postworkout_stat_duration), rubik)
-            SessionStat(state.setsCount.toString(), stringResource(Res.string.postworkout_stat_sets), rubik)
-            SessionStat(state.exercisesCount.toString(), stringResource(Res.string.postworkout_stat_exercises), rubik)
+            SessionStat(state.durationText, stringResource(Res.string.postworkout_stat_duration))
+            SessionStat(state.setsCount.toString(), stringResource(Res.string.postworkout_stat_sets))
+            SessionStat(state.exercisesCount.toString(), stringResource(Res.string.postworkout_stat_exercises))
         }
     }
 }
 
 @Composable
-private fun SessionStat(
-    value: String,
-    label: String,
-    rubik: FontFamily,
-    modifier: Modifier = Modifier,
-) {
+private fun SessionStat(value: String, label: String, modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
         Text(
             text = value,
-            style = rubikStyle(rubik, 20.sp, FontWeight.Medium),
+            style = FjTheme.typography.cardTitle.copy(fontSize = 20.sp),
             color = FjTheme.colors.textPrimary,
         )
         Spacer(Modifier.height(2.dp))
         Text(
             text = label,
-            style = rubikStyle(rubik, 11.5.sp, FontWeight.Medium),
+            style = FjTheme.typography.label.copy(fontSize = 11.5.sp),
             color = FjTheme.colors.textSecondary,
         )
     }
@@ -214,11 +210,7 @@ private fun SessionStat(
  * background — the sheet itself never grows with the exercise count.
  */
 @Composable
-private fun ChecklistWindow(
-    rows: List<FinishChecklistRow>,
-    rubik: FontFamily,
-    modifier: Modifier = Modifier,
-) {
+private fun ChecklistWindow(rows: List<FinishChecklistRow>, modifier: Modifier = Modifier) {
     val fadeColor = FjTheme.colors.sheet
     Box(modifier = modifier.height(ChecklistWindowHeight)) {
         Column(
@@ -227,7 +219,7 @@ private fun ChecklistWindow(
                 .verticalScroll(rememberScrollState()),
         ) {
             rows.forEach { row ->
-                ChecklistRow(row, rubik, Modifier.fillMaxWidth())
+                ChecklistRow(row, Modifier.fillMaxWidth())
             }
         }
         Box(
@@ -243,11 +235,7 @@ private fun ChecklistWindow(
 }
 
 @Composable
-private fun ChecklistRow(
-    row: FinishChecklistRow,
-    rubik: FontFamily,
-    modifier: Modifier = Modifier,
-) {
+private fun ChecklistRow(row: FinishChecklistRow, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier.padding(vertical = 7.dp, horizontal = 2.dp),
         horizontalArrangement = Arrangement.spacedBy(11.dp),
@@ -256,20 +244,23 @@ private fun ChecklistRow(
         ChecklistDot(filled = row.allLogged)
         Text(
             text = row.name,
-            style = rubikStyle(rubik, 15.sp, FontWeight.Medium),
+            style = FjTheme.typography.bodyStrong,
             color = FjTheme.colors.textPrimary,
             modifier = Modifier.weight(1f),
         )
         if (row.allLogged) {
             Text(
                 text = pluralStringResource(Res.plurals.postworkout_sets, row.totalSets, row.totalSets),
-                style = rubikStyle(rubik, 13.sp, FontWeight.Medium),
+                style = FjTheme.typography.caption.copy(fontWeight = FontWeight.Medium),
                 color = FjTheme.colors.textTertiary,
             )
         } else {
             Text(
                 text = stringResource(Res.string.postworkout_partial_format, row.loggedSets, row.totalSets),
-                style = rubikStyle(rubik, 12.sp, FontWeight.Bold),
+                style = FjTheme.typography.label.copy(
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                ),
                 color = PartialPillTextColor,
                 modifier = Modifier
                     .clip(CircleShape)
@@ -302,15 +293,3 @@ private fun ChecklistDot(filled: Boolean, modifier: Modifier = Modifier) {
         }
     }
 }
-
-private fun rubikStyle(
-    family: FontFamily,
-    size: TextUnit,
-    weight: FontWeight,
-    letterSpacing: TextUnit = TextUnit.Unspecified,
-) = TextStyle(
-    fontFamily = family,
-    fontWeight = weight,
-    fontSize = size,
-    letterSpacing = letterSpacing,
-)

@@ -11,18 +11,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
-import kz.maestrosultan.fitjournal.ui.theme.rubikFamily
 
 /**
  * The product's filled primary CTA: 54dp-tall brand rectangle (radius 14) with
  * a white Rubik Medium 16 label. Height, shape, and fill are the button's
  * identity; width and placement belong to the caller (pass `fillMaxWidth()`
  * for edge-to-edge sheet CTAs).
+ *
+ * Label type is the `button` role (Rubik 16), weight-overridden to Medium —
+ * the design's CTA is lighter than the role's SemiBold default.
  */
 @Composable
 fun FjPrimaryButton(
@@ -40,11 +40,7 @@ fun FjPrimaryButton(
     ) {
         Text(
             text = text,
-            style = TextStyle(
-                fontFamily = rubikFamily(),
-                fontWeight = FontWeight.Medium,
-                fontSize = 16.sp,
-            ),
+            style = FjTheme.typography.button.copy(fontWeight = FontWeight.Medium),
             color = Color.White,
         )
     }
