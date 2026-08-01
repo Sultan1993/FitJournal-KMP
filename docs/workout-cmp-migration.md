@@ -192,6 +192,39 @@ callbacks to its coordinator/nav graph.
 
 **MIGRATION COMPLETE on `feature/workout-cmp` — awaiting user review (not merged).**
 
+## Gap-fill session (2026-08-01, after P8)
+
+Filled several v1 gaps. NOTE: a **parallel session** is building a post-workout
+"share card" feature (`ui/postworkout/`) on this SAME branch/worktree; its
+uncommitted WIP transiently breaks `:shared`, so gap-fill work was verified in a
+throwaway worktree off the committed HEAD (excludes their WIP). Nothing clobbered.
+
+- ✅ **1:1 exercise avatar** (`1f34d77`): bundled 238 exercise PNGs
+  (`composeResources/files/exercises/`) + 13 category-icon vectors
+  (`composeResources/drawable/`); `ExerciseAvatar` matches native
+  `WorkoutExerciseImage` (category-colour border, textTertiary fill, image →
+  category-icon fallback). Dynamic load via `Res.readBytes` + `decodeToImageBitmap`.
+- ✅ **Shared calendar** (`badc2a5` + VM state `fdef1a5`): Kizitonwose 2.10.1
+  `WorkoutCalendar` overlay (brand-circle selection, workout dots); VM
+  `calendarVisible`/`workoutDays` via `getRecordsByMonth`, `onToggleCalendar`/
+  `onCalendarMonthChanged`. Hosts: Android dropped `FJCalendar`, both nav-bar icons
+  → `onToggleCalendar` (iOS `24b672b5`, Android `10350273`). **iOS finally has date-nav.**
+- ✅ **de/ru/uk strings** (`fdef1a5`): reused existing app translations; additive.
+- ✅ **iOS Live-Activity reconcile** (`f7d59ba4`): host observes running-session
+  transitions → `WorkoutLiveActivity.sessionDidStart/End`.
+- Verified: shared side (avatar + calendar + strings + VM) builds Android + iOS in
+  the throwaway. HOSTS (Android/iOS app builds) NOT re-verified — blocked by the
+  parallel session's WIP; changes are small/low-risk. Re-verify once branches split.
+
+### Still open (documented follow-ups)
+- **Drag-reorder** UI (VM.onReorder ready; needs reorderable LazyColumn — dep
+  `sh.calvin.reorderable` already added; deferred: pager↔drag nested-scroll needs
+  visual tuning, which the build collision blocked).
+- **Import threads workoutNumber** — still lands new exercises on workout 1;
+  needs the import flow (ImportDataStore/ImportCoordinator) to carry the target
+  page's workoutNumber into `addExercisesToDate`. Both platforms.
+- **"Add from workout" (copy previous)** path on the "+" (only "from list" wired).
+
 ## Known v1 gaps / follow-ups (for morning review)
 - Drag-reorder UI not wired (VM.onReorder ready); swipe-delete not wired (menu delete works).
 - Exercise avatar = category-colour chip, not the per-exercise image.
