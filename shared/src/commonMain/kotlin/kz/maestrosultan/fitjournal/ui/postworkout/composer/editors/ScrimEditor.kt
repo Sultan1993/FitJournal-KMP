@@ -25,7 +25,7 @@ import kz.maestrosultan.fitjournal.ui.theme.FjTheme
  * dismiss.
  */
 @Composable
-fun ScrimEditor(
+internal fun ScrimEditor(
     scrim: Float,
     onScrimChange: (Float) -> Unit,
     modifier: Modifier = Modifier,

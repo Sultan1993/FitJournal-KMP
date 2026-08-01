@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -38,6 +39,8 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -45,7 +48,9 @@ import androidx.compose.ui.unit.sp
 import kotlin.math.ceil
 import kotlin.math.min
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
+import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_close
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_composer_title
+import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_save
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_error_export
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_error_save
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_error_save_permission
@@ -481,11 +486,19 @@ private fun ComposerChrome(
 
 @Composable
 private fun TopChrome(onCloseRequested: () -> Unit, modifier: Modifier = Modifier) {
+    val closeLabel = stringResource(Res.string.postworkout_close)
     Box(modifier = modifier.padding(horizontal = ChromeEdgeInset, vertical = 10.dp)) {
         Box(
             modifier = Modifier
                 .align(Alignment.CenterStart)
                 .testTag(ComposerTestTags.Close)
+                // The glyph is a Canvas and contributes no semantics, so
+                // without this the ONLY way out of the composer announces as an
+                // unnamed button. minimumInteractiveComponentSize because a
+                // bare clickable — unlike IconButton — does not expand a 38dp
+                // visual to the 48dp touch minimum.
+                .semantics { contentDescription = closeLabel }
+                .minimumInteractiveComponentSize()
                 .size(CloseChipSize)
                 .clip(CircleShape)
                 .background(ChromeInk.copy(alpha = 0.4f))
@@ -561,9 +574,14 @@ private fun BottomBar(onSave: () -> Unit, onShare: () -> Unit, modifier: Modifie
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        val saveLabel = stringResource(Res.string.postworkout_save)
         Box(
             modifier = Modifier
                 .testTag(ComposerTestTags.Save)
+                // Same reasoning as the close chip: an icon-only Canvas target
+                // with no name and a sub-48dp hit area.
+                .semantics { contentDescription = saveLabel }
+                .minimumInteractiveComponentSize()
                 .size(RailButtonSize)
                 .clip(CircleShape)
                 .background(ChromeInk.copy(alpha = 0.45f))

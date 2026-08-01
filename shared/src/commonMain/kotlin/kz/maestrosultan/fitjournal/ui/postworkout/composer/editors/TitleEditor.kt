@@ -52,7 +52,7 @@ private val FieldHeight = 52.dp
  * [EditorSheet] grows upward and clears the keyboard.
  */
 @Composable
-fun TitleEditor(
+internal fun TitleEditor(
     title: String,
     onTitleChange: (String) -> Unit,
     onSubmit: () -> Unit,
@@ -95,7 +95,10 @@ fun TitleEditor(
                 keyboardActions = KeyboardActions(onDone = { onSubmit() }),
                 decorationBox = { innerTextField ->
                     Box(contentAlignment = Alignment.CenterStart) {
-                        if (title.isEmpty()) {
+                        // isBlank, not isEmpty: a single space has length 1, so
+                        // the placeholder would vanish while the card headline
+                        // rendered invisible whitespace.
+                        if (title.isBlank()) {
                             Text(
                                 text = stringResource(Res.string.postworkout_title_fallback),
                                 style = FjTheme.typography.body.copy(fontSize = 16.sp),

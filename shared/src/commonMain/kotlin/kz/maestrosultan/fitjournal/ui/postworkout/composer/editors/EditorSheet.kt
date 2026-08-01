@@ -62,7 +62,7 @@ import org.jetbrains.compose.resources.stringResource
  * composed, so the canvas underneath keeps every pointer event.
  */
 @Composable
-fun EditorSheet(
+internal fun EditorSheet(
     visible: Boolean,
     title: String,
     onDone: () -> Unit,
@@ -112,7 +112,7 @@ fun EditorSheet(
 }
 
 /** Design tokens the five editor bodies share with the sheet chrome. */
-object EditorSheetDefaults {
+internal object EditorSheetDefaults {
 
     /** Panel surface — fixed dark regardless of app theme; the card behind it is dark too. */
     val SurfaceColor: Color = Color(0xFF16161F)

@@ -43,7 +43,9 @@ fun ShareComposerRoute(
     // reads correctly. `ShareCardData`'s own KDoc warns about exactly this.
     val data = shareCardData(
         summary = summary,
-        title = state.title,
+        // A cleared or whitespace-only title falls back to the muscle-derived
+        // one rather than exporting a blank headline.
+        title = state.title.ifBlank { viewModel.defaultTitle },
         statsPick = state.statsPick,
         units = viewModel.context.units,
     )

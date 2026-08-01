@@ -46,7 +46,7 @@ private val ChipShape = RoundedCornerShape(12.dp)
  * simply comes back unchanged.
  */
 @Composable
-fun StatsEditor(
+internal fun StatsEditor(
     selected: List<StatKind>,
     onToggle: (StatKind) -> Unit,
     modifier: Modifier = Modifier,

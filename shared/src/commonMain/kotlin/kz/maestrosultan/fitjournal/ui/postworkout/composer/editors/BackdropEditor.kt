@@ -41,7 +41,7 @@ private val RowShape = RoundedCornerShape(14.dp)
  * [onSelect].
  */
 @Composable
-fun BackdropEditor(
+internal fun BackdropEditor(
     selected: BackdropKind,
     onSelect: (BackdropKind) -> Unit,
     onPickPhoto: () -> Unit,

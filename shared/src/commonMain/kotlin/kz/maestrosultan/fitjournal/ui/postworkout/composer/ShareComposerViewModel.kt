@@ -104,6 +104,16 @@ class ShareComposerViewModel internal constructor(
     private var deliverJob: Job? = null
     private var exportTimeoutJob: Job? = null
 
+    /**
+     * The muscle-derived title, kept so a blank one can fall back to it.
+     *
+     * The editor lets the field be cleared, and a title of " " is not empty —
+     * so without this the card headline renders invisible whitespace and the
+     * exported PNG ships with a blank line where the title should be.
+     */
+    internal var defaultTitle: String = ""
+        private set
+
     init {
         viewModelScope.launch {
             // Restore lands async: an edit made in the sub-frame window before
@@ -114,6 +124,7 @@ class ShareComposerViewModel internal constructor(
                 .onFailure { log("defaults load failed, using first-run defaults: $it") }
                 .getOrNull()
             val title = muscleTitleFormatter.title(summary.muscles)
+            defaultTitle = title
             _state.update { it.restoredFrom(saved).copy(title = title.take(ComposerState.MAX_TITLE_LENGTH)) }
         }
     }

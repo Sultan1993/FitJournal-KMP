@@ -24,6 +24,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -57,7 +60,7 @@ private val SelectedBorderWidth = 2.5.dp
  * empty).
  */
 @Composable
-fun LayoutEditor(
+internal fun LayoutEditor(
     selected: ShareLayoutKind,
     onSelect: (ShareLayoutKind) -> Unit,
     onResetLayout: () -> Unit,
@@ -90,6 +93,7 @@ private fun LayoutThumb(
     modifier: Modifier = Modifier,
 ) {
     val brand = FjTheme.colors.brand
+    val label = kind.label()
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -97,6 +101,15 @@ private fun LayoutThumb(
         Box(
             modifier = Modifier
                 .testTag(ComposerTestTags.layoutThumb(kind))
+                // The caption below is a SIBLING of this clickable, not a
+                // descendant, so Compose's semantics merge never picks it up —
+                // every thumbnail announced as an unnamed button and layout
+                // choice was unusable without sight. Selected state is exposed
+                // too, since colour alone carries it visually.
+                .semantics {
+                    contentDescription = label
+                    this.selected = selected
+                }
                 .fillMaxWidth()
                 .aspectRatio(ThumbAspect)
                 .clip(ThumbShape)
@@ -114,7 +127,7 @@ private fun LayoutThumb(
         }
         Spacer(Modifier.height(7.dp))
         Text(
-            text = kind.label(),
+            text = label,
             style = FjTheme.typography.label.copy(
                 fontSize = 11.sp,
                 fontWeight = FontWeight.SemiBold,

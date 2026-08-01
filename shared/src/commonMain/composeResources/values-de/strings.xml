@@ -62,6 +62,8 @@
         <item quantity="one">%1$d Muskelgruppe</item>
         <item quantity="other">%1$d Muskelgruppen</item>
     </plurals>
+    <string name="postworkout_close">Schließen</string>
+    <string name="postworkout_save">In Fotos sichern</string>
     <string name="postworkout_reps_format">%1$d Wdh.</string>
     <string name="postworkout_stat_pair_format">%1$s · %2$s</string>
 
