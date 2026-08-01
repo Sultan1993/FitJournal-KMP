@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
@@ -46,6 +47,10 @@ import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
  * end-workout failure is logged and treated as "already ended" — the finish
  * event fires regardless, because keeping the user stuck on a confirm sheet is
  * worse than any of these errors.
+ *
+ * A stale tap (no running session by the time the sheet loads) shows the same
+ * fallback shell. Confirm is inert in this state; the host's ever-present
+ * native dismissal (Keep training / swipe) is the escape — spec §7.1.
  */
 class FinishConfirmViewModel(
     private val buildSummary: BuildSessionSummaryUseCase,
@@ -157,7 +162,7 @@ class FinishConfirmViewModel(
     private fun startTicking() {
         if (tickJob?.isActive == true) return
         tickJob = viewModelScope.launch {
-            while (true) {
+            while (isActive) {
                 updateDurationText()
                 delay(1_000)
             }

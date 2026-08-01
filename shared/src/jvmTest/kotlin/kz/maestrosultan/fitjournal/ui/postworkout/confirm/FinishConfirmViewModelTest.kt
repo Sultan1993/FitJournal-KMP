@@ -422,6 +422,27 @@ class FinishConfirmViewModelTest {
         vm.dispose()
     }
 
+    @Test
+    fun noRunningSession_showsFallbackShell_andConfirmIsNoOp() = runTest {
+        val bed = TestBed(sampleRecords())
+        bed.sessionRepo.running = null // stale tap: the session vanished before the sheet loaded
+        val vm = bed.vm()
+        runCurrent()
+
+        val state = vm.uiState.value
+        assertFalse(state.loading)
+        assertTrue(state.isFallback)
+
+        // Confirm is inert — no end call, no finished event; the host's
+        // ever-present native dismissal is the escape (spec §7.1).
+        val events = collectFinished(vm)
+        vm.onConfirmFinish()
+        runCurrent()
+        assertEquals(0, bed.sessionRepo.endCalls, "nothing to end — endWorkout must not be called")
+        assertTrue(events.isEmpty(), "no finished event without a session to hand over")
+        vm.dispose()
+    }
+
     // ─── Duration tick ────────────────────────────────────────────────────
 
     @Test
