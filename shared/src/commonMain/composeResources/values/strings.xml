@@ -40,7 +40,7 @@
 
     <!-- Post-workout: success screen -->
     <string name="postworkout_saved_to_journal">Saved to journal</string>
-    <string name="postworkout_total_volume_caption">Total volume · %1$d sets across %2$d exercises</string>
+    <string name="postworkout_total_volume_caption">Total volume · %1$s across %2$s</string>
     <string name="postworkout_tile_duration">DURATION</string>
     <string name="postworkout_tile_sets">SETS</string>
     <string name="postworkout_tile_this_week">THIS WEEK</string>
@@ -50,7 +50,14 @@
     <string name="postworkout_open_record">Open record</string>
     <string name="postworkout_share_workout">Share workout</string>
     <string name="postworkout_title_fallback">Workout</string>
-    <string name="postworkout_sets_format">%1$d sets</string>
+    <plurals name="postworkout_sets">
+        <item quantity="one">%1$d set</item>
+        <item quantity="other">%1$d sets</item>
+    </plurals>
+    <plurals name="postworkout_exercises">
+        <item quantity="one">%1$d exercise</item>
+        <item quantity="other">%1$d exercises</item>
+    </plurals>
     <string name="postworkout_reps_format">%1$d reps</string>
     <string name="postworkout_stat_pair_format">%1$s · %2$s</string>
 

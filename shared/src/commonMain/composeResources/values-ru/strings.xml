@@ -8,8 +8,8 @@
 
     <!-- Post-workout: success screen -->
     <string name="postworkout_saved_to_journal">Сохранено в журнал</string>
-    <string name="postworkout_total_volume_caption">Общий объём · %1$d подходов в %2$d упражнениях</string>
-    <string name="postworkout_tile_duration">ДЛИТЕЛЬНОСТЬ</string>
+    <string name="postworkout_total_volume_caption">Общий объём · %1$s, %2$s</string>
+    <string name="postworkout_tile_duration">ВРЕМЯ</string>
     <string name="postworkout_tile_sets">ПОДХОДЫ</string>
     <string name="postworkout_tile_this_week">ЗА НЕДЕЛЮ</string>
     <string name="postworkout_new_best">НОВЫЙ РЕКОРД</string>
@@ -18,7 +18,18 @@
     <string name="postworkout_open_record">Открыть запись</string>
     <string name="postworkout_share_workout">Поделиться</string>
     <string name="postworkout_title_fallback">Тренировка</string>
-    <string name="postworkout_sets_format">%1$d подходов</string>
+    <plurals name="postworkout_sets">
+        <item quantity="one">%1$d подход</item>
+        <item quantity="few">%1$d подхода</item>
+        <item quantity="many">%1$d подходов</item>
+        <item quantity="other">%1$d подхода</item>
+    </plurals>
+    <plurals name="postworkout_exercises">
+        <item quantity="one">%1$d упражнение</item>
+        <item quantity="few">%1$d упражнения</item>
+        <item quantity="many">%1$d упражнений</item>
+        <item quantity="other">%1$d упражнения</item>
+    </plurals>
     <string name="postworkout_reps_format">%1$d повт.</string>
     <string name="postworkout_stat_pair_format">%1$s · %2$s</string>
 

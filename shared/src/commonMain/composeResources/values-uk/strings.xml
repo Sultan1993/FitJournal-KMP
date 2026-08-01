@@ -8,7 +8,7 @@
 
     <!-- Post-workout: success screen -->
     <string name="postworkout_saved_to_journal">Збережено в журнал</string>
-    <string name="postworkout_total_volume_caption">Загальний обсяг · %1$d підходів у %2$d вправах</string>
+    <string name="postworkout_total_volume_caption">Загальний обсяг · %1$s, %2$s</string>
     <string name="postworkout_tile_duration">ТРИВАЛІСТЬ</string>
     <string name="postworkout_tile_sets">ПІДХОДИ</string>
     <string name="postworkout_tile_this_week">ЗА ТИЖДЕНЬ</string>
@@ -18,7 +18,18 @@
     <string name="postworkout_open_record">Відкрити запис</string>
     <string name="postworkout_share_workout">Поділитися</string>
     <string name="postworkout_title_fallback">Тренування</string>
-    <string name="postworkout_sets_format">%1$d підходів</string>
+    <plurals name="postworkout_sets">
+        <item quantity="one">%1$d підхід</item>
+        <item quantity="few">%1$d підходи</item>
+        <item quantity="many">%1$d підходів</item>
+        <item quantity="other">%1$d підходу</item>
+    </plurals>
+    <plurals name="postworkout_exercises">
+        <item quantity="one">%1$d вправа</item>
+        <item quantity="few">%1$d вправи</item>
+        <item quantity="many">%1$d вправ</item>
+        <item quantity="other">%1$d вправи</item>
+    </plurals>
     <string name="postworkout_reps_format">%1$d повт.</string>
     <string name="postworkout_stat_pair_format">%1$s · %2$s</string>
 

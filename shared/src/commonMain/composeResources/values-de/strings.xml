@@ -8,7 +8,7 @@
 
     <!-- Post-workout: success screen -->
     <string name="postworkout_saved_to_journal">Im Journal gespeichert</string>
-    <string name="postworkout_total_volume_caption">Gesamtvolumen · %1$d Sätze in %2$d Übungen</string>
+    <string name="postworkout_total_volume_caption">Gesamtvolumen · %1$s in %2$s</string>
     <string name="postworkout_tile_duration">DAUER</string>
     <string name="postworkout_tile_sets">SÄTZE</string>
     <string name="postworkout_tile_this_week">DIESE WOCHE</string>
@@ -18,7 +18,14 @@
     <string name="postworkout_open_record">Eintrag öffnen</string>
     <string name="postworkout_share_workout">Training teilen</string>
     <string name="postworkout_title_fallback">Workout</string>
-    <string name="postworkout_sets_format">%1$d Sätze</string>
+    <plurals name="postworkout_sets">
+        <item quantity="one">%1$d Satz</item>
+        <item quantity="other">%1$d Sätze</item>
+    </plurals>
+    <plurals name="postworkout_exercises">
+        <item quantity="one">%1$d Übung</item>
+        <item quantity="other">%1$d Übungen</item>
+    </plurals>
     <string name="postworkout_reps_format">%1$d Wdh.</string>
     <string name="postworkout_stat_pair_format">%1$s · %2$s</string>
 
