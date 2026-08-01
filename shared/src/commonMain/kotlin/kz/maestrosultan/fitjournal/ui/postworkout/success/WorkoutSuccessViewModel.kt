@@ -43,7 +43,7 @@ import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
  * flag (consumed via [onSuccessHapticPlayed]); the host's PostWorkoutHaptics
  * seam is triggered by the composable, not injected here.
  */
-internal class WorkoutSuccessViewModel(
+class WorkoutSuccessViewModel internal constructor(
     private val result: FinishResult,
     private val buildSummary: BuildSessionSummaryUseCase,
     private val sessionRepository: WorkoutSessionRepository,
@@ -51,6 +51,28 @@ internal class WorkoutSuccessViewModel(
     private val clock: Clock = Clock.System,
     private val timeZone: TimeZone = TimeZone.currentSystemDefault(),
 ) : ViewModel() {
+
+    /**
+     * Public construction path — the Android app module (a separate compilation
+     * unit consuming :shared via Hilt) builds VMs itself, so class + constructor
+     * must be public while [MuscleTitleFormatter] stays internal (its defaults
+     * touch generated compose resources). Production always uses the Res-backed
+     * formatter; jvmTest injects a deterministic one via the internal primary.
+     */
+    constructor(
+        result: FinishResult,
+        buildSummary: BuildSessionSummaryUseCase,
+        sessionRepository: WorkoutSessionRepository,
+        clock: Clock = Clock.System,
+        timeZone: TimeZone = TimeZone.currentSystemDefault(),
+    ) : this(
+        result = result,
+        buildSummary = buildSummary,
+        sessionRepository = sessionRepository,
+        muscleTitleFormatter = MuscleTitleFormatter(),
+        clock = clock,
+        timeZone = timeZone,
+    )
 
     private val _uiState = MutableStateFlow(WorkoutSuccessUiState(loading = true))
     val uiState: StateFlow<WorkoutSuccessUiState> = _uiState.asStateFlow()

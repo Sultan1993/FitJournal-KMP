@@ -52,7 +52,7 @@ import kz.maestrosultan.fitjournal.ui.postworkout.seams.SharePresenter
  * the stored setup untouched). Failures surface as a [ComposerChip] that
  * auto-clears after [CHIP_AUTO_CLEAR]; the composer itself never blocks.
  */
-class ShareComposerViewModel(
+class ShareComposerViewModel internal constructor(
     val summary: SessionSummary,
     val context: PostWorkoutContext,
     private val defaultsStore: ComposerDefaultsStore,
@@ -61,6 +61,30 @@ class ShareComposerViewModel(
     private val haptics: PostWorkoutHaptics,
     muscleTitleFormatter: MuscleTitleFormatter,
 ) : ViewModel() {
+
+    /**
+     * Public construction path — the Android app module (a separate compilation
+     * unit consuming :shared via Hilt) builds VMs itself, so class + constructor
+     * must be public while [MuscleTitleFormatter] stays internal (its defaults
+     * touch generated compose resources). Production always uses the Res-backed
+     * formatter; jvmTest injects a deterministic one via the internal primary.
+     */
+    constructor(
+        summary: SessionSummary,
+        context: PostWorkoutContext,
+        defaultsStore: ComposerDefaultsStore,
+        photoPicker: PhotoPicker,
+        sharePresenter: SharePresenter,
+        haptics: PostWorkoutHaptics,
+    ) : this(
+        summary = summary,
+        context = context,
+        defaultsStore = defaultsStore,
+        photoPicker = photoPicker,
+        sharePresenter = sharePresenter,
+        haptics = haptics,
+        muscleTitleFormatter = MuscleTitleFormatter(),
+    )
 
     private val _state = MutableStateFlow(ComposerState())
     val state: StateFlow<ComposerState> = _state.asStateFlow()

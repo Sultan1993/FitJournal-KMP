@@ -491,13 +491,12 @@ class ShareComposerViewModelTest {
     fun close_savesCurrentDefaults_thenEmitsClosedOnce() = runTest {
         val vm = createVm()
         advanceUntilIdle()
-        val closedEvents = collectClosed(vm)
 
         vm.onLayoutSelected(ShareLayoutKind.Receipt)
         vm.onCloseRequested()
         advanceUntilIdle()
 
-        assertEquals(1, closedEvents.size)
+        assertEquals(1, drainClosedEvents(vm))
         assertEquals(1, store.saved.size)
         assertEquals(ShareLayoutKind.Receipt, store.saved.single().layout)
     }
@@ -506,13 +505,12 @@ class ShareComposerViewModelTest {
     fun close_doubleInvoke_stillEmitsOneEvent_andSavesOnce() = runTest {
         val vm = createVm()
         advanceUntilIdle()
-        val closedEvents = collectClosed(vm)
 
         vm.onCloseRequested()
         vm.onCloseRequested()
         advanceUntilIdle()
 
-        assertEquals(1, closedEvents.size)
+        assertEquals(1, drainClosedEvents(vm))
         assertEquals(1, store.saved.size)
     }
 
@@ -521,12 +519,11 @@ class ShareComposerViewModelTest {
         store.saveError = IllegalStateException("disk full")
         val vm = createVm()
         advanceUntilIdle()
-        val closedEvents = collectClosed(vm)
 
         vm.onCloseRequested()
         advanceUntilIdle()
 
-        assertEquals(1, closedEvents.size)
+        assertEquals(1, drainClosedEvents(vm))
     }
 
     @Test
@@ -561,11 +558,18 @@ class ShareComposerViewModelTest {
 
     // ─── Fixtures ───────────────────────────────────────────────────────
 
-    private fun TestScope.collectClosed(vm: ShareComposerViewModel): List<Unit> {
-        val events = mutableListOf<Unit>()
-        backgroundScope.launch { vm.closed.collect { events += it } }
-        runCurrent()
-        return events
+    /**
+     * Drains everything buffered in the `closed` channel and returns the count.
+     * Collected AFTER the fact via a foreground collector + explicit cancel —
+     * a backgroundScope collector is not reliably resumed by advanceUntilIdle
+     * once the foreground goes idle, and the channel buffers anyway.
+     */
+    private fun TestScope.drainClosedEvents(vm: ShareComposerViewModel): Int {
+        var count = 0
+        val collector = launch { vm.closed.collect { count++ } }
+        advanceUntilIdle()
+        collector.cancel()
+        return count
     }
 
     private fun summary(best: SessionBest? = null): SessionSummary = SessionSummary(

@@ -14,7 +14,10 @@ data class ExportRequest(val id: Long, val reason: ExportReason)
 /** Outcome of rendering + PNG-encoding a share card for an [ExportRequest]. */
 sealed interface ExportResult {
 
-    data class Success(val request: ExportRequest, val png: ByteArray) : ExportResult {
+    /** The request this result answers — success or failure, id correlation needs it. */
+    val request: ExportRequest
+
+    data class Success(override val request: ExportRequest, val png: ByteArray) : ExportResult {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is Success) return false
@@ -24,5 +27,5 @@ sealed interface ExportResult {
         override fun hashCode(): Int = 31 * request.hashCode() + png.contentHashCode()
     }
 
-    data class Failure(val request: ExportRequest) : ExportResult
+    data class Failure(override val request: ExportRequest) : ExportResult
 }
