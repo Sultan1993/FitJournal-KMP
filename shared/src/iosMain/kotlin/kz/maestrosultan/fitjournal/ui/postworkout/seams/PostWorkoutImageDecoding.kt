@@ -12,7 +12,7 @@ import org.jetbrains.skia.Image
  * photo". Never throws: an unbridged Kotlin exception would SIGABRT the iOS
  * app.
  */
-fun ByteArray.decodeToImageBitmap(): ImageBitmap? {
+internal fun ByteArray.decodeToImageBitmap(): ImageBitmap? {
     if (isEmpty()) return null
     // Typed as Image? so this compiles against both skiko signatures of
     // makeFromEncoded (throwing non-null vs nullable return).

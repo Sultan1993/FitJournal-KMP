@@ -18,17 +18,27 @@ expect object LocaleFormatters {
     fun formatGrouped(value: Long): String
 
     /**
-     * Short time of day in [timeZone], honoring the locale's 12/24h
-     * convention, e.g. "7:42 PM" / "19:42".
+     * Short time of day in [timeZone], e.g. "7:42 PM" / "19:42". Android/jvm
+     * follow the LOCALE's 12/24h convention only — a device-level 24-hour
+     * override is not honored (accepted divergence: this seam has no Context;
+     * revisit if users notice). iOS honors the device setting.
      */
     fun formatTimeShort(instant: Instant, timeZone: TimeZone): String
 
     /** Localized weekday + day + month, "Wednesday, 22 July" style (no year). */
     fun formatFullDate(date: LocalDate): String
 
-    /** Elapsed duration as h:mm, e.g. 4980s -> "1:23", 300s -> "0:05". */
-    fun formatDuration(seconds: Long): String
-
     /** Localized ordinal, e.g. 3 -> "3rd". */
     fun ordinal(n: Int): String
+}
+
+/**
+ * Elapsed duration as h:mm, e.g. 4980s -> "1:23", 300s -> "0:05". Pure
+ * arithmetic with no locale involvement, so it lives in common code instead of
+ * being implemented three times inside the expect object.
+ */
+internal fun formatDuration(seconds: Long): String {
+    val safe = seconds.coerceAtLeast(0)
+    val minutes = (safe % 3600) / 60
+    return "${safe / 3600}:${minutes.toString().padStart(2, '0')}"
 }

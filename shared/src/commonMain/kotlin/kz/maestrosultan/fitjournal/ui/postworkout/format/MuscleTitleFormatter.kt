@@ -33,7 +33,7 @@ import org.jetbrains.compose.resources.getString
  * only so jvmTest stays deterministic (no resource loading, no locale
  * dependence). Production callers always use the defaults.
  */
-class MuscleTitleFormatter(
+internal class MuscleTitleFormatter(
     private val categoryName: suspend (CategoryType) -> String = { getString(it.nameRes) },
     private val fallbackTitle: suspend () -> String = { getString(Res.string.postworkout_title_fallback) },
 ) {

@@ -37,12 +37,6 @@ actual object LocaleFormatters {
         return formatter.format(Date(noonUtc.toEpochMilliseconds()))
     }
 
-    actual fun formatDuration(seconds: Long): String {
-        val safe = seconds.coerceAtLeast(0)
-        val minutes = (safe % 3600) / 60
-        return "${safe / 3600}:${minutes.toString().padStart(2, '0')}"
-    }
-
     actual fun ordinal(n: Int): String = when (Locale.getDefault().language) {
         "en" -> {
             val suffix = when {
