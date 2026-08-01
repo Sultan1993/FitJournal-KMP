@@ -270,6 +270,43 @@ green on an arm64 simulator destination.
   the layouts and the freeform block stay module-internal deliberately; widening
   them would put the same composition in both app modules, in two languages.
 
+### Two-model review (Opus + Sol), 2026-08-01 — 13 defects fixed
+
+Run after the flow was declared done. It found a **Critical that three green
+builds and 237 green tests had missed**: `postWorkoutNavGraph()` was declared
+and never called, so none of the Android routes existed. `NavigationManager`
+catches and prints navigation exceptions, so it failed silently — the whole
+feature was unreachable. Both models found it independently.
+
+The lesson worth keeping: compiling is not reaching. Nothing in the build or the
+test suite can tell you a destination was never registered.
+
+Also fixed, in rough order of consequence:
+
+1. **The composer never saw a PR.** The confirm sheet builds with
+   `includeBest = false`, so `FinishResult.summary.best` is always null — and
+   both hosts built the composer from that snapshot. The "New best" layout, one
+   of four, was unreachable. The success screen now publishes its rebuilt
+   summary; hosts read it at tap time.
+2. **An ended session could lose its success screen** (Android). The finish
+   collector awaited a cancellable `sheetState.hide()` before navigating.
+3. **A trash drop poisoned a later Reset layout.** `remember(transform)` keys by
+   equality, not identity — a stale in-flight value survived a reset-to-null and
+   preview and export disagreed.
+4. **A Share double-tap reported a bogus failure** — `requestExport` replaced a
+   pending request, violating `CardExportHost`'s null-gap precondition.
+5. **The export composition re-resolved ~15 string resources**, risking a PNG
+   with blank labels beside a correct preview.
+6. `exportMode` never reached the card, so all three export guards were dead.
+7. A dismissal mid-build leaked a ticking `FinishConfirmViewModel` (Android).
+8. An outgoing composer could unregister a live one's launchers (Android).
+9. The photo "cap" was a lower bound — a 4032px photo decoded at full size.
+10. iOS decoded the picked photo on the main thread.
+11. The trash hit-test was offset from the drawn target by a caption height.
+12. `musclesSubline` was always empty — the plural now exists in all four locales.
+13. `ShareCardBody` gained a seven-case gesture suite; it had none, and defects
+    3, 6 and 11 all lived in that hole.
+
 ### Known gaps in the post-workout flow
 
 - **Spec §10 manual matrix is UNRUN** — light/dark, en+de, airplane mode, PR vs
@@ -277,10 +314,33 @@ green on an arm64 simulator destination.
   launches, Android API 28 save grant AND denial, share PNG readable by
   Gmail/Photos. Builds and automated tests are green; nothing has been driven by
   hand on a device.
-- `StatKind.TotalReps` counts bodyweight reps only.
+- `StatKind.TotalReps` counts bodyweight reps only. `lineAggregates` makes
+  tonnage and total-reps mutually exclusive, so the stat ignores weighted work.
+  **Needs a product decision** on what "Total reps" should mean before it is
+  changed — the receipt's bodyweight fallback depends on the same field.
 - The composer's Save button has no "saved" confirmation state.
 - Text shadows in freeform mode use one blur for all card text; the design frame
   specifies a larger blur for the hero number specifically.
+- PR detection is N+1: one full-history query per weighted exercise, with no
+  date floor (the app-wide 3-year window is not applied). Correct, just chatty.
+
+**Open from the review, deliberately not fixed:**
+- **iOS: a failed share is reported as presented.** The Swift presenter returns
+  normally when there is no presenting VC or the temp write fails, but the
+  bridge calls `onPresented` unconditionally, so the ViewModel saves defaults
+  and shows no error. Fixing it means giving `presentShareSheet` a failure
+  channel across the seam, and it brushes against the deliberate "no alerts"
+  offline-first policy — wants a ruling, not a unilateral change.
+- **iOS: bridge tasks sever cancellation.** No `Task` handle is retained, so
+  disposing the composer cannot cancel an in-flight picker or share.
+- Android: the share cache uses one fixed filename, so a deferred reader can get
+  the next card's bytes.
+- Android: the API 28 MediaStore insert supplies no `DATA`, so `DISPLAY_NAME`
+  and the `Pictures/FitJournal` album are ignored on that API level.
+- Android: `isFinishWorkout` is inferred from a display subtitle being null — a
+  copy change would silently revert the feature.
+- Android has no `src/test` source set at all; `PendingResult` and
+  `PostWorkoutActivityBridge` are plain JVM state machines that deserve one.
 
 ## Known v1 gaps / follow-ups (for morning review)
 - Drag-reorder UI not wired (VM.onReorder ready); swipe-delete not wired (menu delete works).
