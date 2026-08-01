@@ -81,11 +81,12 @@ class ImportWorkoutViewModelTest {
         repo.addExercisesToDate(user, journal, src, 1, listOf(exId, exId)) // two records on workout 1
         val model = vm(src, 1)
 
-        val state = withTimeout(5000) { model.viewState.first { !it.loading && it.pages.isNotEmpty() } }
-        assertEquals(2, state.pages.single().records.size)
+        val state = withTimeout(5000) { model.viewState.first { it.content is ImportContent.Loaded } }
+        val loaded = state.content as ImportContent.Loaded
+        assertEquals(2, loaded.pages.single().records.size)
         assertEquals(
-            state.pages.single().records.map { it.id }.toSet(),
-            state.selectedRecordIds,
+            loaded.pages.single().records.map { it.id }.toSet(),
+            loaded.selectedRecordIds,
             "every source record is pre-selected",
         )
         assertTrue(state.canImport)
@@ -99,10 +100,12 @@ class ImportWorkoutViewModelTest {
         val dest = LocalDate(2026, 5, 20)
         repo.addExercisesToDate(user, journal, src, 1, listOf(exId, exId))
         val model = vm(dest, 2)
-        withTimeout(5000) { model.viewState.first { !it.loading } } // initial (dest is empty)
+        // initial (dest is empty → Empty, not Loading)
+        withTimeout(5000) { model.viewState.first { it.content !is ImportContent.Loading } }
 
         model.dispatch(ImportWorkoutAction.SelectSourceDate(src))
-        val loaded = withTimeout(5000) { model.viewState.first { it.pages.isNotEmpty() } }
+        val state = withTimeout(5000) { model.viewState.first { it.content is ImportContent.Loaded } }
+        val loaded = state.content as ImportContent.Loaded
         assertEquals(2, loaded.selectedRecordIds.size)
 
         // dispatch() is synchronous, and onImport flips importInProgress before it

@@ -70,7 +70,10 @@ class ImportWorkoutViewModel(
             is ImportWorkoutAction.SelectSourceDate -> onSelectSourceDate(action.date)
             ImportWorkoutAction.ToggleCalendar -> onToggleCalendar()
             is ImportWorkoutAction.CalendarMonthChanged -> loadWorkoutDays(action.year, action.month)
-            is ImportWorkoutAction.SelectPage -> _uiState.update { it.copy(currentPageIndex = action.index) }
+            is ImportWorkoutAction.SelectPage -> _uiState.update {
+                val loaded = it.content as? ImportContent.Loaded ?: return@update it
+                it.copy(content = loaded.copy(currentPageIndex = action.index))
+            }
             is ImportWorkoutAction.ToggleRecord -> onToggleRecord(action.recordId)
             ImportWorkoutAction.Import -> onImport()
         }
@@ -84,10 +87,7 @@ class ImportWorkoutViewModel(
             it.copy(
                 sourceDate = date,
                 calendarExpanded = false,
-                loading = true,
-                pages = emptyList(),
-                currentPageIndex = 0,
-                selectedRecordIds = emptySet(),
+                content = ImportContent.Loading,
             )
         }
         loadSource(date)
@@ -114,9 +114,10 @@ class ImportWorkoutViewModel(
             val pages = grouped.keys.sorted().map { workoutNumber ->
                 ImportPage(workoutNumber, grouped.getValue(workoutNumber).sortedBy { it.position })
             }
-            _uiState.update {
-                it.copy(
-                    loading = false,
+            val content = if (pages.isEmpty()) {
+                ImportContent.Empty
+            } else {
+                ImportContent.Loaded(
                     pages = pages,
                     currentPageIndex = 0,
                     // Pre-select every record — whole-workout copy is one tap, and
@@ -124,6 +125,7 @@ class ImportWorkoutViewModel(
                     selectedRecordIds = records.map { r -> r.id }.toSet(),
                 )
             }
+            _uiState.update { it.copy(content = content) }
         }
     }
 
@@ -138,9 +140,10 @@ class ImportWorkoutViewModel(
 
     private fun onToggleRecord(recordId: String) {
         _uiState.update {
-            val next = it.selectedRecordIds.toMutableSet()
+            val loaded = it.content as? ImportContent.Loaded ?: return@update it
+            val next = loaded.selectedRecordIds.toMutableSet()
             if (!next.add(recordId)) next.remove(recordId)
-            it.copy(selectedRecordIds = next)
+            it.copy(content = loaded.copy(selectedRecordIds = next))
         }
     }
 
@@ -149,11 +152,12 @@ class ImportWorkoutViewModel(
         val jid = journalId ?: return
         val state = _uiState.value
         if (state.importInProgress) return
+        val loaded = state.content as? ImportContent.Loaded ?: return
         // Preserve pages order (already workoutNumber-then-position); do NOT re-sort
         // by position alone, which would interleave a cross-workout selection.
-        val selected: List<WorkoutRecord> = state.pages
+        val selected: List<WorkoutRecord> = loaded.pages
             .flatMap { it.records }
-            .filter { it.id in state.selectedRecordIds }
+            .filter { it.id in loaded.selectedRecordIds }
         if (selected.isEmpty()) return
         _uiState.update { it.copy(importInProgress = true) }
         viewModelScope.launch {

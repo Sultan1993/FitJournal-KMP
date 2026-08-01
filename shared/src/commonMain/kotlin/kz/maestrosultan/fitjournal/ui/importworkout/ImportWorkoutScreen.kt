@@ -92,7 +92,7 @@ private fun ImportWorkoutBody(
                 modifier = Modifier.fillMaxWidth(),
             )
         } else {
-            ImportPager(state = state, dispatch = dispatch, modifier = Modifier.weight(1f))
+            ImportContentArea(content = state.content, dispatch = dispatch, modifier = Modifier.weight(1f))
             ImportButton(
                 enabled = state.canImport,
                 onClick = { dispatch(ImportWorkoutAction.Import) },
@@ -103,33 +103,39 @@ private fun ImportWorkoutBody(
 }
 
 @Composable
-private fun ImportPager(
-    state: ImportWorkoutUiState,
+private fun ImportContentArea(
+    content: ImportContent,
     dispatch: (ImportWorkoutAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val pages = state.pages
-    if (state.loading) {
-        Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = FjTheme.colors.brand)
-        }
-        return
+    when (content) {
+        ImportContent.Loading ->
+            Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = FjTheme.colors.brand)
+            }
+        ImportContent.Empty ->
+            Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Text(
+                    text = stringResource(Res.string.import_workout_empty),
+                    style = FjTheme.typography.body,
+                    color = FjTheme.colors.textSecondary,
+                )
+            }
+        is ImportContent.Loaded -> ImportPager(loaded = content, dispatch = dispatch, modifier = modifier)
     }
-    if (pages.isEmpty()) {
-        Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            Text(
-                text = stringResource(Res.string.import_workout_empty),
-                style = FjTheme.typography.body,
-                color = FjTheme.colors.textSecondary,
-            )
-        }
-        return
-    }
+}
 
+@Composable
+private fun ImportPager(
+    loaded: ImportContent.Loaded,
+    dispatch: (ImportWorkoutAction) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val pages = loaded.pages
     val pagerState = rememberPagerState(pageCount = { pages.size })
-    LaunchedEffect(state.currentPageIndex, pages.size) {
-        if (state.currentPageIndex in 0 until pages.size && pagerState.currentPage != state.currentPageIndex) {
-            pagerState.animateScrollToPage(state.currentPageIndex)
+    LaunchedEffect(loaded.currentPageIndex, pages.size) {
+        if (loaded.currentPageIndex in 0 until pages.size && pagerState.currentPage != loaded.currentPageIndex) {
+            pagerState.animateScrollToPage(loaded.currentPageIndex)
         }
     }
     LaunchedEffect(pagerState) {
@@ -155,7 +161,7 @@ private fun ImportPager(
                 items(page.records, key = { it.id }) { record ->
                     ImportRecordCard(
                         record = record,
-                        isSelected = record.id in state.selectedRecordIds,
+                        isSelected = record.id in loaded.selectedRecordIds,
                         onToggle = { dispatch(ImportWorkoutAction.ToggleRecord(record.id)) },
                         modifier = Modifier.padding(vertical = 6.dp),
                     )
