@@ -126,4 +126,9 @@
     <string name="category_code_abs">CORE</string>
     <string name="category_code_cardio">CARDIO</string>
     <string name="category_code_other">OTHER</string>
+
+    <!-- Add-exercise chooser (+ button) -->
+    <string name="workout_add_title">Add exercises</string>
+    <string name="workout_add_from_list">From exercise list</string>
+    <string name="workout_add_from_workout">Copy from a workout</string>
 </resources>

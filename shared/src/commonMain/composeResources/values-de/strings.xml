@@ -125,4 +125,9 @@
     <string name="category_code_abs">BAUCH</string>
     <string name="category_code_cardio">CARDIO</string>
     <string name="category_code_other">ANDERE</string>
+
+    <!-- Add-exercise chooser (+ button) -->
+    <string name="workout_add_title">Übungen hinzufügen</string>
+    <string name="workout_add_from_list">Aus der Übungsliste</string>
+    <string name="workout_add_from_workout">Training kopieren</string>
 </resources>

@@ -145,10 +145,11 @@ interface RecordRepository {
     )
 
     /**
-     * Copies [records] onto [date] as brand-new records (fresh uuids).
-     * Each source exercise is recreated with its set count preserved but
-     * `weight`/`distance`/reps/duration cleared — a "repeat this
-     * session" template. The copied session then shows up as the next read's
+     * Copies [records] onto [date] as brand-new records (fresh uuids), each keeping
+     * its source workoutNumber ("copy as is": a 2-workout day copies back as 2
+     * workouts). Each source exercise is recreated with its set count preserved but
+     * `weight`/`distance`/reps/duration cleared — a "repeat this session" template.
+     * The copied session then shows up as the next read's
      * `WorkoutExercise.lastOccurrence`, so the cleared rows render per-position
      * hints with no extra work.
      */
@@ -158,6 +159,20 @@ interface RecordRepository {
         date: LocalDate,
         records: List<WorkoutRecord>,
     )
+
+    /**
+     * Like [addRecordsToDate] but forces every copy onto [date]'s workout
+     * [workoutNumber] (import-into-a-page, regardless of the sources' own numbers).
+     * The default delegates to the copy-as-is [addRecordsToDate] so existing fakes
+     * need no change; the real repository overrides it to target the page.
+     */
+    suspend fun addRecordsToWorkout(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+        workoutNumber: Int,
+        records: List<WorkoutRecord>,
+    ) = addRecordsToDate(userId, journalId, date, records)
 
     /** Copies every record on [date] onto today (see [addRecordsToDate]). */
     suspend fun addRecordsFromDateToToday(

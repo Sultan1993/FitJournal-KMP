@@ -330,7 +330,17 @@ class DefaultRecordRepository(
         date: LocalDate,
         records: List<WorkoutRecord>,
     ) {
-        insertCopiedRecords(userId, journalId, date, records)
+        insertCopiedRecords(userId, journalId, date, records, targetWorkoutNumber = null)
+    }
+
+    override suspend fun addRecordsToWorkout(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+        workoutNumber: Int,
+        records: List<WorkoutRecord>,
+    ) {
+        insertCopiedRecords(userId, journalId, date, records, targetWorkoutNumber = workoutNumber)
     }
 
     override suspend fun addRecordsFromDateToToday(
@@ -339,7 +349,8 @@ class DefaultRecordRepository(
         date: LocalDate,
     ) {
         val source = getRecordsByDate(userId, journalId, date)
-        insertCopiedRecords(userId, journalId, todayInSystemTz(), source)
+        // Repeat-workout copies the whole day "as is" — keep each source's page.
+        insertCopiedRecords(userId, journalId, todayInSystemTz(), source, targetWorkoutNumber = null)
     }
 
     override suspend fun replaceExerciseInRecord(
@@ -390,14 +401,16 @@ class DefaultRecordRepository(
         journalId: String,
         date: LocalDate,
         sources: List<WorkoutRecord>,
+        targetWorkoutNumber: Int?,
     ) {
         if (sources.isEmpty()) return
         val now = Clock.System.now()
         val dateStr = date.toString()
-        // Preserve each source's workoutNumber ("copy as is": a 2-workout day
-        // copies back as 2 workouts). Position is page-relative, so append per
-        // workout — seed each workout's counter from the target date's existing
-        // records for that number, then increment as we lay copies down in order.
+        // [targetWorkoutNumber] set (import-into-a-page) → every copy lands on that
+        // page; null (Repeat-workout) → each keeps its source's workoutNumber ("copy
+        // as is": a 2-workout day copies back as 2 workouts). Position is page-
+        // relative, so append per workout — seed each workout's counter from the
+        // target date's existing records for that number, then increment in order.
         val from = dateStr
         val to = date.plusDaysSafe(1).toString()
         val nextPosition = mutableMapOf<Int, Int>()
@@ -406,11 +419,12 @@ class DefaultRecordRepository(
             nextPosition[wn] = maxOf(nextPosition[wn] ?: -1, row.row.position)
         }
         val trees = sources.map { source ->
+            val workoutNumber = targetWorkoutNumber ?: source.workoutNumber
             val recordUuid = randomUuid()
-            val position = (nextPosition[source.workoutNumber] ?: -1) + 1
-            nextPosition[source.workoutNumber] = position
+            val position = (nextPosition[workoutNumber] ?: -1) + 1
+            nextPosition[workoutNumber] = position
             DBWorkoutRecord(
-                row = newRecordRow(recordUuid, userId, journalId, dateStr, position, source.workoutNumber, now),
+                row = newRecordRow(recordUuid, userId, journalId, dateStr, position, workoutNumber, now),
                 exercises = source.exercises.mapIndexed { exIndex, srcEx ->
                     val weUuid = randomUuid()
                     DBWorkoutExerciseWithSets(

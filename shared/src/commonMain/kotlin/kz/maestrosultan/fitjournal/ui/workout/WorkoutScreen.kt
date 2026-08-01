@@ -15,6 +15,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import kz.maestrosultan.fitjournal.ui.common.PageDots
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
+import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutAddMenu
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutCalendar
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutSessionBar
 
@@ -52,6 +56,9 @@ private fun WorkoutBody(
 ) {
     val pageCount = state.pages.size
     val pagerState = rememberPagerState(pageCount = { pageCount })
+    // The + / placeholder open a shared chooser (from-list vs from-workout); this
+    // holds the tapped page's workoutNumber while it's open, null when closed.
+    var addMenuWorkoutNumber by remember { mutableStateOf<Int?>(null) }
 
     // VM / dot-tap → pager. No-op when already there, so a swipe (which updates
     // the VM) can't ping-pong back.
@@ -79,6 +86,7 @@ private fun WorkoutBody(
                     page = state.pages[index],
                     measurementSystem = state.measurementSystem,
                     dispatch = dispatch,
+                    onRequestAdd = { addMenuWorkoutNumber = it },
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -106,7 +114,7 @@ private fun WorkoutBody(
                 modifier = Modifier.align(Alignment.CenterStart).fillMaxWidth().padding(end = 68.dp),
             )
             AddButton(
-                onClick = { state.currentPage?.let { dispatch(WorkoutAction.AddExercise(it.workoutNumber)) } },
+                onClick = { state.currentPage?.let { addMenuWorkoutNumber = it.workoutNumber } },
                 modifier = Modifier.align(Alignment.CenterEnd),
             )
         }
@@ -121,6 +129,16 @@ private fun WorkoutBody(
                 onDateSelected = { dispatch(WorkoutAction.SelectDate(it)) },
                 onMonthChanged = { year, month -> dispatch(WorkoutAction.CalendarMonthChanged(year, month)) },
                 modifier = Modifier.fillMaxSize().background(FjTheme.colors.background),
+            )
+        }
+
+        // + / placeholder chooser: add from the catalog, or copy a previous workout.
+        addMenuWorkoutNumber?.let { workoutNumber ->
+            val close = { addMenuWorkoutNumber = null }
+            WorkoutAddMenu(
+                onFromList = { close(); dispatch(WorkoutAction.AddExercise(workoutNumber)) },
+                onFromWorkout = { close(); dispatch(WorkoutAction.CopyFromWorkout(workoutNumber)) },
+                onDismiss = close,
             )
         }
     }

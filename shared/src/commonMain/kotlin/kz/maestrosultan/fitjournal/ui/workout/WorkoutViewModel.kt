@@ -114,6 +114,7 @@ class WorkoutViewModel(
             is WorkoutAction.EditNote -> emit(WorkoutEffect.EditNote(action.workoutExerciseId))
             is WorkoutAction.ReplaceExercise -> emit(WorkoutEffect.ReplaceExercise(action.workoutExerciseId))
             is WorkoutAction.AddExercise -> emit(WorkoutEffect.AddExercise(action.workoutNumber))
+            is WorkoutAction.CopyFromWorkout -> emit(WorkoutEffect.CopyFromWorkout(action.workoutNumber))
         }
     }
 

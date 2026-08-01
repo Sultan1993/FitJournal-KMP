@@ -131,4 +131,9 @@
     <string name="category_code_abs">ПРЕСС</string>
     <string name="category_code_cardio">КАРДИО</string>
     <string name="category_code_other">ДРУГИЕ</string>
+
+    <!-- Add-exercise chooser (+ button) -->
+    <string name="workout_add_title">Добавить упражнения</string>
+    <string name="workout_add_from_list">Из списка упражнений</string>
+    <string name="workout_add_from_workout">Скопировать тренировку</string>
 </resources>

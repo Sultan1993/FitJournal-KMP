@@ -40,4 +40,5 @@ sealed interface WorkoutAction {
     data class EditNote(val workoutExerciseId: String) : WorkoutAction
     data class ReplaceExercise(val workoutExerciseId: String) : WorkoutAction
     data class AddExercise(val workoutNumber: Int) : WorkoutAction
+    data class CopyFromWorkout(val workoutNumber: Int) : WorkoutAction
 }

@@ -46,13 +46,14 @@ fun WorkoutPageContent(
     page: WorkoutPage,
     measurementSystem: MeasurementSystem,
     dispatch: (WorkoutAction) -> Unit,
+    onRequestAdd: (workoutNumber: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (page.isPlaceholder || page.records.isEmpty()) {
         AnotherWorkoutPlaceholder(
             title = stringResource(Res.string.workout_another_workout_title),
             subtitle = stringResource(Res.string.workout_another_workout_subtitle),
-            onAddClick = { dispatch(WorkoutAction.AddExercise(page.workoutNumber)) },
+            onAddClick = { onRequestAdd(page.workoutNumber) },
             modifier = modifier,
         )
         return
