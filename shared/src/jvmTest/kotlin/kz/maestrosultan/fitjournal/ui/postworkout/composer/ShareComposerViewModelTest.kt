@@ -182,6 +182,31 @@ class ShareComposerViewModelTest {
         assertEquals(ShareLayoutKind.NewBest, vm.state.value.layout)
     }
 
+    @Test
+    fun init_statsPick_notThreeDistinct_fallsBackToFirstRunPick() = runTest {
+        // Duplicated entry (3 raw, only 2 distinct) — hand-edited/legacy store.
+        store.stored = defaults().copy(
+            statsPick = listOf(StatKind.Sets, StatKind.Sets, StatKind.Duration),
+        )
+        val fromDuplicated = createVm()
+        advanceUntilIdle()
+        assertEquals(
+            listOf(StatKind.Duration, StatKind.Sets, StatKind.BestSet),
+            fromDuplicated.state.value.statsPick,
+        )
+
+        // Too-short list (2 entries).
+        store.stored = defaults().copy(
+            statsPick = listOf(StatKind.Duration, StatKind.TotalReps),
+        )
+        val fromShort = createVm()
+        advanceUntilIdle()
+        assertEquals(
+            listOf(StatKind.Duration, StatKind.Sets, StatKind.BestSet),
+            fromShort.state.value.statsPick,
+        )
+    }
+
     // ─── Stats pick ─────────────────────────────────────────────────────
 
     @Test
@@ -444,6 +469,35 @@ class ShareComposerViewModelTest {
         assertNull(vm.state.value.chip)
     }
 
+    @Test
+    fun chip_secondFailure_reArmsFullWindow_andOldTimerCannotClearIt() = runTest {
+        presenter.saveResult = SaveResult.Failed
+        val vm = createVm()
+        advanceUntilIdle()
+
+        // Chip A (ExportFailed) at t0.
+        vm.onShare()
+        vm.onExportResult(ExportResult.Failure(assertNotNull(vm.state.value.exportRequest)))
+        runCurrent()
+        assertEquals(ComposerChip.ExportFailed, vm.state.value.chip)
+
+        // Chip B (SaveFailed) at t0+1s — cancels A's timer, re-arms the window.
+        advanceTimeBy(1_000)
+        vm.onSave()
+        vm.onExportResult(ExportResult.Success(assertNotNull(vm.state.value.exportRequest), PNG))
+        runCurrent()
+        assertEquals(ComposerChip.SaveFailed, vm.state.value.chip)
+
+        // t0+2.5s — 2.5s after A but only 1.5s after B: A's cancelled timer
+        // must NOT have wiped B.
+        advanceTimeBy(1_500)
+        assertEquals(ComposerChip.SaveFailed, vm.state.value.chip)
+
+        // t0+3.1s — B's own full 2s window has elapsed.
+        advanceTimeBy(600)
+        assertNull(vm.state.value.chip)
+    }
+
     // ─── Photo pick ─────────────────────────────────────────────────────
 
     @Test
@@ -538,6 +592,29 @@ class ShareComposerViewModelTest {
         advanceUntilIdle()
 
         assertEquals(BackdropKind.Photo, store.saved.single().backdropKind)
+    }
+
+    @Test
+    fun close_thenLateExportResult_isDropped() = runTest {
+        val vm = createVm()
+        advanceUntilIdle()
+
+        vm.onShare()
+        val request = assertNotNull(vm.state.value.exportRequest)
+        vm.onCloseRequested()
+        advanceUntilIdle()
+
+        // The render answers after the machine went inert: no share sheet, no
+        // Photos write, no chip — and only the close-path defaults save.
+        vm.onExportResult(ExportResult.Success(request, PNG))
+        advanceUntilIdle()
+
+        assertEquals(0, presenter.shareCalls.size)
+        assertEquals(0, presenter.saveCalls.size)
+        assertNull(vm.state.value.chip)
+        assertNull(vm.state.value.exportRequest)
+        assertEquals(1, store.saved.size)
+        assertEquals(1, drainClosedEvents(vm))
     }
 
     // ─── Purity ─────────────────────────────────────────────────────────

@@ -101,6 +101,8 @@ class ShareComposerViewModel internal constructor(
 
     init {
         viewModelScope.launch {
+            // Restore lands async: an edit made in the sub-frame window before
+            // it applies is clobbered by the restored defaults — accepted.
             // The store contract says load() never throws, but a broken
             // platform store must degrade to first-run defaults, not crash.
             val saved = guarded { defaultsStore.load() }
@@ -114,11 +116,13 @@ class ShareComposerViewModel internal constructor(
     // ─── Card setup ─────────────────────────────────────────────────────
 
     fun onTitleChanged(title: String) {
+        if (closeRequested) return
         _state.update { it.copy(title = title.take(ComposerState.MAX_TITLE_LENGTH)) }
     }
 
     /** NewBest is only offered when the session actually set a PR; otherwise a no-op. */
     fun onLayoutSelected(layout: ShareLayoutKind) {
+        if (closeRequested) return
         if (layout == ShareLayoutKind.NewBest && summary.best == null) return
         if (layout == _state.value.layout) return
         _state.update { it.copy(layout = layout) }
@@ -127,6 +131,7 @@ class ShareComposerViewModel internal constructor(
 
     /** Photo routes through [onPickPhoto]; Brand/Transparent switch directly. */
     fun onBackdropSelected(kind: BackdropKind) {
+        if (closeRequested) return
         val backdrop = when (kind) {
             BackdropKind.Photo -> {
                 onPickPhoto()
@@ -146,6 +151,7 @@ class ShareComposerViewModel internal constructor(
      * were. Re-picking while a photo backdrop is already set is allowed.
      */
     fun onPickPhoto() {
+        if (closeRequested) return
         if (pickJob?.isActive == true) return
         pickJob = viewModelScope.launch {
             val image = guarded { photoPicker.pickPhoto() }
@@ -157,6 +163,7 @@ class ShareComposerViewModel internal constructor(
     }
 
     fun onScrimChanged(scrim: Float) {
+        if (closeRequested) return
         _state.update { it.copy(scrim = scrim.coerceIn(0f, 1f)) }
     }
 
@@ -167,6 +174,7 @@ class ShareComposerViewModel internal constructor(
      * layout always renders exactly three, so there is nothing to deselect to.
      */
     fun onStatToggled(stat: StatKind) {
+        if (closeRequested) return
         if (stat in _state.value.statsPick) return
         _state.update { current ->
             if (stat in current.statsPick) current
@@ -176,20 +184,24 @@ class ShareComposerViewModel internal constructor(
     }
 
     fun onTransformChanged(transform: BlockTransform) {
+        if (closeRequested) return
         _state.update { it.copy(transform = transform) }
     }
 
     /** Removes the card block entirely — a photo-only card. Undone by [onResetLayout]. */
     fun onRemoveBlock() {
+        if (closeRequested) return
         _state.update { it.copy(blockRemoved = true) }
     }
 
     /** Back to the layout's natural placement: transform cleared, block restored. */
     fun onResetLayout() {
+        if (closeRequested) return
         _state.update { it.copy(transform = null, blockRemoved = false) }
     }
 
     fun onEditorSelected(editor: ComposerEditor?) {
+        if (closeRequested) return
         _state.update { it.copy(activeEditor = editor) }
     }
 
@@ -200,6 +212,7 @@ class ShareComposerViewModel internal constructor(
     fun onSave() = requestExport(ExportReason.Save)
 
     private fun requestExport(reason: ExportReason) {
+        if (closeRequested) return
         val request = ExportRequest(id = ++nextExportId, reason = reason)
         _state.update { it.copy(exportRequest = request) }
     }
@@ -210,6 +223,7 @@ class ShareComposerViewModel internal constructor(
      * pending) are stale and dropped.
      */
     fun onExportResult(result: ExportResult) {
+        if (closeRequested) return
         val pending = _state.value.exportRequest ?: return
         if (result.request.id != pending.id) return
         _state.update { it.copy(exportRequest = null) }
@@ -253,10 +267,19 @@ class ShareComposerViewModel internal constructor(
      * THE single close path: persists the current setup, then emits [closed]
      * exactly once. Idempotent — a second call (double-tap, gesture + button)
      * neither re-saves nor re-emits.
+     *
+     * Also quiesces the machine: every mutator and the export handshake
+     * early-return from here on, the in-flight pick and chip timer are
+     * cancelled, and any pending export is dropped — a late render result
+     * must not present a share sheet or write Photos against a tearing-down
+     * host, nor race this close-path defaults save with its own.
      */
     fun onCloseRequested() {
         if (closeRequested) return
         closeRequested = true
+        pickJob?.cancel()
+        chipJob?.cancel()
+        _state.update { it.copy(exportRequest = null, chip = null) }
         viewModelScope.launch {
             saveDefaults()
             _closed.send(Unit)
