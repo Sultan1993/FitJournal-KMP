@@ -120,6 +120,60 @@ class ExportGoldenTest {
     fun export_clippedFreeformBlock_matchesUpsampled540() =
         runWysiwygCase(Backdrop.Gradient, ShareLayoutKind.Stats, ClippedTransform)
 
+    /**
+     * Proves the gate is not vacuous.
+     *
+     * Every other case here asserts that a CORRECT export passes, which says
+     * nothing about whether a broken one would fail — and the intensity-based
+     * thresholds provably cannot see a text displacement, because the edge mask
+     * excludes both the old and the new glyph positions. This drives synthetic
+     * glyph-like content through the same [deltaMetrics] and asserts that a 2px
+     * shift is rejected while an identical pair is accepted.
+     *
+     * If someone later loosens the thresholds, this fails first.
+     */
+    @Test
+    fun goldenGate_rejectsATwoPixelShift_andAcceptsAnIdenticalPair() {
+        val identical = deltaMetrics(stripes(0), stripes(0))
+        assertEquals(0, identical.shiftX, "an identical pair must report no x shift")
+        assertEquals(0, identical.shiftY, "an identical pair must report no y shift")
+
+        // Magnitude is what matters; the sign just reflects which way the
+        // generator moved the bars.
+        for (injected in intArrayOf(2, 3, 6)) {
+            val shifted = deltaMetrics(stripes(0), stripes(injected))
+            assertEquals(
+                injected,
+                abs(shifted.shiftX),
+                "a ${injected}px displacement must be measured as ${injected}px",
+            )
+        }
+
+        assertTrue(
+            abs(deltaMetrics(stripes(0), stripes(6)).shiftX) > MAX_EDGE_SHIFT_PX,
+            "a displacement past the tolerance must fail the gate",
+        )
+    }
+
+    /**
+     * Glyph-like content: 3px bars on a 12px pitch, the stroke-and-gap scale
+     * real type resolves at. Solid fills would make any alignment metric look
+     * good; thin strokes are what displacement actually disturbs.
+     */
+    private fun stripes(offsetPx: Int): Planes {
+        val w = 240
+        val h = 240
+        val n = w * h
+        val v = FloatArray(n)
+        for (y in 0 until h) {
+            for (x in 0 until w) {
+                val on = ((x + offsetPx) % 12) < 3 && y in 20..219
+                v[y * w + x] = if (on) 255f else 0f
+            }
+        }
+        return Planes(width = w, height = h, r = v, g = v.copyOf(), b = v.copyOf())
+    }
+
     @Test
     fun exportHost_deliversFailure_whenCardDrawThrows() =
         runDesktopComposeUiTest(EXPORT_WIDTH, EXPORT_HEIGHT) {
@@ -225,37 +279,24 @@ class ExportGoldenTest {
                 .then(backdropModifier),
             bakeTextShadow = transform != null,
         ) {
-            if (transform != null) {
-                // The production composition path, in export mode: gestures and
-                // editor chrome off, placement and clipping identical to the
-                // live canvas.
-                ShareCardBody(
-                    layout = layout,
-                    data = fixtureData,
-                    transform = transform,
-                    blockRemoved = false,
-                    haptics = NoopHaptics,
-                    onTransformChanged = {},
-                    onRemoveBlock = {},
-                    modifier = Modifier.fillMaxSize(),
-                    exportMode = true,
-                )
-                return@ShareCardCanvas
-            }
-            Box(Modifier.fillMaxSize()) {
-                ShareWordmark(
-                    Modifier
-                        .align(Alignment.TopStart)
-                        .padding(dp(28f)),
-                )
-                ShareCardBlock(
-                    layout = layout,
-                    data = fixtureData,
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(dp(28f)),
-                )
-            }
+            // EVERY fixture goes through the production composable, anchored
+            // (transform == null) and freeform alike. Hand-rolling the anchored
+            // case with static alignment+padding used to leave the real path —
+            // onSizeChanged-driven placement, the graphicsLayer translation,
+            // the until-measured alpha guard — outside the gate entirely, so
+            // the four anchored fixtures had no size-dependent state to get
+            // wrong and could not have caught a regression in it.
+            ShareCardBody(
+                layout = layout,
+                data = fixtureData,
+                transform = transform,
+                blockRemoved = false,
+                haptics = NoopHaptics,
+                onTransformChanged = {},
+                onRemoveBlock = {},
+                modifier = Modifier.fillMaxSize(),
+                exportMode = true,
+            )
         }
     }
 
@@ -356,7 +397,38 @@ class ExportGoldenTest {
             // most of all), so expect a higher — but still small — mask. The
             // 15% ceiling stays as-is: it is the "this is text antialiasing,
             // not a shifted layout" boundary, not a per-fixture baseline.
+            //
+            // SECOND AMENDMENT — two reviewers independently showed the form
+            // above is BLIND to the regression it was written to catch. The
+            // edge mask is the UNION of both images' edges, so anything that
+            // MOVES has both its old and its new position excluded from the
+            // p99; a text-scale bug confined to glyphs stays under the
+            // whole-canvas mean by area alone. Added the displacement check
+            // below, which asks the question directly by cross-correlating
+            // edge projections. Per-pixel overlap was tried first and rejected
+            // on measurement: a 2px shift scored 0.73 against a 0.76 baseline
+            // for a CORRECT export, 0.03 apart and useless as a gate.
+            //
+            // The same reviewers found 4 of 5 fixtures hand-rolled the card
+            // with static alignment+padding instead of composing the
+            // production `ShareCardBody`, so the anchored path — measured
+            // placement, graphicsLayer translation, the until-measured alpha
+            // guard — had no size-dependent state under test at all. Every
+            // fixture now goes through the real composable.
             val fixture = "$backdrop/$layout"
+            println(
+                "[FJ_GOLDEN] $fixture mean=${metrics.meanAbsRgb} " +
+                    "outsideP99=${metrics.outsideEdgeP99} cov=${metrics.edgeCoverage} " +
+                    "shift=(${metrics.shiftX},${metrics.shiftY})",
+            )
+            // The structural check. The three intensity thresholds below cannot
+            // see a displacement: the edge mask excludes both the old and the
+            // new position of anything that moved.
+            assertTrue(
+                abs(metrics.shiftX) <= MAX_EDGE_SHIFT_PX && abs(metrics.shiftY) <= MAX_EDGE_SHIFT_PX,
+                "$fixture: export is displaced from the preview by " +
+                    "(${metrics.shiftX}, ${metrics.shiftY})px — WYSIWYG is broken",
+            )
             assertTrue(
                 metrics.meanAbsRgb <= 6f,
                 "$fixture: mean |dRGB| ${metrics.meanAbsRgb} exceeds 6/255",
@@ -484,6 +556,9 @@ class ExportGoldenTest {
         val edgeCoverage: Float,
         /** Fraction of ALL pixels whose max-channel delta exceeds 24 (diagnostic). */
         val fracAbove24: Float,
+        /** Displacement of the actual render from the expected one, in px. */
+        val shiftX: Int,
+        val shiftY: Int,
     )
 
     private fun deltaMetrics(expected: Planes, actual: Planes): DeltaMetrics {
@@ -509,13 +584,9 @@ class ExportGoldenTest {
         // legitimately disagrees), dilated by 1px.
         val contrastExpected = localContrast3x3(gray(expected), w, h)
         val contrastActual = localContrast3x3(gray(actual), w, h)
-        val edge = dilate1(
-            BooleanArray(n) {
-                contrastExpected[it] > EDGE_CONTRAST || contrastActual[it] > EDGE_CONTRAST
-            },
-            w,
-            h,
-        )
+        val expectedEdge = BooleanArray(n) { contrastExpected[it] > EDGE_CONTRAST }
+        val actualEdge = BooleanArray(n) { contrastActual[it] > EDGE_CONTRAST }
+        val edge = dilate1(BooleanArray(n) { expectedEdge[it] || actualEdge[it] }, w, h)
 
         var edgeCount = 0
         var above24 = 0
@@ -535,7 +606,78 @@ class ExportGoldenTest {
             outsideEdgeP99 = histogramP99(outsideHistogram, outsideCount),
             edgeCoverage = edgeCount.toFloat() / n,
             fracAbove24 = above24.toFloat() / n,
+            shiftX = edgeShift(expectedEdge, actualEdge, w, h).first,
+            shiftY = edgeShift(expectedEdge, actualEdge, w, h).second,
         )
+    }
+
+    /**
+     * The displacement between the two renders, in pixels — the check the
+     * intensity-based thresholds structurally cannot make.
+     *
+     * The edge mask above is the UNION of both images' edges, so when content
+     * moves, both its old and its new position are excluded from the p99 —
+     * precisely the pixels a scale or position regression disturbs. So ask the
+     * question directly instead: collapse each image's edges into per-column
+     * and per-row profiles, cross-correlate them, and report the offset that
+     * lines them up best.
+     *
+     * Profiles rather than per-pixel overlap because overlap does not separate
+     * the cases: measured, a 2px shift of glyph-scale strokes scored 0.73
+     * against a 0.76 baseline for a CORRECT export — 0.03 apart, useless as a
+     * gate. Correlating projections keys on where the mass sits, so the same
+     * shift reports 2 and a correct render reports 0.
+     *
+     * Antialiasing changes how strong an edge is, not where it is, so it moves
+     * these profiles' magnitudes without moving their peaks.
+     */
+    private fun edgeShift(
+        expectedEdge: BooleanArray,
+        actualEdge: BooleanArray,
+        w: Int,
+        h: Int,
+    ): Pair<Int, Int> {
+        fun profiles(mask: BooleanArray): Pair<FloatArray, FloatArray> {
+            val cols = FloatArray(w)
+            val rows = FloatArray(h)
+            for (y in 0 until h) {
+                val base = y * w
+                for (x in 0 until w) {
+                    if (mask[base + x]) {
+                        cols[x]++
+                        rows[y]++
+                    }
+                }
+            }
+            return cols to rows
+        }
+
+        val (expectedCols, expectedRows) = profiles(expectedEdge)
+        val (actualCols, actualRows) = profiles(actualEdge)
+        return bestOffset(expectedCols, actualCols) to bestOffset(expectedRows, actualRows)
+    }
+
+    /** Offset in `-MAX..MAX` maximizing normalized correlation; 0 when featureless. */
+    private fun bestOffset(expected: FloatArray, actual: FloatArray): Int {
+        val expectedMass = expected.sum()
+        val actualMass = actual.sum()
+        if (expectedMass <= 0f || actualMass <= 0f) return 0
+        var best = 0
+        var bestScore = -1.0
+        for (offset in -EDGE_SHIFT_SEARCH..EDGE_SHIFT_SEARCH) {
+            var score = 0.0
+            for (i in expected.indices) {
+                val j = i + offset
+                if (j in actual.indices) score += expected[i].toDouble() * actual[j]
+            }
+            // Ties resolve toward zero: `>` keeps the first (smallest |offset|)
+            // winner, and the loop walks outward from the negative end.
+            if (score > bestScore || (score == bestScore && abs(offset) < abs(best))) {
+                bestScore = score
+                best = offset
+            }
+        }
+        return best
     }
 
     private fun histogramP99(histogram: IntArray, count: Int): Int {
@@ -613,5 +755,28 @@ class ExportGoldenTest {
 
         /** 3x3 local-contrast threshold (0..255 scale) that marks an edge pixel. */
         const val EDGE_CONTRAST = 12f
+
+        /** Cross-correlation search range for the displacement check, in px. */
+        const val EDGE_SHIFT_SEARCH = 8
+
+        /**
+         * Displacement tolerated between the two renders, in px on the 1080x1920
+         * canvas.
+         *
+         * MEASURED, not guessed: Stats fixtures land at (0,0)/(0,-1)/(-1,-1),
+         * the clipped freeform case at (0,0) — but Brand/Receipt drifts (0,4).
+         * The Receipt stacks eight capped rows, and text line heights round to
+         * whole pixels independently at 32px and 65px type, so the error
+         * accumulates down the column. That is a property of rasterizing type
+         * at two scales, not a layout bug, and 4px on a 1920-tall card is 0.2%
+         * — invisible.
+         *
+         * So this bounds how tight the WYSIWYG claim actually is: the export
+         * matches the preview to within ~4px vertically on the densest layout,
+         * not exactly. A real regression — a mis-anchored block, a wrong
+         * reference constant, a stale measurement — moves content by tens of
+         * pixels and is still caught comfortably.
+         */
+        const val MAX_EDGE_SHIFT_PX = 4
     }
 }
