@@ -148,6 +148,14 @@ callbacks to its coordinator/nav graph.
     Then iOS calendar + dynamic title + Live-Activity tile reconciliation.
   - Then Sol review + finish branch.
 
+- **P8 DONE**: Sol/Codex two-round review of the shared diff. Round 1 → 2 Critical
+  + 2 Important + 1 Minor (session-page union, Start gating on finished pages,
+  date-switch day-mixing, reps-0 em dash, decimal rounding) — ALL fixed in
+  `71931fc`. Round 2 → **VERDICT: pass, no new defects**. Both apps build after the
+  fixes (Android composite compile 5s; iOS framework re-linked clean).
+
+**MIGRATION COMPLETE on `feature/workout-cmp` — awaiting user review (not merged).**
+
 ## Known v1 gaps / follow-ups (for morning review)
 - Drag-reorder UI not wired (VM.onReorder ready); swipe-delete not wired (menu delete works).
 - Exercise avatar = category-colour chip, not the per-exercise image.
