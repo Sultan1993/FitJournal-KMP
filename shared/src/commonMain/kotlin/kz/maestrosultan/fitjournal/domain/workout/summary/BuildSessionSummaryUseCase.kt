@@ -137,15 +137,24 @@ class BuildSessionSummaryUseCase(
                 totalDistance = logged.sumOf { it.distance ?: 0.0 },
                 totalDurationSec = logged.sumOf { it.duration ?: 0 },
             )
-            ResultType.WEIGHT_REPS -> {
-                val tonnage = TonnageCalculator.forSets(logged)
-                if (tonnage > 0.0) {
-                    LineAggregates(tonnageKg = tonnage)
-                } else {
-                    // Bodyweight work (0 kg logged): tonnage says nothing, reps do.
-                    LineAggregates(totalReps = logged.sumOf { it.reps ?: 0 })
-                }
-            }
+            // BOTH aggregates, always — they are independent measures of the
+            // same sets, not alternatives:
+            //   tonnage    = sum of weight_i * reps_i
+            //   total reps = sum of every rep performed
+            //
+            // They used to be mutually exclusive, gated on `tonnage > 0`. That
+            // made "Total reps" ignore all weighted work — its whole point —
+            // and it swallowed a set carrying weight but no reps: zero tonnage
+            // sent it down the reps branch, where it summed to zero reps too,
+            // so a logged set reported nothing in either family.
+            //
+            // Presentation still chooses which to SHOW (a row with zero tonnage
+            // shows reps, because "0 kg" says nothing); that is a display rule
+            // and belongs there, not here.
+            ResultType.WEIGHT_REPS -> LineAggregates(
+                tonnageKg = TonnageCalculator.forSets(logged),
+                totalReps = logged.sumOf { it.reps ?: 0 },
+            )
         }
     }
 

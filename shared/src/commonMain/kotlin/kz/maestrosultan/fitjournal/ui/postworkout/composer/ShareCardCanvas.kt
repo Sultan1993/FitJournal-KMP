@@ -946,9 +946,8 @@ internal fun shareCardData(
                     StatKind.BestSet -> summary.best
                         ?.let { WorkoutValueFormatter.value(it.weightKg, ResultType.WEIGHT_REPS, units) }
                         ?: WorkoutValueFormatter.EMPTY
-                    // KNOWN GAP: ExerciseLine.totalReps is populated for
-                    // bodyweight lines only, so this counts bodyweight reps.
-                    // A true session-wide rep total needs a SessionSummary field.
+                    // Every rep of the session: ExerciseLine.totalReps is now
+                    // populated for weighted work too, not bodyweight only.
                     StatKind.TotalReps -> summary.exercises.sumOf { it.totalReps ?: 0 }.toString()
                 },
                 label = stringResource(kind.labelRes),
@@ -958,7 +957,12 @@ internal fun shareCardData(
             ShareExerciseRow(
                 name = line.name,
                 setsText = pluralStringResource(Res.plurals.postworkout_sets, line.loggedSets, line.loggedSets),
-                tonnageText = line.tonnageKg?.let { "${groupedTonnage(it)} $weightUnit" },
+                // Zero tonnage means no weight was entered, and "0 kg" tells the
+                // reader nothing — the reps do. Rows carry both, so the row
+                // picks.
+                tonnageText = line.tonnageKg
+                    ?.takeIf { it > 0.0 }
+                    ?.let { "${groupedTonnage(it)} $weightUnit" },
                 repsText = line.totalReps?.let { stringResource(Res.string.postworkout_reps_format, it) },
                 distanceText = line.totalDistance
                     ?.let { WorkoutValueFormatter.value(it, ResultType.DISTANCE_DURATION, units) },

@@ -42,10 +42,17 @@ data class SessionSummary(
 )
 
 /**
- * Per-exercise aggregate row. Exactly one aggregate family is populated:
- * weighted work carries [tonnageKg]; zero-tonnage (bodyweight) work falls back
- * to [totalReps]; DISTANCE_DURATION work carries [totalDistance] +
- * [totalDurationSec]. An exercise with no logged sets carries none.
+ * Per-exercise aggregate row.
+ *
+ * WEIGHT_REPS work carries BOTH [tonnageKg] (sum of weight x reps) and
+ * [totalReps] (sum of every rep) — two measures of the same sets, not
+ * alternatives. DISTANCE_DURATION work carries [totalDistance] +
+ * [totalDurationSec] instead. An exercise with no logged sets carries none.
+ *
+ * Which one to SHOW is presentation's decision: the receipt and the success
+ * rail fall back to reps when a row's tonnage is zero, since "0 kg" says
+ * nothing. Encoding that choice here used to make [totalReps] exclude every
+ * weighted exercise.
  */
 data class ExerciseLine(
     val exerciseUuid: String,

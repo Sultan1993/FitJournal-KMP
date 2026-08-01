@@ -189,9 +189,11 @@ class WorkoutSuccessViewModel internal constructor(
         name = line.name,
         loggedSets = line.loggedSets,
         totalSets = line.totalSets,
-        // ExerciseLine populates exactly one aggregate family (or none).
+        // Weighted rows carry BOTH tonnage and reps, so the row picks. Zero
+        // tonnage means no weight was entered, and "0 kg" tells the reader
+        // nothing — the reps do.
         aggregate = when {
-            line.tonnageKg != null ->
+            line.tonnageKg != null && line.tonnageKg > 0.0 ->
                 RailAggregate.Tonnage(WorkoutValueFormatter.value(line.tonnageKg, ResultType.WEIGHT_REPS, units))
             line.totalReps != null -> RailAggregate.Reps(line.totalReps)
             line.totalDistance != null || line.totalDurationSec != null -> RailAggregate.DistanceDuration(

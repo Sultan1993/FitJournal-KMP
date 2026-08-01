@@ -176,6 +176,24 @@ class BuildSessionSummaryUseCaseTest {
 
     // ─── Per-exercise aggregates ──────────────────────────────────────────
 
+    /**
+     * A set with weight but no reps used to report NOTHING. Zero tonnage
+     * (weight x 0) routed it down the old bodyweight branch, which then summed
+     * to zero reps as well — so the exercise counted as logged while both
+     * aggregates said there was no work.
+     */
+    @Test
+    fun weightWithoutReps_stillCountsAsALoggedSet_andReportsBothAggregates(): Unit = runBlocking {
+        val carryWe = addOccurrence(seedExercise("Farmer's carry", CategoryType.FOREARMS), date)
+        repo.addSet(userId, journalId, carryWe, 40.0, null, null, null)
+
+        val line = summarize().exercises.single()
+
+        assertEquals(1, line.loggedSets, "weight is the primary value — the set is logged")
+        assertEquals(0.0, line.tonnageKg, "40kg x no reps is zero tonnage, arithmetically")
+        assertEquals(0, line.totalReps, "and zero reps — but both are REPORTED, not null")
+    }
+
     @Test
     fun perExerciseAggregates_weighted_bodyweight_andCardio(): Unit = runBlocking {
         val squatWe = addOccurrence(seedExercise("Squat", CategoryType.QUADRICEPS), date)
@@ -193,15 +211,20 @@ class BuildSessionSummaryUseCaseTest {
         assertEquals(3, summary.exerciseCount)
         assertEquals(listOf("Squat", "Push-up", "Run"), summary.exercises.map { it.name }, "day order")
 
+        // Weighted work carries BOTH: tonnage is sum(weight * reps), totalReps
+        // is every rep performed. Two measures of the same sets, so a weighted
+        // exercise must not go missing from a session-wide rep total.
         val squat = summary.exercises[0]
-        assertEquals(1000.0, squat.tonnageKg, "weighted work aggregates to tonnage")
-        assertNull(squat.totalReps)
+        assertEquals(1000.0, squat.tonnageKg, "2 sets x 100kg x 5 reps")
+        assertEquals(10, squat.totalReps, "weighted work still counts its reps")
         assertNull(squat.totalDistance)
         assertNull(squat.totalDurationSec)
         assertEquals(CategoryType.QUADRICEPS, squat.category)
 
+        // No weight entered: tonnage is arithmetically zero and the reps are
+        // the only meaningful number. Which one to SHOW is presentation's call.
         val pushup = summary.exercises[1]
-        assertNull(pushup.tonnageKg, "zero-tonnage bodyweight work falls back to a rep total")
+        assertEquals(0.0, pushup.tonnageKg, "0kg x 22 reps is zero tonnage")
         assertEquals(22, pushup.totalReps)
         assertEquals(CategoryType.CHEST, pushup.category)
 
