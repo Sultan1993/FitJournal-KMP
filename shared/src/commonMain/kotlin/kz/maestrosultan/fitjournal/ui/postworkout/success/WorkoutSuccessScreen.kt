@@ -28,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -359,7 +360,13 @@ private fun SectionEyebrow(text: String) {
 
 @Composable
 private fun MuscleBarRow(bar: MuscleBarUi, modifier: Modifier = Modifier) {
-    var started by remember { mutableStateOf(false) }
+    // rememberSaveable: the entrance animation is a one-time welcome, not a
+    // property of the data. On Android the composer is a forward nav
+    // destination, so this screen's composition is disposed while it is open
+    // and rebuilt on the way back — with plain `remember` the bars reset and
+    // re-grew every time the user opened and closed the composer. iOS never
+    // showed it, because `.overFullScreen` keeps the screen alive underneath.
+    var started by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(Unit) { started = true }
     val fraction by animateFloatAsState(
         targetValue = if (started) bar.fraction else 0f,
