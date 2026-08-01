@@ -14,6 +14,7 @@ import platform.Foundation.NSNumber
 import platform.Foundation.NSNumberFormatter
 import platform.Foundation.NSNumberFormatterDecimalStyle
 import platform.Foundation.NSNumberFormatterOrdinalStyle
+import platform.Foundation.NSTimeIntervalSince1970
 
 /**
  * Foundation-backed actuals (NSNumberFormatter/NSDateFormatter, current
@@ -63,5 +64,9 @@ actual object LocaleFormatters {
     }
 }
 
-private fun Instant.toNSDateCompat(): NSDate =
-    NSDate.dateWithTimeIntervalSince1970(toEpochMilliseconds() / 1000.0)
+// K/N interop exposes -initWithTimeIntervalSince1970: only through the
+// NSDateCreation category (not as a constructor), so build the date off the
+// 2001 reference epoch — the only epoch constructor the interop generates.
+private fun Instant.toNSDateCompat(): NSDate = NSDate(
+    timeIntervalSinceReferenceDate = toEpochMilliseconds() / 1000.0 - NSTimeIntervalSince1970,
+)
