@@ -58,6 +58,10 @@
         <item quantity="one">%1$d exercise</item>
         <item quantity="other">%1$d exercises</item>
     </plurals>
+    <plurals name="postworkout_muscle_groups">
+        <item quantity="one">%1$d muscle group</item>
+        <item quantity="other">%1$d muscle groups</item>
+    </plurals>
     <string name="postworkout_reps_format">%1$d reps</string>
     <string name="postworkout_stat_pair_format">%1$s · %2$s</string>
 

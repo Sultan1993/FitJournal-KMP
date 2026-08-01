@@ -62,6 +62,12 @@
         <item quantity="many">%1$d упражнений</item>
         <item quantity="other">%1$d упражнения</item>
     </plurals>
+    <plurals name="postworkout_muscle_groups">
+        <item quantity="one">%1$d мышечная группа</item>
+        <item quantity="few">%1$d мышечные группы</item>
+        <item quantity="many">%1$d мышечных групп</item>
+        <item quantity="other">%1$d мышечные группы</item>
+    </plurals>
     <string name="postworkout_reps_format">%1$d повт.</string>
     <string name="postworkout_stat_pair_format">%1$s · %2$s</string>
 

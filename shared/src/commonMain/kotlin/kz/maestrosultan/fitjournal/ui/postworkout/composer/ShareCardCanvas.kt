@@ -89,6 +89,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.category_code_tric
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_drag_to_remove
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_exercises
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_more_format
+import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_muscle_groups
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_new_best
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_reps_format
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_sets
@@ -954,11 +955,11 @@ internal fun shareCardData(
         moreLabel = if (hidden > 0) stringResource(Res.string.postworkout_more_format, hidden) else null,
         receiptFooter = setsText + ShareCardSeparator + durationText,
         musclesHeadline = setsText,
-        // MISSING RESOURCE: no "N muscle groups" plural exists in
-        // values/strings.xml, and inventing one here would ship an
-        // untranslated string to de/ru/uk. The run is omitted until the key
-        // lands (see the report).
-        musclesSubline = "",
+        musclesSubline = pluralStringResource(
+            Res.plurals.postworkout_muscle_groups,
+            summary.muscles.size,
+            summary.muscles.size,
+        ),
         musclesFooter = tonnageText + ShareCardSeparator + exercisesText + ShareCardSeparator + durationText,
         muscles = summary.muscles.map { load ->
             ShareMuscleBar(
