@@ -150,11 +150,12 @@ class WorkoutSuccessViewModelTest {
         result: FinishResult,
         summaryUseCase: BuildSessionSummaryUseCase = buildSummary,
         sessions: WorkoutSessionRepository = sessionRepo,
+        titleFormatter: MuscleTitleFormatter = formatter,
     ) = WorkoutSuccessViewModel(
         result = result,
         buildSummary = summaryUseCase,
         sessionRepository = sessions,
-        muscleTitleFormatter = formatter,
+        muscleTitleFormatter = titleFormatter,
         clock = clock,
         timeZone = TimeZone.UTC,
     )
@@ -351,6 +352,31 @@ class WorkoutSuccessViewModelTest {
         assertEquals("cat-QUADRICEPS", state.title, "the usable snapshot renders — not the bare fallback")
         assertEquals("500 kg", state.tonnageText)
         assertNull(state.personalRecord, "the degradation: the snapshot was built without the PR")
+    }
+
+    @Test
+    fun snapshotRenderThrowsToo_landsOnTheBareFallback(): Unit = runTest(dispatcher) {
+        val squatWe = addOccurrence(seedExercise("Squat", CategoryType.QUADRICEPS), date)
+        repo.addSet(userId, journalId, squatWe, 100.0, 5, null, null)
+        val result = finishResult(endedSession())
+        // categoryName throws, fallbackTitle succeeds: the session read and the
+        // summary rebuild are FINE here, but with non-empty muscles BOTH stateFor
+        // attempts (rebuilt summary, then the snapshot) hit categoryName and die,
+        // while bareFallbackState's title(emptyList()) short-circuits to
+        // fallbackTitle before ever touching categoryName — so rung 2 is
+        // reachable AND the bare fallback still renders.
+        val explodingCategoryNames = MuscleTitleFormatter(
+            categoryName = { throw IllegalStateException("string resource loading failed") },
+            fallbackTitle = { "fallback-title" },
+        )
+
+        val state = awaitState(viewModel(result, titleFormatter = explodingCategoryNames))
+
+        assertEquals(
+            WorkoutSuccessUiState(loading = false, title = "fallback-title", playSuccessHaptic = true),
+            state,
+            "bare fallback EXACTLY: fallback title, every section at its hidden default, haptic armed",
+        )
     }
 
     // ─── Read-only contract ───────────────────────────────────────────────
