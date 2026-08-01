@@ -115,23 +115,37 @@ class FinishConfirmViewModel(
     }
 
     /**
-     * End the session and emit [FinishResult] on [finished] — exactly once: the
-     * guard flips synchronously on the first tap and never resets, so re-taps
-     * during AND after ending are no-ops.
+     * End the session and emit [FinishResult] on [finished] — at most once per
+     * SUCCESSFUL end.
+     *
+     * The guard flips synchronously on the first tap so re-taps during the write
+     * are no-ops, and it stays flipped once the session is genuinely ended. But
+     * a FAILED end releases it again and emits nothing: this is the flow's only
+     * domain write, so if it did not land the session is still running, and
+     * proceeding would show a celebration for a workout that never finished
+     * while the sheet's own latch made retrying impossible.
+     *
+     * Doing nothing on failure is deliberate — no alert, no error state, the
+     * sheet simply stays up with a live duration still ticking, and the Finish
+     * button works again. That matches the offline-first contract (failures are
+     * logged, never surfaced) and leaves the user with the one affordance that
+     * can actually fix it: tap again.
      */
     fun onConfirmFinish() {
         if (isEnding) return
         val current = session ?: return // load not finished, or nothing was running
         isEnding = true
         viewModelScope.launch {
-            runCatching { endWorkout(current.userId) }
-                .onFailure { failure ->
-                    if (failure is CancellationException) throw failure
-                    // Failure contract: treated as already ended — proceed. The use
-                    // case itself never throws on the ordinary nothing-running path
-                    // (it returns null), so this is a genuinely unexpected error.
-                    println("[FJ_FINISH_CONFIRM] endWorkout failed (${failure.message}) — treating as already ended")
-                }
+            val ended = runCatching { endWorkout(current.userId) }
+            ended.exceptionOrNull()?.let { failure ->
+                if (failure is CancellationException) throw failure
+                // The use case returns null (never throws) on the ordinary
+                // nothing-running path, so reaching here means the write really
+                // failed. Release the latch and leave the session alone.
+                println("[FJ_FINISH_CONFIRM] endWorkout failed (${failure.message}) — session still running, retry available")
+                isEnding = false
+                return@launch
+            }
             stopTicking() // the session is over; freeze the last rendered duration
             _finished.send(
                 FinishResult(

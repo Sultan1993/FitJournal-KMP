@@ -5,6 +5,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
@@ -535,8 +536,13 @@ class FinishConfirmViewModelTest {
         vm.dispose()
     }
 
+    /**
+     * A failed end must emit NOTHING. This is the flow's only domain write, so
+     * if it did not land the session is still running — proceeding would show a
+     * celebration for a workout that never finished.
+     */
     @Test
-    fun endWorkoutThrowing_logsAndProceeds() = runTest {
+    fun endWorkoutThrowing_emitsNothing_andLeavesTheSessionRunning() = runTest {
         val bed = TestBed(sampleRecords())
         bed.sessionRepo.endThrows = true
         val vm = bed.vm()
@@ -546,7 +552,32 @@ class FinishConfirmViewModelTest {
         vm.onConfirmFinish()
         runCurrent() // must not crash
 
-        assertEquals(1, events.size, "a throwing end is treated as already ended — the flow proceeds")
+        assertTrue(events.isEmpty(), "a failed end must not report the workout as finished")
+        assertNotNull(bed.sessionRepo.running, "the session must still be running after a failed end")
+        vm.dispose()
+    }
+
+    /**
+     * ...and the latch must release, or "tap again" hits a dead button — the
+     * one affordance that can actually recover from a failed write.
+     */
+    @Test
+    fun endWorkoutThrowing_thenSucceeding_finishesOnTheSecondTap() = runTest {
+        val bed = TestBed(sampleRecords())
+        bed.sessionRepo.endThrows = true
+        val vm = bed.vm()
+        runCurrent()
+        val events = collectFinished(vm)
+
+        vm.onConfirmFinish()
+        runCurrent()
+        assertTrue(events.isEmpty())
+
+        bed.sessionRepo.endThrows = false
+        vm.onConfirmFinish()
+        runCurrent()
+
+        assertEquals(1, events.size, "the retry must be able to finish the workout")
         assertEquals(expectedContext, events.single().context)
         assertEquals(3, events.single().summary.loggedSets, "the loaded summary still rides along")
         vm.dispose()
