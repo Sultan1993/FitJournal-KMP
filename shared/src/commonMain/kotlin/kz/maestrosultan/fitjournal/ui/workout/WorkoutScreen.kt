@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import kz.maestrosultan.fitjournal.ui.common.PageDots
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
+import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutCalendar
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutSessionBar
 
 /**
@@ -111,6 +112,19 @@ private fun WorkoutBody(
             AddButton(
                 onClick = { state.currentPage?.let { callbacks.onAddExercise(it.workoutNumber) } },
                 modifier = Modifier.align(Alignment.CenterEnd),
+            )
+        }
+
+        // Month-calendar overlay, toggled from the native nav-bar icon
+        // (viewModel.onToggleCalendar). Selecting a day closes it (the VM clears
+        // calendarVisible); re-tapping the nav icon also closes it.
+        if (state.calendarVisible) {
+            WorkoutCalendar(
+                selectedDate = state.selectedDate,
+                workoutDays = state.workoutDays,
+                onDateSelected = viewModel::onDateSelected,
+                onMonthChanged = viewModel::onCalendarMonthChanged,
+                modifier = Modifier.fillMaxSize().background(FjTheme.colors.background),
             )
         }
     }
