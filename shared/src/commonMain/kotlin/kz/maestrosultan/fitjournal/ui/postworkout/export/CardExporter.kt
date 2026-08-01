@@ -16,6 +16,8 @@ import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /** Fixed export raster size: 1080x1920 physical px (9:16 story format). */
 internal const val ExportWidthPx = 1080
@@ -42,13 +44,20 @@ internal const val ExportHeightPx = 1920
  * - Deliver a new [ExportRequest] (fresh id) per export; the host re-runs its
  *   capture effect per request and reports through [onResult]. Pass null when
  *   idle — nothing is composed and nothing is captured.
+ * - A new request MUST be preceded by a null (idle) request. The null gap
+ *   tears the export node down, so the next request recomposes it and gets a
+ *   guaranteed fresh draw. Chaining request N+1 directly after N is detected
+ *   (the per-request draw bookkeeping sees no new draw attempt) and reported
+ *   as [ExportResult.Failure] — never a stale or blank capture. The
+ *   ViewModel's request/idle cycle already complies.
  *
  * Failure semantics: any error — a throw inside the card's draw, layer
- * rasterization, or PNG encoding — is reported as [ExportResult.Failure] for
- * the request. There is no degraded fallback capture, and no exception ever
- * escapes to the caller (an unbridged Kotlin throw would abort the iOS app).
- * Draw-phase throws cannot reach the capture coroutine on their own, so the
- * record call is wrapped and the failure is handed over via [DrawErrorHolder].
+ * rasterization, PNG encoding, or a request whose node never drew at all — is
+ * reported as [ExportResult.Failure] for the request. There is no degraded
+ * fallback capture, and no exception ever escapes to the caller (an unbridged
+ * Kotlin throw would abort the iOS app). Draw-phase throws cannot reach the
+ * capture coroutine on their own, so the record call is wrapped and the
+ * failure is handed over via [DrawErrorHolder].
  */
 @Composable
 internal fun CardExportHost(
@@ -71,6 +80,7 @@ internal fun CardExportHost(
                         val failure = runCatching {
                             layer.record { this@drawWithContent.drawContent() }
                         }.exceptionOrNull()
+                        drawErrors.attempted = true
                         drawErrors.error = failure
                         if (failure == null) {
                             drawLayer(layer)
@@ -85,16 +95,33 @@ internal fun CardExportHost(
     val latestOnResult by rememberUpdatedState(onResult)
     LaunchedEffect(request) {
         if (request == null) return@LaunchedEffect
+        // Reset the per-request draw bookkeeping. Effect bodies of a freshly
+        // (re)started composition run BEFORE that frame's layout/draw, so the
+        // first draw attempt for THIS request always lands after this reset.
+        drawErrors.attempted = false
+        drawErrors.error = null
         // Two frame waits: the export node composes this frame and draws at the
         // end of it; by the time the second withFrameNanos resumes, at least
         // one full frame including the draw (record) phase has committed.
         withFrameNanos {}
         withFrameNanos {}
         val drawError = drawErrors.error
-        val encoded: Result<ByteArray> = if (drawError != null) {
-            Result.failure(drawError)
-        } else {
-            runCatching { layer.toImageBitmap().encodeToPng() }
+        val encoded: Result<ByteArray> = when {
+            !drawErrors.attempted -> Result.failure(
+                IllegalStateException(
+                    "export node never drew for request ${request.id} — a new " +
+                        "request must be preceded by a null (idle) request",
+                ),
+            )
+            drawError != null -> Result.failure(drawError)
+            else -> runCatching {
+                // Rasterize on the UI thread (GraphicsLayer is UI-owned), then
+                // encode the immutable snapshot off-main: PNG encoding of a
+                // 1080x1920 bitmap is ~100ms we must not spend on the main
+                // thread at the share tap.
+                val bitmap = layer.toImageBitmap()
+                withContext(Dispatchers.Default) { bitmap.encodeToPng() }
+            }
         }
         encoded.fold(
             onSuccess = { png -> latestOnResult(ExportResult.Success(request, png)) },
@@ -107,12 +134,18 @@ internal fun CardExportHost(
 }
 
 /**
- * Hands a draw-phase throw from the render pass to the capture coroutine.
- * Deliberately a plain var, not snapshot state: it is written during the draw
- * phase (where snapshot writes are illegal back-writes) and only read after
- * the frame waits, on the same UI thread. Each draw attempt overwrites it, so
- * it always reflects the latest attempt.
+ * Hands per-request draw bookkeeping from the render pass to the capture
+ * coroutine: [attempted] flips on every draw attempt (so a request whose node
+ * never drew is detected instead of encoding a stale/blank layer), [error]
+ * carries a draw-phase throw. Both are reset at the top of each request's
+ * capture effect, which runs before that frame's draw.
+ *
+ * Deliberately plain vars, not snapshot state: they are written during the
+ * draw phase (where snapshot writes are illegal back-writes) and only read
+ * after the frame waits, on the same UI thread. Each draw attempt overwrites
+ * them, so they always reflect the latest attempt.
  */
 private class DrawErrorHolder {
+    var attempted: Boolean = false
     var error: Throwable? = null
 }
