@@ -33,12 +33,15 @@ import com.kizitonwose.calendar.core.CalendarDay
 import com.kizitonwose.calendar.core.DayPosition
 import com.kizitonwose.calendar.core.OutDateStyle
 import com.kizitonwose.calendar.core.daysOfWeek
+import kotlin.time.Clock
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.Month
+import kotlinx.datetime.TimeZone
 import kotlinx.datetime.YearMonth
+import kotlinx.datetime.todayIn
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
 import kz.maestrosultan.fitjournal.ui.format.NameStyle
@@ -70,6 +73,7 @@ fun WorkoutCalendar(
     // so a Monday-first (or Sunday-first) locale stays consistent across both.
     val weekDays = remember { daysOfWeek() }
     val firstDayOfWeek = weekDays.first()
+    val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
 
     val anchorMonth = remember(selectedDate) { YearMonth(selectedDate.year, selectedDate.month) }
     val startMonth = remember(anchorMonth) { anchorMonth.offsetMonths(-RANGE_MONTHS) }
@@ -80,9 +84,6 @@ fun WorkoutCalendar(
         endMonth = endMonth,
         firstVisibleMonth = anchorMonth,
         firstDayOfWeek = firstDayOfWeek,
-        // Pad every month to the full 6x7 grid so the calendar's height is
-        // constant — a 4- or 5-week month won't make it grow/shrink as you
-        // page between months (6 rows is the max any month can span).
         outDateStyle = OutDateStyle.EndOfGrid,
     )
     val scope = rememberCoroutineScope()
@@ -102,7 +103,7 @@ fun WorkoutCalendar(
 
     Column(
         modifier = modifier
-            .background(FjTheme.colors.surface)
+            .background(FjTheme.colors.background)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -148,6 +149,7 @@ fun WorkoutCalendar(
                 DayCell(
                     day = day,
                     isSelected = day.position == DayPosition.MonthDate && day.date == selectedDate,
+                    isToday = day.date == today,
                     categories = workoutDays[day.date].orEmpty(),
                     onClick = { onDateSelected(day.date) },
                 )
@@ -160,6 +162,7 @@ fun WorkoutCalendar(
 private fun DayCell(
     day: CalendarDay,
     isSelected: Boolean,
+    isToday: Boolean,
     categories: List<CategoryType>,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -167,14 +170,17 @@ private fun DayCell(
     val isMonthDate = day.position == DayPosition.MonthDate
 
     // Fade the selection circle and number color rather than hard-flipping them.
-    // Read both inside draw/style so the tween doesn't recompose every frame.
     val circleColor by animateColorAsState(
         targetValue = if (isSelected) FjTheme.colors.brand else Color.Transparent,
         label = "daySelectionCircle",
     )
+    // Today's number is tinted, no fill (accent in dark, brand in light) — native
+    // parity. A selected day still wins (white on the brand circle).
+    val todayTint = if (FjTheme.colors.isDark) FjTheme.colors.accent else FjTheme.colors.brand
     val numberColor by animateColorAsState(
         targetValue = when {
             isSelected -> Color.White
+            isToday && isMonthDate -> todayTint
             isMonthDate -> FjTheme.colors.textPrimary
             else -> FjTheme.colors.textTertiary
         },
@@ -200,9 +206,7 @@ private fun DayCell(
             )
         }
 
-        // Only in-month, unselected days carry the dots (the selected circle would
-        // otherwise sit on top of them). One dot per muscle group trained, up to 4,
-        // coloured by category — mirrors the native calendar.
+        // Unselected in-month days only — the selection circle would cover the dots.
         if (isMonthDate && categories.isNotEmpty() && !isSelected) {
             Row(
                 modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 5.dp),

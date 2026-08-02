@@ -6,6 +6,7 @@ import kotlin.time.Clock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -241,9 +242,13 @@ class WorkoutViewModel(
     // ─── Actions (private — every interaction arrives via [dispatch]) ────
 
     private fun onDateSelected(date: LocalDate) {
-        calendarVisible.value = false
         currentPageIndex.value = 0
         selectedDate.value = date
+        // Let the tapped day's highlight land before the calendar collapses away.
+        viewModelScope.launch {
+            delay(250)
+            calendarVisible.value = false
+        }
     }
 
     /** Nav-bar calendar icon: open/close the month overlay; load its dots on open. */

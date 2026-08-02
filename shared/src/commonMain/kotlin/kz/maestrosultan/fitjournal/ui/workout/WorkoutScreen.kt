@@ -96,12 +96,8 @@ private fun WorkoutBody(
 
     Box(modifier = modifier.fillMaxSize().background(FjTheme.colors.background)) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Month-calendar, toggled from the native nav-bar icon
-            // (dispatch(ToggleCalendar)). It sits in the layout flow rather than
-            // over the pager, so opening it EXPANDS from the top and pushes the
-            // pager down (as if it were always present at 0 height); closing
-            // collapses it back. Selecting a day / re-tapping the icon clears
-            // calendarVisible.
+            // In the layout flow (not an overlay), so expanding it pushes the pager
+            // down. The nav-bar icon toggles calendarVisible.
             AnimatedVisibility(
                 visible = state.calendarVisible,
                 enter = expandVertically(tween(240), expandFrom = Alignment.Top) + fadeIn(tween(200)),
@@ -144,30 +140,34 @@ private fun WorkoutBody(
             }
         }
 
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                // Sit above the bottom system inset (iOS home indicator / Android
-                // gesture nav) — the host's scaffold only pads the top status bar.
-                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))
-                .padding(16.dp),
+        // Fades out while the calendar is open, back in when it closes.
+        AnimatedVisibility(
+            visible = !state.calendarVisible,
+            enter = fadeIn(tween(200)),
+            exit = fadeOut(tween(160)),
+            modifier = Modifier.align(Alignment.BottomCenter),
         ) {
-            WorkoutSessionBar(
-                state = state.sessionBar,
-                runningSince = state.runningSince,
-                onStart = { dispatch(WorkoutContract.ViewAction.StartSession) },
-                onEnd = { dispatch(WorkoutContract.ViewAction.RequestEndSession) },
-                // Leave room for the add button at the trailing edge.
-                modifier = Modifier.align(Alignment.CenterStart).fillMaxWidth().padding(end = 68.dp),
-            )
-            AddButton(
-                onClick = { state.currentPage?.let { addMenuWorkoutNumber = it.workoutNumber } },
-                modifier = Modifier.align(Alignment.CenterEnd),
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    // Above the bottom system inset — the host scaffold pads only the top.
+                    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))
+                    .padding(16.dp),
+            ) {
+                WorkoutSessionBar(
+                    state = state.sessionBar,
+                    runningSince = state.runningSince,
+                    onStart = { dispatch(WorkoutContract.ViewAction.StartSession) },
+                    onEnd = { dispatch(WorkoutContract.ViewAction.RequestEndSession) },
+                    modifier = Modifier.align(Alignment.CenterStart).fillMaxWidth().padding(end = 68.dp),
+                )
+                AddButton(
+                    onClick = { state.currentPage?.let { addMenuWorkoutNumber = it.workoutNumber } },
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                )
+            }
         }
 
-        // + / placeholder chooser: add from the catalog, or copy a previous workout.
         addMenuWorkoutNumber?.let { workoutNumber ->
             val close = { addMenuWorkoutNumber = null }
             WorkoutAddMenu(
