@@ -19,9 +19,11 @@ import kotlinx.datetime.toInstant
 
 /**
  * Android actuals. Dates go through [AndroidDateFormat.getBestDateTimePattern]
- * so the field order follows the device region. Names and the first day of the
- * week come from `java.time` (kotlinx-datetime's [DayOfWeek]/[Month] are
- * java.time typealiases on the JVM), giving standalone/nominative forms.
+ * so the field order follows the device region. Names come from `java.time`
+ * (via [JavaDayOfWeek.of]/[Month.of]) for standalone/nominative forms. NOTE:
+ * kotlinx-datetime's [DayOfWeek]/[Month] are NOT java.time typealiases in this
+ * project, so the explicit `.isoDayNumber` / `month1to12` conversions below are
+ * load-bearing — `day.getDisplayName(...)` would not compile.
  *
  * Formatters are created per call: java.text formatters are not thread-safe and
  * these calls are rare, so caching would buy nothing and cost safety.

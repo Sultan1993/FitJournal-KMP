@@ -17,11 +17,13 @@ import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.toJavaLocalDate
 
 /**
- * jvm (test harness) actual. Names + first-day-of-week use `java.time`,
- * identical to the Android actual. The skeleton date methods fall back to
- * `ofLocalizedDate` styles because `getBestDateTimePattern` is Android-only —
- * acceptable here since only jvmTest runs this, and its date assertions compare
- * against this same function rather than a literal.
+ * jvm (test harness) actual. Names use `java.time` (via [JavaDayOfWeek.of] /
+ * [Month.of]), like the Android actual. `getBestDateTimePattern` is Android-only,
+ * so the skeleton dates are approximated with fixed patterns that mirror the
+ * production FIELD SET — [formatFullDate] as "EEEE, d MMMM" (weekday+day+month,
+ * NO year, matching the "EEEEdMMMM" skeleton) and [formatDayMonthYear] as a
+ * localized long date. Only jvmTest runs this; field-order regionality isn't
+ * exercised, but the no-year field set now matches production.
  */
 actual object LocaleFormatters {
 
@@ -35,8 +37,7 @@ actual object LocaleFormatters {
     }
 
     actual fun formatFullDate(date: LocalDate): String =
-        DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)
-            .withLocale(Locale.getDefault())
+        DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale.getDefault())
             .format(date.toJavaLocalDate())
 
     actual fun formatDayMonthYear(date: LocalDate): String =
