@@ -1,58 +1,72 @@
 package kz.maestrosultan.fitjournal.ui.workout.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import kz.maestrosultan.fitjournal.domain.exercise.Category
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
+import kz.maestrosultan.fitjournal.shared.generated.resources.Res
+import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_exercises
+import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_sets
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
-import kz.maestrosultan.fitjournal.ui.theme.composeColor
+import org.jetbrains.compose.resources.pluralStringResource
 
-/** Distinct primary muscle groups worked on this page, as colour-dot chips. */
+private const val SEPARATOR = " • "
+
+/**
+ * The page's header: the day's muscle groups as a centered title, with an
+ * exercise/set-count subtitle beneath it — matching the native workout header
+ * (which showed the same counts in its nav subtitle).
+ */
 @Composable
 fun WorkoutMuscleHeader(records: List<WorkoutRecord>, modifier: Modifier = Modifier) {
     val categories = remember(records) {
-        records.flatMap { it.exercises }.map { it.exercise.primaryCategory }.distinctBy { it.type }
+        records.flatMap { it.exercises }
+            .map { it.exercise.primaryCategory }
+            .distinctBy { it.type }
+            .sortedBy { it.type.ordinal }
     }
     if (categories.isEmpty()) return
-    Row(
+
+    val exerciseCount = remember(records) { records.sumOf { it.exercises.size } }
+    // Filled sets only (a real weight/distance was logged) — parity with the
+    // native "N sets" count, which skipped unfilled target rows.
+    val setCount = remember(records) {
+        records.sumOf { record -> record.exercises.sumOf { ex -> ex.sets.count { it.displayValue != null } } }
+    }
+
+    val exercisesText = pluralStringResource(Res.plurals.postworkout_exercises, exerciseCount, exerciseCount)
+    val setsText = pluralStringResource(Res.plurals.postworkout_sets, setCount, setCount)
+
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        categories.forEach { MuscleChip(it) }
-    }
-}
-
-@Composable
-private fun MuscleChip(category: Category) {
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(FjTheme.colors.surface)
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Box(Modifier.size(8.dp).clip(CircleShape).background(category.type.composeColor()))
-        Text(category.name, style = FjTheme.typography.label, color = FjTheme.colors.textSecondary)
+        Text(
+            text = categories.joinToString(SEPARATOR) { it.name },
+            style = FjTheme.typography.cardTitle,
+            color = FjTheme.colors.textPrimary,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(Modifier.height(2.dp))
+        Text(
+            text = "$exercisesText$SEPARATOR$setsText",
+            style = FjTheme.typography.caption,
+            color = FjTheme.colors.textSecondary,
+            textAlign = TextAlign.Center,
+        )
     }
 }

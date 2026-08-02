@@ -17,7 +17,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -35,7 +34,6 @@ import com.kizitonwose.calendar.core.OutDateStyle
 import com.kizitonwose.calendar.core.daysOfWeek
 import kotlin.time.Clock
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.launch
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.Month
@@ -86,12 +84,9 @@ fun WorkoutCalendar(
         firstDayOfWeek = firstDayOfWeek,
         outDateStyle = OutDateStyle.EndOfGrid,
     )
-    val scope = rememberCoroutineScope()
 
     // Report the settled visible month. snapshotFlow emits the current value on
-    // first collection, so the initial month fires too (dots load on open); the
-    // header arrows below scroll the state, which flows back through here — one
-    // source of truth for "the month changed", no double-firing.
+    // first collection, so the initial month fires too (dots load on open).
     val latestOnMonthChanged by rememberUpdatedState(onMonthChanged)
     LaunchedEffect(state) {
         snapshotFlow { state.firstVisibleMonth.yearMonth }
@@ -107,27 +102,14 @@ fun WorkoutCalendar(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        // Month + year with prev / next arrows.
-        Row(
+        // Month + year — swipe the calendar to change months (no arrows).
+        Text(
+            text = "${LocaleFormatters.monthName(visibleMonth.month.ordinal + 1, NameStyle.Full)} ${visibleMonth.year}",
+            style = FjTheme.typography.cardTitle,
+            color = FjTheme.colors.textPrimary,
+            textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            CalendarArrow(
-                glyph = "‹",
-                onClick = { scope.launch { state.animateScrollToMonth(visibleMonth.offsetMonths(-1)) } },
-            )
-            Text(
-                text = "${LocaleFormatters.monthName(visibleMonth.month.ordinal + 1, NameStyle.Full)} ${visibleMonth.year}",
-                style = FjTheme.typography.cardTitle,
-                color = FjTheme.colors.textPrimary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.weight(1f),
-            )
-            CalendarArrow(
-                glyph = "›",
-                onClick = { scope.launch { state.animateScrollToMonth(visibleMonth.offsetMonths(1)) } },
-            )
-        }
+        )
 
         // Weekday header, aligned to the calendar's firstDayOfWeek.
         Row(modifier = Modifier.fillMaxWidth()) {
@@ -222,27 +204,6 @@ private fun DayCell(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun CalendarArrow(
-    glyph: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .size(40.dp)
-            .clip(CircleShape)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = glyph,
-            style = FjTheme.typography.cardTitle,
-            color = FjTheme.colors.textSecondary,
-        )
     }
 }
 
