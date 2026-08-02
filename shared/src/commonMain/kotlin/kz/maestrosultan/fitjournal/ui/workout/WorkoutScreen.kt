@@ -1,5 +1,11 @@
 package kz.maestrosultan.fitjournal.ui.workout
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -135,15 +141,23 @@ private fun WorkoutBody(
         }
 
         // Month-calendar overlay, toggled from the native nav-bar icon
-        // (dispatch(ToggleCalendar)). Selecting a day closes it (the VM clears
-        // calendarVisible); re-tapping the nav icon also closes it.
-        if (state.calendarVisible) {
+        // (dispatch(ToggleCalendar)). Slides down from the top with a fade and
+        // takes only the height it needs (not the whole screen); selecting a day
+        // closes it (the VM clears calendarVisible), re-tapping the icon closes it.
+        AnimatedVisibility(
+            visible = state.calendarVisible,
+            enter = fadeIn(tween(200)) + slideInVertically(tween(240)) { -it },
+            exit = fadeOut(tween(160)) + slideOutVertically(tween(200)) { -it },
+            modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth(),
+        ) {
             WorkoutCalendar(
                 selectedDate = state.selectedDate,
                 workoutDays = state.workoutDays,
                 onDateSelected = { dispatch(WorkoutContract.ViewAction.SelectDate(it)) },
                 onMonthChanged = { year, month -> dispatch(WorkoutContract.ViewAction.CalendarMonthChanged(year, month)) },
-                modifier = Modifier.fillMaxSize().background(FjTheme.colors.background),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)),
             )
         }
 

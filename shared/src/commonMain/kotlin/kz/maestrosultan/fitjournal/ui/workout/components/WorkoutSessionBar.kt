@@ -4,8 +4,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -56,15 +54,12 @@ fun WorkoutSessionBar(
     onEnd: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Slide up + fade so the bar eases in (e.g. landing on today's empty
-    // workout) instead of popping; state swaps (Start <-> Running) cross-fade.
+    // Cross-fade so the bar eases in/out (e.g. landing on today's empty workout)
+    // instead of popping — no slide.
     AnimatedContent(
         targetState = state,
         modifier = modifier,
-        transitionSpec = {
-            (fadeIn(tween(220)) + slideInVertically(tween(260), initialOffsetY = { it })) togetherWith
-                (fadeOut(tween(160)) + slideOutVertically(tween(200), targetOffsetY = { it }))
-        },
+        transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(180)) },
         label = "workout-session-bar",
     ) { current ->
         when (current) {

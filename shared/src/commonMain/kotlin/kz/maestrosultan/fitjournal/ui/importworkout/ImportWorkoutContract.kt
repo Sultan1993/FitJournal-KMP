@@ -3,6 +3,7 @@ package kz.maestrosultan.fitjournal.ui.importworkout
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.datetime.LocalDate
+import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 
@@ -51,7 +52,7 @@ object ImportWorkoutContract {
     data class ViewState(
         val sourceDate: LocalDate,
         val calendarExpanded: Boolean,
-        val workoutDays: Set<LocalDate>,
+        val workoutDays: Map<LocalDate, List<CategoryType>>,
         val content: ImportContent,
         val importInProgress: Boolean,
         val measurementSystem: MeasurementSystem,
@@ -65,7 +66,7 @@ object ImportWorkoutContract {
             fun initial(sourceDate: LocalDate) = ViewState(
                 sourceDate = sourceDate,
                 calendarExpanded = false,
-                workoutDays = emptySet(),
+                workoutDays = emptyMap(),
                 content = ImportContent.Loading,
                 importInProgress = false,
                 measurementSystem = MeasurementSystem.KG_KM,

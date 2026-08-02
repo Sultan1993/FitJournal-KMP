@@ -4,6 +4,7 @@ import kotlin.time.Instant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.datetime.LocalDate
+import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
@@ -74,8 +75,12 @@ object WorkoutContract {
         val measurementSystem: MeasurementSystem,
         /** The month-calendar overlay is open (toggled from the native nav-bar icon). */
         val calendarVisible: Boolean,
-        /** Days in the calendar's visible month that have workouts — marked with a dot. */
-        val workoutDays: Set<LocalDate>,
+        /**
+         * Days in the calendar's visible month that have workouts, each mapped to
+         * the (distinct) muscle-group categories trained that day — the calendar
+         * marks a day with up to four category-coloured dots.
+         */
+        val workoutDays: Map<LocalDate, List<CategoryType>>,
     ) {
         val currentPage: WorkoutPage? get() = pages.getOrNull(currentPageIndex)
 
@@ -93,7 +98,7 @@ object WorkoutContract {
                 runningSession = null,
                 measurementSystem = MeasurementSystem.KG_KM,
                 calendarVisible = false,
-                workoutDays = emptySet(),
+                workoutDays = emptyMap(),
             )
         }
     }

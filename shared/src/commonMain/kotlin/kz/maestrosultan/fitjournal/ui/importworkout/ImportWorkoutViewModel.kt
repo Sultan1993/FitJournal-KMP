@@ -134,7 +134,12 @@ class ImportWorkoutViewModel(
         val jid = journalId ?: return
         viewModelScope.launch {
             val records = recordRepository.getRecordsByMonth(uid, jid, month.toString(), year.toString())
-            _uiState.update { state -> state.copy(workoutDays = records.map { it.date }.toSet()) }
+            val byDay = records
+                .groupBy { it.date }
+                .mapValues { (_, dayRecords) ->
+                    dayRecords.flatMap { it.exercises }.map { it.exercise.primaryCategory.type }.distinct()
+                }
+            _uiState.update { state -> state.copy(workoutDays = byDay) }
         }
     }
 

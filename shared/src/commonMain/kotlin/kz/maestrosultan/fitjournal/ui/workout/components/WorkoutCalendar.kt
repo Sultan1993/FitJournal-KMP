@@ -39,9 +39,11 @@ import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.Month
 import kotlinx.datetime.YearMonth
+import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
 import kz.maestrosultan.fitjournal.ui.format.NameStyle
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
+import kz.maestrosultan.fitjournal.ui.theme.composeColor
 
 /**
  * A single-month, page-per-month workout calendar built on the headless
@@ -50,7 +52,8 @@ import kz.maestrosultan.fitjournal.ui.theme.FjTheme
  * the calendar library's own multiplatform surface.
  *
  * @param selectedDate the highlighted day (filled brand circle, white number).
- * @param workoutDays days to mark with a brand dot below the number.
+ * @param workoutDays workout days mapped to the muscle-group categories trained
+ *   that day — each marked with up to four category-coloured dots below the number.
  * @param onDateSelected fired when an in-month day is tapped.
  * @param onMonthChanged fired for the initially-visible month and every time the
  *   settled visible month changes; [month] is 1..12.
@@ -58,7 +61,7 @@ import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 @Composable
 fun WorkoutCalendar(
     selectedDate: LocalDate,
-    workoutDays: Set<LocalDate>,
+    workoutDays: Map<LocalDate, List<CategoryType>>,
     onDateSelected: (LocalDate) -> Unit,
     onMonthChanged: (year: Int, month: Int) -> Unit,
     modifier: Modifier = Modifier,
@@ -142,7 +145,7 @@ fun WorkoutCalendar(
                 DayCell(
                     day = day,
                     isSelected = day.position == DayPosition.MonthDate && day.date == selectedDate,
-                    isWorkoutDay = day.date in workoutDays,
+                    categories = workoutDays[day.date].orEmpty(),
                     onClick = { onDateSelected(day.date) },
                 )
             },
@@ -154,7 +157,7 @@ fun WorkoutCalendar(
 private fun DayCell(
     day: CalendarDay,
     isSelected: Boolean,
-    isWorkoutDay: Boolean,
+    categories: List<CategoryType>,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -194,17 +197,23 @@ private fun DayCell(
             )
         }
 
-        // Only in-month, unselected days carry the dot (the selected circle would
-        // otherwise sit on top of it).
-        if (isMonthDate && isWorkoutDay && !isSelected) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 6.dp)
-                    .size(5.dp)
-                    .clip(CircleShape)
-                    .background(FjTheme.colors.brand),
-            )
+        // Only in-month, unselected days carry the dots (the selected circle would
+        // otherwise sit on top of them). One dot per muscle group trained, up to 4,
+        // coloured by category — mirrors the native calendar.
+        if (isMonthDate && categories.isNotEmpty() && !isSelected) {
+            Row(
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 5.dp),
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                categories.take(4).forEach { category ->
+                    Box(
+                        modifier = Modifier
+                            .size(5.dp)
+                            .clip(CircleShape)
+                            .background(category.composeColor()),
+                    )
+                }
+            }
         }
     }
 }

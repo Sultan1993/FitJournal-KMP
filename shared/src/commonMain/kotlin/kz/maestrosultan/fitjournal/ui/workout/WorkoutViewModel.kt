@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
+import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.sync.SyncReason
 import kz.maestrosultan.fitjournal.domain.sync.SyncTrigger
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
@@ -64,7 +65,7 @@ class WorkoutViewModel(
     private val currentPageIndex = MutableStateFlow(0)
     private val pagerScrolling = MutableStateFlow(false)
     private val calendarVisible = MutableStateFlow(false)
-    private val workoutDays = MutableStateFlow<Set<LocalDate>>(emptySet())
+    private val workoutDays = MutableStateFlow<Map<LocalDate, List<CategoryType>>>(emptyMap())
 
     private val _uiState = MutableStateFlow(
         WorkoutContract.ViewState.initial(initialDate, isToday = initialDate == today()),
@@ -172,7 +173,7 @@ class WorkoutViewModel(
         requestedPageIndex: Int,
         pagerScrolling: Boolean,
         calendarVisible: Boolean,
-        workoutDays: Set<LocalDate>,
+        workoutDays: Map<LocalDate, List<CategoryType>>,
     ): WorkoutContract.ViewState {
         val pages = buildPages(records, daySessions)
         val pageIndex = requestedPageIndex.coerceIn(0, (pages.size - 1).coerceAtLeast(0))
@@ -263,7 +264,13 @@ class WorkoutViewModel(
         val jid = journalId ?: return
         viewModelScope.launch {
             val records = recordRepository.getRecordsByMonth(uid, jid, month.toString(), year.toString())
-            workoutDays.value = records.map { it.date }.toSet()
+            // date -> the distinct muscle groups trained that day (first-seen
+            // order), for the calendar's category-coloured dots.
+            workoutDays.value = records
+                .groupBy { it.date }
+                .mapValues { (_, dayRecords) ->
+                    dayRecords.flatMap { it.exercises }.map { it.exercise.primaryCategory.type }.distinct()
+                }
         }
     }
 
