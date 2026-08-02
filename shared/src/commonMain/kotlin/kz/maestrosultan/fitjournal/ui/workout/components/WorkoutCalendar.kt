@@ -80,7 +80,10 @@ fun WorkoutCalendar(
         endMonth = endMonth,
         firstVisibleMonth = anchorMonth,
         firstDayOfWeek = firstDayOfWeek,
-        outDateStyle = OutDateStyle.EndOfRow,
+        // Pad every month to the full 6x7 grid so the calendar's height is
+        // constant — a 4- or 5-week month won't make it grow/shrink as you
+        // page between months (6 rows is the max any month can span).
+        outDateStyle = OutDateStyle.EndOfGrid,
     )
     val scope = rememberCoroutineScope()
 

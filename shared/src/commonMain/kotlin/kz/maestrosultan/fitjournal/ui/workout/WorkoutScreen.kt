@@ -2,13 +2,14 @@ package kz.maestrosultan.fitjournal.ui.workout
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
@@ -94,28 +95,54 @@ private fun WorkoutBody(
     }
 
     Box(modifier = modifier.fillMaxSize().background(FjTheme.colors.background)) {
-        if (pageCount > 0) {
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize(),
-                key = { index -> state.pages[index].workoutNumber },
-            ) { index ->
-                WorkoutPageContent(
-                    page = state.pages[index],
-                    measurementSystem = state.measurementSystem,
-                    dispatch = dispatch,
-                    onRequestAdd = { addMenuWorkoutNumber = it },
-                    modifier = Modifier.fillMaxSize(),
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Month-calendar, toggled from the native nav-bar icon
+            // (dispatch(ToggleCalendar)). It sits in the layout flow rather than
+            // over the pager, so opening it EXPANDS from the top and pushes the
+            // pager down (as if it were always present at 0 height); closing
+            // collapses it back. Selecting a day / re-tapping the icon clears
+            // calendarVisible.
+            AnimatedVisibility(
+                visible = state.calendarVisible,
+                enter = expandVertically(tween(240), expandFrom = Alignment.Top) + fadeIn(tween(200)),
+                exit = shrinkVertically(tween(200), shrinkTowards = Alignment.Top) + fadeOut(tween(160)),
+            ) {
+                WorkoutCalendar(
+                    selectedDate = state.selectedDate,
+                    workoutDays = state.workoutDays,
+                    onDateSelected = { dispatch(WorkoutContract.ViewAction.SelectDate(it)) },
+                    onMonthChanged = { year, month -> dispatch(WorkoutContract.ViewAction.CalendarMonthChanged(year, month)) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)),
+                )
+            }
+
+            Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                if (pageCount > 0) {
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize(),
+                        key = { index -> state.pages[index].workoutNumber },
+                    ) { index ->
+                        WorkoutPageContent(
+                            page = state.pages[index],
+                            measurementSystem = state.measurementSystem,
+                            dispatch = dispatch,
+                            onRequestAdd = { addMenuWorkoutNumber = it },
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                }
+
+                PageDots(
+                    count = pageCount,
+                    currentPage = pagerState.currentPage,
+                    onDotClick = { dispatch(WorkoutContract.ViewAction.SelectPage(it)) },
+                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp),
                 )
             }
         }
-
-        PageDots(
-            count = pageCount,
-            currentPage = pagerState.currentPage,
-            onDotClick = { dispatch(WorkoutContract.ViewAction.SelectPage(it)) },
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp),
-        )
 
         Box(
             modifier = Modifier
@@ -137,27 +164,6 @@ private fun WorkoutBody(
             AddButton(
                 onClick = { state.currentPage?.let { addMenuWorkoutNumber = it.workoutNumber } },
                 modifier = Modifier.align(Alignment.CenterEnd),
-            )
-        }
-
-        // Month-calendar overlay, toggled from the native nav-bar icon
-        // (dispatch(ToggleCalendar)). Slides down from the top with a fade and
-        // takes only the height it needs (not the whole screen); selecting a day
-        // closes it (the VM clears calendarVisible), re-tapping the icon closes it.
-        AnimatedVisibility(
-            visible = state.calendarVisible,
-            enter = fadeIn(tween(200)) + slideInVertically(tween(240)) { -it },
-            exit = fadeOut(tween(160)) + slideOutVertically(tween(200)) { -it },
-            modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth(),
-        ) {
-            WorkoutCalendar(
-                selectedDate = state.selectedDate,
-                workoutDays = state.workoutDays,
-                onDateSelected = { dispatch(WorkoutContract.ViewAction.SelectDate(it)) },
-                onMonthChanged = { year, month -> dispatch(WorkoutContract.ViewAction.CalendarMonthChanged(year, month)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)),
             )
         }
 
