@@ -9,6 +9,8 @@
 
     <!-- Exercise card -->
     <string name="workout_add_set">Додати підхід</string>
+    <string name="workout_set_label">Підхід</string>
+    <string name="workout_exercise_note_label">Нотатка</string>
     <string name="workout_add_exercise">Додати вправу</string>
     <string name="workout_last_prefix">Минулого разу: %1$s</string>
     <string name="workout_superset">Суперсет</string>

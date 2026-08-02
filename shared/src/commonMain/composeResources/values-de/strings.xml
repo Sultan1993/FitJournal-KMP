@@ -9,6 +9,8 @@
 
     <!-- Exercise card -->
     <string name="workout_add_set">Satz hinzufügen</string>
+    <string name="workout_set_label">Satz</string>
+    <string name="workout_exercise_note_label">Notiz</string>
     <string name="workout_add_exercise">Übung hinzufügen</string>
     <string name="workout_last_prefix">Zuletzt: %1$s</string>
     <string name="workout_superset">Supersatz</string>

@@ -41,6 +41,26 @@ object WorkoutValueFormatter {
         return listOfNotNull(v, r).joinToString(" ")
     }
 
+    // ── Split parts, for the native "20 kg × 8" look (big number, small unit) ──
+
+    /** Just the number: "70", "2.5", or "—". */
+    fun number(value: Double?): String = value?.let { trimNumber(it) } ?: EMPTY
+
+    /** The value's unit alone: "kg"/"lb" (weight) or "km"/"mi" (distance). */
+    fun unit(resultType: ResultType, system: MeasurementSystem): String = when (resultType) {
+        ResultType.WEIGHT_REPS -> if (system == MeasurementSystem.KG_KM) "kg" else "lb"
+        ResultType.DISTANCE_DURATION -> if (system == MeasurementSystem.KG_KM) "km" else "mi"
+    }
+
+    /** The reps/duration number alone: "8"/"12", or "—". null/0 is the unset sentinel. */
+    fun repsNumber(reps: Int?): String = if (reps == null || reps == 0) EMPTY else reps.toString()
+
+    /** The reps companion's unit: "" for weight×reps, "min" for distance/duration. */
+    fun repsUnit(resultType: ResultType): String = when (resultType) {
+        ResultType.WEIGHT_REPS -> ""
+        ResultType.DISTANCE_DURATION -> "min"
+    }
+
     /** "70" not "70.0", "2.5" not "2.50" — no String.format in commonMain. */
     private fun trimNumber(d: Double): String {
         val asLong = d.toLong()

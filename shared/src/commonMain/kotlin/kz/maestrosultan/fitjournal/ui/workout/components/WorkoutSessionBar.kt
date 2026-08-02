@@ -1,5 +1,12 @@
 package kz.maestrosultan.fitjournal.ui.workout.components
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -49,10 +56,22 @@ fun WorkoutSessionBar(
     onEnd: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    when (state) {
-        SessionBarState.Hidden -> Unit
-        SessionBarState.Start -> StartPill(onStart, modifier)
-        SessionBarState.Running -> RunningBar(runningSince, onEnd, modifier)
+    // Slide up + fade so the bar eases in (e.g. landing on today's empty
+    // workout) instead of popping; state swaps (Start <-> Running) cross-fade.
+    AnimatedContent(
+        targetState = state,
+        modifier = modifier,
+        transitionSpec = {
+            (fadeIn(tween(220)) + slideInVertically(tween(260), initialOffsetY = { it })) togetherWith
+                (fadeOut(tween(160)) + slideOutVertically(tween(200), targetOffsetY = { it }))
+        },
+        label = "workout-session-bar",
+    ) { current ->
+        when (current) {
+            SessionBarState.Hidden -> Spacer(Modifier.fillMaxWidth())
+            SessionBarState.Start -> StartPill(onStart, Modifier)
+            SessionBarState.Running -> RunningBar(runningSince, onEnd, Modifier)
+        }
     }
 }
 
@@ -62,7 +81,7 @@ private fun StartPill(onStart: () -> Unit, modifier: Modifier) {
         modifier = modifier
             .fillMaxWidth()
             .height(56.dp)
-            .clip(RoundedCornerShape(28.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(FjTheme.colors.brand)
             .clickable(onClick = onStart),
         contentAlignment = Alignment.Center,
@@ -88,7 +107,7 @@ private fun RunningBar(runningSince: Instant?, onEnd: () -> Unit, modifier: Modi
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()
-                .clip(RoundedCornerShape(28.dp))
+                .clip(RoundedCornerShape(16.dp))
                 .background(FjTheme.colors.brandSubtle),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -100,7 +119,7 @@ private fun RunningBar(runningSince: Instant?, onEnd: () -> Unit, modifier: Modi
         Box(
             modifier = Modifier
                 .fillMaxHeight()
-                .clip(RoundedCornerShape(28.dp))
+                .clip(RoundedCornerShape(16.dp))
                 .background(FjTheme.colors.negative)
                 .clickable(onClick = onEnd)
                 .padding(horizontal = 24.dp),

@@ -1,6 +1,5 @@
 package kz.maestrosultan.fitjournal.ui.workout.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,32 +7,37 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
-import kz.maestrosultan.fitjournal.shared.generated.resources.workout_add_set
+import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_options
+import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_sets
+import kz.maestrosultan.fitjournal.shared.generated.resources.workout_exercise_note_label
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * One exercise inside a record card: avatar + name (+ optional note), a 3-dot
- * menu trigger, its set rows, and an "Add set" row. Set values come straight
- * from the domain's [WorkoutExercise.displayValuesAt] — the ghost/own-numbers
- * rules are already resolved there; presentation only formats units.
+ * One exercise inside a record card — 1:1 with the native `WorkoutExerciseItem`:
+ * a 44dp category image, the name over a "N SETS" eyebrow, an options trigger,
+ * an optional NOTE block, then the set rail. Set values come from the domain's
+ * [WorkoutExercise.displayValuesAt] (the ghost/own-numbers rules are resolved
+ * there); presentation only splits value/unit for the big-number/small-unit look.
  */
 @Composable
 fun WorkoutExerciseItem(
@@ -45,83 +49,95 @@ fun WorkoutExerciseItem(
     modifier: Modifier = Modifier,
 ) {
     val resultType = exercise.exercise.resultType
-    Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            ExerciseAvatar(exercise = exercise.exercise)
-            Spacer(Modifier.width(12.dp))
+    val note = exercise.comment?.takeIf { it.isNotBlank() }
+    val sets = exercise.sets.mapIndexed { index, set ->
+        val values = exercise.displayValuesAt(index, fallBackToPreviousSet = false)
+        SetDisplay(
+            setId = set.id,
+            number = WorkoutValueFormatter.number(values.value),
+            unit = WorkoutValueFormatter.unit(resultType, measurementSystem),
+            repsNumber = WorkoutValueFormatter.repsNumber(values.reps),
+            repsUnit = WorkoutValueFormatter.repsUnit(resultType),
+        )
+    }
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        // Header: image + (name / N SETS) + options — vertically centered on the image.
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            ExerciseAvatar(exercise = exercise.exercise, size = 44.dp)
+            Spacer(Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = exercise.exercise.name,
-                    style = FjTheme.typography.cardTitle,
+                    style = FjTheme.typography.body.copy(fontSize = 16.sp, fontWeight = FontWeight.SemiBold),
                     color = FjTheme.colors.textPrimary,
-                    maxLines = 2,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                exercise.comment?.takeIf { it.isNotBlank() }?.let { note ->
-                    Text(
-                        text = note,
-                        style = FjTheme.typography.caption,
-                        color = FjTheme.colors.textSecondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+                Text(
+                    text = pluralStringResource(Res.plurals.postworkout_sets, exercise.sets.size, exercise.sets.size)
+                        .uppercase(),
+                    style = FjTheme.typography.caption.copy(
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.1.em,
+                    ),
+                    color = FjTheme.colors.textTertiary,
+                    maxLines = 1,
+                )
             }
-            MoreButton(onMenu)
-        }
-
-        Spacer(Modifier.height(4.dp))
-
-        exercise.sets.forEachIndexed { index, set ->
-            val values = exercise.displayValuesAt(index, fallBackToPreviousSet = false)
-            WorkoutSetRow(
-                setNumber = index + 1,
-                valueText = WorkoutValueFormatter.value(values.value, resultType, measurementSystem),
-                repsText = WorkoutValueFormatter.reps(values.reps, resultType),
-                hintText = null,
-                onClick = { onSetClick(set.id) },
-            )
-        }
-
-        AddSetRow(onAddSet)
-    }
-}
-
-@Composable
-private fun MoreButton(onMenu: () -> Unit) {
-    Box(
-        modifier = Modifier.size(36.dp).clip(CircleShape).clickable(onClick = onMenu),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(3.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            repeat(3) {
-                Box(Modifier.size(3.5.dp).clip(CircleShape).background(FjTheme.colors.textTertiary))
+            Box(
+                // Clickable first so the padding is part of the tap target; a
+                // smaller end inset nudges the glyph toward the card edge.
+                modifier = Modifier
+                    .clickable(onClick = onMenu)
+                    .padding(start = 8.dp, top = 8.dp, bottom = 8.dp, end = 4.dp),
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_common_options),
+                    contentDescription = null,
+                    tint = FjTheme.colors.textSecondary,
+                    modifier = Modifier.size(20.dp),
+                )
             }
         }
-    }
-}
 
-@Composable
-private fun AddSetRow(onAddSet: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(44.dp)
-            .clip(RoundedCornerShape(10.dp))
-            .clickable(onClick = onAddSet),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier.size(24.dp).clip(CircleShape).background(FjTheme.colors.brandSubtle),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text("+", style = FjTheme.typography.bodyStrong, color = FjTheme.colors.brand)
+        if (note != null) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = stringResource(Res.string.workout_exercise_note_label).uppercase(),
+                    style = FjTheme.typography.caption.copy(
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.1.em,
+                    ),
+                    color = FjTheme.colors.textTertiary,
+                )
+                Text(
+                    text = note,
+                    style = FjTheme.typography.caption.copy(fontSize = 14.sp, fontWeight = FontWeight.Medium),
+                    color = FjTheme.colors.textSecondary,
+                )
+            }
         }
-        Spacer(Modifier.width(12.dp))
-        Text(
-            text = stringResource(Res.string.workout_add_set),
-            style = FjTheme.typography.body,
-            color = FjTheme.colors.textSecondary,
+
+        WorkoutSetRail(
+            sets = sets,
+            showAddSet = true,
+            onSetClick = onSetClick,
+            onAddSet = onAddSet,
+            // No note → the header gap lives here; with a note the note block
+            // owns the top gap. Rail content sits at 18 (16 card + 2) so the dot
+            // column lines up with the NOTE text.
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = if (note == null) 8.dp else 0.dp, start = 18.dp, end = 18.dp),
         )
     }
 }
