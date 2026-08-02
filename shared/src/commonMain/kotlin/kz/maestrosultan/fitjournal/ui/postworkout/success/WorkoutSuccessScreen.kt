@@ -84,7 +84,7 @@ private const val BarStaggerMillis = 40
  * (liquid-glass bar item on iOS, the app's back convention on Android), and
  * the host also wraps this in `FitJournalTheme`.
  *
- * All values come pre-formatted from [WorkoutSuccessUiState]; the only
+ * All values come pre-formatted from [WorkoutSuccessContract.ViewState]; the only
  * derivations here are presentation-level (plural selection, the tonnage
  * number/unit split, rail trailing assembly). [onHapticConsumed] fires once
  * when the state asks for the success haptic — the host performs it and tells
@@ -92,7 +92,7 @@ private const val BarStaggerMillis = 40
  */
 @Composable
 fun WorkoutSuccessScreen(
-    state: WorkoutSuccessUiState,
+    state: WorkoutSuccessContract.ViewState,
     onShare: () -> Unit,
     onOpenRecord: () -> Unit,
     onHapticConsumed: () -> Unit,

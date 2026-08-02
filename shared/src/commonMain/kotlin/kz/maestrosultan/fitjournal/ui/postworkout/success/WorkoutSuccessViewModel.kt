@@ -30,7 +30,7 @@ import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
  * In init the ended session is RE-READ from [sessionRepository] (by its page —
  * userId/journalId/date/workoutNumber from [FinishResult.context]; the repo has
  * no by-uuid read) and the summary is REBUILT via [buildSummary] with the
- * default `includeBest`, so [WorkoutSuccessUiState.personalRecord] is populated
+ * default `includeBest`, so [WorkoutSuccessContract.ViewState.personalRecord] is populated
  * even though the confirm sheet's snapshot skipped PR detection. PR detection
  * is composed INSIDE the use case — never call DetectSessionBestUseCase here.
  *
@@ -39,9 +39,9 @@ import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
  * finish-time snapshot ([FinishResult.summary]); that throws too → bare
  * fallback (localized fallback title, every section hidden). Both are logged.
  *
- * Haptics: the VM owns only the one-shot [WorkoutSuccessUiState.playSuccessHaptic]
- * flag (consumed via [onSuccessHapticPlayed]); the host's PostWorkoutHaptics
- * seam is triggered by the composable, not injected here.
+ * Haptics: the VM owns only the one-shot [WorkoutSuccessContract.ViewState.playSuccessHaptic]
+ * flag (consumed via [WorkoutSuccessContract.ViewAction.SuccessHapticPlayed]); the host's
+ * PostWorkoutHaptics seam is triggered by the composable, not injected here.
  */
 class WorkoutSuccessViewModel internal constructor(
     private val result: FinishResult,
@@ -50,7 +50,7 @@ class WorkoutSuccessViewModel internal constructor(
     private val muscleTitleFormatter: MuscleTitleFormatter,
     private val clock: Clock = Clock.System,
     private val timeZone: TimeZone = TimeZone.currentSystemDefault(),
-) : ViewModel() {
+) : ViewModel(), WorkoutSuccessContract.ViewModel {
 
     /**
      * Public construction path — the Android app module (a separate compilation
@@ -74,8 +74,8 @@ class WorkoutSuccessViewModel internal constructor(
         timeZone = timeZone,
     )
 
-    private val _uiState = MutableStateFlow(WorkoutSuccessUiState(loading = true))
-    val uiState: StateFlow<WorkoutSuccessUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(WorkoutSuccessContract.ViewState(loading = true))
+    override val viewState: StateFlow<WorkoutSuccessContract.ViewState> = _uiState.asStateFlow()
 
     /**
      * The summary the share composer must be built from — NOT [FinishResult.summary].
@@ -116,8 +116,16 @@ class WorkoutSuccessViewModel internal constructor(
         }
     }
 
+    // ─── MVI entry point ────────────────────────────────────────────────
+
+    override fun dispatch(action: WorkoutSuccessContract.ViewAction) {
+        when (action) {
+            WorkoutSuccessContract.ViewAction.SuccessHapticPlayed -> onSuccessHapticPlayed()
+        }
+    }
+
     /** Consume the one-shot success haptic after the composable has played it. */
-    fun onSuccessHapticPlayed() {
+    private fun onSuccessHapticPlayed() {
         _uiState.update { it.copy(playSuccessHaptic = false) }
     }
 
@@ -140,12 +148,12 @@ class WorkoutSuccessViewModel internal constructor(
         return buildSummary(session)
     }
 
-    private suspend fun stateFor(summary: SessionSummary): WorkoutSuccessUiState {
+    private suspend fun stateFor(summary: SessionSummary): WorkoutSuccessContract.ViewState {
         val units = result.context.units
         val session = summary.session
         val now = clock.now()
         val maxMuscleSets = summary.muscles.maxOfOrNull { it.loggedSets } ?: 0
-        return WorkoutSuccessUiState(
+        return WorkoutSuccessContract.ViewState(
             loading = false,
             title = muscleTitleFormatter.title(summary.muscles),
             dateLine = LocaleFormatters.formatFullDate(session.date) + " · " +
@@ -205,7 +213,7 @@ class WorkoutSuccessViewModel internal constructor(
     )
 
     /** Worst case: even the snapshot didn't render. Fallback title, everything hidden. */
-    private suspend fun bareFallbackState(): WorkoutSuccessUiState {
+    private suspend fun bareFallbackState(): WorkoutSuccessContract.ViewState {
         val title = try {
             muscleTitleFormatter.title(emptyList())
         } catch (e: CancellationException) {
@@ -213,7 +221,7 @@ class WorkoutSuccessViewModel internal constructor(
         } catch (e: Exception) {
             ""
         }
-        return WorkoutSuccessUiState(loading = false, title = title, playSuccessHaptic = true)
+        return WorkoutSuccessContract.ViewState(loading = false, title = title, playSuccessHaptic = true)
     }
 
     private fun log(message: String, error: Exception) {

@@ -11,7 +11,7 @@ import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
  * Behavioral gate for the W4a confirm-sheet content: the checklist trailing
  * affordance (partial pill vs plain set count) and the fallback shell.
  *
- * Rows are driven purely through [FinishConfirmUiState] — a reps-only planned
+ * Rows are driven purely through [FinishConfirmContract.ViewState] — a reps-only planned
  * row arrives as `allLogged = false` with partial counts; a weight-0 but
  * logged row arrives as `allLogged = true` (the VM owns that rule, the
  * composable must not re-derive it).
@@ -84,7 +84,7 @@ class FinishConfirmSheetContentTest {
         onNodeWithText("1 of 3").assertDoesNotExist()
     }
 
-    private fun ComposeUiTest.setSheet(state: FinishConfirmUiState) {
+    private fun ComposeUiTest.setSheet(state: FinishConfirmContract.ViewState) {
         setContent {
             FitJournalTheme(darkTheme = false) {
                 FinishConfirmSheetContent(
@@ -100,7 +100,7 @@ class FinishConfirmSheetContentTest {
     private fun stateWith(
         isFallback: Boolean = false,
         checklist: List<FinishChecklistRow>,
-    ) = FinishConfirmUiState(
+    ) = FinishConfirmContract.ViewState(
         loading = false,
         isFallback = isFallback,
         dateText = "Friday, 31 July",

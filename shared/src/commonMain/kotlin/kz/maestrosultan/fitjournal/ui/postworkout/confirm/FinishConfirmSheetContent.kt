@@ -61,9 +61,9 @@ private val ChecklistWindowHeight = 196.dp
  * shows through; the checklist fade blends to [FjTheme.colors.sheet]).
  *
  * Pure state-in / events-out: every string and number arrives pre-formatted in
- * [FinishConfirmUiState]; nothing is re-derived here. While [FinishConfirmUiState.loading]
+ * [FinishConfirmContract.ViewState]; nothing is re-derived here. While [FinishConfirmContract.ViewState.loading]
  * the data sections (session card, checklist) are simply not emitted; the
- * fallback shell ([FinishConfirmUiState.isFallback]) renders without the checklist.
+ * fallback shell ([FinishConfirmContract.ViewState.isFallback]) renders without the checklist.
  *
  * Type comes off [FjTheme.typography]; where the design pins a value no role
  * carries, the nearest role is `.copy()`-overridden rather than hand-built.
@@ -73,7 +73,7 @@ private val ChecklistWindowHeight = 196.dp
  */
 @Composable
 fun FinishConfirmSheetContent(
-    state: FinishConfirmUiState,
+    state: FinishConfirmContract.ViewState,
     onConfirmFinish: () -> Unit,
     onKeepTraining: () -> Unit,
     onVisibilityChanged: (Boolean) -> Unit,
@@ -148,7 +148,7 @@ private fun Grabber(modifier: Modifier = Modifier) {
 
 /** brandSubtle summary card: eyebrow, tonnage + unit, duration/sets/exercises stats. */
 @Composable
-private fun SessionCard(state: FinishConfirmUiState, modifier: Modifier = Modifier) {
+private fun SessionCard(state: FinishConfirmContract.ViewState, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(22.dp))

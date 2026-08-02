@@ -357,7 +357,11 @@ class FinishConfirmViewModelTest {
 
     private fun TestScope.collectFinished(vm: FinishConfirmViewModel): List<FinishResult> {
         val events = mutableListOf<FinishResult>()
-        backgroundScope.launch { vm.finished.collect { events += it } }
+        backgroundScope.launch {
+            vm.viewEffect.collect { effect ->
+                if (effect is FinishConfirmContract.ViewEffect.Finished) events += effect.result
+            }
+        }
         runCurrent()
         return events
     }
@@ -374,7 +378,7 @@ class FinishConfirmViewModelTest {
         val vm = bed.vm()
         runCurrent()
 
-        val state = vm.uiState.value
+        val state = vm.viewState.value
         assertFalse(state.loading)
         assertFalse(state.isFallback)
         assertEquals(LocaleFormatters.formatFullDate(DATE), state.dateText)
@@ -401,7 +405,7 @@ class FinishConfirmViewModelTest {
         val vm = bed.vm()
         runCurrent() // must not crash
 
-        val state = vm.uiState.value
+        val state = vm.viewState.value
         assertFalse(state.loading)
         assertTrue(state.isFallback)
         assertEquals(0, state.setsCount)
@@ -414,7 +418,7 @@ class FinishConfirmViewModelTest {
 
         // Finishing still works; the event carries the empty summary.
         val events = collectFinished(vm)
-        vm.onConfirmFinish()
+        vm.dispatch(FinishConfirmContract.ViewAction.ConfirmFinish)
         runCurrent()
         assertEquals(1, events.size)
         assertEquals(expectedContext, events.single().context)
@@ -430,14 +434,14 @@ class FinishConfirmViewModelTest {
         val vm = bed.vm()
         runCurrent()
 
-        val state = vm.uiState.value
+        val state = vm.viewState.value
         assertFalse(state.loading)
         assertTrue(state.isFallback)
 
         // Confirm is inert — no end call, no finished event; the host's
         // ever-present native dismissal is the escape (spec §7.1).
         val events = collectFinished(vm)
-        vm.onConfirmFinish()
+        vm.dispatch(FinishConfirmContract.ViewAction.ConfirmFinish)
         runCurrent()
         assertEquals(0, bed.sessionRepo.endCalls, "nothing to end — endWorkout must not be called")
         assertTrue(events.isEmpty(), "no finished event without a session to hand over")
@@ -452,22 +456,22 @@ class FinishConfirmViewModelTest {
         bed.clock.instant = T0 + 60.seconds
         val vm = bed.vm()
         runCurrent()
-        assertEquals("0:01", vm.uiState.value.durationText)
+        assertEquals("0:01", vm.viewState.value.durationText)
 
         bed.clock.instant = T0 + 120.seconds
         advanceTimeBy(1_000)
         runCurrent()
-        assertEquals("0:02", vm.uiState.value.durationText, "visible sheet ticks")
+        assertEquals("0:02", vm.viewState.value.durationText, "visible sheet ticks")
 
-        vm.onVisibilityChanged(false)
+        vm.dispatch(FinishConfirmContract.ViewAction.VisibilityChanged(false))
         bed.clock.instant = T0 + 600.seconds
         advanceTimeBy(10_000)
         runCurrent()
-        assertEquals("0:02", vm.uiState.value.durationText, "hidden sheet must not tick")
+        assertEquals("0:02", vm.viewState.value.durationText, "hidden sheet must not tick")
 
-        vm.onVisibilityChanged(true)
+        vm.dispatch(FinishConfirmContract.ViewAction.VisibilityChanged(true))
         runCurrent()
-        assertEquals("0:10", vm.uiState.value.durationText, "becoming visible catches up immediately")
+        assertEquals("0:10", vm.viewState.value.durationText, "becoming visible catches up immediately")
         vm.dispose()
     }
 
@@ -480,7 +484,7 @@ class FinishConfirmViewModelTest {
         runCurrent()
         val events = collectFinished(vm)
 
-        vm.onConfirmFinish()
+        vm.dispatch(FinishConfirmContract.ViewAction.ConfirmFinish)
         runCurrent()
 
         assertEquals(1, events.size)
@@ -493,7 +497,7 @@ class FinishConfirmViewModelTest {
         assertEquals(1, bed.sessionRepo.endCalls)
 
         // A tap after the finish already fired stays a no-op.
-        vm.onConfirmFinish()
+        vm.dispatch(FinishConfirmContract.ViewAction.ConfirmFinish)
         runCurrent()
         assertEquals(1, events.size)
         assertEquals(1, bed.sessionRepo.endCalls)
@@ -508,9 +512,9 @@ class FinishConfirmViewModelTest {
         runCurrent()
         val events = collectFinished(vm)
 
-        vm.onConfirmFinish()
+        vm.dispatch(FinishConfirmContract.ViewAction.ConfirmFinish)
         runCurrent() // first end is now suspended mid-flight
-        vm.onConfirmFinish() // tap during ending
+        vm.dispatch(FinishConfirmContract.ViewAction.ConfirmFinish) // tap during ending
         runCurrent()
         advanceTimeBy(600)
         runCurrent()
@@ -528,7 +532,7 @@ class FinishConfirmViewModelTest {
         runCurrent()
         val events = collectFinished(vm)
 
-        vm.onConfirmFinish()
+        vm.dispatch(FinishConfirmContract.ViewAction.ConfirmFinish)
         runCurrent()
 
         assertEquals(1, events.size, "nothing-was-running is a no-op end, not a blocked finish")
@@ -549,7 +553,7 @@ class FinishConfirmViewModelTest {
         runCurrent()
         val events = collectFinished(vm)
 
-        vm.onConfirmFinish()
+        vm.dispatch(FinishConfirmContract.ViewAction.ConfirmFinish)
         runCurrent() // must not crash
 
         assertTrue(events.isEmpty(), "a failed end must not report the workout as finished")
@@ -569,12 +573,12 @@ class FinishConfirmViewModelTest {
         runCurrent()
         val events = collectFinished(vm)
 
-        vm.onConfirmFinish()
+        vm.dispatch(FinishConfirmContract.ViewAction.ConfirmFinish)
         runCurrent()
         assertTrue(events.isEmpty())
 
         bed.sessionRepo.endThrows = false
-        vm.onConfirmFinish()
+        vm.dispatch(FinishConfirmContract.ViewAction.ConfirmFinish)
         runCurrent()
 
         assertEquals(1, events.size, "the retry must be able to finish the workout")

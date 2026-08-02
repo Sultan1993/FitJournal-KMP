@@ -102,7 +102,7 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        val state = vm.state.value
+        val state = vm.viewState.value
         assertEquals(ShareLayoutKind.Stats, state.layout)
         assertEquals(ComposerBackdrop.Brand, state.backdrop)
         assertEquals(1.0f, state.scrim)
@@ -121,7 +121,7 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        val state = vm.state.value
+        val state = vm.viewState.value
         assertEquals(ShareLayoutKind.Stats, state.layout)
         assertEquals(ComposerBackdrop.Brand, state.backdrop)
         assertEquals(1.0f, state.scrim)
@@ -144,7 +144,7 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        val state = vm.state.value
+        val state = vm.viewState.value
         assertEquals(ShareLayoutKind.Receipt, state.layout)
         assertEquals(ComposerBackdrop.Transparent, state.backdrop)
         assertEquals(0.45f, state.scrim)
@@ -160,7 +160,7 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        assertEquals(ComposerBackdrop.Brand, vm.state.value.backdrop)
+        assertEquals(ComposerBackdrop.Brand, vm.viewState.value.backdrop)
     }
 
     @Test
@@ -170,7 +170,7 @@ class ShareComposerViewModelTest {
         val vm = createVm(summary = summary(best = null))
         advanceUntilIdle()
 
-        assertEquals(ShareLayoutKind.Stats, vm.state.value.layout)
+        assertEquals(ShareLayoutKind.Stats, vm.viewState.value.layout)
     }
 
     @Test
@@ -180,7 +180,7 @@ class ShareComposerViewModelTest {
         val vm = createVm(summary = summary(best = sessionBest()))
         advanceUntilIdle()
 
-        assertEquals(ShareLayoutKind.NewBest, vm.state.value.layout)
+        assertEquals(ShareLayoutKind.NewBest, vm.viewState.value.layout)
     }
 
     @Test
@@ -193,7 +193,7 @@ class ShareComposerViewModelTest {
         advanceUntilIdle()
         assertEquals(
             listOf(StatKind.Duration, StatKind.Sets, StatKind.BestSet),
-            fromDuplicated.state.value.statsPick,
+            fromDuplicated.viewState.value.statsPick,
         )
 
         // Too-short list (2 entries).
@@ -204,7 +204,7 @@ class ShareComposerViewModelTest {
         advanceUntilIdle()
         assertEquals(
             listOf(StatKind.Duration, StatKind.Sets, StatKind.BestSet),
-            fromShort.state.value.statsPick,
+            fromShort.viewState.value.statsPick,
         )
     }
 
@@ -215,9 +215,9 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        vm.onStatToggled(StatKind.Exercises)
+        vm.dispatch(ShareComposerContract.ViewAction.StatToggled(StatKind.Exercises))
 
-        assertEquals(listOf(StatKind.Sets, StatKind.BestSet, StatKind.Exercises), vm.state.value.statsPick)
+        assertEquals(listOf(StatKind.Sets, StatKind.BestSet, StatKind.Exercises), vm.viewState.value.statsPick)
         assertEquals(1, haptics.tickCount)
     }
 
@@ -226,9 +226,9 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        vm.onStatToggled(StatKind.Sets)
+        vm.dispatch(ShareComposerContract.ViewAction.StatToggled(StatKind.Sets))
 
-        assertEquals(listOf(StatKind.Duration, StatKind.Sets, StatKind.BestSet), vm.state.value.statsPick)
+        assertEquals(listOf(StatKind.Duration, StatKind.Sets, StatKind.BestSet), vm.viewState.value.statsPick)
         assertEquals(0, haptics.tickCount)
     }
 
@@ -237,12 +237,12 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        vm.onStatToggled(StatKind.Exercises)
-        vm.onStatToggled(StatKind.TotalReps)
-        vm.onStatToggled(StatKind.Duration)
-        vm.onStatToggled(StatKind.Duration) // now selected again → no-op
+        vm.dispatch(ShareComposerContract.ViewAction.StatToggled(StatKind.Exercises))
+        vm.dispatch(ShareComposerContract.ViewAction.StatToggled(StatKind.TotalReps))
+        vm.dispatch(ShareComposerContract.ViewAction.StatToggled(StatKind.Duration))
+        vm.dispatch(ShareComposerContract.ViewAction.StatToggled(StatKind.Duration)) // now selected again → no-op
 
-        val pick = vm.state.value.statsPick
+        val pick = vm.viewState.value.statsPick
         assertEquals(3, pick.size)
         assertEquals(pick.distinct(), pick)
         assertEquals(listOf(StatKind.Exercises, StatKind.TotalReps, StatKind.Duration), pick)
@@ -255,9 +255,9 @@ class ShareComposerViewModelTest {
         val vm = createVm(summary = summary(best = null))
         advanceUntilIdle()
 
-        vm.onLayoutSelected(ShareLayoutKind.NewBest)
+        vm.dispatch(ShareComposerContract.ViewAction.LayoutSelected(ShareLayoutKind.NewBest))
 
-        assertEquals(ShareLayoutKind.Stats, vm.state.value.layout)
+        assertEquals(ShareLayoutKind.Stats, vm.viewState.value.layout)
     }
 
     @Test
@@ -265,9 +265,9 @@ class ShareComposerViewModelTest {
         val vm = createVm(summary = summary(best = sessionBest()))
         advanceUntilIdle()
 
-        vm.onLayoutSelected(ShareLayoutKind.NewBest)
+        vm.dispatch(ShareComposerContract.ViewAction.LayoutSelected(ShareLayoutKind.NewBest))
 
-        assertEquals(ShareLayoutKind.NewBest, vm.state.value.layout)
+        assertEquals(ShareLayoutKind.NewBest, vm.viewState.value.layout)
     }
 
     // ─── Block transform / reset ────────────────────────────────────────
@@ -277,15 +277,15 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        vm.onTransformChanged(BlockTransform(cx = 0.7f, cy = 0.2f, scale = 0.8f, rotationDeg = -30f))
-        vm.onRemoveBlock()
-        assertNotNull(vm.state.value.transform)
-        assertTrue(vm.state.value.blockRemoved)
+        vm.dispatch(ShareComposerContract.ViewAction.TransformChanged(BlockTransform(cx = 0.7f, cy = 0.2f, scale = 0.8f, rotationDeg = -30f)))
+        vm.dispatch(ShareComposerContract.ViewAction.RemoveBlock)
+        assertNotNull(vm.viewState.value.transform)
+        assertTrue(vm.viewState.value.blockRemoved)
 
-        vm.onResetLayout()
+        vm.dispatch(ShareComposerContract.ViewAction.ResetLayout)
 
-        assertNull(vm.state.value.transform)
-        assertFalse(vm.state.value.blockRemoved)
+        assertNull(vm.viewState.value.transform)
+        assertFalse(vm.viewState.value.blockRemoved)
     }
 
     // ─── Title ──────────────────────────────────────────────────────────
@@ -295,11 +295,11 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        vm.onTitleChanged("a".repeat(61))
-        assertEquals("a".repeat(60), vm.state.value.title)
+        vm.dispatch(ShareComposerContract.ViewAction.TitleChanged("a".repeat(61)))
+        assertEquals("a".repeat(60), vm.viewState.value.title)
 
-        vm.onTitleChanged("b".repeat(60))
-        assertEquals("b".repeat(60), vm.state.value.title)
+        vm.dispatch(ShareComposerContract.ViewAction.TitleChanged("b".repeat(60)))
+        assertEquals("b".repeat(60), vm.viewState.value.title)
     }
 
     // ─── Export handshake ───────────────────────────────────────────────
@@ -309,16 +309,16 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        vm.onShare()
-        val first = assertNotNull(vm.state.value.exportRequest)
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        val first = assertNotNull(vm.viewState.value.exportRequest)
         assertEquals(ExportReason.Share, first.reason)
 
         // Ids climb ACROSS exports, so a late result from an earlier request is
         // still recognisable as stale.
-        vm.onExportResult(ExportResult.Success(first, PNG))
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(ExportResult.Success(first, PNG)))
         advanceUntilIdle()
-        vm.onShare()
-        val second = assertNotNull(vm.state.value.exportRequest)
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        val second = assertNotNull(vm.viewState.value.exportRequest)
         assertNotEquals(first.id, second.id)
         assertTrue(second.id > first.id)
     }
@@ -335,18 +335,18 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        vm.onShare()
-        assertNotNull(vm.state.value.exportRequest)
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        assertNotNull(vm.viewState.value.exportRequest)
 
         // The host never calls onExportResult.
         advanceTimeBy(11_000)
         runCurrent()
 
-        assertNull(vm.state.value.exportRequest, "a timed-out request must clear")
-        assertEquals(ComposerChip.ExportFailed, vm.state.value.chip)
+        assertNull(vm.viewState.value.exportRequest, "a timed-out request must clear")
+        assertEquals(ComposerChip.ExportFailed, vm.viewState.value.chip)
 
-        vm.onShare()
-        assertNotNull(vm.state.value.exportRequest, "Share must work again after a timeout")
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        assertNotNull(vm.viewState.value.exportRequest, "Share must work again after a timeout")
     }
 
     /**
@@ -361,13 +361,13 @@ class ShareComposerViewModelTest {
         advanceUntilIdle()
         store.saved.clear()
 
-        vm.onShare()
-        val request = assertNotNull(vm.state.value.exportRequest)
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        val request = assertNotNull(vm.viewState.value.exportRequest)
         presenter.shareGate = CompletableDeferred() // hold the presentation open
-        vm.onExportResult(ExportResult.Success(request, PNG))
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(ExportResult.Success(request, PNG)))
         runCurrent()
 
-        vm.onCloseRequested()
+        vm.dispatch(ShareComposerContract.ViewAction.CloseRequested)
         advanceUntilIdle()
 
         assertEquals(0, presenter.shareCalls.size, "a cancelled delivery must not present")
@@ -386,13 +386,13 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        vm.onShare()
-        val pending = assertNotNull(vm.state.value.exportRequest)
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        val pending = assertNotNull(vm.viewState.value.exportRequest)
 
-        vm.onShare()
-        vm.onSave()
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        vm.dispatch(ShareComposerContract.ViewAction.Save)
 
-        val still = assertNotNull(vm.state.value.exportRequest)
+        val still = assertNotNull(vm.viewState.value.exportRequest)
         assertEquals(pending.id, still.id)
         assertEquals(ExportReason.Share, still.reason)
     }
@@ -402,9 +402,9 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        vm.onSave()
+        vm.dispatch(ShareComposerContract.ViewAction.Save)
 
-        assertEquals(ExportReason.Save, assertNotNull(vm.state.value.exportRequest).reason)
+        assertEquals(ExportReason.Save, assertNotNull(vm.viewState.value.exportRequest).reason)
     }
 
     @Test
@@ -412,20 +412,20 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        vm.onShare()
-        val request = assertNotNull(vm.state.value.exportRequest)
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        val request = assertNotNull(vm.viewState.value.exportRequest)
         val result = ExportResult.Success(request, PNG)
-        vm.onExportResult(result)
-        assertNull(vm.state.value.exportRequest)
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(result))
+        assertNull(vm.viewState.value.exportRequest)
         advanceUntilIdle()
 
         assertEquals(1, presenter.shareCalls.size)
         assertTrue(presenter.shareCalls.single().contentEquals(PNG))
         assertEquals(1, store.saved.size)
-        assertNull(vm.state.value.chip)
+        assertNull(vm.viewState.value.chip)
 
         // Replaying the same (now unmatched) result is dropped.
-        vm.onExportResult(result)
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(result))
         advanceUntilIdle()
         assertEquals(1, presenter.shareCalls.size)
     }
@@ -436,9 +436,9 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        vm.onSave()
-        val request = assertNotNull(vm.state.value.exportRequest)
-        vm.onExportResult(ExportResult.Success(request, PNG))
+        vm.dispatch(ShareComposerContract.ViewAction.Save)
+        val request = assertNotNull(vm.viewState.value.exportRequest)
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(ExportResult.Success(request, PNG)))
         advanceUntilIdle()
 
         assertEquals(1, presenter.saveCalls.size)
@@ -446,8 +446,8 @@ class ShareComposerViewModelTest {
         assertEquals(0, presenter.shareCalls.size)
         assertEquals(1, haptics.successCount)
         assertEquals(1, store.saved.size)
-        assertNull(vm.state.value.exportRequest)
-        assertNull(vm.state.value.chip)
+        assertNull(vm.viewState.value.exportRequest)
+        assertNull(vm.viewState.value.chip)
     }
 
     @Test
@@ -456,13 +456,13 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        vm.onShare()
-        val request = assertNotNull(vm.state.value.exportRequest)
-        vm.onExportResult(ExportResult.Success(request, PNG))
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        val request = assertNotNull(vm.viewState.value.exportRequest)
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(ExportResult.Success(request, PNG)))
         runCurrent()
 
-        assertEquals(ComposerChip.ExportFailed, vm.state.value.chip)
-        assertNull(vm.state.value.exportRequest)
+        assertEquals(ComposerChip.ExportFailed, vm.viewState.value.chip)
+        assertNull(vm.viewState.value.exportRequest)
         assertTrue(store.saved.isEmpty())
         assertEquals(0, haptics.successCount)
     }
@@ -473,13 +473,13 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        vm.onSave()
-        val request = assertNotNull(vm.state.value.exportRequest)
-        vm.onExportResult(ExportResult.Success(request, PNG))
+        vm.dispatch(ShareComposerContract.ViewAction.Save)
+        val request = assertNotNull(vm.viewState.value.exportRequest)
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(ExportResult.Success(request, PNG)))
         runCurrent()
 
-        assertEquals(ComposerChip.SaveFailed, vm.state.value.chip)
-        assertNull(vm.state.value.exportRequest)
+        assertEquals(ComposerChip.SaveFailed, vm.viewState.value.chip)
+        assertNull(vm.viewState.value.exportRequest)
         assertTrue(store.saved.isEmpty())
         assertEquals(0, haptics.successCount)
     }
@@ -490,12 +490,12 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        vm.onSave()
-        val request = assertNotNull(vm.state.value.exportRequest)
-        vm.onExportResult(ExportResult.Success(request, PNG))
+        vm.dispatch(ShareComposerContract.ViewAction.Save)
+        val request = assertNotNull(vm.viewState.value.exportRequest)
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(ExportResult.Success(request, PNG)))
         runCurrent()
 
-        assertEquals(ComposerChip.SavePermission, vm.state.value.chip)
+        assertEquals(ComposerChip.SavePermission, vm.viewState.value.chip)
         assertEquals(0, haptics.successCount)
     }
 
@@ -504,13 +504,13 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        vm.onShare()
-        val request = assertNotNull(vm.state.value.exportRequest)
-        vm.onExportResult(ExportResult.Failure(request))
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        val request = assertNotNull(vm.viewState.value.exportRequest)
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(ExportResult.Failure(request)))
         runCurrent()
 
-        assertEquals(ComposerChip.ExportFailed, vm.state.value.chip)
-        assertNull(vm.state.value.exportRequest)
+        assertEquals(ComposerChip.ExportFailed, vm.viewState.value.chip)
+        assertNull(vm.viewState.value.exportRequest)
         assertEquals(0, presenter.shareCalls.size)
         assertEquals(0, presenter.saveCalls.size)
         assertTrue(store.saved.isEmpty())
@@ -524,22 +524,22 @@ class ShareComposerViewModelTest {
         // A pending request can no longer be superseded, so the stale case is a
         // result arriving for a request that has ALREADY been resolved — a slow
         // export whose host reports after the user started the next one.
-        vm.onShare()
-        val stale = assertNotNull(vm.state.value.exportRequest)
-        vm.onExportResult(ExportResult.Failure(stale))
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        val stale = assertNotNull(vm.viewState.value.exportRequest)
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(ExportResult.Failure(stale)))
         runCurrent()
 
-        vm.onShare()
-        val newest = assertNotNull(vm.state.value.exportRequest)
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        val newest = assertNotNull(vm.viewState.value.exportRequest)
 
-        vm.onExportResult(ExportResult.Success(stale, PNG))
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(ExportResult.Success(stale, PNG)))
         // runCurrent, NOT advanceUntilIdle: idling would run out the export
         // watchdog and fail `newest`, which is a different behaviour than the
         // staleness this case is about.
         runCurrent()
 
         assertEquals(0, presenter.shareCalls.size)
-        assertEquals(newest, vm.state.value.exportRequest)
+        assertEquals(newest, vm.viewState.value.exportRequest)
     }
 
     @Test
@@ -547,14 +547,14 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        vm.onShare()
-        vm.onExportResult(ExportResult.Failure(assertNotNull(vm.state.value.exportRequest)))
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(ExportResult.Failure(assertNotNull(vm.viewState.value.exportRequest))))
         runCurrent()
-        assertEquals(ComposerChip.ExportFailed, vm.state.value.chip)
+        assertEquals(ComposerChip.ExportFailed, vm.viewState.value.chip)
 
         advanceTimeBy(2_001)
 
-        assertNull(vm.state.value.chip)
+        assertNull(vm.viewState.value.chip)
     }
 
     @Test
@@ -564,26 +564,26 @@ class ShareComposerViewModelTest {
         advanceUntilIdle()
 
         // Chip A (ExportFailed) at t0.
-        vm.onShare()
-        vm.onExportResult(ExportResult.Failure(assertNotNull(vm.state.value.exportRequest)))
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(ExportResult.Failure(assertNotNull(vm.viewState.value.exportRequest))))
         runCurrent()
-        assertEquals(ComposerChip.ExportFailed, vm.state.value.chip)
+        assertEquals(ComposerChip.ExportFailed, vm.viewState.value.chip)
 
         // Chip B (SaveFailed) at t0+1s — cancels A's timer, re-arms the window.
         advanceTimeBy(1_000)
-        vm.onSave()
-        vm.onExportResult(ExportResult.Success(assertNotNull(vm.state.value.exportRequest), PNG))
+        vm.dispatch(ShareComposerContract.ViewAction.Save)
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(ExportResult.Success(assertNotNull(vm.viewState.value.exportRequest), PNG)))
         runCurrent()
-        assertEquals(ComposerChip.SaveFailed, vm.state.value.chip)
+        assertEquals(ComposerChip.SaveFailed, vm.viewState.value.chip)
 
         // t0+2.5s — 2.5s after A but only 1.5s after B: A's cancelled timer
         // must NOT have wiped B.
         advanceTimeBy(1_500)
-        assertEquals(ComposerChip.SaveFailed, vm.state.value.chip)
+        assertEquals(ComposerChip.SaveFailed, vm.viewState.value.chip)
 
         // t0+3.1s — B's own full 2s window has elapsed.
         advanceTimeBy(600)
-        assertNull(vm.state.value.chip)
+        assertNull(vm.viewState.value.chip)
     }
 
     // ─── Photo pick ─────────────────────────────────────────────────────
@@ -594,10 +594,10 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        vm.onPickPhoto()
+        vm.dispatch(ShareComposerContract.ViewAction.PickPhoto)
         advanceUntilIdle()
 
-        val backdrop = assertIs<ComposerBackdrop.Photo>(vm.state.value.backdrop)
+        val backdrop = assertIs<ComposerBackdrop.Photo>(vm.viewState.value.backdrop)
         assertSame(FakeBitmap, backdrop.image)
     }
 
@@ -606,12 +606,12 @@ class ShareComposerViewModelTest {
         picker.result = null
         val vm = createVm()
         advanceUntilIdle()
-        val before = vm.state.value
+        val before = vm.viewState.value
 
-        vm.onPickPhoto()
+        vm.dispatch(ShareComposerContract.ViewAction.PickPhoto)
         advanceUntilIdle()
 
-        assertEquals(before, vm.state.value)
+        assertEquals(before, vm.viewState.value)
     }
 
     @Test
@@ -619,12 +619,12 @@ class ShareComposerViewModelTest {
         picker.error = IllegalStateException("picker exploded")
         val vm = createVm()
         advanceUntilIdle()
-        val before = vm.state.value
+        val before = vm.viewState.value
 
-        vm.onPickPhoto()
+        vm.dispatch(ShareComposerContract.ViewAction.PickPhoto)
         advanceUntilIdle()
 
-        assertEquals(before, vm.state.value)
+        assertEquals(before, vm.viewState.value)
     }
 
     // ─── Defaults save / close contract ─────────────────────────────────
@@ -634,8 +634,8 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        vm.onLayoutSelected(ShareLayoutKind.Receipt)
-        vm.onCloseRequested()
+        vm.dispatch(ShareComposerContract.ViewAction.LayoutSelected(ShareLayoutKind.Receipt))
+        vm.dispatch(ShareComposerContract.ViewAction.CloseRequested)
         advanceUntilIdle()
 
         assertEquals(1, drainClosedEvents(vm))
@@ -648,8 +648,8 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        vm.onCloseRequested()
-        vm.onCloseRequested()
+        vm.dispatch(ShareComposerContract.ViewAction.CloseRequested)
+        vm.dispatch(ShareComposerContract.ViewAction.CloseRequested)
         advanceUntilIdle()
 
         assertEquals(1, drainClosedEvents(vm))
@@ -662,7 +662,7 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        vm.onCloseRequested()
+        vm.dispatch(ShareComposerContract.ViewAction.CloseRequested)
         advanceUntilIdle()
 
         assertEquals(1, drainClosedEvents(vm))
@@ -674,9 +674,9 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        vm.onPickPhoto()
+        vm.dispatch(ShareComposerContract.ViewAction.PickPhoto)
         advanceUntilIdle()
-        vm.onCloseRequested()
+        vm.dispatch(ShareComposerContract.ViewAction.CloseRequested)
         advanceUntilIdle()
 
         assertEquals(BackdropKind.Photo, store.saved.single().backdropKind)
@@ -687,20 +687,20 @@ class ShareComposerViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        vm.onShare()
-        val request = assertNotNull(vm.state.value.exportRequest)
-        vm.onCloseRequested()
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        val request = assertNotNull(vm.viewState.value.exportRequest)
+        vm.dispatch(ShareComposerContract.ViewAction.CloseRequested)
         advanceUntilIdle()
 
         // The render answers after the machine went inert: no share sheet, no
         // Photos write, no chip — and only the close-path defaults save.
-        vm.onExportResult(ExportResult.Success(request, PNG))
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(ExportResult.Success(request, PNG)))
         advanceUntilIdle()
 
         assertEquals(0, presenter.shareCalls.size)
         assertEquals(0, presenter.saveCalls.size)
-        assertNull(vm.state.value.chip)
-        assertNull(vm.state.value.exportRequest)
+        assertNull(vm.viewState.value.chip)
+        assertNull(vm.viewState.value.exportRequest)
         assertEquals(1, store.saved.size)
         assertEquals(1, drainClosedEvents(vm))
     }
@@ -731,7 +731,7 @@ class ShareComposerViewModelTest {
      */
     private fun TestScope.drainClosedEvents(vm: ShareComposerViewModel): Int {
         var count = 0
-        val collector = launch { vm.closed.collect { count++ } }
+        val collector = launch { vm.viewEffect.collect { count++ } }
         advanceUntilIdle()
         collector.cancel()
         return count

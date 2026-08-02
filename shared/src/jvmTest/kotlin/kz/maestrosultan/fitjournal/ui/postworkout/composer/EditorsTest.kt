@@ -46,7 +46,7 @@ class EditorsTest {
         }
 
         // All five are always offered; exactly the picked three read as selected.
-        onAllNodes(isSelected()).assertCountEquals(ComposerState.STATS_PICK_SIZE)
+        onAllNodes(isSelected()).assertCountEquals(ShareComposerContract.ViewState.STATS_PICK_SIZE)
         onNodeWithText("Duration").assertIsSelected()
         onNodeWithText("Sets").assertIsSelected()
         onNodeWithText("Best set").assertIsSelected()
@@ -99,7 +99,7 @@ class EditorsTest {
     @Test
     fun layoutThumbnail_switchesWhatTheCanvasRenders() = runComposeUiTest {
         var state by mutableStateOf(
-            ComposerState(
+            ShareComposerContract.ViewState(
                 title = "Chest & Triceps",
                 layout = ShareLayoutKind.Stats,
                 activeEditor = ComposerEditor.Layout,

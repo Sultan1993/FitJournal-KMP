@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_title_fallback
-import kz.maestrosultan.fitjournal.ui.postworkout.composer.ComposerState
+import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareComposerContract
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import org.jetbrains.compose.resources.stringResource
 
@@ -57,7 +57,7 @@ internal fun TitleEditor(
     onTitleChange: (String) -> Unit,
     onSubmit: () -> Unit,
     modifier: Modifier = Modifier,
-    maxLength: Int = ComposerState.MAX_TITLE_LENGTH,
+    maxLength: Int = ShareComposerContract.ViewState.MAX_TITLE_LENGTH,
 ) {
     // The panel exists only to type in, so claim focus (and the keyboard) once
     // on enter. requestFocus is imperative work that must not run in the

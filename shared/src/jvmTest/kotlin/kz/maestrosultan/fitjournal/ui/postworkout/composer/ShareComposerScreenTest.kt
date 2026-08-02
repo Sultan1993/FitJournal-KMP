@@ -15,7 +15,7 @@ import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
  * editor, the failure chip renders the right copy, and the close chip is the
  * single close entry (one event per tap).
  *
- * The card body is stubbed (`card = {}`) and no [ComposerState.exportRequest]
+ * The card body is stubbed (`card = {}`) and no [ShareComposerContract.ViewState.exportRequest]
  * is pinned, so these cases exercise the chrome only — the real layouts and the
  * export capture are gated by their own tests (Task 17 / `ExportGoldenTest`).
  */
@@ -92,13 +92,13 @@ class ShareComposerScreenTest {
 
     // ------------------------------------------------------------- fixtures
 
-    private fun composerState(chip: ComposerChip? = null) = ComposerState(
+    private fun composerState(chip: ComposerChip? = null) = ShareComposerContract.ViewState(
         title = "Chest & Triceps",
         chip = chip,
     )
 
     private fun ComposeUiTest.setComposer(
-        state: ComposerState = composerState(),
+        state: ShareComposerContract.ViewState = composerState(),
         onCloseRequested: () -> Unit = {},
         onEditorSelected: (ComposerEditor?) -> Unit = {},
         onShare: () -> Unit = {},

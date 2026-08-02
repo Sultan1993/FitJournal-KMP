@@ -40,7 +40,7 @@ private val ChipShape = RoundedCornerShape(12.dp)
  * Body of the Stats panel: a chip per [StatKind], laid out three to a row.
  *
  * Purely a mirror of [selected] — the "exactly three, replace the oldest"
- * rule lives in the ViewModel (see `ComposerState.statsPick`), so a tap only
+ * rule lives in the ViewModel (see `ShareComposerContract.ViewState.statsPick`), so a tap only
  * reports which chip was hit via [onToggle] and the next state emission decides
  * what the chips look like. Deselecting the third one is a ViewModel no-op and
  * simply comes back unchanged.

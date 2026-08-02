@@ -30,7 +30,7 @@ import kz.maestrosultan.fitjournal.ui.postworkout.seams.SharePresenter
 
 /**
  * Shared presentation for the share-card composer — the ONE ViewModel both
- * apps use. Pure state machine over [ComposerState]: defaults restore/persist
+ * apps use. Pure state machine over [ShareComposerContract.ViewState]: defaults restore/persist
  * through [ComposerDefaultsStore], the pinned [ExportRequest]/[ExportResult]
  * handshake with the rendering composable, and dispatch of the finished PNG to
  * [SharePresenter] (share sheet vs photo library).
@@ -63,7 +63,7 @@ class ShareComposerViewModel internal constructor(
     // the same instance straight to the canvas.
     internal val haptics: PostWorkoutHaptics,
     muscleTitleFormatter: MuscleTitleFormatter,
-) : ViewModel() {
+) : ViewModel(), ShareComposerContract.ViewModel {
 
     /**
      * Public construction path — the Android app module (a separate compilation
@@ -89,13 +89,13 @@ class ShareComposerViewModel internal constructor(
         muscleTitleFormatter = MuscleTitleFormatter(),
     )
 
-    private val _state = MutableStateFlow(ComposerState())
-    val state: StateFlow<ComposerState> = _state.asStateFlow()
+    private val _state = MutableStateFlow(ShareComposerContract.ViewState())
+    override val viewState: StateFlow<ShareComposerContract.ViewState> = _state.asStateFlow()
 
     // One-shot, single-consumer close event (buffered so emission never
     // depends on a collector being resumed at that exact moment).
-    private val _closed = Channel<Unit>(Channel.BUFFERED)
-    val closed: Flow<Unit> = _closed.receiveAsFlow()
+    private val _closed = Channel<ShareComposerContract.ViewEffect>(Channel.BUFFERED)
+    override val viewEffect: Flow<ShareComposerContract.ViewEffect> = _closed.receiveAsFlow()
 
     private var nextExportId = 0L
     private var closeRequested = false
@@ -129,19 +129,40 @@ class ShareComposerViewModel internal constructor(
             if (closeRequested) return@launch
             val title = muscleTitleFormatter.title(summary.muscles)
             defaultTitle = title
-            _state.update { it.restoredFrom(saved).copy(title = title.take(ComposerState.MAX_TITLE_LENGTH)) }
+            _state.update { it.restoredFrom(saved).copy(title = title.take(ShareComposerContract.ViewState.MAX_TITLE_LENGTH)) }
+        }
+    }
+
+    // ─── MVI entry point ────────────────────────────────────────────────
+
+    override fun dispatch(action: ShareComposerContract.ViewAction) {
+        when (action) {
+            is ShareComposerContract.ViewAction.TitleChanged -> onTitleChanged(action.title)
+            is ShareComposerContract.ViewAction.LayoutSelected -> onLayoutSelected(action.layout)
+            is ShareComposerContract.ViewAction.BackdropSelected -> onBackdropSelected(action.kind)
+            ShareComposerContract.ViewAction.PickPhoto -> onPickPhoto()
+            is ShareComposerContract.ViewAction.ScrimChanged -> onScrimChanged(action.scrim)
+            is ShareComposerContract.ViewAction.StatToggled -> onStatToggled(action.stat)
+            is ShareComposerContract.ViewAction.TransformChanged -> onTransformChanged(action.transform)
+            ShareComposerContract.ViewAction.RemoveBlock -> onRemoveBlock()
+            ShareComposerContract.ViewAction.ResetLayout -> onResetLayout()
+            is ShareComposerContract.ViewAction.EditorSelected -> onEditorSelected(action.editor)
+            ShareComposerContract.ViewAction.Share -> onShare()
+            ShareComposerContract.ViewAction.Save -> onSave()
+            is ShareComposerContract.ViewAction.ExportResult -> onExportResult(action.result)
+            ShareComposerContract.ViewAction.CloseRequested -> onCloseRequested()
         }
     }
 
     // ─── Card setup ─────────────────────────────────────────────────────
 
-    fun onTitleChanged(title: String) {
+    private fun onTitleChanged(title: String) {
         if (closeRequested) return
-        _state.update { it.copy(title = title.take(ComposerState.MAX_TITLE_LENGTH)) }
+        _state.update { it.copy(title = title.take(ShareComposerContract.ViewState.MAX_TITLE_LENGTH)) }
     }
 
     /** NewBest is only offered when the session actually set a PR; otherwise a no-op. */
-    fun onLayoutSelected(layout: ShareLayoutKind) {
+    private fun onLayoutSelected(layout: ShareLayoutKind) {
         if (closeRequested) return
         if (layout == ShareLayoutKind.NewBest && summary.best == null) return
         if (layout == _state.value.layout) return
@@ -150,7 +171,7 @@ class ShareComposerViewModel internal constructor(
     }
 
     /** Photo routes through [onPickPhoto]; Brand/Transparent switch directly. */
-    fun onBackdropSelected(kind: BackdropKind) {
+    private fun onBackdropSelected(kind: BackdropKind) {
         if (closeRequested) return
         val backdrop = when (kind) {
             BackdropKind.Photo -> {
@@ -170,7 +191,7 @@ class ShareComposerViewModel internal constructor(
      * a throwing picker is treated the same — the user just stays where they
      * were. Re-picking while a photo backdrop is already set is allowed.
      */
-    fun onPickPhoto() {
+    private fun onPickPhoto() {
         if (closeRequested) return
         if (pickJob?.isActive == true) return
         pickJob = viewModelScope.launch {
@@ -182,18 +203,18 @@ class ShareComposerViewModel internal constructor(
         }
     }
 
-    fun onScrimChanged(scrim: Float) {
+    private fun onScrimChanged(scrim: Float) {
         if (closeRequested) return
         _state.update { it.copy(scrim = scrim.coerceIn(0f, 1f)) }
     }
 
     /**
-     * Keeps the exactly-[ComposerState.STATS_PICK_SIZE] invariant: selecting a
+     * Keeps the exactly-[ShareComposerContract.ViewState.STATS_PICK_SIZE] invariant: selecting a
      * new stat replaces the OLDEST selection (the pick list is ordered
      * oldest-first); tapping an already-selected stat is a no-op — the Stats
      * layout always renders exactly three, so there is nothing to deselect to.
      */
-    fun onStatToggled(stat: StatKind) {
+    private fun onStatToggled(stat: StatKind) {
         if (closeRequested) return
         if (stat in _state.value.statsPick) return
         _state.update { current ->
@@ -203,33 +224,33 @@ class ShareComposerViewModel internal constructor(
         haptics.tick()
     }
 
-    fun onTransformChanged(transform: BlockTransform) {
+    private fun onTransformChanged(transform: BlockTransform) {
         if (closeRequested) return
         _state.update { it.copy(transform = transform) }
     }
 
     /** Removes the card block entirely — a photo-only card. Undone by [onResetLayout]. */
-    fun onRemoveBlock() {
+    private fun onRemoveBlock() {
         if (closeRequested) return
         _state.update { it.copy(blockRemoved = true) }
     }
 
     /** Back to the layout's natural placement: transform cleared, block restored. */
-    fun onResetLayout() {
+    private fun onResetLayout() {
         if (closeRequested) return
         _state.update { it.copy(transform = null, blockRemoved = false) }
     }
 
-    fun onEditorSelected(editor: ComposerEditor?) {
+    private fun onEditorSelected(editor: ComposerEditor?) {
         if (closeRequested) return
         _state.update { it.copy(activeEditor = editor) }
     }
 
     // ─── Export handshake ───────────────────────────────────────────────
 
-    fun onShare() = requestExport(ExportReason.Share)
+    private fun onShare() = requestExport(ExportReason.Share)
 
-    fun onSave() = requestExport(ExportReason.Save)
+    private fun onSave() = requestExport(ExportReason.Save)
 
     /**
      * Ignores a request while one is still in flight.
@@ -261,11 +282,11 @@ class ShareComposerViewModel internal constructor(
     }
 
     /**
-     * The composable's answer to [ComposerState.exportRequest]. Results for
+     * The composable's answer to [ShareComposerContract.ViewState.exportRequest]. Results for
      * anything but the newest request (superseded, replayed, or no request
      * pending) are stale and dropped.
      */
-    fun onExportResult(result: ExportResult) {
+    private fun onExportResult(result: ExportResult) {
         if (closeRequested) return
         val pending = _state.value.exportRequest ?: return
         if (result.request.id != pending.id) return
@@ -323,7 +344,7 @@ class ShareComposerViewModel internal constructor(
      * must not present a share sheet or write Photos against a tearing-down
      * host, nor race this close-path defaults save with its own.
      */
-    fun onCloseRequested() {
+    private fun onCloseRequested() {
         if (closeRequested) return
         closeRequested = true
         pickJob?.cancel()
@@ -337,7 +358,7 @@ class ShareComposerViewModel internal constructor(
         _state.update { it.copy(exportRequest = null, chip = null) }
         viewModelScope.launch {
             saveDefaults()
-            _closed.send(Unit)
+            _closed.send(ShareComposerContract.ViewEffect.Closed)
         }
     }
 
@@ -369,7 +390,7 @@ class ShareComposerViewModel internal constructor(
         }
     }
 
-    private fun ComposerState.restoredFrom(saved: ComposerDefaults?): ComposerState {
+    private fun ShareComposerContract.ViewState.restoredFrom(saved: ComposerDefaults?): ShareComposerContract.ViewState {
         if (saved == null) return this
         return copy(
             // NewBest only renders with a PR; a stale saved preference falls back.
@@ -384,13 +405,13 @@ class ShareComposerViewModel internal constructor(
             },
             // Defend the exactly-3 invariant against hand-edited/legacy stores.
             statsPick = saved.statsPick.distinct()
-                .takeIf { it.size == ComposerState.STATS_PICK_SIZE }
+                .takeIf { it.size == ShareComposerContract.ViewState.STATS_PICK_SIZE }
                 ?: statsPick,
             // isFinite first: Float.coerceIn compares with < and >, both false
             // for NaN, so a corrupt persisted NaN would pass straight through
             // into the backdrop alpha.
             scrim = saved.scrim.takeIf { it.isFinite() }?.coerceIn(0f, 1f)
-                ?: ComposerState.FIRST_RUN_SCRIM,
+                ?: ShareComposerContract.ViewState.FIRST_RUN_SCRIM,
             transform = saved.transform,
             blockRemoved = saved.blockRemoved,
         )

@@ -17,8 +17,10 @@ import kz.maestrosultan.fitjournal.domain.workout.summary.BuildSessionSummaryUse
 import kz.maestrosultan.fitjournal.domain.workout.summary.DetectSessionBestUseCase
 import kz.maestrosultan.fitjournal.domain.workout.summary.SessionSummary
 import kz.maestrosultan.fitjournal.domain.workout.usecase.EndWorkoutUseCase
+import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareComposerContract
 import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareComposerRoute
 import kz.maestrosultan.fitjournal.ui.postworkout.composer.ShareComposerViewModel
+import kz.maestrosultan.fitjournal.ui.postworkout.confirm.FinishConfirmContract
 import kz.maestrosultan.fitjournal.ui.postworkout.confirm.FinishConfirmSheetContent
 import kz.maestrosultan.fitjournal.ui.postworkout.confirm.FinishConfirmViewModel
 import kz.maestrosultan.fitjournal.ui.postworkout.seams.IosComposerDefaultsBridge
@@ -29,6 +31,7 @@ import kz.maestrosultan.fitjournal.ui.postworkout.seams.IosSharePresenter
 import kz.maestrosultan.fitjournal.ui.postworkout.seams.IosSharePresenterBridge
 import kz.maestrosultan.fitjournal.ui.postworkout.seams.PostWorkoutHaptics
 import kz.maestrosultan.fitjournal.ui.postworkout.seams.SerializedComposerDefaultsStore
+import kz.maestrosultan.fitjournal.ui.postworkout.success.WorkoutSuccessContract
 import kz.maestrosultan.fitjournal.ui.postworkout.success.WorkoutSuccessScreen
 import kz.maestrosultan.fitjournal.ui.postworkout.success.WorkoutSuccessViewModel
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
@@ -73,20 +76,24 @@ fun FinishConfirmController(
     onKeepTraining: () -> Unit,
 ): UIViewController = ComposeUIViewController {
     FitJournalTheme {
-        val state by viewModel.uiState.collectAsState()
+        val state by viewModel.viewState.collectAsState()
         // The VM's finish event is a buffered Channel — one consumer, delivered
         // even if it is emitted before this collector attaches.
         LaunchedEffect(viewModel) {
-            viewModel.finished.collect { result -> onFinished(result) }
+            viewModel.viewEffect.collect { effect ->
+                when (effect) {
+                    is FinishConfirmContract.ViewEffect.Finished -> onFinished(effect.result)
+                }
+            }
         }
         // The sheet content paints no background of its own (it expects the
         // host's sheet surface); on iOS that surface is this compose view.
         Box(Modifier.fillMaxSize().background(FjTheme.colors.sheet)) {
             FinishConfirmSheetContent(
                 state = state,
-                onConfirmFinish = viewModel::onConfirmFinish,
+                onConfirmFinish = { viewModel.dispatch(FinishConfirmContract.ViewAction.ConfirmFinish) },
                 onKeepTraining = onKeepTraining,
-                onVisibilityChanged = viewModel::onVisibilityChanged,
+                onVisibilityChanged = { viewModel.dispatch(FinishConfirmContract.ViewAction.VisibilityChanged(it)) },
                 modifier = Modifier.safeDrawingPadding(),
             )
         }
@@ -116,7 +123,7 @@ fun WorkoutSuccessController(
     haptics: PostWorkoutHaptics,
 ): UIViewController = ComposeUIViewController {
     FitJournalTheme {
-        val state by viewModel.uiState.collectAsState()
+        val state by viewModel.viewState.collectAsState()
         // Background edge-to-edge (under the status bar / home indicator), the
         // content itself inset — the native close item floats in the same inset.
         Box(Modifier.fillMaxSize().background(FjTheme.colors.background)) {
@@ -128,7 +135,7 @@ fun WorkoutSuccessController(
                 },
                 onHapticConsumed = {
                     haptics.success()
-                    viewModel.onSuccessHapticPlayed()
+                    viewModel.dispatch(WorkoutSuccessContract.ViewAction.SuccessHapticPlayed)
                 },
                 modifier = Modifier.safeDrawingPadding(),
             )
@@ -157,7 +164,11 @@ fun ShareComposerController(
 ): UIViewController = ComposeUIViewController {
     FitJournalTheme(darkTheme = true) {
         LaunchedEffect(viewModel) {
-            viewModel.closed.collect { onClosed() }
+            viewModel.viewEffect.collect { effect ->
+                when (effect) {
+                    ShareComposerContract.ViewEffect.Closed -> onClosed()
+                }
+            }
         }
         // No safeDrawingPadding: the card canvas is edge-to-edge by design and
         // the composer's own chrome carries the insets it needs.

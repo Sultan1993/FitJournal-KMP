@@ -160,8 +160,8 @@ class WorkoutSuccessViewModelTest {
         timeZone = TimeZone.UTC,
     )
 
-    private suspend fun awaitState(vm: WorkoutSuccessViewModel): WorkoutSuccessUiState =
-        vm.uiState.first { !it.loading }
+    private suspend fun awaitState(vm: WorkoutSuccessViewModel): WorkoutSuccessContract.ViewState =
+        vm.viewState.first { !it.loading }
 
     private fun expectedDateLine(start: Instant = START, end: Instant = END): String =
         LocaleFormatters.formatFullDate(date) + " · " +
@@ -373,7 +373,7 @@ class WorkoutSuccessViewModelTest {
         val state = awaitState(viewModel(result, titleFormatter = explodingCategoryNames))
 
         assertEquals(
-            WorkoutSuccessUiState(loading = false, title = "fallback-title", playSuccessHaptic = true),
+            WorkoutSuccessContract.ViewState(loading = false, title = "fallback-title", playSuccessHaptic = true),
             state,
             "bare fallback EXACTLY: fallback title, every section at its hidden default, haptic armed",
         )
@@ -414,8 +414,8 @@ class WorkoutSuccessViewModelTest {
         val vm = viewModel(finishResult(endedSession()))
 
         assertTrue(awaitState(vm).playSuccessHaptic, "armed once the state lands")
-        vm.onSuccessHapticPlayed()
-        assertFalse(vm.uiState.value.playSuccessHaptic, "consumed — never fires twice")
+        vm.dispatch(WorkoutSuccessContract.ViewAction.SuccessHapticPlayed)
+        assertFalse(vm.viewState.value.playSuccessHaptic, "consumed — never fires twice")
     }
 
     // ─── Fakes ────────────────────────────────────────────────────────────

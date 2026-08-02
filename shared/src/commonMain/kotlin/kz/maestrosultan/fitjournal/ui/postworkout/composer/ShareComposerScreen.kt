@@ -102,7 +102,7 @@ import org.jetbrains.compose.resources.stringResource
  *
  * [card] is the card body drawn inside [ShareCardCanvas]; the real W6/W7
  * layouts arrive as a caller-supplied slot, and block placement / removal
- * ([ComposerState.transform], [ComposerState.blockRemoved]) is applied there —
+ * ([ShareComposerContract.ViewState.transform], [ShareComposerContract.ViewState.blockRemoved]) is applied there —
  * the shell only reads `transform` to pick the scrim mode.
  *
  * The slot is invoked TWICE per frame — once for the live preview and once for
@@ -111,13 +111,13 @@ import org.jetbrains.compose.resources.stringResource
  * and can record editor chrome into the shared PNG.
  *
  * [hasPersonalRecord] is the one piece of session shape the shell needs that
- * [ComposerState] does not carry: the Layout editor must not offer NewBest for a
+ * [ShareComposerContract.ViewState] does not carry: the Layout editor must not offer NewBest for a
  * session with no PR (`ShareComposerViewModel.onLayoutSelected` refuses it
  * anyway, so an offered-but-inert thumbnail would be the bug).
  */
 @Composable
 internal fun ShareComposerScreen(
-    state: ComposerState,
+    state: ShareComposerContract.ViewState,
     hasPersonalRecord: Boolean,
     onCloseRequested: () -> Unit,
     onEditorSelected: (ComposerEditor?) -> Unit,
@@ -228,7 +228,7 @@ internal object ComposerTestTags {
  */
 @Composable
 private fun ComposerEditorOverlay(
-    state: ComposerState,
+    state: ShareComposerContract.ViewState,
     hasPersonalRecord: Boolean,
     onEditorSelected: (ComposerEditor?) -> Unit,
     onTitleChanged: (String) -> Unit,
@@ -312,7 +312,7 @@ private fun EditorPanel(
  */
 @Composable
 private fun ComposerCardContent(
-    state: ComposerState,
+    state: ShareComposerContract.ViewState,
     exportMode: Boolean,
     modifier: Modifier = Modifier,
     card: @Composable ShareCardScope.(exportMode: Boolean) -> Unit,

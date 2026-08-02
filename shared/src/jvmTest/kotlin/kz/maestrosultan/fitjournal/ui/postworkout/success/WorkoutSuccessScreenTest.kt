@@ -15,7 +15,7 @@ import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 /**
  * Behavioral gate for [WorkoutSuccessScreen] (design frame W4b, spec §7.2):
  *
- *  1. The PR card is composed only when [WorkoutSuccessUiState.personalRecord]
+ *  1. The PR card is composed only when [WorkoutSuccessContract.ViewState.personalRecord]
  *     is non-null, and its line omits the "× reps" tail for weight-only bests.
  *  2. Muscle bars render top-to-bottom in the state's ranked order — the screen
  *     must never re-sort what `SessionSummary` already ranked.
@@ -91,7 +91,7 @@ class WorkoutSuccessScreenTest {
 
     @Test
     fun fallbackState_rendersTitleAndChromeOnly() = runComposeUiTest {
-        setScreen(WorkoutSuccessUiState(loading = false, title = "Workout"))
+        setScreen(WorkoutSuccessContract.ViewState(loading = false, title = "Workout"))
 
         onNodeWithText("Workout").assertExists()
         // Static chrome survives the fallback.
@@ -144,7 +144,7 @@ class WorkoutSuccessScreenTest {
 
     // ------------------------------------------------------------------ fixtures
 
-    private fun ComposeUiTest.setScreen(state: WorkoutSuccessUiState) {
+    private fun ComposeUiTest.setScreen(state: WorkoutSuccessContract.ViewState) {
         setContent {
             FitJournalTheme(darkTheme = false) {
                 WorkoutSuccessScreen(
@@ -158,7 +158,7 @@ class WorkoutSuccessScreenTest {
     }
 
     /** Fully-populated display state; ranked muscles CHEST > TRICEPS > ABS. */
-    private fun fullState(personalRecord: PersonalRecordUi?) = WorkoutSuccessUiState(
+    private fun fullState(personalRecord: PersonalRecordUi?) = WorkoutSuccessContract.ViewState(
         loading = false,
         title = "Chest · Triceps · Abs",
         dateLine = "Wednesday, 22 July · 09:38–10:42",

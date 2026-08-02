@@ -43,7 +43,7 @@ import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
  * host collects to run the post-workout flow.
  *
  * Failure contract: a summary-read failure degrades to the
- * [FinishConfirmUiState.isFallback] shell (never blocks the sheet), and an
+ * [FinishConfirmContract.ViewState.isFallback] shell (never blocks the sheet), and an
  * end-workout failure is logged and treated as "already ended" — the finish
  * event fires regardless, because keeping the user stuck on a confirm sheet is
  * worse than any of these errors.
@@ -63,16 +63,16 @@ class FinishConfirmViewModel(
     // currently formats only zone-free values (LocalDate eyebrow, elapsed
     // duration), so nothing reads it yet.
     private val timeZone: TimeZone = TimeZone.currentSystemDefault(),
-) : ViewModel() {
+) : ViewModel(), FinishConfirmContract.ViewModel {
 
-    private val _uiState = MutableStateFlow(FinishConfirmUiState.initial())
-    val uiState: StateFlow<FinishConfirmUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(FinishConfirmContract.ViewState.initial())
+    override val viewState: StateFlow<FinishConfirmContract.ViewState> = _uiState.asStateFlow()
 
     // One host consumer handling the event exactly once — a buffered Channel,
     // not a SharedFlow, so a finish emitted before the collector attaches is
     // delivered rather than dropped.
-    private val _finished = Channel<FinishResult>(Channel.BUFFERED)
-    val finished: Flow<FinishResult> = _finished.receiveAsFlow()
+    private val _effects = Channel<FinishConfirmContract.ViewEffect>(Channel.BUFFERED)
+    override val viewEffect: Flow<FinishConfirmContract.ViewEffect> = _effects.receiveAsFlow()
 
     // Resolved once in init (repositories are id-parameterised — see
     // WorkoutUserContext); session then carries the full identity.
@@ -106,10 +106,19 @@ class FinishConfirmViewModel(
         }
     }
 
+    // ─── MVI entry point ────────────────────────────────────────────────
+
+    override fun dispatch(action: FinishConfirmContract.ViewAction) {
+        when (action) {
+            is FinishConfirmContract.ViewAction.VisibilityChanged -> onVisibilityChanged(action.visible)
+            FinishConfirmContract.ViewAction.ConfirmFinish -> onConfirmFinish()
+        }
+    }
+
     // ─── Actions ────────────────────────────────────────────────────────
 
     /** Pause the 1s duration tick while the sheet is off-screen; catch up on return. */
-    fun onVisibilityChanged(visible: Boolean) {
+    private fun onVisibilityChanged(visible: Boolean) {
         isVisible = visible
         if (visible) startTicking() else stopTicking()
     }
@@ -131,7 +140,7 @@ class FinishConfirmViewModel(
      * logged, never surfaced) and leaves the user with the one affordance that
      * can actually fix it: tap again.
      */
-    fun onConfirmFinish() {
+    private fun onConfirmFinish() {
         if (isEnding) return
         val current = session ?: return // load not finished, or nothing was running
         isEnding = true
@@ -147,16 +156,18 @@ class FinishConfirmViewModel(
                 return@launch
             }
             stopTicking() // the session is over; freeze the last rendered duration
-            _finished.send(
-                FinishResult(
-                    context = PostWorkoutContext(
-                        userId = current.userId,
-                        journalId = current.journalId,
-                        date = current.date,
-                        workoutNumber = current.workoutNumber,
-                        units = units,
+            _effects.send(
+                FinishConfirmContract.ViewEffect.Finished(
+                    FinishResult(
+                        context = PostWorkoutContext(
+                            userId = current.userId,
+                            journalId = current.journalId,
+                            date = current.date,
+                            workoutNumber = current.workoutNumber,
+                            units = units,
+                        ),
+                        summary = summary ?: emptySummary(current),
                     ),
-                    summary = summary ?: emptySummary(current),
                 ),
             )
         }
@@ -194,11 +205,11 @@ class FinishConfirmViewModel(
         _uiState.update { if (it.durationText == text) it else it.copy(durationText = text) }
     }
 
-    private fun stateOf(session: WorkoutSession, summary: SessionSummary?): FinishConfirmUiState {
+    private fun stateOf(session: WorkoutSession, summary: SessionSummary?): FinishConfirmContract.ViewState {
         // Single source for number-trimming AND unit choice; split so the sheet
         // can render the big number and its unit label separately.
         val tonnage = WorkoutValueFormatter.value(summary?.tonnageKg ?: 0.0, ResultType.WEIGHT_REPS, units)
-        return FinishConfirmUiState(
+        return FinishConfirmContract.ViewState(
             loading = false,
             isFallback = summary == null,
             dateText = LocaleFormatters.formatFullDate(session.date),

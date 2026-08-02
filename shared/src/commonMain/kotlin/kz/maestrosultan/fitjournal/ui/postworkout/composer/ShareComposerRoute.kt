@@ -18,8 +18,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
  * places, in two languages, and made every future card change a three-repo
  * edit. Hosts supply a ViewModel and a modifier; nothing else.
  *
- * Dismissal is NOT a parameter here: hosts collect [ShareComposerViewModel.closed]
- * and pop their own navigation. The composer never calls back to close, so
+ * Dismissal is NOT a parameter here: hosts collect [ShareComposerViewModel.viewEffect]
+ * ([ShareComposerContract.ViewEffect.Closed]) and pop their own navigation. The
+ * composer never calls back to close, so
  * there is exactly one close path however it was triggered — chip, system Back,
  * or a completed share.
  */
@@ -28,7 +29,7 @@ fun ShareComposerRoute(
     viewModel: ShareComposerViewModel,
     modifier: Modifier = Modifier,
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
+    val state by viewModel.viewState.collectAsStateWithLifecycle()
     val summary = viewModel.summary
 
     // Resolved ONCE, here, and handed to both the live and the export
@@ -53,18 +54,18 @@ fun ShareComposerRoute(
     ShareComposerScreen(
         state = state,
         hasPersonalRecord = summary.best != null,
-        onCloseRequested = viewModel::onCloseRequested,
-        onEditorSelected = viewModel::onEditorSelected,
-        onTitleChanged = viewModel::onTitleChanged,
-        onLayoutSelected = viewModel::onLayoutSelected,
-        onResetLayout = viewModel::onResetLayout,
-        onBackdropSelected = viewModel::onBackdropSelected,
-        onPickPhoto = viewModel::onPickPhoto,
-        onStatToggled = viewModel::onStatToggled,
-        onScrimChanged = viewModel::onScrimChanged,
-        onShare = viewModel::onShare,
-        onSave = viewModel::onSave,
-        onExportResult = viewModel::onExportResult,
+        onCloseRequested = { viewModel.dispatch(ShareComposerContract.ViewAction.CloseRequested) },
+        onEditorSelected = { viewModel.dispatch(ShareComposerContract.ViewAction.EditorSelected(it)) },
+        onTitleChanged = { viewModel.dispatch(ShareComposerContract.ViewAction.TitleChanged(it)) },
+        onLayoutSelected = { viewModel.dispatch(ShareComposerContract.ViewAction.LayoutSelected(it)) },
+        onResetLayout = { viewModel.dispatch(ShareComposerContract.ViewAction.ResetLayout) },
+        onBackdropSelected = { viewModel.dispatch(ShareComposerContract.ViewAction.BackdropSelected(it)) },
+        onPickPhoto = { viewModel.dispatch(ShareComposerContract.ViewAction.PickPhoto) },
+        onStatToggled = { viewModel.dispatch(ShareComposerContract.ViewAction.StatToggled(it)) },
+        onScrimChanged = { viewModel.dispatch(ShareComposerContract.ViewAction.ScrimChanged(it)) },
+        onShare = { viewModel.dispatch(ShareComposerContract.ViewAction.Share) },
+        onSave = { viewModel.dispatch(ShareComposerContract.ViewAction.Save) },
+        onExportResult = { viewModel.dispatch(ShareComposerContract.ViewAction.ExportResult(it)) },
         modifier = modifier,
     ) { exportMode ->
         Box(Modifier.fillMaxSize()) {
@@ -74,8 +75,8 @@ fun ShareComposerRoute(
                 transform = state.transform,
                 blockRemoved = state.blockRemoved,
                 haptics = viewModel.haptics,
-                onTransformChanged = viewModel::onTransformChanged,
-                onRemoveBlock = viewModel::onRemoveBlock,
+                onTransformChanged = { viewModel.dispatch(ShareComposerContract.ViewAction.TransformChanged(it)) },
+                onRemoveBlock = { viewModel.dispatch(ShareComposerContract.ViewAction.RemoveBlock) },
                 modifier = Modifier.fillMaxSize(),
                 exportMode = exportMode,
             )
