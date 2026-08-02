@@ -90,8 +90,8 @@ fun WorkoutPageContent(
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         state = lazyListState,
-        // Clear the pinned page dots + top fade so the header starts below them.
-        contentPadding = PaddingValues(top = 56.dp, bottom = 140.dp),
+        // Clear the pinned page dots + top fade so the header starts just below them.
+        contentPadding = PaddingValues(top = 24.dp, bottom = 140.dp),
     ) {
         item {
             WorkoutMuscleHeader(orderedRecords)

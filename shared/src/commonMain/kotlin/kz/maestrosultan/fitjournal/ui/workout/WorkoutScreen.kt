@@ -22,7 +22,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -35,6 +35,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import kz.maestrosultan.fitjournal.shared.generated.resources.Res
+import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_plus
 import kz.maestrosultan.fitjournal.ui.common.PageDots
 import kz.maestrosultan.fitjournal.ui.common.TopFadeScrim
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
@@ -42,6 +44,7 @@ import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutAddMenu
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutCalendar
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutSessionBar
+import org.jetbrains.compose.resources.painterResource
 
 /**
  * The shared Workout body — a full-width pager over the day's workouts (+ the
@@ -136,7 +139,7 @@ private fun WorkoutBody(
                 // the dots sit on top of it (native parity).
                 TopFadeScrim(
                     color = FjTheme.colors.background,
-                    height = 56.dp,
+                    height = 24.dp,
                     modifier = Modifier.align(Alignment.TopCenter),
                 )
 
@@ -198,6 +201,11 @@ private fun AddButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Text("+", style = FjTheme.typography.screenTitle, color = FjTheme.colors.brand)
+        Icon(
+            painter = painterResource(Res.drawable.ic_common_plus),
+            contentDescription = null,
+            tint = FjTheme.colors.brand,
+            modifier = Modifier.size(26.dp),
+        )
     }
 }
