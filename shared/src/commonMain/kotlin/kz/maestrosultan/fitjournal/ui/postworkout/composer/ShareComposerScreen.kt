@@ -60,6 +60,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_rail_s
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_rail_stats
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_rail_title
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_share_workout
+import kz.maestrosultan.fitjournal.ui.common.TopFadeScrim
 import kz.maestrosultan.fitjournal.ui.postworkout.composer.editors.BackdropEditor
 import kz.maestrosultan.fitjournal.ui.postworkout.composer.editors.EditorSheet
 import kz.maestrosultan.fitjournal.ui.postworkout.composer.editors.EditorSheetDefaults
@@ -427,12 +428,10 @@ private fun PhotoScrims(
                     .background(brush),
             )
             if (!exportMode) {
-                Box(
-                    Modifier
-                        .align(Alignment.TopCenter)
-                        .fillMaxWidth()
-                        .height(TopScrimHeight)
-                        .background(Brush.verticalGradient(listOf(TopScrimInk, Color.Transparent))),
+                TopFadeScrim(
+                    color = TopScrimInk,
+                    height = TopScrimHeight,
+                    modifier = Modifier.align(Alignment.TopCenter),
                 )
             }
         }

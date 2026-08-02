@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -35,10 +34,9 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import kz.maestrosultan.fitjournal.ui.common.PageDots
+import kz.maestrosultan.fitjournal.ui.common.TopFadeScrim
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutAddMenu
@@ -136,12 +134,10 @@ private fun WorkoutBody(
 
                 // Top fade — list content scrolls out under the page dots, then
                 // the dots sit on top of it (native parity).
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .background(Brush.verticalGradient(listOf(FjTheme.colors.background, Color.Transparent))),
+                TopFadeScrim(
+                    color = FjTheme.colors.background,
+                    height = 56.dp,
+                    modifier = Modifier.align(Alignment.TopCenter),
                 )
 
                 PageDots(
