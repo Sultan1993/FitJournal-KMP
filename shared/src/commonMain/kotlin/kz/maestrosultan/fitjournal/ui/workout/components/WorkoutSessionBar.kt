@@ -1,10 +1,10 @@
 package kz.maestrosultan.fitjournal.ui.workout.components
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -54,16 +54,22 @@ fun WorkoutSessionBar(
     onEnd: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Cross-fade so the bar eases in/out (e.g. landing on today's empty workout)
-    // instead of popping — no slide.
+    // Pure cross-fade: `using null` drops the size animation and every state keeps
+    // the 56dp bar height, so the buttons fade in/out without shrinking or sliding.
     AnimatedContent(
         targetState = state,
         modifier = modifier,
-        transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(180)) },
+        transitionSpec = {
+            ContentTransform(
+                targetContentEnter = fadeIn(tween(220)),
+                initialContentExit = fadeOut(tween(180)),
+                sizeTransform = null,
+            )
+        },
         label = "workout-session-bar",
     ) { current ->
         when (current) {
-            SessionBarState.Hidden -> Spacer(Modifier.fillMaxWidth())
+            SessionBarState.Hidden -> Spacer(Modifier.fillMaxWidth().height(56.dp))
             SessionBarState.Start -> StartPill(onStart, Modifier)
             SessionBarState.Running -> RunningBar(runningSince, onEnd, Modifier)
         }
