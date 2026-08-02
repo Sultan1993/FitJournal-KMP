@@ -23,6 +23,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_another_workout_subtitle
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_another_workout_title
 import kz.maestrosultan.fitjournal.ui.workout.components.AnotherWorkoutPlaceholder
+import kz.maestrosultan.fitjournal.ui.workout.components.FirstWorkoutPlaceholder
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutExerciseMenu
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutMuscleHeader
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutRecordCard
@@ -49,10 +50,20 @@ fun WorkoutPageContent(
     onRequestAdd: (workoutNumber: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (page.isPlaceholder || page.records.isEmpty()) {
+    // The ephemeral N+1 page invites ANOTHER workout; an empty real page (the
+    // day's first workout, or one started but not yet logged) is the primary
+    // "add exercises to start" empty state — the native illustration + hint.
+    if (page.isPlaceholder) {
         AnotherWorkoutPlaceholder(
             title = stringResource(Res.string.workout_another_workout_title),
             subtitle = stringResource(Res.string.workout_another_workout_subtitle),
+            onAddClick = { onRequestAdd(page.workoutNumber) },
+            modifier = modifier,
+        )
+        return
+    }
+    if (page.records.isEmpty()) {
+        FirstWorkoutPlaceholder(
             onAddClick = { onRequestAdd(page.workoutNumber) },
             modifier = modifier,
         )

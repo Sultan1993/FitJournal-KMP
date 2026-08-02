@@ -140,6 +140,7 @@
     <!-- Copy-from-workout picker -->
     <string name="import_workout_add">Додати до тренування</string>
     <string name="import_workout_empty">Немає тренувань цього дня</string>
+    <string name="workout_first_workout_hint">Натисніть «+», щоб додати вправи та почати записувати підходи</string>
     <string name="common_today">Сьогодні</string>
     <string name="common_yesterday">Вчора</string>
 </resources>
