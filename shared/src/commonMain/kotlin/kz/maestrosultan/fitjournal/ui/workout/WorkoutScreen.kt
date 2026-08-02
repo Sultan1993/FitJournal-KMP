@@ -79,6 +79,13 @@ private fun WorkoutBody(
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.settledPage }.collect { dispatch(WorkoutContract.ViewAction.SelectPage(it)) }
     }
+    // Pager motion → VM so the native host can suppress its edge-back until the
+    // pager settles (a back-swipe begun mid-fling must page, not pop). snapshotFlow
+    // only emits on change, so this is start/stop, not per-frame.
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.isScrollInProgress }
+            .collect { dispatch(WorkoutContract.ViewAction.SetPagerScrolling(it)) }
+    }
 
     Box(modifier = modifier.fillMaxSize().background(FjTheme.colors.background)) {
         if (pageCount > 0) {

@@ -62,6 +62,7 @@ class WorkoutViewModel(
 
     private val selectedDate = MutableStateFlow(initialDate)
     private val currentPageIndex = MutableStateFlow(0)
+    private val pagerScrolling = MutableStateFlow(false)
     private val calendarVisible = MutableStateFlow(false)
     private val workoutDays = MutableStateFlow<Set<LocalDate>>(emptySet())
 
@@ -97,6 +98,7 @@ class WorkoutViewModel(
         when (action) {
             is WorkoutContract.ViewAction.SelectDate -> onDateSelected(action.date)
             is WorkoutContract.ViewAction.SelectPage -> onPageSelected(action.index)
+            is WorkoutContract.ViewAction.SetPagerScrolling -> pagerScrolling.value = action.scrolling
             WorkoutContract.ViewAction.ToggleCalendar -> onToggleCalendar()
             is WorkoutContract.ViewAction.CalendarMonthChanged -> onCalendarMonthChanged(action.year, action.month)
             WorkoutContract.ViewAction.StartSession -> onStartSession()
@@ -138,16 +140,23 @@ class WorkoutViewModel(
         }
         val running: Flow<WorkoutSession?> = sessionRepository.getRunningSessionFlow(uid)
 
+        // Merge the two pager facts into one flow so the main combine stays at
+        // its 5-arg typed form.
+        val pageInfo = combine(currentPageIndex, pagerScrolling) { index, scrolling ->
+            PageInfo(index, scrolling)
+        }
         combine(
             dayData,
             running,
-            currentPageIndex,
+            pageInfo,
             calendarVisible,
             workoutDays,
-        ) { day, run, pageIndex, calVisible, calDays ->
-            buildState(day.date, day.records, day.sessions, run, pageIndex, calVisible, calDays)
+        ) { day, run, page, calVisible, calDays ->
+            buildState(day.date, day.records, day.sessions, run, page.index, page.scrolling, calVisible, calDays)
         }.collect { _uiState.value = it }
     }
+
+    private data class PageInfo(val index: Int, val scrolling: Boolean)
 
     private data class DayData(
         val date: LocalDate,
@@ -161,6 +170,7 @@ class WorkoutViewModel(
         daySessions: List<WorkoutSession>,
         running: WorkoutSession?,
         requestedPageIndex: Int,
+        pagerScrolling: Boolean,
         calendarVisible: Boolean,
         workoutDays: Set<LocalDate>,
     ): WorkoutContract.ViewState {
@@ -184,6 +194,7 @@ class WorkoutViewModel(
             isToday = isToday,
             pages = pages,
             currentPageIndex = pageIndex,
+            pagerScrolling = pagerScrolling,
             sessionBar = bar,
             runningSession = running,
             measurementSystem = measurementSystem,

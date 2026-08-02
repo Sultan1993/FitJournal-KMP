@@ -60,6 +60,13 @@ object WorkoutContract {
         val isToday: Boolean,
         val pages: List<WorkoutPage>,
         val currentPageIndex: Int,
+        /**
+         * The pager is mid-swipe/animation (not settled). The native host reads
+         * this to suppress its edge-back gesture until the pager comes to rest —
+         * otherwise a back-swipe begun while almost-but-not-yet on the next page
+         * (settledPage still 0) would pop the screen instead of paging.
+         */
+        val pagerScrolling: Boolean,
         val sessionBar: SessionBarState,
         /** Non-null iff a workout is running app-wide — its start moment drives the ticking bar. */
         val runningSession: WorkoutSession?,
@@ -81,6 +88,7 @@ object WorkoutContract {
                 isToday = isToday,
                 pages = emptyList(),
                 currentPageIndex = 0,
+                pagerScrolling = false,
                 sessionBar = SessionBarState.Hidden,
                 runningSession = null,
                 measurementSystem = MeasurementSystem.KG_KM,
@@ -98,6 +106,10 @@ object WorkoutContract {
     sealed interface ViewAction {
         data class SelectDate(val date: LocalDate) : ViewAction
         data class SelectPage(val index: Int) : ViewAction
+
+        /** The shared pager started (true) or finished (false) scrolling. */
+        data class SetPagerScrolling(val scrolling: Boolean) : ViewAction
+
         data object ToggleCalendar : ViewAction
         data class CalendarMonthChanged(val year: Int, val month: Int) : ViewAction
 
