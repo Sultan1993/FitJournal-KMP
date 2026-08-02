@@ -1,8 +1,11 @@
 package kz.maestrosultan.fitjournal.ui.workout.components
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -169,16 +172,33 @@ private fun DayCell(
         label = "dayNumberColor",
     )
 
+    val interactionSource = remember { MutableInteractionSource() }
+
     Box(
         modifier = modifier
             .aspectRatio(1f)
-            .then(if (isMonthDate) Modifier.clickable(onClick = onClick) else Modifier),
+            // The whole cell stays tappable but carries no indication itself — the
+            // ripple is drawn on the circle below (same interaction source), so it
+            // matches the round highlight instead of filling the square.
+            .then(
+                if (isMonthDate) {
+                    Modifier.clickable(
+                        interactionSource = interactionSource,
+                        indication = null,
+                        onClick = onClick,
+                    )
+                } else {
+                    Modifier
+                },
+            ),
         contentAlignment = Alignment.Center,
     ) {
         Box(
             modifier = Modifier
                 .size(SELECTION_DIAMETER)
-                .drawBehind { drawCircle(circleColor) },
+                .drawBehind { drawCircle(circleColor) }
+                .clip(CircleShape)
+                .indication(interactionSource, LocalIndication.current),
             contentAlignment = Alignment.Center,
         ) {
             Text(
