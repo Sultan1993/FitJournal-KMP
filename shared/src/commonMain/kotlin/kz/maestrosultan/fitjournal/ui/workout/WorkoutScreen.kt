@@ -35,7 +35,7 @@ import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutSessionBar
  * ephemeral "another workout" placeholder), page dots up top, and the Start/End
  * bar + add button along the bottom. Hosted inside each app's native nav shell;
  * every interaction goes through [WorkoutViewModel.dispatch], and navigation
- * leaves as [WorkoutEffect]s the host collects.
+ * leaves as [WorkoutContract.ViewEffect]s the host collects.
  */
 @Composable
 fun WorkoutScreen(
@@ -50,8 +50,8 @@ fun WorkoutScreen(
 
 @Composable
 private fun WorkoutBody(
-    state: WorkoutUiState,
-    dispatch: (WorkoutAction) -> Unit,
+    state: WorkoutContract.ViewState,
+    dispatch: (WorkoutContract.ViewAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val pageCount = state.pages.size
@@ -72,7 +72,7 @@ private fun WorkoutBody(
     }
     // Pager swipe → VM (settled only, so mid-swipe frames don't thrash state).
     LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.settledPage }.collect { dispatch(WorkoutAction.SelectPage(it)) }
+        snapshotFlow { pagerState.settledPage }.collect { dispatch(WorkoutContract.ViewAction.SelectPage(it)) }
     }
 
     Box(modifier = modifier.fillMaxSize().background(FjTheme.colors.background)) {
@@ -95,7 +95,7 @@ private fun WorkoutBody(
         PageDots(
             count = pageCount,
             currentPage = pagerState.currentPage,
-            onDotClick = { dispatch(WorkoutAction.SelectPage(it)) },
+            onDotClick = { dispatch(WorkoutContract.ViewAction.SelectPage(it)) },
             modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp),
         )
 
@@ -108,8 +108,8 @@ private fun WorkoutBody(
             WorkoutSessionBar(
                 state = state.sessionBar,
                 runningSince = state.runningSince,
-                onStart = { dispatch(WorkoutAction.StartSession) },
-                onEnd = { dispatch(WorkoutAction.RequestEndSession) },
+                onStart = { dispatch(WorkoutContract.ViewAction.StartSession) },
+                onEnd = { dispatch(WorkoutContract.ViewAction.RequestEndSession) },
                 // Leave room for the add button at the trailing edge.
                 modifier = Modifier.align(Alignment.CenterStart).fillMaxWidth().padding(end = 68.dp),
             )
@@ -126,8 +126,8 @@ private fun WorkoutBody(
             WorkoutCalendar(
                 selectedDate = state.selectedDate,
                 workoutDays = state.workoutDays,
-                onDateSelected = { dispatch(WorkoutAction.SelectDate(it)) },
-                onMonthChanged = { year, month -> dispatch(WorkoutAction.CalendarMonthChanged(year, month)) },
+                onDateSelected = { dispatch(WorkoutContract.ViewAction.SelectDate(it)) },
+                onMonthChanged = { year, month -> dispatch(WorkoutContract.ViewAction.CalendarMonthChanged(year, month)) },
                 modifier = Modifier.fillMaxSize().background(FjTheme.colors.background),
             )
         }
@@ -136,8 +136,8 @@ private fun WorkoutBody(
         addMenuWorkoutNumber?.let { workoutNumber ->
             val close = { addMenuWorkoutNumber = null }
             WorkoutAddMenu(
-                onFromList = { close(); dispatch(WorkoutAction.AddExercise(workoutNumber)) },
-                onFromWorkout = { close(); dispatch(WorkoutAction.CopyFromWorkout(workoutNumber)) },
+                onFromList = { close(); dispatch(WorkoutContract.ViewAction.AddExercise(workoutNumber)) },
+                onFromWorkout = { close(); dispatch(WorkoutContract.ViewAction.CopyFromWorkout(workoutNumber)) },
                 onDismiss = close,
             )
         }

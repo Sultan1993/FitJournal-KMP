@@ -39,13 +39,13 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
  * Records reorder by long-press-drag: the visible order is an optimistic local
  * copy of [WorkoutPage.records] (re-seeded whenever the page's records change),
  * moved by key so the non-draggable header's index offset can't corrupt the
- * move, and persisted via [WorkoutAction.Reorder] on drop.
+ * move, and persisted via [WorkoutContract.ViewAction.Reorder] on drop.
  */
 @Composable
 fun WorkoutPageContent(
     page: WorkoutPage,
     measurementSystem: MeasurementSystem,
-    dispatch: (WorkoutAction) -> Unit,
+    dispatch: (WorkoutContract.ViewAction) -> Unit,
     onRequestAdd: (workoutNumber: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -91,10 +91,10 @@ fun WorkoutPageContent(
                     record = record,
                     measurementSystem = measurementSystem,
                     onSetClick = { exerciseId, setId ->
-                        dispatch(WorkoutAction.OpenExerciseFocus(exerciseId, setId, false))
+                        dispatch(WorkoutContract.ViewAction.OpenExerciseFocus(exerciseId, setId, false))
                     },
                     onAddSet = { exerciseId ->
-                        dispatch(WorkoutAction.OpenExerciseFocus(exerciseId, null, true))
+                        dispatch(WorkoutContract.ViewAction.OpenExerciseFocus(exerciseId, null, true))
                     },
                     onExerciseMenu = { exercise -> menuTarget = MenuTarget(record, exercise) },
                     modifier = Modifier
@@ -107,7 +107,7 @@ fun WorkoutPageContent(
                                 // positions and fire a sync tick.
                                 val newOrder = orderedRecords.map { it.id }
                                 if (newOrder != page.records.map { it.id }) {
-                                    dispatch(WorkoutAction.Reorder(newOrder))
+                                    dispatch(WorkoutContract.ViewAction.Reorder(newOrder))
                                 }
                             },
                         ),
@@ -125,14 +125,14 @@ fun WorkoutPageContent(
             hasNote = !exercise.comment.isNullOrBlank(),
             isSuperset = record.isSuperset,
             canAddToSuperset = !record.isSuperset && page.records.any { it.position > record.position },
-            onAbout = { close(); dispatch(WorkoutAction.OpenExerciseInfo(exercise.exercise.uuid, ExerciseInfoSection.About)) },
-            onHistory = { close(); dispatch(WorkoutAction.OpenExerciseInfo(exercise.exercise.uuid, ExerciseInfoSection.History)) },
-            onStats = { close(); dispatch(WorkoutAction.OpenExerciseInfo(exercise.exercise.uuid, ExerciseInfoSection.Stats)) },
-            onNote = { close(); dispatch(WorkoutAction.EditNote(exercise.id)) },
-            onReplace = { close(); dispatch(WorkoutAction.ReplaceExercise(exercise.id)) },
-            onAddToSuperset = { close(); dispatch(WorkoutAction.AddToSuperset(record)) },
-            onRemoveFromSuperset = { close(); dispatch(WorkoutAction.RemoveFromSuperset(record, exercise)) },
-            onDelete = { close(); dispatch(WorkoutAction.DeleteRecord(record)) },
+            onAbout = { close(); dispatch(WorkoutContract.ViewAction.OpenExerciseInfo(exercise.exercise.uuid, ExerciseInfoSection.About)) },
+            onHistory = { close(); dispatch(WorkoutContract.ViewAction.OpenExerciseInfo(exercise.exercise.uuid, ExerciseInfoSection.History)) },
+            onStats = { close(); dispatch(WorkoutContract.ViewAction.OpenExerciseInfo(exercise.exercise.uuid, ExerciseInfoSection.Stats)) },
+            onNote = { close(); dispatch(WorkoutContract.ViewAction.EditNote(exercise.id)) },
+            onReplace = { close(); dispatch(WorkoutContract.ViewAction.ReplaceExercise(exercise.id)) },
+            onAddToSuperset = { close(); dispatch(WorkoutContract.ViewAction.AddToSuperset(record)) },
+            onRemoveFromSuperset = { close(); dispatch(WorkoutContract.ViewAction.RemoveFromSuperset(record, exercise)) },
+            onDelete = { close(); dispatch(WorkoutContract.ViewAction.DeleteRecord(record)) },
             onDismiss = close,
         )
     }

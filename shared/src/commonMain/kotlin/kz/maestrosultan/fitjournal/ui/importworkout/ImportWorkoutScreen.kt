@@ -57,8 +57,8 @@ fun ImportWorkoutScreen(
 
 @Composable
 private fun ImportWorkoutBody(
-    state: ImportWorkoutUiState,
-    dispatch: (ImportWorkoutAction) -> Unit,
+    state: ImportWorkoutContract.ViewState,
+    dispatch: (ImportWorkoutContract.ViewAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize().background(FjTheme.colors.background)) {
@@ -66,7 +66,7 @@ private fun ImportWorkoutBody(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { dispatch(ImportWorkoutAction.ToggleCalendar) }
+                .clickable { dispatch(ImportWorkoutContract.ViewAction.ToggleCalendar) }
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -88,15 +88,15 @@ private fun ImportWorkoutBody(
             WorkoutCalendar(
                 selectedDate = state.sourceDate,
                 workoutDays = state.workoutDays,
-                onDateSelected = { dispatch(ImportWorkoutAction.SelectSourceDate(it)) },
-                onMonthChanged = { year, month -> dispatch(ImportWorkoutAction.CalendarMonthChanged(year, month)) },
+                onDateSelected = { dispatch(ImportWorkoutContract.ViewAction.SelectSourceDate(it)) },
+                onMonthChanged = { year, month -> dispatch(ImportWorkoutContract.ViewAction.CalendarMonthChanged(year, month)) },
                 modifier = Modifier.fillMaxWidth(),
             )
         } else {
             ImportContentArea(content = state.content, dispatch = dispatch, modifier = Modifier.weight(1f))
             ImportButton(
                 enabled = state.canImport,
-                onClick = { dispatch(ImportWorkoutAction.Import) },
+                onClick = { dispatch(ImportWorkoutContract.ViewAction.Import) },
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
             )
         }
@@ -106,7 +106,7 @@ private fun ImportWorkoutBody(
 @Composable
 private fun ImportContentArea(
     content: ImportContent,
-    dispatch: (ImportWorkoutAction) -> Unit,
+    dispatch: (ImportWorkoutContract.ViewAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     when (content) {
@@ -129,7 +129,7 @@ private fun ImportContentArea(
 @Composable
 private fun ImportPager(
     loaded: ImportContent.Loaded,
-    dispatch: (ImportWorkoutAction) -> Unit,
+    dispatch: (ImportWorkoutContract.ViewAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val pages = loaded.pages
@@ -140,7 +140,7 @@ private fun ImportPager(
         }
     }
     LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.settledPage }.collect { dispatch(ImportWorkoutAction.SelectPage(it)) }
+        snapshotFlow { pagerState.settledPage }.collect { dispatch(ImportWorkoutContract.ViewAction.SelectPage(it)) }
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
@@ -148,7 +148,7 @@ private fun ImportPager(
             PageDots(
                 count = pages.size,
                 currentPage = pagerState.currentPage,
-                onDotClick = { dispatch(ImportWorkoutAction.SelectPage(it)) },
+                onDotClick = { dispatch(ImportWorkoutContract.ViewAction.SelectPage(it)) },
                 modifier = Modifier.align(Alignment.CenterHorizontally).padding(vertical = 8.dp),
             )
         }
@@ -163,7 +163,7 @@ private fun ImportPager(
                     ImportRecordCard(
                         record = record,
                         isSelected = record.id in loaded.selectedRecordIds,
-                        onToggle = { dispatch(ImportWorkoutAction.ToggleRecord(record.id)) },
+                        onToggle = { dispatch(ImportWorkoutContract.ViewAction.ToggleRecord(record.id)) },
                         modifier = Modifier.padding(vertical = 6.dp),
                     )
                 }

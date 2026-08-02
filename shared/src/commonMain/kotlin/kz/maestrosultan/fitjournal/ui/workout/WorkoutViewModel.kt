@@ -30,11 +30,10 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutSession
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSessionRepository
 import kz.maestrosultan.fitjournal.domain.workout.usecase.EndWorkoutUseCase
 import kz.maestrosultan.fitjournal.domain.workout.usecase.StartWorkoutUseCase
-import kz.maestrosultan.fitjournal.ui.mvi.MviModel
 
 /**
  * Shared presentation for the Workout body — the ONE ViewModel both apps use, in
- * the [MviModel] shape: one entry point ([dispatch]) and two outputs ([viewState]
+ * the per-screen MVI [WorkoutContract] shape: one entry point ([dispatch]) and two outputs ([viewState]
  * + one-shot [viewEffect]). The shared Compose body and the native nav shell both
  * interact only through [dispatch]; nothing calls this any other way.
  *
@@ -42,7 +41,7 @@ import kz.maestrosultan.fitjournal.ui.mvi.MviModel
  * trailing placeholder), the Start/End session bar, and per-record edits. It is
  * pure rendering + local reads/writes against the KMP repositories; NAVIGATION
  * (set editor, exercise details, import) and the end-confirm sheet leave as
- * [WorkoutEffect]s the native host performs, so this stays free of platform nav.
+ * [WorkoutContract.ViewEffect]s the native host performs, so this stays free of platform nav.
  *
  * Session-lifecycle side effects that ARE platform-specific (rest timer, live
  * tile) are NOT here — the host observes [viewState].runningSession and
@@ -59,7 +58,7 @@ class WorkoutViewModel(
     initialDate: LocalDate,
     private val clock: Clock = Clock.System,
     private val timeZone: TimeZone = TimeZone.currentSystemDefault(),
-) : ViewModel(), MviModel<WorkoutUiState, WorkoutEffect, WorkoutAction> {
+) : ViewModel(), WorkoutContract.ViewModel {
 
     private val selectedDate = MutableStateFlow(initialDate)
     private val currentPageIndex = MutableStateFlow(0)
@@ -67,15 +66,15 @@ class WorkoutViewModel(
     private val workoutDays = MutableStateFlow<Set<LocalDate>>(emptySet())
 
     private val _uiState = MutableStateFlow(
-        WorkoutUiState.initial(initialDate, isToday = initialDate == today()),
+        WorkoutContract.ViewState.initial(initialDate, isToday = initialDate == today()),
     )
-    override val viewState: StateFlow<WorkoutUiState> = _uiState.asStateFlow()
+    override val viewState: StateFlow<WorkoutContract.ViewState> = _uiState.asStateFlow()
 
     // One-shot navigation / end-confirm outputs. Buffered single-consumer channel
     // (the host) via receiveAsFlow, so an effect emitted before the host starts
     // collecting isn't dropped — see kotlin-flow-state-event-modeling.
-    private val _effects = Channel<WorkoutEffect>(Channel.BUFFERED)
-    override val viewEffect: Flow<WorkoutEffect> = _effects.receiveAsFlow()
+    private val _effects = Channel<WorkoutContract.ViewEffect>(Channel.BUFFERED)
+    override val viewEffect: Flow<WorkoutContract.ViewEffect> = _effects.receiveAsFlow()
 
     // Resolved once from the shared UserSession (repositories are id-parameterised).
     private var userId: String? = null
@@ -94,31 +93,31 @@ class WorkoutViewModel(
 
     // ─── MVI entry point ────────────────────────────────────────────────
 
-    override fun dispatch(action: WorkoutAction) {
+    override fun dispatch(action: WorkoutContract.ViewAction) {
         when (action) {
-            is WorkoutAction.SelectDate -> onDateSelected(action.date)
-            is WorkoutAction.SelectPage -> onPageSelected(action.index)
-            WorkoutAction.ToggleCalendar -> onToggleCalendar()
-            is WorkoutAction.CalendarMonthChanged -> onCalendarMonthChanged(action.year, action.month)
-            WorkoutAction.StartSession -> onStartSession()
-            WorkoutAction.RequestEndSession -> emit(WorkoutEffect.RequestEndSession)
-            WorkoutAction.EndSession -> onEndSession()
-            is WorkoutAction.DeleteRecord -> onDeleteRecord(action.record)
-            is WorkoutAction.Reorder -> onReorder(action.orderedRecordIds)
-            is WorkoutAction.AddToSuperset -> onAddToSuperset(action.record)
-            is WorkoutAction.RemoveFromSuperset -> onRemoveFromSuperset(action.record, action.exercise)
-            is WorkoutAction.OpenExerciseFocus ->
-                emit(WorkoutEffect.OpenExerciseFocus(action.workoutExerciseId, action.workoutSetId, action.startAddingSet))
-            is WorkoutAction.OpenExerciseInfo ->
-                emit(WorkoutEffect.OpenExerciseInfo(action.exerciseId, action.section))
-            is WorkoutAction.EditNote -> emit(WorkoutEffect.EditNote(action.workoutExerciseId))
-            is WorkoutAction.ReplaceExercise -> emit(WorkoutEffect.ReplaceExercise(action.workoutExerciseId))
-            is WorkoutAction.AddExercise -> emit(WorkoutEffect.AddExercise(action.workoutNumber))
-            is WorkoutAction.CopyFromWorkout -> emit(WorkoutEffect.CopyFromWorkout(action.workoutNumber))
+            is WorkoutContract.ViewAction.SelectDate -> onDateSelected(action.date)
+            is WorkoutContract.ViewAction.SelectPage -> onPageSelected(action.index)
+            WorkoutContract.ViewAction.ToggleCalendar -> onToggleCalendar()
+            is WorkoutContract.ViewAction.CalendarMonthChanged -> onCalendarMonthChanged(action.year, action.month)
+            WorkoutContract.ViewAction.StartSession -> onStartSession()
+            WorkoutContract.ViewAction.RequestEndSession -> emit(WorkoutContract.ViewEffect.RequestEndSession)
+            WorkoutContract.ViewAction.EndSession -> onEndSession()
+            is WorkoutContract.ViewAction.DeleteRecord -> onDeleteRecord(action.record)
+            is WorkoutContract.ViewAction.Reorder -> onReorder(action.orderedRecordIds)
+            is WorkoutContract.ViewAction.AddToSuperset -> onAddToSuperset(action.record)
+            is WorkoutContract.ViewAction.RemoveFromSuperset -> onRemoveFromSuperset(action.record, action.exercise)
+            is WorkoutContract.ViewAction.OpenExerciseFocus ->
+                emit(WorkoutContract.ViewEffect.OpenExerciseFocus(action.workoutExerciseId, action.workoutSetId, action.startAddingSet))
+            is WorkoutContract.ViewAction.OpenExerciseInfo ->
+                emit(WorkoutContract.ViewEffect.OpenExerciseInfo(action.exerciseId, action.section))
+            is WorkoutContract.ViewAction.EditNote -> emit(WorkoutContract.ViewEffect.EditNote(action.workoutExerciseId))
+            is WorkoutContract.ViewAction.ReplaceExercise -> emit(WorkoutContract.ViewEffect.ReplaceExercise(action.workoutExerciseId))
+            is WorkoutContract.ViewAction.AddExercise -> emit(WorkoutContract.ViewEffect.AddExercise(action.workoutNumber))
+            is WorkoutContract.ViewAction.CopyFromWorkout -> emit(WorkoutContract.ViewEffect.CopyFromWorkout(action.workoutNumber))
         }
     }
 
-    private fun emit(effect: WorkoutEffect) {
+    private fun emit(effect: WorkoutContract.ViewEffect) {
         _effects.trySend(effect)
     }
 
@@ -164,7 +163,7 @@ class WorkoutViewModel(
         requestedPageIndex: Int,
         calendarVisible: Boolean,
         workoutDays: Set<LocalDate>,
-    ): WorkoutUiState {
+    ): WorkoutContract.ViewState {
         val pages = buildPages(records, daySessions)
         val pageIndex = requestedPageIndex.coerceIn(0, (pages.size - 1).coerceAtLeast(0))
         val currentPage = pages.getOrNull(pageIndex)
@@ -179,7 +178,7 @@ class WorkoutViewModel(
             isToday && currentPage?.session == null -> SessionBarState.Start
             else -> SessionBarState.Hidden
         }
-        return WorkoutUiState(
+        return WorkoutContract.ViewState(
             loading = false,
             selectedDate = date,
             isToday = isToday,

@@ -103,19 +103,19 @@ class ImportWorkoutViewModelTest {
         // initial (dest is empty → Empty, not Loading)
         withTimeout(5000) { model.viewState.first { it.content !is ImportContent.Loading } }
 
-        model.dispatch(ImportWorkoutAction.SelectSourceDate(src))
+        model.dispatch(ImportWorkoutContract.ViewAction.SelectSourceDate(src))
         val state = withTimeout(5000) { model.viewState.first { it.content is ImportContent.Loaded } }
         val loaded = state.content as ImportContent.Loaded
         assertEquals(2, loaded.selectedRecordIds.size)
 
         // dispatch() is synchronous, and onImport flips importInProgress before it
         // returns, so the second tap is guaranteed to hit the guard.
-        model.dispatch(ImportWorkoutAction.Import)
-        model.dispatch(ImportWorkoutAction.Import)
+        model.dispatch(ImportWorkoutContract.ViewAction.Import)
+        model.dispatch(ImportWorkoutContract.ViewAction.Import)
 
         // Exactly one Dismiss fires (from the single write).
         val effect = withTimeout(5000) { model.viewEffect.first() }
-        assertEquals(ImportWorkoutEffect.Dismiss, effect)
+        assertEquals(ImportWorkoutContract.ViewEffect.Dismiss, effect)
 
         val onDest = repo.getRecordsByDate(user, journal, dest)
         assertEquals(2, onDest.size, "one import, not two")

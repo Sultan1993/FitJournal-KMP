@@ -19,16 +19,16 @@ import kz.maestrosultan.fitjournal.domain.sync.SyncTrigger
 import kz.maestrosultan.fitjournal.domain.user.UserSessionState
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
-import kz.maestrosultan.fitjournal.ui.mvi.MviModel
 
 /**
- * Shared presentation for the "Copy from a workout" picker, in the [MviModel]
- * shape. Shows a source-day calendar, that day's records grouped into a pager
+ * Shared presentation for the "Copy from a workout" picker, in the per-screen
+ * MVI [ImportWorkoutContract] shape. Shows a source-day calendar, that day's
+ * records grouped into a pager
  * (one page per workoutNumber), and per-record selection (all pre-selected on
  * load — whole-workout copy is one tap, matching the native pickers). Importing
  * copies the selected records onto [destinationDate]'s workout
  * [destinationWorkoutNumber] (the page the + was tapped on) via the local-first
- * [RecordRepository], then emits [ImportWorkoutEffect.Dismiss].
+ * [RecordRepository], then emits [ImportWorkoutContract.ViewEffect.Dismiss].
  *
  * Host-owned: the host builds it, collects [viewEffect], and calls [dispose].
  */
@@ -38,13 +38,13 @@ class ImportWorkoutViewModel(
     private val destinationDate: LocalDate,
     private val destinationWorkoutNumber: Int,
     awaitSession: suspend () -> UserSessionState,
-) : ViewModel(), MviModel<ImportWorkoutUiState, ImportWorkoutEffect, ImportWorkoutAction> {
+) : ViewModel(), ImportWorkoutContract.ViewModel {
 
-    private val _uiState = MutableStateFlow(ImportWorkoutUiState.initial(destinationDate))
-    override val viewState: StateFlow<ImportWorkoutUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(ImportWorkoutContract.ViewState.initial(destinationDate))
+    override val viewState: StateFlow<ImportWorkoutContract.ViewState> = _uiState.asStateFlow()
 
-    private val _effects = Channel<ImportWorkoutEffect>(Channel.BUFFERED)
-    override val viewEffect: Flow<ImportWorkoutEffect> = _effects.receiveAsFlow()
+    private val _effects = Channel<ImportWorkoutContract.ViewEffect>(Channel.BUFFERED)
+    override val viewEffect: Flow<ImportWorkoutContract.ViewEffect> = _effects.receiveAsFlow()
 
     private var userId: String? = null
     private var journalId: String? = null
@@ -65,17 +65,17 @@ class ImportWorkoutViewModel(
         }
     }
 
-    override fun dispatch(action: ImportWorkoutAction) {
+    override fun dispatch(action: ImportWorkoutContract.ViewAction) {
         when (action) {
-            is ImportWorkoutAction.SelectSourceDate -> onSelectSourceDate(action.date)
-            ImportWorkoutAction.ToggleCalendar -> onToggleCalendar()
-            is ImportWorkoutAction.CalendarMonthChanged -> loadWorkoutDays(action.year, action.month)
-            is ImportWorkoutAction.SelectPage -> _uiState.update {
+            is ImportWorkoutContract.ViewAction.SelectSourceDate -> onSelectSourceDate(action.date)
+            ImportWorkoutContract.ViewAction.ToggleCalendar -> onToggleCalendar()
+            is ImportWorkoutContract.ViewAction.CalendarMonthChanged -> loadWorkoutDays(action.year, action.month)
+            is ImportWorkoutContract.ViewAction.SelectPage -> _uiState.update {
                 val loaded = it.content as? ImportContent.Loaded ?: return@update it
                 it.copy(content = loaded.copy(currentPageIndex = action.index))
             }
-            is ImportWorkoutAction.ToggleRecord -> onToggleRecord(action.recordId)
-            ImportWorkoutAction.Import -> onImport()
+            is ImportWorkoutContract.ViewAction.ToggleRecord -> onToggleRecord(action.recordId)
+            ImportWorkoutContract.ViewAction.Import -> onImport()
         }
     }
 
@@ -164,7 +164,7 @@ class ImportWorkoutViewModel(
             try {
                 recordRepository.addRecordsToWorkout(uid, jid, destinationDate, destinationWorkoutNumber, selected)
                 syncTrigger.requestTick(SyncReason.PostWrite.WorkoutRecord)
-                _effects.trySend(ImportWorkoutEffect.Dismiss)
+                _effects.trySend(ImportWorkoutContract.ViewEffect.Dismiss)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
