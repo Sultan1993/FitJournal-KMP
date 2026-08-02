@@ -1,7 +1,7 @@
 <resources>
     <!-- Workout pager / placeholder -->
     <string name="workout_another_workout_title">Another workout today</string>
-    <string name="workout_another_workout_subtitle">Press + to add exercises — they're logged as a separate workout. Leave this page empty and it isn't saved.</string>
+    <string name="workout_another_workout_subtitle">Press + to add exercises — they're logged as a separate workout.</string>
 
     <!-- Session bar -->
     <string name="workout_start">Start workout</string>
