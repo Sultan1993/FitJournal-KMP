@@ -144,6 +144,9 @@ object WorkoutContract {
         data class ReplaceExercise(val workoutExerciseId: String) : ViewAction
         data class AddExercise(val workoutNumber: Int) : ViewAction
         data class CopyFromWorkout(val workoutNumber: Int) : ViewAction
+
+        /** Share the finished workout on [workoutNumber]'s page (the 4b card's Share button). */
+        data class ShareWorkout(val workoutNumber: Int) : ViewAction
     }
 
     /**
@@ -165,6 +168,9 @@ object WorkoutContract {
 
         /** Copy a previous workout's records onto [workoutNumber]'s page (records picker). */
         data class CopyFromWorkout(val workoutNumber: Int) : ViewEffect
+
+        /** Share the finished workout on [workoutNumber]'s page — the host opens the post-workout share. */
+        data class ShareWorkout(val workoutNumber: Int) : ViewEffect
 
         /** End tapped — the host raises the shared post-workout confirm sheet. */
         data object RequestEndSession : ViewEffect

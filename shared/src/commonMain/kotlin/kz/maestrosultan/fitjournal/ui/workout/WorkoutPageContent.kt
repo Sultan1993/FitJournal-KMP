@@ -27,6 +27,7 @@ import kz.maestrosultan.fitjournal.ui.workout.components.FirstWorkoutPlaceholder
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutExerciseMenu
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutMuscleHeader
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutRecordCard
+import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutSessionCard
 import org.jetbrains.compose.resources.stringResource
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -94,7 +95,18 @@ fun WorkoutPageContent(
         contentPadding = PaddingValues(top = 24.dp, bottom = 140.dp),
     ) {
         item {
-            WorkoutMuscleHeader(orderedRecords)
+            // Finished + timed workout → the 4b card (times, duration, Share);
+            // otherwise the plain centered muscle title.
+            val session = page.session
+            if (session?.endedAt != null) {
+                WorkoutSessionCard(
+                    records = orderedRecords,
+                    session = session,
+                    onShare = { dispatch(WorkoutContract.ViewAction.ShareWorkout(page.workoutNumber)) },
+                )
+            } else {
+                WorkoutMuscleHeader(orderedRecords)
+            }
             Spacer(Modifier.height(12.dp))
         }
         items(orderedRecords, key = { it.id }) { record ->

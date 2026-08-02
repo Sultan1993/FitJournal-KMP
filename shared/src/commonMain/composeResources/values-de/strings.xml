@@ -6,6 +6,8 @@
     <!-- Session bar -->
     <string name="workout_start">Training starten</string>
     <string name="workout_end">Training beenden</string>
+    <string name="workout_duration_minutes">%1$d Min.</string>
+    <string name="workout_duration_hours_minutes">%1$d Std. %2$d Min.</string>
 
     <!-- Exercise card -->
     <string name="workout_add_set">Satz hinzufügen</string>

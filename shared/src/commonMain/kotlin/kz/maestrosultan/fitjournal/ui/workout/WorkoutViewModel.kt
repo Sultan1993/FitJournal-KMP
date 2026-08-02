@@ -118,6 +118,7 @@ class WorkoutViewModel(
             is WorkoutContract.ViewAction.ReplaceExercise -> emit(WorkoutContract.ViewEffect.ReplaceExercise(action.workoutExerciseId))
             is WorkoutContract.ViewAction.AddExercise -> emit(WorkoutContract.ViewEffect.AddExercise(action.workoutNumber))
             is WorkoutContract.ViewAction.CopyFromWorkout -> emit(WorkoutContract.ViewEffect.CopyFromWorkout(action.workoutNumber))
+            is WorkoutContract.ViewAction.ShareWorkout -> emit(WorkoutContract.ViewEffect.ShareWorkout(action.workoutNumber))
         }
     }
 
