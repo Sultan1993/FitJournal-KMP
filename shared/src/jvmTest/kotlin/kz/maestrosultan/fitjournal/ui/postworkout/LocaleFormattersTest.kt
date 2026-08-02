@@ -3,8 +3,8 @@ package kz.maestrosultan.fitjournal.ui.postworkout
 import java.util.Locale
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kz.maestrosultan.fitjournal.ui.postworkout.seams.LocaleFormatters
-import kz.maestrosultan.fitjournal.ui.postworkout.seams.formatDuration
+import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
+import kz.maestrosultan.fitjournal.ui.format.formatDuration
 
 class LocaleFormattersTest {
 

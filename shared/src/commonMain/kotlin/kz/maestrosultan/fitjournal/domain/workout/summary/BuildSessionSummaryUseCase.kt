@@ -4,6 +4,7 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
+import kz.maestrosultan.fitjournal.kmp.time.firstDayOfWeekFromLocale
 import kz.maestrosultan.fitjournal.domain.calculation.TonnageCalculator
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.exercise.Exercise
@@ -80,19 +81,23 @@ class BuildSessionSummaryUseCase(
     }
 
     /**
-     * `countCompletedSessionsBetween(monday..sunday, excluding this session) + 1`
-     * over the Mon-based ISO week of the session's date. While running, the
-     * session isn't completed (never counted); once ended, it's excluded by
-     * uuid — so the ordinal can't change when the workout ends.
+     * `countCompletedSessionsBetween(weekStart..weekEnd, excluding this session) + 1`
+     * over the session date's week, using the device locale's first day of week
+     * (so it agrees with the calendar — US weeks start Sunday, most others
+     * Monday). While running, the session isn't completed (never counted); once
+     * ended, it's excluded by uuid — so the ordinal can't change when the
+     * workout ends.
      */
     private suspend fun weekOrdinal(session: WorkoutSession): Int {
-        val monday = session.date.minus(session.date.dayOfWeek.isoDayNumber - 1, DateTimeUnit.DAY)
-        val sunday = monday.plus(6, DateTimeUnit.DAY)
+        val firstDay = firstDayOfWeekFromLocale()
+        val daysFromStart = (session.date.dayOfWeek.isoDayNumber - firstDay.isoDayNumber + 7) % 7
+        val weekStart = session.date.minus(daysFromStart, DateTimeUnit.DAY)
+        val weekEnd = weekStart.plus(6, DateTimeUnit.DAY)
         return sessions.countCompletedSessionsBetween(
             userId = session.userId,
             journalId = session.journalId,
-            from = monday,
-            to = sunday,
+            from = weekStart,
+            to = weekEnd,
             excludeSessionUuid = session.id,
         ) + 1
     }

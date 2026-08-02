@@ -140,4 +140,6 @@
     <!-- Copy-from-workout picker -->
     <string name="import_workout_add">Добавить в тренировку</string>
     <string name="import_workout_empty">Нет тренировок в этот день</string>
+    <string name="common_today">Сегодня</string>
+    <string name="common_yesterday">Вчера</string>
 </resources>

@@ -39,6 +39,8 @@ import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.Month
 import kotlinx.datetime.YearMonth
+import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
+import kz.maestrosultan.fitjournal.ui.format.NameStyle
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 
 /**
@@ -108,7 +110,7 @@ fun WorkoutCalendar(
                 onClick = { scope.launch { state.animateScrollToMonth(visibleMonth.offsetMonths(-1)) } },
             )
             Text(
-                text = "${visibleMonth.month.displayName()} ${visibleMonth.year}",
+                text = "${LocaleFormatters.monthName(visibleMonth.month.ordinal + 1, NameStyle.Full)} ${visibleMonth.year}",
                 style = FjTheme.typography.cardTitle,
                 color = FjTheme.colors.textPrimary,
                 textAlign = TextAlign.Center,
@@ -124,7 +126,7 @@ fun WorkoutCalendar(
         Row(modifier = Modifier.fillMaxWidth()) {
             for (day in weekDays) {
                 Text(
-                    text = day.shortLabel(),
+                    text = LocaleFormatters.weekdayName(day, NameStyle.Short),
                     style = FjTheme.typography.label,
                     color = FjTheme.colors.textTertiary,
                     textAlign = TextAlign.Center,
@@ -240,11 +242,3 @@ private fun YearMonth.offsetMonths(delta: Int): YearMonth {
     val total = year * 12 + month.ordinal + delta
     return YearMonth(total.floorDiv(12), Month(total.mod(12) + 1))
 }
-
-/** "March", "December" — from the enum name; commonMain has no locale month names. */
-private fun Month.displayName(): String =
-    name.lowercase().replaceFirstChar { it.uppercaseChar() }
-
-/** "Mon", "Sun" — enum-derived short label, multiplatform-safe. */
-private fun DayOfWeek.shortLabel(): String =
-    name.take(3).lowercase().replaceFirstChar { it.uppercaseChar() }

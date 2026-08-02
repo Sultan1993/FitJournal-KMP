@@ -134,4 +134,6 @@
     <!-- Copy-from-workout picker -->
     <string name="import_workout_add">Zum Training hinzufügen</string>
     <string name="import_workout_empty">Kein Training an diesem Tag</string>
+    <string name="common_today">Heute</string>
+    <string name="common_yesterday">Gestern</string>
 </resources>

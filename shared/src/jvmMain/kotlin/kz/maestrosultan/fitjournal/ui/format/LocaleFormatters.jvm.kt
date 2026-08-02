@@ -1,0 +1,71 @@
+package kz.maestrosultan.fitjournal.ui.format
+
+import java.text.DateFormat
+import java.text.NumberFormat
+import java.time.DayOfWeek as JavaDayOfWeek
+import java.time.Month
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.time.format.TextStyle
+import java.util.Date
+import java.util.Locale
+import kotlin.time.Instant
+import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.isoDayNumber
+import kotlinx.datetime.toJavaLocalDate
+
+/**
+ * jvm (test harness) actual. Names + first-day-of-week use `java.time`,
+ * identical to the Android actual. The skeleton date methods fall back to
+ * `ofLocalizedDate` styles because `getBestDateTimePattern` is Android-only —
+ * acceptable here since only jvmTest runs this, and its date assertions compare
+ * against this same function rather than a literal.
+ */
+actual object LocaleFormatters {
+
+    actual fun formatGrouped(value: Long): String =
+        NumberFormat.getIntegerInstance(Locale.getDefault()).format(value)
+
+    actual fun formatTimeShort(instant: Instant, timeZone: TimeZone): String {
+        val formatter = DateFormat.getTimeInstance(DateFormat.SHORT, Locale.getDefault())
+        formatter.timeZone = java.util.TimeZone.getTimeZone(timeZone.id)
+        return formatter.format(Date(instant.toEpochMilliseconds()))
+    }
+
+    actual fun formatFullDate(date: LocalDate): String =
+        DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)
+            .withLocale(Locale.getDefault())
+            .format(date.toJavaLocalDate())
+
+    actual fun formatDayMonthYear(date: LocalDate): String =
+        DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG)
+            .withLocale(Locale.getDefault())
+            .format(date.toJavaLocalDate())
+
+    actual fun ordinal(n: Int): String = when (Locale.getDefault().language) {
+        "en" -> {
+            val suffix = when {
+                n % 100 in 11..13 -> "th"
+                n % 10 == 1 -> "st"
+                n % 10 == 2 -> "nd"
+                n % 10 == 3 -> "rd"
+                else -> "th"
+            }
+            "$n$suffix"
+        }
+        "de" -> "$n."
+        "ru", "uk" -> "$n-й"
+        else -> n.toString()
+    }
+
+    actual fun monthName(month1to12: Int, style: NameStyle): String =
+        Month.of(month1to12).getDisplayName(style.standalone(), Locale.getDefault())
+
+    actual fun weekdayName(day: DayOfWeek, style: NameStyle): String =
+        JavaDayOfWeek.of(day.isoDayNumber).getDisplayName(style.standalone(), Locale.getDefault())
+
+    private fun NameStyle.standalone(): TextStyle =
+        if (this == NameStyle.Full) TextStyle.FULL_STANDALONE else TextStyle.SHORT_STANDALONE
+}

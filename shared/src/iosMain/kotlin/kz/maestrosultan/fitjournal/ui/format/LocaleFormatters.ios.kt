@@ -1,9 +1,11 @@
-package kz.maestrosultan.fitjournal.ui.postworkout.seams
+package kz.maestrosultan.fitjournal.ui.format
 
 import kotlin.time.Instant
+import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atTime
+import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toNSDate
 import kotlinx.datetime.toNSTimeZone
@@ -18,7 +20,7 @@ import platform.Foundation.NSNumberFormatterOrdinalStyle
 /**
  * Foundation-backed actuals (NSNumberFormatter/NSDateFormatter, current
  * locale). Formatters are created per call — they are not thread-safe and the
- * call volume (one summary render) makes caching pointless.
+ * call volume (a summary render, a calendar header) makes caching pointless.
  */
 actual object LocaleFormatters {
 
@@ -38,20 +40,15 @@ actual object LocaleFormatters {
         return formatter.stringFromDate(instant.toNSDate())
     }
 
-    actual fun formatFullDate(date: LocalDate): String {
-        // Noon UTC + a UTC formatter renders exactly the given calendar day,
-        // immune to the device zone shifting it across midnight.
-        val formatter = NSDateFormatter().apply {
-            dateFormat = "EEEE, d MMMM"
-            timeZone = TimeZone.UTC.toNSTimeZone()
-        }
-        val noonUtc = date.atTime(hour = 12, minute = 0).toInstant(TimeZone.UTC)
-        return formatter.stringFromDate(noonUtc.toNSDate())
-    }
+    actual fun formatFullDate(date: LocalDate): String = skeleton("EEEEdMMMM", date)
 
-    actual fun formatDayMonthYear(date: LocalDate): String {
+    actual fun formatDayMonthYear(date: LocalDate): String = skeleton("dMMMMy", date)
+
+    // Skeleton → locale pattern (order/separators per region), formatted in UTC
+    // against noon so the device zone can't shift the rendered calendar day.
+    private fun skeleton(template: String, date: LocalDate): String {
         val formatter = NSDateFormatter().apply {
-            dateFormat = "d MMMM yyyy"
+            setLocalizedDateFormatFromTemplate(template)
             timeZone = TimeZone.UTC.toNSTimeZone()
         }
         val noonUtc = date.atTime(hour = 12, minute = 0).toInstant(TimeZone.UTC)
@@ -63,5 +60,27 @@ actual object LocaleFormatters {
             numberStyle = NSNumberFormatterOrdinalStyle
         }
         return formatter.stringFromNumber(NSNumber(int = n)) ?: n.toString()
+    }
+
+    actual fun monthName(month1to12: Int, style: NameStyle): String {
+        val formatter = NSDateFormatter()
+        val symbols = if (style == NameStyle.Full) {
+            formatter.standaloneMonthSymbols
+        } else {
+            formatter.shortStandaloneMonthSymbols
+        }
+        return symbols?.getOrNull(month1to12 - 1) as? String ?: ""
+    }
+
+    actual fun weekdayName(day: DayOfWeek, style: NameStyle): String {
+        val formatter = NSDateFormatter()
+        val symbols = if (style == NameStyle.Full) {
+            formatter.standaloneWeekdaySymbols
+        } else {
+            formatter.shortStandaloneWeekdaySymbols
+        }
+        // NSDateFormatter weekday symbols are 0 = Sunday .. 6 = Saturday.
+        val index = day.isoDayNumber % 7 // MON(1)->1 .. SAT(6)->6, SUN(7)->0
+        return symbols?.getOrNull(index) as? String ?: ""
     }
 }

@@ -56,7 +56,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_tile_t
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_total_volume_caption
 import kz.maestrosultan.fitjournal.ui.common.FjPrimaryButton
 import kz.maestrosultan.fitjournal.ui.postworkout.format.nameRes
-import kz.maestrosultan.fitjournal.ui.postworkout.seams.formatDuration
+import kz.maestrosultan.fitjournal.ui.format.formatDuration
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource

@@ -27,12 +27,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.import_workout_add
 import kz.maestrosultan.fitjournal.shared.generated.resources.import_workout_empty
 import kz.maestrosultan.fitjournal.ui.common.PageDots
-import kz.maestrosultan.fitjournal.ui.postworkout.seams.LocaleFormatters
+import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
+import kz.maestrosultan.fitjournal.ui.format.relativeDayLabel
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutCalendar
@@ -71,7 +71,8 @@ private fun ImportWorkoutBody(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = state.sourceDate.displayLabel(),
+                text = relativeDayLabel(state.sourceDate)
+                    ?: LocaleFormatters.formatDayMonthYear(state.sourceDate),
                 style = FjTheme.typography.cardTitle,
                 color = FjTheme.colors.textPrimary,
                 modifier = Modifier.weight(1f),
@@ -192,6 +193,3 @@ private fun ImportButton(
         )
     }
 }
-
-/** "12 March 2024" style, localized via the platform date-formatter seam. */
-private fun LocalDate.displayLabel(): String = LocaleFormatters.formatDayMonthYear(this)

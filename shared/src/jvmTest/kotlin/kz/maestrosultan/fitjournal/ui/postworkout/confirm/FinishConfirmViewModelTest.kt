@@ -42,7 +42,7 @@ import kz.maestrosultan.fitjournal.domain.workout.summary.WeightedSetOccurrence
 import kz.maestrosultan.fitjournal.domain.workout.usecase.EndWorkoutUseCase
 import kz.maestrosultan.fitjournal.ui.postworkout.FinishResult
 import kz.maestrosultan.fitjournal.ui.postworkout.PostWorkoutContext
-import kz.maestrosultan.fitjournal.ui.postworkout.seams.LocaleFormatters
+import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutUserContext
 
 private const val USER = "user-1"

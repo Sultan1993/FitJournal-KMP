@@ -26,8 +26,8 @@ import kz.maestrosultan.fitjournal.domain.workout.summary.SessionSummary
 import kz.maestrosultan.fitjournal.domain.workout.usecase.EndWorkoutUseCase
 import kz.maestrosultan.fitjournal.ui.postworkout.FinishResult
 import kz.maestrosultan.fitjournal.ui.postworkout.PostWorkoutContext
-import kz.maestrosultan.fitjournal.ui.postworkout.seams.LocaleFormatters
-import kz.maestrosultan.fitjournal.ui.postworkout.seams.formatDuration
+import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
+import kz.maestrosultan.fitjournal.ui.format.formatDuration
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutUserContext
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
 

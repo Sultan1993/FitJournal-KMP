@@ -103,9 +103,9 @@ import kz.maestrosultan.fitjournal.ui.postworkout.composer.layouts.NewBestLayout
 import kz.maestrosultan.fitjournal.ui.postworkout.composer.layouts.ReceiptLayout
 import kz.maestrosultan.fitjournal.ui.postworkout.composer.layouts.StatsLayout
 import kz.maestrosultan.fitjournal.ui.postworkout.composer.layouts.receiptHiddenCount
-import kz.maestrosultan.fitjournal.ui.postworkout.seams.LocaleFormatters
+import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
 import kz.maestrosultan.fitjournal.ui.postworkout.seams.PostWorkoutHaptics
-import kz.maestrosultan.fitjournal.ui.postworkout.seams.formatDuration
+import kz.maestrosultan.fitjournal.ui.format.formatDuration
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
 import org.jetbrains.compose.resources.StringResource

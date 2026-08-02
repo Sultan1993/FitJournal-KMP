@@ -44,7 +44,7 @@ import kz.maestrosultan.fitjournal.domain.workout.summary.SessionSummary
 import kz.maestrosultan.fitjournal.ui.postworkout.FinishResult
 import kz.maestrosultan.fitjournal.ui.postworkout.PostWorkoutContext
 import kz.maestrosultan.fitjournal.ui.postworkout.format.MuscleTitleFormatter
-import kz.maestrosultan.fitjournal.ui.postworkout.seams.LocaleFormatters
+import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
 
 /**
  * [WorkoutSuccessViewModel] end-to-end through in-memory SQLite (mirroring
