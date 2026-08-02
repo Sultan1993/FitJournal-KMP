@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.hours
 import kotlinx.coroutines.delay
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
@@ -34,8 +35,11 @@ fun relativeDayLabel(date: LocalDate): String? {
             val day = now.toLocalDateTime(zone).date
             value = day
             // Sleep until the next local midnight, then recompute (relabels the
-            // screen on rollover). A zone change is picked up on the next tick.
-            delay(day.plus(1, DateTimeUnit.DAY).atStartOfDayIn(zone) - now)
+            // screen on rollover). ponytail: capped at 1h so a wall-clock/time-zone
+            // jump is reflected within the hour, not up to a full day; a platform
+            // TZ-change observer would be exact but is overkill for a date label.
+            val untilMidnight = day.plus(1, DateTimeUnit.DAY).atStartOfDayIn(zone) - now
+            delay(minOf(untilMidnight, 1.hours))
         }
     }
     return when (date) {

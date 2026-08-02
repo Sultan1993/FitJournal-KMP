@@ -1,6 +1,7 @@
 package kz.maestrosultan.fitjournal.domain.workout.summary
 
 import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
@@ -24,14 +25,19 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutSet
  * Exercise → muscle resolution follows the existing workout UI
  * (`exercise.primaryCategory.type` — see the platforms' workout-details
  * grouping); tonnage is [TonnageCalculator] over LOGGED sets only; the week
- * ordinal counts completed sessions in the session's Mon..Sun ISO week
- * excluding the session itself, + 1, which makes it identical before and
- * after ending by construction.
+ * ordinal counts completed sessions in the session's week (starting on
+ * [firstDayOfWeek]) excluding the session itself, + 1, which makes it identical
+ * before and after ending by construction.
+ *
+ * [firstDayOfWeek] is injected (defaulting to the device locale) rather than
+ * read from the process-global inside the use case, so week math stays pure and
+ * tests pin it explicitly instead of mutating the JVM default locale.
  */
 class BuildSessionSummaryUseCase(
     private val records: RecordRepository,
     private val sessions: WorkoutSessionRepository,
     private val detectSessionBest: DetectSessionBestUseCase,
+    private val firstDayOfWeek: DayOfWeek = firstDayOfWeekFromLocale(),
 ) {
 
     /**
@@ -89,8 +95,7 @@ class BuildSessionSummaryUseCase(
      * workout ends.
      */
     private suspend fun weekOrdinal(session: WorkoutSession): Int {
-        val firstDay = firstDayOfWeekFromLocale()
-        val daysFromStart = (session.date.dayOfWeek.isoDayNumber - firstDay.isoDayNumber + 7) % 7
+        val daysFromStart = (session.date.dayOfWeek.isoDayNumber - firstDayOfWeek.isoDayNumber + 7) % 7
         val weekStart = session.date.minus(daysFromStart, DateTimeUnit.DAY)
         val weekEnd = weekStart.plus(6, DateTimeUnit.DAY)
         return sessions.countCompletedSessionsBetween(

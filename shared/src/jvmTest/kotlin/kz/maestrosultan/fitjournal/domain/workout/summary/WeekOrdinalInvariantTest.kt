@@ -1,7 +1,7 @@
 package kz.maestrosultan.fitjournal.domain.workout.summary
 
-import java.util.Locale
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.data.exercise.datasource.CategoriesDBDataSource
 import kz.maestrosultan.fitjournal.data.exercise.datasource.ExercisesDBDataSource
@@ -12,8 +12,6 @@ import kz.maestrosultan.fitjournal.data.record.repository.DefaultRecordRepositor
 import kz.maestrosultan.fitjournal.data.session.datasource.WorkoutSessionsDBDataSource
 import kz.maestrosultan.fitjournal.data.session.repository.DefaultWorkoutSessionRepository
 import kz.maestrosultan.fitjournal.data.testExerciseMapper
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Clock
@@ -27,10 +25,10 @@ import kotlin.time.Instant
  * counted), once ended it's excluded by uuid. Plus the week boundary in both
  * directions.
  *
- * The week now starts on the locale's first day (matching the calendar), so
- * these tests pin the default locale to make the boundary deterministic:
- * [Locale.UK] (Monday-start) for most, and one case flips to [Locale.US]
- * (Sunday-start) to prove the boundary follows the locale.
+ * The week starts on the use case's injected [BuildSessionSummaryUseCase]
+ * firstDayOfWeek (in production the device locale, matching the calendar).
+ * These tests inject it explicitly — [mondayWeek] and [sundayWeek] — so the
+ * boundary is deterministic without mutating the JVM-global default locale.
  *
  * 2026-01: Sat 10, Sun 11, Mon 12, Wed 14, Fri 16, Sun 18, Mon 19.
  */
@@ -50,18 +48,16 @@ class WeekOrdinalInvariantTest {
     private val sessionsDB = WorkoutSessionsDBDataSource(db.workoutSessionsQueries)
     private val clock = StepClock(Instant.parse("2026-01-12T09:00:00Z"))
     private val sessionRepo = DefaultWorkoutSessionRepository(sessionsDB, clock)
-    private val buildSummary = BuildSessionSummaryUseCase(repo, sessionRepo, DetectSessionBestUseCase(repo))
+
+    // Explicitly-injected week start — no JVM-global locale mutation; each test
+    // uses the one whose boundary it exercises.
+    private val mondayWeek =
+        BuildSessionSummaryUseCase(repo, sessionRepo, DetectSessionBestUseCase(repo), DayOfWeek.MONDAY)
+    private val sundayWeek =
+        BuildSessionSummaryUseCase(repo, sessionRepo, DetectSessionBestUseCase(repo), DayOfWeek.SUNDAY)
+
     private val userId = "user-1"
     private val journalId = "journal-1"
-
-    private var savedLocale: Locale = Locale.getDefault()
-
-    @BeforeTest fun setUp() {
-        savedLocale = Locale.getDefault()
-        Locale.setDefault(Locale.UK) // Monday-start; deterministic regardless of the CI machine locale.
-    }
-
-    @AfterTest fun tearDown() = Locale.setDefault(savedLocale)
 
     /** Starts and immediately ends a session on [date]; returns its uuid. */
     private suspend fun completedSession(date: LocalDate, workoutNumber: Int = 1): String {
@@ -79,13 +75,13 @@ class WeekOrdinalInvariantTest {
         completedSession(LocalDate(2026, 1, 19)) // next Monday — out
 
         val running = sessionRepo.startSession(userId, journalId, LocalDate(2026, 1, 16), workoutNumber = 1)
-        val whileRunning = buildSummary(running).weekOrdinal
+        val whileRunning = mondayWeek(running).weekOrdinal
         assertEquals(3, whileRunning, "2 completed this week + this one = workout 3 of the week")
 
         val ended = sessionRepo.endSession(userId)!!
         assertEquals(
             whileRunning,
-            buildSummary(ended).weekOrdinal,
+            mondayWeek(ended).weekOrdinal,
             "ending the session must not change its ordinal (excludeSessionUuid makes it identical by construction)",
         )
     }
@@ -97,11 +93,11 @@ class WeekOrdinalInvariantTest {
         completedSession(monday, workoutNumber = 1) // earlier workout of the same Monday — counts
 
         val running = sessionRepo.startSession(userId, journalId, monday, workoutNumber = 2)
-        val whileRunning = buildSummary(running).weekOrdinal
+        val whileRunning = mondayWeek(running).weekOrdinal
         assertEquals(2, whileRunning, "Mon-start week: Sunday the 11th belongs to LAST week")
 
         val ended = sessionRepo.endSession(userId)!!
-        assertEquals(whileRunning, buildSummary(ended).weekOrdinal)
+        assertEquals(whileRunning, mondayWeek(ended).weekOrdinal)
     }
 
     @Test
@@ -111,12 +107,12 @@ class WeekOrdinalInvariantTest {
 
         val running = sessionRepo.startSession(userId, journalId, LocalDate(2026, 1, 18), workoutNumber = 1)
 
-        assertEquals(2, buildSummary(running).weekOrdinal, "a Sunday session closes the week that began Monday the 12th")
+        assertEquals(2, mondayWeek(running).weekOrdinal, "a Sunday session closes the week that began Monday the 12th")
     }
 
     @Test
-    fun sundayStartLocale_sundayOpensTheWeek(): Unit = runBlocking {
-        Locale.setDefault(Locale.US) // Sunday-start: the week containing Fri 16 is Sun 11 .. Sat 17.
+    fun sundayStart_sundayOpensTheWeek(): Unit = runBlocking {
+        // Sunday-start: the week containing Fri 16 is Sun 11 .. Sat 17.
         completedSession(LocalDate(2026, 1, 10)) // Saturday — previous week (Sun 4 .. Sat 10), out
         completedSession(LocalDate(2026, 1, 11)) // Sunday — now the FIRST day of this week, in
         completedSession(LocalDate(2026, 1, 12)) // Monday — this week, in
@@ -124,7 +120,7 @@ class WeekOrdinalInvariantTest {
         val running = sessionRepo.startSession(userId, journalId, LocalDate(2026, 1, 16), workoutNumber = 1)
         assertEquals(
             3,
-            buildSummary(running).weekOrdinal,
+            sundayWeek(running).weekOrdinal,
             "Sunday-start: Sun 11 + Mon 12 + this one = 3; Sat 10 belongs to last week",
         )
     }
