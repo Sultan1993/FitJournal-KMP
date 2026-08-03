@@ -521,7 +521,7 @@ class WorkoutSuccessViewModelTest {
     private class ThrowingReadsRecordRepository(
         private val delegate: RecordRepository,
     ) : RecordRepository by delegate {
-        override suspend fun getRecordsByDate(userId: String, journalId: String, date: LocalDate): List<WorkoutRecord> =
+        override suspend fun getRecordsByDate(userId: String, journalId: String, date: LocalDate, includeLastOccurrence: Boolean): List<WorkoutRecord> =
             throw IllegalStateException("record repository unavailable")
     }
 

@@ -107,7 +107,9 @@ class ImportWorkoutViewModel(
         val jid = journalId ?: return
         sourceLoadJob?.cancel()
         sourceLoadJob = viewModelScope.launch {
-            val records = recordRepository.getRecordsByDate(uid, jid, date)
+            // Read-only cards — no "last session" hints — so skip the per-exercise
+            // lastOccurrence SQL fallbacks that make a plain getRecordsByDate slow.
+            val records = recordRepository.getRecordsByDate(uid, jid, date, includeLastOccurrence = false)
             // Generation guard: a newer source selection supersedes this read.
             if (_uiState.value.sourceDate != date) return@launch
             val grouped = records.groupBy { it.workoutNumber }

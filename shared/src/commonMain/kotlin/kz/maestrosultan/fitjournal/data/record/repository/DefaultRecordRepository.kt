@@ -85,6 +85,7 @@ class DefaultRecordRepository(
         userId: String,
         journalId: String,
         date: LocalDate,
+        includeLastOccurrence: Boolean,
     ): List<WorkoutRecord> {
         val exerciseLookup = exerciseLookupForRead(userId)
         // Half-open one-day window: [date, date+1). LocalDate.toString()
@@ -93,7 +94,7 @@ class DefaultRecordRepository(
         val from = date.toString()
         val to = date.plusDaysSafe(1).toString()
         val trees = workoutsDB.getWorkoutRecordsByJournal(userId, journalId, from, to)
-        return toDomainList(trees, exerciseLookup)
+        return toDomainList(trees, exerciseLookup, includeLastOccurrence = includeLastOccurrence)
     }
 
     override suspend fun getRecordsByMonth(

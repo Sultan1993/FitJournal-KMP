@@ -41,12 +41,17 @@ interface RecordRepository {
      * The one read that populates `WorkoutExercise.lastOccurrence` (with its
      * Flow variant) — it backs the logging flow, which is the only consumer of
      * "what did I do last time".
+     *
+     * [includeLastOccurrence] defaults to true (the logging flow needs the
+     * hints). Pass false for read-only consumers that never render "last
+     * session" hints — e.g. the import picker — to skip the per-exercise
+     * "previous occurrence" SQL fallbacks, which are otherwise pure overhead.
      */
-
     suspend fun getRecordsByDate(
         userId: String,
         journalId: String,
         date: LocalDate,
+        includeLastOccurrence: Boolean = true,
     ): List<WorkoutRecord>
 
     /**

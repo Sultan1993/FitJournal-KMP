@@ -134,7 +134,7 @@ private class FakeSessionRepo(
 private class FakeRecordRepo(var records: List<WorkoutRecord>) : RecordRepository {
     var throwOnRead = false
 
-    override suspend fun getRecordsByDate(userId: String, journalId: String, date: LocalDate): List<WorkoutRecord> {
+    override suspend fun getRecordsByDate(userId: String, journalId: String, date: LocalDate, includeLastOccurrence: Boolean): List<WorkoutRecord> {
         if (throwOnRead) throw IllegalStateException("read boom")
         return records
     }
