@@ -104,11 +104,28 @@ private fun ImportWorkoutBody(
 
             // The source day's records — always present; the calendar (above) just
             // pushes them down when it expands.
+            //
+            // When collapsed, the records sit directly under the host's opaque nav
+            // bar. Without a top inset they'd scroll UNDER it with a hard edge and
+            // the pager's TopFadeScrim (pinned to the pager top) would hide behind
+            // the nav bar. Inset by the top safe area so the scrim lands just below
+            // the nav bar and content fades out there — matching the fade you get
+            // below the calendar when it's open. Only when collapsed: when the
+            // calendar is open it already occupies (and pads) the top itself.
             ImportContentArea(
                 content = state.content,
                 measurementSystem = state.measurementSystem,
                 dispatch = dispatch,
-                modifier = Modifier.fillMaxWidth().weight(1f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .then(
+                        if (!state.calendarExpanded) {
+                            Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
+                        } else {
+                            Modifier
+                        },
+                    ),
             )
         }
 
