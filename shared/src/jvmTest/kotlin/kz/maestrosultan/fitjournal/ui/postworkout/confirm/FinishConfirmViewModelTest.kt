@@ -274,6 +274,11 @@ class FinishConfirmViewModelTest {
 
     @AfterTest
     fun tearDown() {
+        // Before Dispatchers.resetMain, and unconditionally: a test that failed
+        // mid-body never reached its own vm.dispose(), and a live tick loop
+        // makes runTest hang instead of surfacing the failure.
+        built.forEach { it.dispose() }
+        built.clear()
         Dispatchers.resetMain()
     }
 
@@ -333,7 +338,7 @@ class FinishConfirmViewModelTest {
         record(1, listOf(workoutExercise("Squat", listOf(set(100.0, 5), set(null, 12))))),
     )
 
-    private class TestBed(records: List<WorkoutRecord>) {
+    private inner class TestBed(records: List<WorkoutRecord>) {
         val clock = StepClock(T0)
         val session = WorkoutSession(
             id = "session-1",
@@ -354,8 +359,19 @@ class FinishConfirmViewModelTest {
             userContext = FakeUserContext(),
             units = MeasurementSystem.KG_KM,
             clock = clock,
-        )
+        ).also { built += it }
     }
+
+    /**
+     * Every VM this class builds, disposed in [tearDown].
+     *
+     * The VM runs a 1 Hz tick loop in its own scope, and `runTest` will not
+     * return while that loop is alive. Tests call `vm.dispose()` on their last
+     * line, so before this existed ANY failing assertion skipped the dispose
+     * and the whole suite HUNG instead of reporting the failure — a one-line
+     * expectation change cost far more to diagnose than it should have.
+     */
+    private val built = mutableListOf<FinishConfirmViewModel>()
 
     private fun TestScope.collectFinished(vm: FinishConfirmViewModel): List<FinishResult> {
         val events = mutableListOf<FinishResult>()
@@ -385,7 +401,11 @@ class FinishConfirmViewModelTest {
         assertFalse(state.isFallback)
         assertEquals(LocaleFormatters.formatFullDate(DATE), state.dateText)
         assertEquals("0:05", state.durationText)
-        assertEquals("1580", state.tonnageValue, "60×10 + 60×8 + 100×5; the planned reps-only set adds nothing")
+        assertEquals(
+            "1,580",
+            state.tonnageValue,
+            "60×10 + 60×8 + 100×5; the planned reps-only set adds nothing. Grouped, per design W4a",
+        )
         assertEquals("kg", state.tonnageUnit)
         assertEquals(3, state.setsCount)
         assertEquals(2, state.exercisesCount)

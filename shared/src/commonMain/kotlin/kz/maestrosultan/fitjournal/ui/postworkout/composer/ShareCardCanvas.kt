@@ -1018,7 +1018,14 @@ internal fun shareCardData(
                 distanceText = line.totalDistance
                     ?.takeIf { it > 0.0 }
                     ?.let { WorkoutValueFormatter.value(it, ResultType.DISTANCE_DURATION, units) },
-                durationText = line.totalDurationSec?.let { formatDuration(it.toLong()) },
+                // Guarded like distance above, and for the same reason: the
+                // duration is summed to a non-null 0 for a row that logged
+                // neither, and the receipt's fallback chain ends here — so
+                // without this the card prints "0:00" where the success rail
+                // correctly shows nothing at all.
+                durationText = line.totalDurationSec
+                    ?.takeIf { it > 0 }
+                    ?.let { formatDuration(it.toLong()) },
             )
         },
         moreLabel = if (hidden > 0) stringResource(Res.string.postworkout_more_format, hidden) else null,
@@ -1059,6 +1066,10 @@ internal fun shareCardData(
 
 /** Thousands-grouped tonnage ("14,850") — the card never shows fractional kilos. */
 private fun groupedTonnage(kg: Double): String = LocaleFormatters.formatGrouped(kg.roundToLong())
+// NOTE: the card composes number and unit separately, so it keeps this
+// number-only helper. The combined form lives on
+// WorkoutValueFormatter.groupedTonnage, which the success screen and the
+// confirm sheet use — all three round and group identically.
 
 /**
  * Single source for the weight unit label, borrowed off [WorkoutValueFormatter]

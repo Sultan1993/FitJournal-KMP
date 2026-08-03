@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -76,6 +77,9 @@ private val FooterFadeHeight = 44.dp
 private const val BarAnimationMillis = 300
 private const val BarStaggerMillis = 40
 
+/** Design W4b sizes the pinned header row by its 40dp close control, not by the chip. */
+private val HeaderRowMinHeight = 40.dp
+
 /** Rail row metrics — the connector inset is derived from them so it always meets the dot centers. */
 private val RailRowVerticalPadding = 5.dp
 private val RailDotSize = 9.dp
@@ -123,7 +127,13 @@ fun WorkoutSuccessScreen(
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .padding(start = 24.dp, end = 24.dp, top = 4.dp),
+                    .padding(start = 24.dp, end = 24.dp, top = 4.dp)
+                    // The frame's row is sized by the 40dp close control, not by
+                    // the chip. That control is native chrome here, so without a
+                    // floor the row shrinks to the shorter chip and everything
+                    // below starts ~7dp high. It also centres the chip against
+                    // the host's close button on iOS.
+                    .heightIn(min = HeaderRowMinHeight),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 SavedToJournalChip()

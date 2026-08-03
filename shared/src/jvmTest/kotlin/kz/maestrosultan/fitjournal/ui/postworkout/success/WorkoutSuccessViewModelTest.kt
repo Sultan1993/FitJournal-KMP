@@ -6,6 +6,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -186,7 +187,11 @@ class WorkoutSuccessViewModelTest {
 
         assertEquals("cat-QUADRICEPS · cat-CHEST", state.title)
         assertEquals(expectedDateLine(), state.dateLine)
-        assertEquals("1365 kg", state.tonnageText, "105×3 + 90×5 + 60×10, unit from result.context")
+        assertEquals(
+            "1,365 kg",
+            state.tonnageText,
+            "105×3 + 90×5 + 60×10, unit from result.context, grouped as design W4b shows it",
+        )
         assertEquals(3, state.loggedSets)
         assertEquals(2, state.exerciseCount)
         assertEquals(
@@ -377,6 +382,33 @@ class WorkoutSuccessViewModelTest {
             state,
             "bare fallback EXACTLY: fallback title, every section at its hidden default, haptic armed",
         )
+    }
+
+    /**
+     * A timed row with the distance left at 0, end to end through the real
+     * BuildSessionSummaryUseCase and the real rail mapping — not a pre-nulled
+     * fixture.
+     *
+     * The distance must be an explicit 0.0, not null: `WorkoutSet.isLogged` is
+     * `displayValue != null`, which for DISTANCE_DURATION IS the distance, so a
+     * null-distance set is not logged at all and produces no aggregate. Zero is
+     * the reachable case (WorkoutSet documents 0 as 3.2% of production sets),
+     * and it is what used to render "0 km · 0:32" instead of just the clock.
+     *
+     * Also pins the unit contract: 32 minutes in, 1920 seconds out.
+     */
+    @Test
+    fun durationOnlyExercise_dropsTheZeroDistanceFromTheRail(): Unit = runTest(dispatcher) {
+        val rower = seedExercise("Rowing Machine", CategoryType.QUADRICEPS, ResultType.DISTANCE_DURATION)
+        val rowerWe = addOccurrence(rower, date)
+        repo.addSet(userId, journalId, rowerWe, null, null, 0.0, 32)
+
+        val state = awaitState(viewModel(finishResult(endedSession())))
+
+        val line = state.exercises.single { it.name == "Rowing Machine" }
+        val aggregate = assertIs<RailAggregate.DistanceDuration>(line.aggregate)
+        assertNull(aggregate.distanceText, "a zero distance must not reach the UI as \"0 km\"")
+        assertEquals(1920, aggregate.durationSec, "32 logged minutes must arrive as 1920 seconds")
     }
 
     // ─── Read-only contract ───────────────────────────────────────────────

@@ -160,7 +160,10 @@ class WorkoutSuccessViewModel internal constructor(
                 LocaleFormatters.formatTimeShort(session.startedAt, timeZone) + "–" +
                 LocaleFormatters.formatTimeShort(session.endedAt ?: now, timeZone),
             tonnageText = if (summary.loggedSets > 0) {
-                WorkoutValueFormatter.value(summary.tonnageKg, ResultType.WEIGHT_REPS, units)
+                // Grouped: this is the hero number of the screen and design W4b
+                // shows "14,850". The share card already grouped, so an
+                // ungrouped hero also disagreed with the image made from it.
+                WorkoutValueFormatter.groupedTonnage(summary.tonnageKg, units)
             } else {
                 null // nothing logged — a "0 kg" hero number celebrates nothing
             },

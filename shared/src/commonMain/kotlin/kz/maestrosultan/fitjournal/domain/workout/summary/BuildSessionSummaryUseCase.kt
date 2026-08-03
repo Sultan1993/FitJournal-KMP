@@ -150,7 +150,14 @@ class BuildSessionSummaryUseCase(
         return when (exercise.resultType) {
             ResultType.DISTANCE_DURATION -> LineAggregates(
                 totalDistance = logged.sumOf { it.distance ?: 0.0 },
-                totalDurationSec = logged.sumOf { it.duration ?: 0 },
+                // WorkoutSet.duration is MINUTES — that is what the user types
+                // and what every other surface renders ("12 min" via
+                // WorkoutValueFormatter, "8 km x 32 min" in the iOS coach
+                // prompt). This field is seconds, as its name says and as its
+                // consumers require: both the success rail and the share card
+                // hand it straight to formatDuration(seconds). Without the
+                // conversion a 32-minute run printed "0:00".
+                totalDurationSec = logged.sumOf { it.duration ?: 0 } * SECONDS_PER_MINUTE,
             )
             // BOTH aggregates, always — they are independent measures of the
             // same sets, not alternatives:
@@ -171,6 +178,11 @@ class BuildSessionSummaryUseCase(
                 totalReps = logged.sumOf { it.reps ?: 0 },
             )
         }
+    }
+
+    /** WorkoutSet.duration is stored in minutes; ExerciseLine.totalDurationSec is seconds. */
+    private companion object {
+        const val SECONDS_PER_MINUTE = 60
     }
 
     private data class LineAggregates(

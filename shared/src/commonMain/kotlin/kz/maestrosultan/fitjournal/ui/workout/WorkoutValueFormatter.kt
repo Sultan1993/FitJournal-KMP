@@ -1,7 +1,9 @@
 package kz.maestrosultan.fitjournal.ui.workout
 
+import kotlin.math.roundToLong
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
+import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
 
 /**
  * Formats set values for display. Presentation-only: it never re-derives which
@@ -45,6 +47,23 @@ object WorkoutValueFormatter {
 
     /** Just the number: "70", "2.5", or "—". */
     fun number(value: Double?): String = value?.let { trimNumber(it) } ?: EMPTY
+
+    /**
+     * A session-total tonnage for a headline: locale-grouped, with the unit —
+     * "14,850 kg" (and "14 850 kg" where the locale groups with a space).
+     *
+     * Deliberately separate from [value], which never groups: separators earn
+     * their keep on a five-digit session total and only clutter a "70 kg" set
+     * row. Design frames W4a and W4b and the share card all show the grouped
+     * form, and this is the one implementation all three call so they cannot
+     * disagree about the same session's number.
+     *
+     * Rounds to whole units, matching the frames — a session total is never
+     * shown with decimals. Like [value] this relabels rather than converts:
+     * stored values are already in the user's preferred unit.
+     */
+    fun groupedTonnage(kg: Double, system: MeasurementSystem): String =
+        "${LocaleFormatters.formatGrouped(kg.roundToLong())} ${unit(ResultType.WEIGHT_REPS, system)}"
 
     /** The value's unit alone: "kg"/"lb" (weight) or "km"/"mi" (distance). */
     fun unit(resultType: ResultType, system: MeasurementSystem): String = when (resultType) {

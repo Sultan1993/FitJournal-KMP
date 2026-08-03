@@ -1,5 +1,8 @@
 package kz.maestrosultan.fitjournal.ui.postworkout.success
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.getBoundsInRoot
@@ -110,18 +113,44 @@ class WorkoutSuccessScreenTest {
         assertTrue(width > 0.dp, "rail connector collapsed to $width wide")
     }
 
-    /** Design W4b marks the chip's row `flex: none` — it must not scroll away. */
+    /**
+     * Design W4b marks the chip's row `flex: none` — it must not scroll away.
+     *
+     * The screen is pinned to a short surface on purpose: at the test default
+     * of 1024x768 this fixture fits without overflowing, `performScrollTo()`
+     * becomes a no-op, and "the chip did not move" would pass on a screen where
+     * NOTHING moves. The body assertion below is what keeps this honest.
+     */
     @Test
     fun savedChip_staysPinned_whenTheBodyScrolls() = runComposeUiTest {
-        setScreen(fullState(personalRecord = null))
+        setContent {
+            FitJournalTheme(darkTheme = false) {
+                Box(Modifier.requiredSize(402.dp, 480.dp)) {
+                    WorkoutSuccessScreen(
+                        state = fullState(personalRecord = null),
+                        onShare = {},
+                        onOpenRecord = {},
+                        onHapticConsumed = {},
+                    )
+                }
+            }
+        }
+        waitForIdle()
 
-        val before = onNodeWithText("Saved to journal").getBoundsInRoot().top
-        // Drag a bottom-of-content node into view; the chip must not follow.
+        val chipBefore = onNodeWithText("Saved to journal").getBoundsInRoot().top
+        val bodyBefore = onNodeWithText("Chest").getBoundsInRoot().top
+
         onNodeWithText("Treadmill Run").performScrollTo()
         waitForIdle()
-        val after = onNodeWithText("Saved to journal").getBoundsInRoot().top
 
-        assertEquals(before, after, "the saved-to-journal chip scrolled with the body")
+        val chipAfter = onNodeWithText("Saved to journal").getBoundsInRoot().top
+        val bodyAfter = onNodeWithText("Chest").getBoundsInRoot().top
+
+        assertTrue(
+            bodyAfter < bodyBefore,
+            "the body never scrolled ($bodyBefore -> $bodyAfter), so the pin assertion proves nothing",
+        )
+        assertEquals(chipBefore, chipAfter, "the saved-to-journal chip scrolled with the body")
     }
 
     /** Nothing is shareable until the summary lands. */

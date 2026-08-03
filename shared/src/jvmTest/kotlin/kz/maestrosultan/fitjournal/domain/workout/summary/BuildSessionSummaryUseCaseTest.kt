@@ -203,8 +203,9 @@ class BuildSessionSummaryUseCaseTest {
         repo.addSet(userId, journalId, squatWe, 100.0, 5, null, null)
         repo.addSet(userId, journalId, pushupWe, 0.0, 12, null, null)
         repo.addSet(userId, journalId, pushupWe, 0.0, 10, null, null)
-        repo.addSet(userId, journalId, runWe, null, null, 5.0, 600)
-        repo.addSet(userId, journalId, runWe, null, null, 3.0, 300)
+        // duration is MINUTES at the set level (10 + 5), seconds on the line.
+        repo.addSet(userId, journalId, runWe, null, null, 5.0, 10)
+        repo.addSet(userId, journalId, runWe, null, null, 3.0, 5)
 
         val summary = summarize()
 
@@ -232,7 +233,7 @@ class BuildSessionSummaryUseCaseTest {
         assertNull(run.tonnageKg)
         assertNull(run.totalReps)
         assertEquals(8.0, run.totalDistance)
-        assertEquals(900, run.totalDurationSec)
+        assertEquals(900, run.totalDurationSec, "15 logged minutes, exposed as seconds")
         assertEquals(CategoryType.CARDIO, run.category)
     }
 

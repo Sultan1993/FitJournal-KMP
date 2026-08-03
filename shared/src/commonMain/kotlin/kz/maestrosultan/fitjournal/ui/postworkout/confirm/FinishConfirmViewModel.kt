@@ -206,9 +206,13 @@ class FinishConfirmViewModel(
     }
 
     private fun stateOf(session: WorkoutSession, summary: SessionSummary?): FinishConfirmContract.ViewState {
-        // Single source for number-trimming AND unit choice; split so the sheet
-        // can render the big number and its unit label separately.
-        val tonnage = WorkoutValueFormatter.value(summary?.tonnageKg ?: 0.0, ResultType.WEIGHT_REPS, units)
+        // Single source for grouping AND unit choice; split so the sheet can
+        // render the big number and its unit label separately. Grouped because
+        // design W4a's session card shows "14,850" — and because the success
+        // screen this sheet leads into shows the same total.
+        // substringBeforeLast/AfterLast still split correctly under locales
+        // that group with a space ("14 850 kg").
+        val tonnage = WorkoutValueFormatter.groupedTonnage(summary?.tonnageKg ?: 0.0, units)
         return FinishConfirmContract.ViewState(
             loading = false,
             isFallback = summary == null,
