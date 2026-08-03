@@ -97,8 +97,8 @@ private fun WorkoutSetItem(position: Int, set: SetDisplay, onClick: (() -> Unit)
         modifier = Modifier
             .fillMaxWidth()
             .height(44.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            // clip + clickable only when tappable — an import (null-onClick) row is fully inert.
+            .then(if (onClick != null) Modifier.clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick) else Modifier)
             .testTag("set_row"),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
