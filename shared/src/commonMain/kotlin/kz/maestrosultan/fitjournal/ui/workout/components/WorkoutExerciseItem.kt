@@ -1,5 +1,6 @@
 package kz.maestrosultan.fitjournal.ui.workout.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,11 +11,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.em
@@ -23,7 +28,9 @@ import androidx.compose.ui.unit.dp
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
+import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_check
 import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_options
+import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_plus
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_sets
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_exercise_note_label
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
@@ -47,6 +54,8 @@ fun WorkoutExerciseItem(
     onAddSet: () -> Unit,
     onMenu: () -> Unit,
     modifier: Modifier = Modifier,
+    isImporting: Boolean = false,
+    isSelected: Boolean = false,
 ) {
     val resultType = exercise.exercise.resultType
     val note = exercise.comment?.takeIf { it.isNotBlank() }
@@ -89,19 +98,24 @@ fun WorkoutExerciseItem(
                     maxLines = 1,
                 )
             }
-            Box(
-                // Clickable first so the padding is part of the tap target; a
-                // smaller end inset nudges the glyph toward the card edge.
-                modifier = Modifier
-                    .clickable(onClick = onMenu)
-                    .padding(start = 8.dp, top = 8.dp, bottom = 8.dp, end = 4.dp),
-            ) {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_common_options),
-                    contentDescription = null,
-                    tint = FjTheme.colors.textSecondary,
-                    modifier = Modifier.size(20.dp),
-                )
+            if (isImporting) {
+                SelectionCircle(isSelected = isSelected)
+            } else {
+                Box(
+                    // Clickable first so the padding is part of the tap target; a
+                    // smaller end inset nudges the glyph toward the card edge.
+                    modifier = Modifier
+                        .clickable(onClick = onMenu)
+                        .padding(start = 8.dp, top = 8.dp, bottom = 8.dp, end = 4.dp)
+                        .testTag("exercise_options"),
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_common_options),
+                        contentDescription = null,
+                        tint = FjTheme.colors.textSecondary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
             }
         }
 
@@ -129,8 +143,8 @@ fun WorkoutExerciseItem(
 
         WorkoutSetRail(
             sets = sets,
-            showAddSet = true,
-            onSetClick = onSetClick,
+            showAddSet = !isImporting,
+            onSetClick = if (isImporting) null else onSetClick,
             onAddSet = onAddSet,
             // No note → the header gap lives here; with a note the note block
             // owns the top gap. Rail content sits at 18 (16 card + 2) so the dot
@@ -138,6 +152,30 @@ fun WorkoutExerciseItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = if (note == null) 8.dp else 0.dp, start = 18.dp, end = 18.dp),
+        )
+    }
+}
+
+/**
+ * 36dp circular selection indicator shown in import mode in place of the
+ * options trigger. Display-only — the card itself is the tap target (wired
+ * in a later task), so no clickable here.
+ */
+@Composable
+private fun SelectionCircle(isSelected: Boolean) {
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .clip(CircleShape)
+            .background(if (isSelected) FjTheme.colors.brand else FjTheme.colors.brand.copy(alpha = 0.1f))
+            .testTag("selection_circle"),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            painter = painterResource(if (isSelected) Res.drawable.ic_common_check else Res.drawable.ic_common_plus),
+            contentDescription = null,
+            tint = if (isSelected) Color.White else FjTheme.colors.brand,
+            modifier = Modifier.size(16.dp),
         )
     }
 }

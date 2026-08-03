@@ -24,6 +24,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -53,7 +54,7 @@ data class SetDisplay(
 fun WorkoutSetRail(
     sets: List<SetDisplay>,
     showAddSet: Boolean,
-    onSetClick: (setId: String) -> Unit,
+    onSetClick: ((setId: String) -> Unit)?,
     onAddSet: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -74,7 +75,11 @@ fun WorkoutSetRail(
         },
     ) {
         sets.forEachIndexed { index, set ->
-            WorkoutSetItem(position = index + 1, set = set, onClick = { onSetClick(set.setId) })
+            WorkoutSetItem(
+                position = index + 1,
+                set = set,
+                onClick = onSetClick?.let { cb -> { cb(set.setId) } },
+            )
         }
         if (showAddSet) {
             AddSetRow(onAddSet)
@@ -83,7 +88,7 @@ fun WorkoutSetRail(
 }
 
 @Composable
-private fun WorkoutSetItem(position: Int, set: SetDisplay, onClick: () -> Unit) {
+private fun WorkoutSetItem(position: Int, set: SetDisplay, onClick: (() -> Unit)?) {
     val bigStyle = FjTheme.typography.body.copy(fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
     val smallStyle = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Medium)
     val isGhost = set.number == EM_DASH && set.repsNumber == EM_DASH
@@ -93,7 +98,8 @@ private fun WorkoutSetItem(position: Int, set: SetDisplay, onClick: () -> Unit) 
             .fillMaxWidth()
             .height(44.dp)
             .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick),
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .testTag("set_row"),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -133,7 +139,8 @@ private fun AddSetRow(onAddSet: () -> Unit) {
             .fillMaxWidth()
             .height(46.dp)
             .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onAddSet),
+            .clickable(onClick = onAddSet)
+            .testTag("add_set_row"),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {

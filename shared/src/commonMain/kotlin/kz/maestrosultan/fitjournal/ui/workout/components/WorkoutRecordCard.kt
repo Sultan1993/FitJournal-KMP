@@ -47,6 +47,8 @@ fun WorkoutRecordCard(
     onAddSet: (workoutExerciseId: String) -> Unit,
     onExerciseMenu: (WorkoutExercise) -> Unit,
     modifier: Modifier = Modifier,
+    isImporting: Boolean = false,
+    isSelected: Boolean = false,
 ) {
     Column(
         // 14 above the first block, 8 below the last; the exercise items and
@@ -88,6 +90,8 @@ fun WorkoutRecordCard(
                 onSetClick = { setId -> onSetClick(exercise.id, setId) },
                 onAddSet = { onAddSet(exercise.id) },
                 onMenu = { onExerciseMenu(exercise) },
+                isImporting = isImporting,
+                isSelected = isSelected,
             )
             if (index != record.exercises.lastIndex) {
                 DashedDivider(
