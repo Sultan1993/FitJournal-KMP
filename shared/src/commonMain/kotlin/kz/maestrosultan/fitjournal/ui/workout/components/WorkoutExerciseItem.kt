@@ -67,6 +67,9 @@ fun WorkoutExerciseItem(
             unit = WorkoutValueFormatter.unit(resultType, measurementSystem),
             repsNumber = WorkoutValueFormatter.repsNumber(values.reps),
             repsUnit = WorkoutValueFormatter.repsUnit(resultType),
+            // Style actual vs target off the set's OWN logged state, not the
+            // displayed value (which may be a ghost) — matches native WorkoutSetView.
+            isLogged = set.isLogged,
         )
     }
 

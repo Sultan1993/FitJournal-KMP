@@ -44,6 +44,10 @@ data class SetDisplay(
     val unit: String,       // "kg" (skipped when [number] is the em-dash)
     val repsNumber: String, // "8" / "—"
     val repsUnit: String,   // "" (weight×reps) or "min" (distance/duration)
+    // Actual (logged) vs target (planned) value styling: a logged set renders
+    // full-strength, a not-logged one dims to 0.3 — the set's OWN value decides,
+    // not the displayed number (which may be a ghost). Mirrors native WorkoutSetView.
+    val isLogged: Boolean,
 )
 
 /**
@@ -91,7 +95,6 @@ fun WorkoutSetRail(
 private fun WorkoutSetItem(position: Int, set: SetDisplay, onClick: (() -> Unit)?) {
     val bigStyle = FjTheme.typography.body.copy(fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
     val smallStyle = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Medium)
-    val isGhost = set.number == EM_DASH && set.repsNumber == EM_DASH
 
     Row(
         modifier = Modifier
@@ -112,7 +115,8 @@ private fun WorkoutSetItem(position: Int, set: SetDisplay, onClick: (() -> Unit)
         )
         Row(
             horizontalArrangement = Arrangement.spacedBy(5.dp),
-            modifier = Modifier.alpha(if (isGhost) 0.4f else 1f),
+            // Actual (logged) = full strength; target/planned = dimmed to 0.3 (native parity).
+            modifier = Modifier.alpha(if (set.isLogged) 1f else 0.3f),
         ) {
             Text(set.number, style = bigStyle, color = FjTheme.colors.textPrimary, modifier = Modifier.alignByBaseline())
             if (set.unit.isNotEmpty() && set.number != EM_DASH) {
