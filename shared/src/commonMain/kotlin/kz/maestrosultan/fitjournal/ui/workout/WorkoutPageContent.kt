@@ -34,7 +34,7 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 
 /**
  * One pager page. The ephemeral placeholder page (or any empty real page)
- * renders the "Another workout today" empty state; otherwise the muscle header +
+ * renders the "Log another workout" empty state; otherwise the muscle header +
  * a scrolling list of record cards, with the 3-dot menu hoisted here. Every
  * interaction goes out through [dispatch] — no per-callback plumbing.
  *

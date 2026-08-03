@@ -1,6 +1,6 @@
 <resources>
     <!-- Workout pager / placeholder -->
-    <string name="workout_another_workout_title">Another workout today</string>
+    <string name="workout_another_workout_title">Log another workout</string>
     <string name="workout_another_workout_subtitle">Press + to add exercises — they're logged as a separate workout.</string>
 
     <!-- Session bar -->

@@ -12,10 +12,11 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutSession
 
 /**
  * One horizontal page of the pager = one workout of the day. Records materialise
- * pages; [session] is that page's timing if any. The last page is always the
- * ephemeral [isPlaceholder] one ("Another workout today") at max+1 — it holds no
- * records yet, though it can carry a running session started there but not yet
- * logged into.
+ * pages; [session] is that page's timing if any.
+ *
+ * A trailing ephemeral [isPlaceholder] page ("Log another workout") sits at
+ * max+1 — but only when the day's last workout has records; see
+ * [buildWorkoutPages]. It holds no records of its own.
  */
 data class WorkoutPage(
     val workoutNumber: Int,

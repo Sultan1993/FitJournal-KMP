@@ -1,6 +1,6 @@
 <resources>
     <!-- Workout pager / placeholder -->
-    <string name="workout_another_workout_title">Ещё одна тренировка сегодня</string>
+    <string name="workout_another_workout_title">Записать ещё одну тренировку</string>
     <string name="workout_another_workout_subtitle">Нажмите +, чтобы добавить упражнения — они запишутся как отдельная тренировка.</string>
 
     <!-- Session bar -->

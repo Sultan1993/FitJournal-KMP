@@ -1,6 +1,6 @@
 <resources>
     <!-- Workout pager / placeholder -->
-    <string name="workout_another_workout_title">Noch ein Training heute</string>
+    <string name="workout_another_workout_title">Weiteres Training erfassen</string>
     <string name="workout_another_workout_subtitle">Tippe auf +, um Übungen hinzuzufügen – sie werden als separates Training erfasst.</string>
 
     <!-- Session bar -->
