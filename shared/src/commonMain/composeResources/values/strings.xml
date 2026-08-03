@@ -139,6 +139,7 @@
     <!-- Copy-from-workout picker -->
     <string name="import_workout_add">Add to workout</string>
     <string name="import_workout_empty">No workouts on this day</string>
+    <string name="import_workout_placeholder">Select workout date from which you want to add exercises</string>
     <string name="workout_first_workout_hint">Press + to add exercises and start logging your sets</string>
     <string name="common_today">Today</string>
     <string name="common_yesterday">Yesterday</string>
