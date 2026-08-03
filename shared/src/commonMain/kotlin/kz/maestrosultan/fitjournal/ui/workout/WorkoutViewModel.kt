@@ -177,7 +177,7 @@ class WorkoutViewModel(
         calendarVisible: Boolean,
         workoutDays: Map<LocalDate, List<CategoryType>>,
     ): WorkoutContract.ViewState {
-        val pages = buildPages(records, daySessions)
+        val pages = buildWorkoutPages(records, daySessions)
         val pageIndex = requestedPageIndex.coerceIn(0, (pages.size - 1).coerceAtLeast(0))
         val currentPage = pages.getOrNull(pageIndex)
         val isToday = date == today()
@@ -212,33 +212,9 @@ class WorkoutViewModel(
      * pages), then the ephemeral placeholder at max+1. Always ≥ page 1 +
      * placeholder, so N+1 is always slideable.
      */
-    private fun buildPages(records: List<WorkoutRecord>, daySessions: List<WorkoutSession>): List<WorkoutPage> {
-        val grouped = records.groupBy { it.workoutNumber }
-        // Real pages come from the UNION of record AND session workout numbers: a
-        // workout started but not yet logged into (session, no records) is still a
-        // real page, and the placeholder must sit AFTER it — matching the session
-        // contract (next number = max across sessions and records). Always page 1.
-        val realPageNumbers = (records.map { it.workoutNumber } + daySessions.map { it.workoutNumber })
-            .distinct()
-            .sorted()
-            .ifEmpty { listOf(1) }
-        val real = realPageNumbers.map { workoutNumber ->
-            WorkoutPage(
-                workoutNumber = workoutNumber,
-                records = grouped[workoutNumber].orEmpty(),
-                session = daySessions.firstOrNull { it.workoutNumber == workoutNumber },
-                isPlaceholder = false,
-            )
-        }
-        val placeholderNumber = realPageNumbers.max() + 1
-        val placeholder = WorkoutPage(
-            workoutNumber = placeholderNumber,
-            records = emptyList(),
-            session = daySessions.firstOrNull { it.workoutNumber == placeholderNumber },
-            isPlaceholder = true,
-        )
-        return real + placeholder
-    }
+    // Page assembly + the placeholder rule live in buildWorkoutPages (WorkoutPages.kt):
+    // a pure function of (records, sessions), so the rule is tested directly
+    // instead of through the whole ViewModel.
 
     // ─── Actions (private — every interaction arrives via [dispatch]) ────
 
