@@ -1065,11 +1065,10 @@ internal fun shareCardData(
 }
 
 /** Thousands-grouped tonnage ("14,850") — the card never shows fractional kilos. */
-private fun groupedTonnage(kg: Double): String = LocaleFormatters.formatGrouped(kg.roundToLong())
-// NOTE: the card composes number and unit separately, so it keeps this
-// number-only helper. The combined form lives on
-// WorkoutValueFormatter.groupedTonnage, which the success screen and the
-// confirm sheet use — all three round and group identically.
+// One implementation for every surface: the card, the success screen and the
+// confirm sheet all round and group through WorkoutValueFormatter, so they
+// cannot disagree about the same session's number.
+private fun groupedTonnage(kg: Double): String = WorkoutValueFormatter.groupedTonnageNumber(kg)
 
 /**
  * Single source for the weight unit label, borrowed off [WorkoutValueFormatter]

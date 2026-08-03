@@ -63,7 +63,17 @@ object WorkoutValueFormatter {
      * stored values are already in the user's preferred unit.
      */
     fun groupedTonnage(kg: Double, system: MeasurementSystem): String =
-        "${LocaleFormatters.formatGrouped(kg.roundToLong())} ${unit(ResultType.WEIGHT_REPS, system)}"
+        "${groupedTonnageNumber(kg)} ${unit(ResultType.WEIGHT_REPS, system)}"
+
+    /**
+     * The grouped tonnage number alone: "14,850".
+     *
+     * The share card composes the number and its unit at different sizes, so it
+     * needs this half on its own. Both halves round and group HERE — that is
+     * the point of the split: the card and the screens cannot disagree about
+     * the same session's number by rounding it differently.
+     */
+    fun groupedTonnageNumber(kg: Double): String = LocaleFormatters.formatGrouped(kg.roundToLong())
 
     /** The value's unit alone: "kg"/"lb" (weight) or "km"/"mi" (distance). */
     fun unit(resultType: ResultType, system: MeasurementSystem): String = when (resultType) {

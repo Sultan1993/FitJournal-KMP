@@ -204,8 +204,11 @@ class WorkoutSuccessViewModel internal constructor(
         // tonnage means no weight was entered, and "0 kg" tells the reader
         // nothing — the reps do.
         aggregate = when {
+            // Grouped like the hero and the card: design W4b's rail reads
+            // "4 sets · 4,320 kg". These are per-exercise session totals, which
+            // run to four and five digits just as the session total does.
             line.tonnageKg != null && line.tonnageKg > 0.0 ->
-                RailAggregate.Tonnage(WorkoutValueFormatter.value(line.tonnageKg, ResultType.WEIGHT_REPS, units))
+                RailAggregate.Tonnage(WorkoutValueFormatter.groupedTonnage(line.tonnageKg, units))
             line.totalReps != null -> RailAggregate.Reps(line.totalReps)
             line.totalDistance != null || line.totalDurationSec != null -> {
                 // Same rule as the tonnage branch above: a zero distance is not

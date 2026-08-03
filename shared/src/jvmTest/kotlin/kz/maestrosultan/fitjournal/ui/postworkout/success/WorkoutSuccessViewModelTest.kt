@@ -385,6 +385,25 @@ class WorkoutSuccessViewModelTest {
     }
 
     /**
+     * Design W4b's rail reads "4 sets · 4,320 kg". Per-exercise session totals
+     * reach four and five digits just as the session total does, so the rail
+     * groups too — it used to render a bare "2400 kg" beside a grouped hero.
+     */
+    @Test
+    fun railTonnage_isGrouped_likeTheHeroAndTheCard(): Unit = runTest(dispatcher) {
+        val press = seedExercise("Leg Press", CategoryType.QUADRICEPS)
+        val pressWe = addOccurrence(press, date)
+        repo.addSet(userId, journalId, pressWe, 100.0, 12, null, null)
+        repo.addSet(userId, journalId, pressWe, 100.0, 12, null, null)
+
+        val state = awaitState(viewModel(finishResult(endedSession())))
+
+        val line = state.exercises.single { it.name == "Leg Press" }
+        val aggregate = assertIs<RailAggregate.Tonnage>(line.aggregate)
+        assertEquals("2,400 kg", aggregate.text, "100×12 twice, grouped as the frame shows it")
+    }
+
+    /**
      * A timed row with the distance left at 0, end to end through the real
      * BuildSessionSummaryUseCase and the real rail mapping — not a pre-nulled
      * fixture.

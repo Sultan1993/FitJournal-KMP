@@ -80,10 +80,21 @@ private const val BarStaggerMillis = 40
 /** Design W4b sizes the pinned header row by its 40dp close control, not by the chip. */
 private val HeaderRowMinHeight = 40.dp
 
-/** Rail row metrics — the connector inset is derived from them so it always meets the dot centers. */
+/** Rail row metrics. */
 private val RailRowVerticalPadding = 5.dp
 private val RailDotSize = 9.dp
-private val RailConnectorInset = RailRowVerticalPadding + RailDotSize / 2
+
+/**
+ * Design W4b's connector insets, verbatim (`top: 10px; bottom: 12px`).
+ *
+ * Deliberately NOT computed from the row metrics: the dot is centred in a row
+ * whose height comes from the 15sp exercise name, not from the dot, so
+ * `rowPadding + dotRadius` is not where the centre actually lands. These are
+ * the frame's visual values, and they end the line underneath the first and
+ * last dots rather than overshooting past them.
+ */
+private val RailConnectorInsetTop = 10.dp
+private val RailConnectorInsetBottom = 12.dp
 
 /** The rail connector draws nothing testable, so the regression test asserts on its bounds. */
 internal const val RailConnectorTestTag = "success_rail_connector"
@@ -467,10 +478,9 @@ private fun JournalRail(lines: List<RailLineUi>) {
         Box(Modifier.matchParentSize()) {
             Box(
                 Modifier
-                    // Inset to the dot centers so the line spans first to last
-                    // rather than overshooting both ends (design W4b: top 10,
-                    // bottom 12, against this row metric).
-                    .padding(start = 4.dp, top = RailConnectorInset, bottom = RailConnectorInset)
+                    // Inset so the line terminates under the first and last
+                    // dots instead of overshooting both ends.
+                    .padding(start = 4.dp, top = RailConnectorInsetTop, bottom = RailConnectorInsetBottom)
                     .width(1.5.dp)
                     .fillMaxHeight()
                     .background(FjTheme.colors.brandSubtle)
