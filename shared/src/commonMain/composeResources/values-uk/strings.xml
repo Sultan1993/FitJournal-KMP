@@ -6,6 +6,7 @@
     <!-- Session bar -->
     <string name="workout_start">Почати тренування</string>
     <string name="workout_end">Завершити тренування</string>
+    <string name="workout_session_label">Тренування</string>
     <string name="workout_duration_minutes">%1$d хв</string>
     <string name="workout_duration_hours_minutes">%1$d год %2$d хв</string>
 
