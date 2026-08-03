@@ -207,9 +207,15 @@ private fun ImportPager(
             val bottomInset = WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom).asPaddingValues().calculateBottomPadding()
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                // Clear the pinned page dots + top fade so the header starts just
-                // below them; bottom clears the floating Add button + its inset.
-                contentPadding = PaddingValues(top = 24.dp, bottom = bottomInset + 86.dp),
+                // Reserve the top strip for the pinned page dots ONLY when they show
+                // (>1 page). A single-page day has no dots, so that 24.dp would just
+                // be an empty gap under the nav bar — drop it and let the muscle
+                // header sit right up top (still fading under the scrim on scroll).
+                // Bottom clears the floating Add button + its inset.
+                contentPadding = PaddingValues(
+                    top = if (pages.size > 1) 24.dp else 0.dp,
+                    bottom = bottomInset + 86.dp,
+                ),
             ) {
                 item {
                     WorkoutMuscleHeader(page.records)
