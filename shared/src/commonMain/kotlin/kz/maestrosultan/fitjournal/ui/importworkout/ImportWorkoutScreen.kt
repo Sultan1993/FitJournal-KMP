@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.import_workout_add
 import kz.maestrosultan.fitjournal.shared.generated.resources.import_workout_empty
@@ -93,7 +94,12 @@ private fun ImportWorkoutBody(
                 modifier = Modifier.fillMaxWidth(),
             )
         } else {
-            ImportContentArea(content = state.content, dispatch = dispatch, modifier = Modifier.weight(1f))
+            ImportContentArea(
+                content = state.content,
+                measurementSystem = state.measurementSystem,
+                dispatch = dispatch,
+                modifier = Modifier.weight(1f),
+            )
             ImportButton(
                 enabled = state.canImport,
                 onClick = { dispatch(ImportWorkoutContract.ViewAction.Import) },
@@ -106,6 +112,7 @@ private fun ImportWorkoutBody(
 @Composable
 private fun ImportContentArea(
     content: ImportContent,
+    measurementSystem: MeasurementSystem,
     dispatch: (ImportWorkoutContract.ViewAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -122,13 +129,19 @@ private fun ImportContentArea(
                     color = FjTheme.colors.textSecondary,
                 )
             }
-        is ImportContent.Loaded -> ImportPager(loaded = content, dispatch = dispatch, modifier = modifier)
+        is ImportContent.Loaded -> ImportPager(
+            loaded = content,
+            measurementSystem = measurementSystem,
+            dispatch = dispatch,
+            modifier = modifier,
+        )
     }
 }
 
 @Composable
 private fun ImportPager(
     loaded: ImportContent.Loaded,
+    measurementSystem: MeasurementSystem,
     dispatch: (ImportWorkoutContract.ViewAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -162,6 +175,7 @@ private fun ImportPager(
                 items(page.records, key = { it.id }) { record ->
                     ImportRecordCard(
                         record = record,
+                        measurementSystem = measurementSystem,
                         isSelected = record.id in loaded.selectedRecordIds,
                         onToggle = { dispatch(ImportWorkoutContract.ViewAction.ToggleRecord(record.id)) },
                         modifier = Modifier.padding(vertical = 6.dp),
