@@ -204,10 +204,24 @@ class WorkoutSuccessViewModel internal constructor(
             line.tonnageKg != null && line.tonnageKg > 0.0 ->
                 RailAggregate.Tonnage(WorkoutValueFormatter.value(line.tonnageKg, ResultType.WEIGHT_REPS, units))
             line.totalReps != null -> RailAggregate.Reps(line.totalReps)
-            line.totalDistance != null || line.totalDurationSec != null -> RailAggregate.DistanceDuration(
-                distanceText = WorkoutValueFormatter.value(line.totalDistance ?: 0.0, ResultType.DISTANCE_DURATION, units),
-                durationSec = line.totalDurationSec ?: 0,
-            )
+            line.totalDistance != null || line.totalDurationSec != null -> {
+                // Same rule as the tonnage branch above: a zero distance is not
+                // a fact worth printing. DISTANCE_DURATION lines always carry a
+                // non-null (summed) distance, so a duration-only exercise —
+                // a plank, a timed row — arrives here as 0.0 and would
+                // otherwise render "0 km · 1:30".
+                val distance = line.totalDistance?.takeIf { it > 0.0 }
+                val durationSec = line.totalDurationSec ?: 0
+                if (distance == null && durationSec <= 0) {
+                    null
+                } else {
+                    RailAggregate.DistanceDuration(
+                        distanceText = distance
+                            ?.let { WorkoutValueFormatter.value(it, ResultType.DISTANCE_DURATION, units) },
+                        durationSec = durationSec,
+                    )
+                }
+            }
             else -> null
         },
     )

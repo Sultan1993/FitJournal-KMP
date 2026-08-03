@@ -1010,7 +1010,13 @@ internal fun shareCardData(
                     ?.takeIf { it > 0.0 }
                     ?.let { "${groupedTonnage(it)} $weightUnit" },
                 repsText = line.totalReps?.let { stringResource(Res.string.postworkout_reps_format, it) },
+                // `takeIf` for the same reason tonnage has one: DISTANCE_DURATION
+                // lines always carry a summed (non-null) distance, so a
+                // duration-only exercise arrives as 0.0. Without this the
+                // receipt's `tonnageText ?: repsText ?: distanceText ?:
+                // durationText` chain picks "0 km" over the real duration.
                 distanceText = line.totalDistance
+                    ?.takeIf { it > 0.0 }
                     ?.let { WorkoutValueFormatter.value(it, ResultType.DISTANCE_DURATION, units) },
                 durationText = line.totalDurationSec?.let { formatDuration(it.toLong()) },
             )

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -36,6 +37,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -74,6 +76,14 @@ private val FooterFadeHeight = 44.dp
 private const val BarAnimationMillis = 300
 private const val BarStaggerMillis = 40
 
+/** Rail row metrics — the connector inset is derived from them so it always meets the dot centers. */
+private val RailRowVerticalPadding = 5.dp
+private val RailDotSize = 9.dp
+private val RailConnectorInset = RailRowVerticalPadding + RailDotSize / 2
+
+/** The rail connector draws nothing testable, so the regression test asserts on its bounds. */
+internal const val RailConnectorTestTag = "success_rail_connector"
+
 /**
  * Post-workout SUCCESS screen (design frame W4b): a quiet journal moment —
  * date, muscle-group title, tonnage, three tiles, the PR card when one fired,
@@ -104,6 +114,22 @@ fun WorkoutSuccessScreen(
     }
 
     Column(modifier.fillMaxSize().background(FjTheme.colors.background)) {
+        // Fixed header row — design W4b marks it `flex: none`, so the
+        // confirmation never scrolls away. The frame pairs it with the close
+        // affordance on this same row; that button is native chrome owned by
+        // the host (top-trailing liquid glass on iOS, the back convention on
+        // Android), so the chip takes the leading side instead of colliding.
+        if (!state.loading) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(start = 24.dp, end = 24.dp, top = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                SavedToJournalChip()
+            }
+        }
+
         Box(Modifier.weight(1f)) {
             Column(
                 Modifier
@@ -114,17 +140,16 @@ fun WorkoutSuccessScreen(
             ) {
                 if (state.loading) return@Column
 
-                SavedToJournalChip()
+                Spacer(Modifier.height(24.dp))
                 state.dateLine?.let { line ->
-                    Spacer(Modifier.height(14.dp))
                     Text(
                         text = line,
                         style = FjTheme.typography.caption,
                         color = FjTheme.colors.textSecondary,
                     )
+                    Spacer(Modifier.height(6.dp))
                 }
 
-                Spacer(Modifier.height(6.dp))
                 Text(
                     text = state.title,
                     style = FjTheme.typography.screenTitle.copy(
@@ -196,11 +221,15 @@ fun WorkoutSuccessScreen(
             )
         }
 
-        Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 26.dp)) {
+        // Gated on the same flag as the body: a live Share button pinned over a
+        // blank screen would open the composer on a session that has not loaded.
+        if (!state.loading) {
             FjPrimaryButton(
                 text = stringResource(Res.string.postworkout_share_workout),
                 onClick = onShare,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 26.dp),
                 leadingIcon = { ShareGlyph() },
             )
         }
@@ -418,14 +447,26 @@ private fun MuscleBarRow(bar: MuscleBarUi, modifier: Modifier = Modifier) {
 @Composable
 private fun JournalRail(lines: List<RailLineUi>) {
     Box {
-        // Continuous rail behind the dots, inset to sit under their centers.
-        Box(
-            Modifier
-                .padding(start = 4.dp)
-                .width(1.5.dp)
-                .fillMaxSize()
-                .background(FjTheme.colors.brandSubtle),
-        )
+        // The connector is wrapped in a matchParentSize box rather than being
+        // sized directly. This screen's whole body is a `verticalScroll`, which
+        // measures children with maxHeight = Infinity, and `fillMaxSize()` is a
+        // no-op on an unbounded axis — sized directly, the line measured 0.dp
+        // tall and never drew at all. `matchParentSize` is resolved from the
+        // Box's FINAL size, after the rows have determined it, so the inner
+        // `fillMaxHeight()` sees a bounded constraint.
+        Box(Modifier.matchParentSize()) {
+            Box(
+                Modifier
+                    // Inset to the dot centers so the line spans first to last
+                    // rather than overshooting both ends (design W4b: top 10,
+                    // bottom 12, against this row metric).
+                    .padding(start = 4.dp, top = RailConnectorInset, bottom = RailConnectorInset)
+                    .width(1.5.dp)
+                    .fillMaxHeight()
+                    .background(FjTheme.colors.brandSubtle)
+                    .testTag(RailConnectorTestTag),
+            )
+        }
         Column {
             lines.forEach { line ->
                 RailRow(line, Modifier.fillMaxWidth())
@@ -437,10 +478,10 @@ private fun JournalRail(lines: List<RailLineUi>) {
 @Composable
 private fun RailRow(line: RailLineUi, modifier: Modifier = Modifier) {
     Row(
-        modifier.padding(vertical = 5.dp),
+        modifier.padding(vertical = RailRowVerticalPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(9.dp).clip(CircleShape).background(FjTheme.colors.brand))
+        Box(Modifier.size(RailDotSize).clip(CircleShape).background(FjTheme.colors.brand))
         Spacer(Modifier.width(14.dp))
         Text(
             text = line.name,
@@ -475,9 +516,9 @@ private fun railTrailing(loggedSets: Int, aggregate: RailAggregate): String = wh
             stringResource(Res.string.postworkout_reps_format, aggregate.count)
 
     is RailAggregate.DistanceDuration -> buildString {
-        append(aggregate.distanceText)
+        aggregate.distanceText?.let { append(it) }
         if (aggregate.durationSec > 0) {
-            append(" · ")
+            if (isNotEmpty()) append(" · ")
             append(formatDuration(aggregate.durationSec.toLong()))
         }
     }

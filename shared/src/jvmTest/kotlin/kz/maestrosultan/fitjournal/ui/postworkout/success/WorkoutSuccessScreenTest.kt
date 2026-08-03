@@ -3,8 +3,11 @@ package kz.maestrosultan.fitjournal.ui.postworkout.success
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.runComposeUiTest
+import androidx.compose.ui.unit.dp
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -87,6 +90,70 @@ class WorkoutSuccessScreenTest {
         onNodeWithText("3 sets · 765 kg").assertExists()
         onNodeWithText("2 sets · 22 reps").assertExists()
         onNodeWithText("8 km · 0:32").assertExists()
+    }
+
+    /**
+     * The rail connector is drawn, not written, so nothing else in this suite
+     * would notice it vanishing. It did: sized with `fillMaxSize()` inside the
+     * screen's `verticalScroll`, height constraints are unbounded and the line
+     * measured 0.dp — invisible in every build until this assertion existed.
+     */
+    @Test
+    fun railConnector_hasHeight_insideTheScrollingBody() = runComposeUiTest {
+        setScreen(fullState(personalRecord = null))
+
+        val bounds = onNodeWithTag(RailConnectorTestTag, useUnmergedTree = true).getBoundsInRoot()
+        val height = bounds.bottom - bounds.top
+        val width = bounds.right - bounds.left
+
+        assertTrue(height > 0.dp, "rail connector collapsed to $height — the line does not render")
+        assertTrue(width > 0.dp, "rail connector collapsed to $width wide")
+    }
+
+    /** Design W4b marks the chip's row `flex: none` — it must not scroll away. */
+    @Test
+    fun savedChip_staysPinned_whenTheBodyScrolls() = runComposeUiTest {
+        setScreen(fullState(personalRecord = null))
+
+        val before = onNodeWithText("Saved to journal").getBoundsInRoot().top
+        // Drag a bottom-of-content node into view; the chip must not follow.
+        onNodeWithText("Treadmill Run").performScrollTo()
+        waitForIdle()
+        val after = onNodeWithText("Saved to journal").getBoundsInRoot().top
+
+        assertEquals(before, after, "the saved-to-journal chip scrolled with the body")
+    }
+
+    /** Nothing is shareable until the summary lands. */
+    @Test
+    fun loadingState_rendersNoShareButtonAndNoChip() = runComposeUiTest {
+        setScreen(WorkoutSuccessContract.ViewState(loading = true))
+
+        onNodeWithText("Share workout").assertDoesNotExist()
+        onNodeWithText("Saved to journal").assertDoesNotExist()
+    }
+
+    /**
+     * A plank or a timed row logs duration with no distance. The summary sums
+     * distance to a non-null 0.0, so the row used to read "0 km · 0:32".
+     */
+    @Test
+    fun railLine_omitsDistance_whenOnlyDurationWasLogged() = runComposeUiTest {
+        setScreen(
+            fullState(personalRecord = null).copy(
+                exercises = listOf(
+                    RailLineUi(
+                        name = "Plank",
+                        loggedSets = 1,
+                        totalSets = 1,
+                        aggregate = RailAggregate.DistanceDuration(distanceText = null, durationSec = 1920),
+                    ),
+                ),
+            ),
+        )
+
+        onNodeWithText("0:32").assertExists()
+        onNodeWithText("0 km · 0:32").assertDoesNotExist()
     }
 
     @Test

@@ -59,8 +59,14 @@ sealed interface RailAggregate {
     /** Raw count — the composable pluralizes ("22 reps"). */
     data class Reps(val count: Int) : RailAggregate
 
-    /** "8 km" + raw seconds — the composable formats/pluralizes the duration. */
-    data class DistanceDuration(val distanceText: String, val durationSec: Int) : RailAggregate
+    /**
+     * "8 km" + raw seconds — the composable formats/pluralizes the duration.
+     *
+     * [distanceText] is null when no distance was entered (a plank, a timed
+     * row): "0 km" tells the reader nothing, and the clock is the whole story
+     * there. Same rule the weighted rows apply to zero tonnage.
+     */
+    data class DistanceDuration(val distanceText: String?, val durationSec: Int) : RailAggregate
 }
 
 /**
