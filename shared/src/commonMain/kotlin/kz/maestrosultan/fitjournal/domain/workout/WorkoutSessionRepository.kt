@@ -67,6 +67,14 @@ interface WorkoutSessionRepository {
      */
     suspend fun endSession(userId: String): WorkoutSession?
 
+    /**
+     * Hard-delete ONE session by id — the empty-workout cleanup. A workout with
+     * no records is not a workout, so its session (started then ended with
+     * nothing logged, or emptied by deleting every record) is discarded rather
+     * than kept. [userId]-scoped defensively. No-op if the row is already gone.
+     */
+    suspend fun deleteSession(userId: String, sessionUuid: String)
+
     /** Delete-account purge (mirrors RecordRepository.deleteUserRecords). */
     suspend fun deleteUserSessions(userId: String)
 }

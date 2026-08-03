@@ -121,6 +121,8 @@ private class FakeSessionRepo(
         workoutNumber: Int,
     ): WorkoutSession = error("unused")
 
+    override suspend fun deleteSession(userId: String, sessionUuid: String) = error("unused")
+
     override suspend fun deleteUserSessions(userId: String) = error("unused")
 }
 

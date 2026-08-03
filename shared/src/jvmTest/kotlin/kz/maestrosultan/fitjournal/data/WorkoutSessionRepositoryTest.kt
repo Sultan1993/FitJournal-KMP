@@ -125,6 +125,25 @@ class WorkoutSessionRepositoryTest {
     }
 
     @Test
+    fun deleteSession_discardsRow_andIsUserScoped(): Unit = runBlocking {
+        // The empty-workout discard: a running session that logged nothing is
+        // deleted outright, and the userId guard keeps a stray uuid off another
+        // user's identical page.
+        val running = repo.startSession(userId, journalId, date, 1)
+        val otherUser = "user-2"
+        val other = repo.startSession(otherUser, journalId, date, 1)
+
+        // Wrong user + right uuid is a no-op.
+        repo.deleteSession(otherUser, running.id)
+        assertEquals(running, repo.getRunningSession(userId), "a mismatched userId must not delete the row")
+
+        repo.deleteSession(userId, running.id)
+        assertNull(repo.getSessionByWorkoutNumber(userId, journalId, date, 1), "the session is discarded")
+        assertNull(repo.getRunningSession(userId), "nothing runs for the user after discard")
+        assertEquals(other, repo.getSessionByWorkoutNumber(otherUser, journalId, date, 1), "other user untouched")
+    }
+
+    @Test
     fun endSession_stampsEndedAt_andDurationDerives(): Unit = runBlocking {
         val started = repo.startSession(userId, journalId, date, 1)
         testClock.instant += 125.seconds

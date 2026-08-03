@@ -155,6 +155,12 @@ class WorkoutSessionsDBDataSource(
         }
     }
 
+    /** Discard one session by id (empty-workout cleanup); userId-scoped defensively. */
+    suspend fun deleteByUuid(uuid: String, userId: String) = withContext(Dispatchers.IO) {
+        dao.deleteWorkoutSessionByUuid(uuid, userId)
+        Unit
+    }
+
     /** Hard purge for the delete-account flow. */
     suspend fun deleteByUserId(userId: String) = withContext(Dispatchers.IO) {
         dao.deleteWorkoutSessionsByUserId(userId)

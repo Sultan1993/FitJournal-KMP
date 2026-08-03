@@ -100,5 +100,8 @@ class DefaultWorkoutSessionRepository(
     override suspend fun endSession(userId: String): WorkoutSession? =
         sessionsDB.endRunningSession(userId, clock.now())?.toDomain()
 
+    override suspend fun deleteSession(userId: String, sessionUuid: String) =
+        sessionsDB.deleteByUuid(sessionUuid, userId)
+
     override suspend fun deleteUserSessions(userId: String) = sessionsDB.deleteByUserId(userId)
 }

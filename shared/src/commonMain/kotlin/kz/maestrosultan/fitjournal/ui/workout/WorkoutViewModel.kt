@@ -104,7 +104,7 @@ class WorkoutViewModel(
             WorkoutContract.ViewAction.ToggleCalendar -> onToggleCalendar()
             is WorkoutContract.ViewAction.CalendarMonthChanged -> onCalendarMonthChanged(action.year, action.month)
             WorkoutContract.ViewAction.StartSession -> onStartSession()
-            WorkoutContract.ViewAction.RequestEndSession -> emit(WorkoutContract.ViewEffect.RequestEndSession)
+            WorkoutContract.ViewAction.RequestEndSession -> onRequestEndSession()
             WorkoutContract.ViewAction.EndSession -> onEndSession()
             is WorkoutContract.ViewAction.DeleteRecord -> onDeleteRecord(action.record)
             is WorkoutContract.ViewAction.Reorder -> onReorder(action.orderedRecordIds)
@@ -293,6 +293,29 @@ class WorkoutViewModel(
         viewModelScope.launch { startWorkout(uid, jid, date, page.workoutNumber) }
     }
 
+    /**
+     * End tapped. A workout that logged NOTHING (zero records) is not worth
+     * saving: discard the running session silently and let the bar fall back to
+     * Start — no finished-but-empty session, no confirm sheet, nothing persisted.
+     * Only a workout with at least one record raises the confirm sheet.
+     */
+    private fun onRequestEndSession() {
+        val uid = userId ?: return
+        val jid = journalId ?: return
+        val running = _uiState.value.runningSession ?: return
+        viewModelScope.launch {
+            // ponytail: getRecordsByDate over-reads (builds lastOccurrence) but
+            // End is a rare user tap — swap for a COUNT query if it ever profiles hot.
+            val hasRecords = recordRepository.getRecordsByDate(uid, jid, running.date)
+                .any { it.workoutNumber == running.workoutNumber }
+            if (hasRecords) {
+                emit(WorkoutContract.ViewEffect.RequestEndSession)
+            } else {
+                sessionRepository.deleteSession(uid, running.id)
+            }
+        }
+    }
+
     private fun onEndSession() {
         val uid = userId ?: return
         viewModelScope.launch { endWorkout(uid) }
@@ -303,8 +326,25 @@ class WorkoutViewModel(
         val jid = journalId ?: return
         viewModelScope.launch {
             recordRepository.deleteRecord(uid, jid, record)
+            discardSessionIfEmptied(uid, jid, record.date, record.workoutNumber)
             syncTrigger.requestTick(SyncReason.PostWrite.WorkoutRecord)
         }
+    }
+
+    /**
+     * After deleting a record, drop a now-empty workout's FINISHED session so no
+     * "finished but nothing logged" zombie lingers — it would inflate the weekly
+     * ordinal and strand the page with neither a summary card nor a Start bar (the
+     * bar hides while a session exists). A RUNNING session is left alone: the user
+     * may still be mid-workout, and End's own discard-empty ([onRequestEndSession])
+     * handles it if they finish with nothing logged.
+     */
+    private suspend fun discardSessionIfEmptied(uid: String, jid: String, date: LocalDate, workoutNumber: Int) {
+        val session = sessionRepository.getSessionByWorkoutNumber(uid, jid, date, workoutNumber) ?: return
+        if (session.endedAt == null) return
+        val stillHasRecords = recordRepository.getRecordsByDate(uid, jid, date)
+            .any { it.workoutNumber == workoutNumber }
+        if (!stillHasRecords) sessionRepository.deleteSession(uid, session.id)
     }
 
     /** Persist a within-page reorder ([orderedRecordIds] = the page's records, new order). */
