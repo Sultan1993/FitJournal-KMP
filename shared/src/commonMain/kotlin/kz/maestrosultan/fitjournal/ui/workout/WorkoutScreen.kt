@@ -112,9 +112,7 @@ private fun WorkoutBody(
                     workoutDays = state.workoutDays,
                     onDateSelected = { dispatch(WorkoutContract.ViewAction.SelectDate(it)) },
                     onMonthChanged = { year, month -> dispatch(WorkoutContract.ViewAction.CalendarMonthChanged(year, month)) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)),
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 

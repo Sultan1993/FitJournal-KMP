@@ -96,36 +96,18 @@ private fun ImportWorkoutBody(
                     workoutDays = state.workoutDays,
                     onDateSelected = { dispatch(ImportWorkoutContract.ViewAction.SelectSourceDate(it)) },
                     onMonthChanged = { year, month -> dispatch(ImportWorkoutContract.ViewAction.CalendarMonthChanged(year, month)) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)),
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
             // The source day's records — always present; the calendar (above) just
-            // pushes them down when it expands.
-            //
-            // When collapsed, the records sit directly under the host's opaque nav
-            // bar. Without a top inset they'd scroll UNDER it with a hard edge and
-            // the pager's TopFadeScrim (pinned to the pager top) would hide behind
-            // the nav bar. Inset by the top safe area so the scrim lands just below
-            // the nav bar and content fades out there — matching the fade you get
-            // below the calendar when it's open. Only when collapsed: when the
-            // calendar is open it already occupies (and pads) the top itself.
+            // pushes them down when it expands. Same Box(weight) + top-fade layout
+            // as the workout list's page content.
             ImportContentArea(
                 content = state.content,
                 measurementSystem = state.measurementSystem,
                 dispatch = dispatch,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .then(
-                        if (!state.calendarExpanded) {
-                            Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
-                        } else {
-                            Modifier
-                        },
-                    ),
+                modifier = Modifier.fillMaxWidth().weight(1f),
             )
         }
 
@@ -207,15 +189,10 @@ private fun ImportPager(
             val bottomInset = WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom).asPaddingValues().calculateBottomPadding()
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                // Reserve the top strip for the pinned page dots ONLY when they show
-                // (>1 page). A single-page day has no dots, so that 24.dp would just
-                // be an empty gap under the nav bar — drop it and let the muscle
-                // header sit right up top (still fading under the scrim on scroll).
-                // Bottom clears the floating Add button + its inset.
-                contentPadding = PaddingValues(
-                    top = if (pages.size > 1) 24.dp else 0.dp,
-                    bottom = bottomInset + 86.dp,
-                ),
+                // Clear the pinned page dots + top fade so the header starts just
+                // below them (mirrors the workout list). Bottom clears the floating
+                // Add button + its inset.
+                contentPadding = PaddingValues(top = 24.dp, bottom = bottomInset + 86.dp),
             ) {
                 item {
                     WorkoutMuscleHeader(page.records)
