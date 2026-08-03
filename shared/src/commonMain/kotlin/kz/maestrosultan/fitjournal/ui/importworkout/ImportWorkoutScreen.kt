@@ -11,7 +11,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -28,10 +27,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -44,33 +41,28 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
-import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_arrow_down
 import kz.maestrosultan.fitjournal.shared.generated.resources.import_workout_add
 import kz.maestrosultan.fitjournal.shared.generated.resources.import_workout_empty
-import kz.maestrosultan.fitjournal.shared.generated.resources.import_workout_placeholder
 import kz.maestrosultan.fitjournal.ui.common.PageDots
 import kz.maestrosultan.fitjournal.ui.common.TopFadeScrim
-import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
-import kz.maestrosultan.fitjournal.ui.format.relativeDayLabel
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutCalendar
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutMuscleHeader
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * The shared "Copy from a workout" picker — a brand source-date pill that expands
- * the shared [WorkoutCalendar], the source day's records as a per-workout pager
- * with per-record selection, and a floating Add button. Hosted inside each app's
- * native modal; import + dismiss leave via [ImportWorkoutViewModel.viewEffect].
+ * The shared "Copy from a workout" picker body — the source day's records as a
+ * per-workout pager with per-record selection, and a floating Add button. The
+ * month [WorkoutCalendar] lives at the top of the layout flow and expands
+ * (pushing the pager down) when [ImportWorkoutContract.ViewState.calendarExpanded]
+ * is set. The calendar toggle + the "From previous workout" title/date subtitle
+ * live in each host's native nav bar (exactly like the workout list), so this
+ * body has no header of its own. Hosted inside each app's native modal; import +
+ * dismiss leave via [ImportWorkoutViewModel.viewEffect].
  */
 @Composable
 fun ImportWorkoutScreen(
@@ -92,7 +84,8 @@ private fun ImportWorkoutBody(
     Box(modifier = modifier.fillMaxSize().background(FjTheme.colors.background)) {
         Column(modifier = Modifier.fillMaxSize()) {
             // In the layout flow (not an overlay), so expanding it pushes the pager
-            // down. The brand pill below toggles calendarExpanded.
+            // down — same push-down as the workout list. The host's nav-bar calendar
+            // icon toggles calendarExpanded.
             AnimatedVisibility(
                 visible = state.calendarExpanded,
                 enter = expandVertically(tween(240), expandFrom = Alignment.Top) + fadeIn(tween(200)),
@@ -109,26 +102,11 @@ private fun ImportWorkoutBody(
                 )
             }
 
-            AnimatedVisibility(
-                visible = !state.calendarExpanded,
-                enter = fadeIn(tween(200)),
-                exit = fadeOut(tween(160)),
-            ) {
-                SourceDatePill(
-                    sourceDate = state.sourceDate,
-                    onClick = { dispatch(ImportWorkoutContract.ViewAction.ToggleCalendar) },
-                )
-            }
-
-            // Both fades share this weighted slot so it never collapses
-            // mid-transition (the calendar's expandVertically already handles the
-            // push-down; this row only ever holds the placeholder or the pager).
-            // Extracted to ImportBody (its own composable) so ColumnScope isn't an
-            // implicit receiver alongside the inner Box's BoxScope — with both in
-            // scope, AnimatedVisibility inside the Box binds to
-            // ColumnScope.AnimatedVisibility and fails to resolve.
-            ImportBody(
-                state = state,
+            // The source day's records — always present; the calendar (above) just
+            // pushes them down when it expands.
+            ImportContentArea(
+                content = state.content,
+                measurementSystem = state.measurementSystem,
                 dispatch = dispatch,
                 modifier = Modifier.fillMaxWidth().weight(1f),
             )
@@ -150,98 +128,6 @@ private fun ImportWorkoutBody(
                     // Above the bottom system inset — the host scaffold pads only the top.
                     .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))
                     .padding(16.dp),
-            )
-        }
-    }
-}
-
-/**
- * The weighted content slot — centered placeholder while the calendar is open,
- * the record pager otherwise. Its own composable (rather than inlined in the
- * Column) so the only implicit receiver inside is this `Box`'s `BoxScope`;
- * nesting it directly in the Column would also put the outer `ColumnScope` in
- * scope, and `AnimatedVisibility` would bind to `ColumnScope.AnimatedVisibility`
- * from that outer receiver instead — which is illegal called from an inner Box
- * lambda.
- */
-@Composable
-private fun ImportBody(
-    state: ImportWorkoutContract.ViewState,
-    dispatch: (ImportWorkoutContract.ViewAction) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Box(modifier = modifier) {
-        AnimatedVisibility(
-            visible = state.calendarExpanded,
-            enter = fadeIn(tween(200)),
-            exit = fadeOut(tween(160)),
-        ) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    text = stringResource(Res.string.import_workout_placeholder),
-                    style = FjTheme.typography.body,
-                    color = FjTheme.colors.textSecondary,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 32.dp),
-                )
-            }
-        }
-
-        AnimatedVisibility(
-            visible = !state.calendarExpanded,
-            enter = fadeIn(tween(200)),
-            exit = fadeOut(tween(160)),
-        ) {
-            ImportContentArea(
-                content = state.content,
-                measurementSystem = state.measurementSystem,
-                dispatch = dispatch,
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
-    }
-}
-
-/**
- * Collapsed source-date header — a full-width brand pill; tapping it expands the
- * shared [WorkoutCalendar] to pick a different source day.
- */
-@Composable
-private fun SourceDatePill(
-    sourceDate: LocalDate,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, top = 8.dp)
-            .height(64.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(FjTheme.colors.brand)
-            .clickable(onClick = onClick),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = relativeDayLabel(sourceDate) ?: LocaleFormatters.formatDayMonthYear(sourceDate),
-            style = FjTheme.typography.cardTitle.copy(fontSize = 20.sp),
-            color = Color.White,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f).padding(start = 16.dp),
-        )
-        Box(
-            modifier = Modifier
-                .padding(end = 16.dp)
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.1f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                painter = painterResource(Res.drawable.ic_common_arrow_down),
-                contentDescription = null,
-                tint = Color.White,
             )
         }
     }
