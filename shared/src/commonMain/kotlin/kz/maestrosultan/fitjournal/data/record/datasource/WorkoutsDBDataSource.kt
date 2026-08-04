@@ -367,6 +367,7 @@ class WorkoutsDBDataSource(
                 schemaVersion = record.row.schemaVersion.toLong(),
                 createdDate = record.row.createdDate.toStoredString(),
                 updatedDate = record.row.updatedDate.toStoredString(),
+                workoutNumber = record.row.workoutNumber.toLong(),
             )
             insertChildren(record)
         }
@@ -391,6 +392,7 @@ class WorkoutsDBDataSource(
                 schemaVersion = record.row.schemaVersion.toLong(),
                 createdDate = record.row.createdDate.toStoredString(),
                 updatedDate = record.row.updatedDate.toStoredString(),
+                workoutNumber = record.row.workoutNumber.toLong(),
             )
             insertChildren(record)
         }

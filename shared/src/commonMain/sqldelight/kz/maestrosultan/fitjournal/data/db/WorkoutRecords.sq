@@ -119,14 +119,13 @@ WHERE uuid = ?;
 -- and re-created by the orchestrator from the decoded payload.
 -- Callers must check `pendingUpload=1` on the existing row first to honor
 -- the local-wins escape hatch.
--- INSERT OR REPLACE + no `workoutNumber` column listed means a sync pull resets
--- workoutNumber to its DEFAULT (1) on this row. workoutNumber IS a synced field
--- (AWSWorkoutRecord.workoutNumber, deployed 2026-07-31), so the sync increment
--- MUST add it to this column list and thread the pulled value — otherwise
--- multi-workout grouping erodes to "everything on workout 1" on every pull.
+-- `workoutNumber` MUST stay in this column list: INSERT OR REPLACE drops any
+-- unlisted column to its table DEFAULT (1), which on every pull would collapse
+-- multi-workout days onto workout 1. The orchestrator threads the pulled
+-- AWSWorkoutRecord.workoutNumber (coalesced to 1 for legacy null rows).
 upsertWorkoutRecordFromRemote:
-INSERT OR REPLACE INTO workoutRecords(uuid, remoteId, userId, journalId, date, position, comment, startedAt, durationSec, deletedAt, pendingUpload, schemaVersion, createdDate, updatedDate)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?);
+INSERT OR REPLACE INTO workoutRecords(uuid, remoteId, userId, journalId, date, position, comment, startedAt, durationSec, deletedAt, pendingUpload, schemaVersion, createdDate, updatedDate, workoutNumber)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?);
 
 -- Same shape as the above but hardcodes pendingUpload=1. Used by the
 -- orchestrator's orphan-reparent path: a remote workout references a
@@ -134,14 +133,11 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?);
 -- during a destructive schema migration). We rewrite `journalId` to the
 -- user's personal journal and mark dirty so push corrects AWS on the
 -- next tick.
--- INSERT OR REPLACE + no `workoutNumber` column listed means a sync pull resets
--- workoutNumber to its DEFAULT (1) on this row. workoutNumber IS a synced field
--- (AWSWorkoutRecord.workoutNumber, deployed 2026-07-31), so the sync increment
--- MUST add it to this column list and thread the pulled value — otherwise
--- multi-workout grouping erodes to "everything on workout 1" on every pull.
+-- `workoutNumber` MUST stay in this column list (see upsertWorkoutRecordFromRemote):
+-- INSERT OR REPLACE would otherwise reset it to the table DEFAULT (1) on pull.
 upsertWorkoutRecordFromRemoteAsPending:
-INSERT OR REPLACE INTO workoutRecords(uuid, remoteId, userId, journalId, date, position, comment, startedAt, durationSec, deletedAt, pendingUpload, schemaVersion, createdDate, updatedDate)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?);
+INSERT OR REPLACE INTO workoutRecords(uuid, remoteId, userId, journalId, date, position, comment, startedAt, durationSec, deletedAt, pendingUpload, schemaVersion, createdDate, updatedDate, workoutNumber)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?);
 
 -- Idempotent on live rows only — re-tombstoning shifts `deletedAt`
 -- and bumps `updatedDate` for no reason; the predicate makes the

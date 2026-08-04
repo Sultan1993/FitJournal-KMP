@@ -52,6 +52,38 @@ class RecordRepositoryTest {
     }
 
     @Test
+    fun syncPull_preservesWorkoutNumber_notResetToOne(): Unit = runBlocking {
+        // Regression: the pull upsert (INSERT OR REPLACE) used to omit the
+        // workoutNumber column, so every pull reset it to the table DEFAULT (1),
+        // collapsing multi-workout days onto workout 1.
+        val exId = seedCatalogExercise()
+        // A record logged as the day's SECOND workout.
+        repo.addExercisesToDate(userId, journalId, date, 2, listOf(exId))
+        val tree = workoutsDB.getWorkoutRecordById(
+            repo.getRecordsByDate(userId, journalId, date).single().id,
+        )!!
+        assertEquals(2, tree.row.workoutNumber)
+
+        // Simulate a sync pull re-applying the same record — both upsert paths.
+        workoutsDB.replaceWorkoutRecordFromRemote(tree)
+        assertEquals(
+            2,
+            workoutsDB.getWorkoutRecordById(tree.row.uuid)!!.row.workoutNumber,
+            "a sync pull must preserve workoutNumber, not reset it to 1",
+        )
+
+        workoutsDB.replaceWorkoutRecordFromRemoteAsPending(tree)
+        assertEquals(
+            2,
+            workoutsDB.getWorkoutRecordById(tree.row.uuid)!!.row.workoutNumber,
+            "the orphan-reparent pull path must also preserve workoutNumber",
+        )
+
+        // The domain read still groups it on page 2.
+        assertEquals(2, repo.getRecordsByDate(userId, journalId, date).single().workoutNumber)
+    }
+
+    @Test
     fun addSet_thenUpdate_thenDelete(): Unit = runBlocking {
         val exId = seedCatalogExercise()
         repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId))
