@@ -20,7 +20,10 @@ private const val SEPARATOR = " • "
  * native workout header.
  */
 @Composable
-fun WorkoutMuscleHeader(records: List<WorkoutRecord>, modifier: Modifier = Modifier) {
+fun WorkoutMuscleHeader(
+    records: List<WorkoutRecord>,
+    modifier: Modifier = Modifier
+) {
     val categories = remember(records) {
         records.flatMap { it.exercises }
             .map { it.exercise.primaryCategory }

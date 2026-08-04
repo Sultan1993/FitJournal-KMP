@@ -30,8 +30,8 @@
     <string name="workout_menu_delete">Löschen</string>
 
     <!-- Delete confirm -->
-    <string name="workout_delete_title">Diese Übung löschen?</string>
-    <string name="workout_delete_message">Das kann nicht rückgängig gemacht werden.</string>
+    <string name="workout_delete_title">Übung löschen?</string>
+    <string name="workout_delete_message">Protokollierte Sätze werden aus dem heutigen Training entfernt. Das kann nicht rückgängig gemacht werden.</string>
 
     <!-- Common -->
     <string name="common_cancel">Abbrechen</string>

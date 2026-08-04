@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -98,7 +99,14 @@ private fun StartPill(onStart: () -> Unit, modifier: Modifier) {
             .clickable(onClick = onStart),
         contentAlignment = Alignment.Center,
     ) {
-        Text(stringResource(Res.string.workout_start), style = FjTheme.typography.button, color = Color.White)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            // Same live dot as the running bar, white against the brand fill.
+            Box(Modifier.size(6.dp).clip(CircleShape).background(Color.White))
+            Text(stringResource(Res.string.workout_start), style = FjTheme.typography.button, color = Color.White)
+        }
     }
 }
 
@@ -122,20 +130,27 @@ private fun RunningBar(runningSince: Instant?, onEnd: () -> Unit, modifier: Modi
             modifier = Modifier.padding(start = 16.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            Text(
-                text = stringResource(Res.string.workout_session_label).uppercase(),
-                style = FjTheme.typography.caption.copy(
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 0.1.em,
-                ),
-                color = FjTheme.colors.textTertiary,
-                maxLines = 1,
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                // Live "recording" dot — the brand accent marking an active session.
+                Box(Modifier.size(6.dp).clip(CircleShape).background(FjTheme.colors.brand))
+                Text(
+                    text = stringResource(Res.string.workout_session_label).uppercase(),
+                    style = FjTheme.typography.caption.copy(
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.1.em,
+                    ),
+                    color = FjTheme.colors.textTertiary,
+                    maxLines = 1,
+                )
+            }
             Text(
                 text = elapsedText(runningSince),
                 style = FjTheme.typography.numberLarge.copy(fontSize = 24.sp, fontWeight = FontWeight.Bold),
-                color = FjTheme.colors.brand,
+                color = FjTheme.colors.textPrimary,
                 maxLines = 1,
             )
         }

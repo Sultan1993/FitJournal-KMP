@@ -145,7 +145,7 @@ private fun WorkoutBody(
                     count = pageCount,
                     currentPage = pagerState.currentPage,
                     onDotClick = { dispatch(WorkoutContract.ViewAction.SelectPage(it)) },
-                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp),
+                    modifier = Modifier.align(Alignment.TopCenter),
                 )
             }
         }

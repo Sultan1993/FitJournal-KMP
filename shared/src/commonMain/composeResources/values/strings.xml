@@ -25,13 +25,13 @@
     <string name="workout_menu_note_add">Add note</string>
     <string name="workout_menu_note_edit">Edit note</string>
     <string name="workout_menu_replace">Replace exercise</string>
-    <string name="workout_menu_superset_add">Add to superset</string>
+    <string name="workout_menu_superset_add">Superset with next</string>
     <string name="workout_menu_superset_remove">Remove from superset</string>
     <string name="workout_menu_delete">Delete</string>
 
     <!-- Delete confirm -->
-    <string name="workout_delete_title">Delete this exercise?</string>
-    <string name="workout_delete_message">This can't be undone.</string>
+    <string name="workout_delete_title">Delete exercise?</string>
+    <string name="workout_delete_message">Logged sets will be removed from today's workout. This can't be undone.</string>
 
     <!-- Common -->
     <string name="common_cancel">Cancel</string>

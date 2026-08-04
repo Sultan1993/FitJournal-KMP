@@ -22,6 +22,10 @@ import kz.maestrosultan.fitjournal.domain.workout.isSuperset
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_another_workout_subtitle
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_another_workout_title
+import kz.maestrosultan.fitjournal.shared.generated.resources.workout_delete_message
+import kz.maestrosultan.fitjournal.shared.generated.resources.workout_delete_title
+import kz.maestrosultan.fitjournal.shared.generated.resources.workout_menu_delete
+import kz.maestrosultan.fitjournal.ui.common.ConfirmActionSheet
 import kz.maestrosultan.fitjournal.ui.workout.components.AnotherWorkoutPlaceholder
 import kz.maestrosultan.fitjournal.ui.workout.components.FirstWorkoutPlaceholder
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutExerciseMenu
@@ -87,6 +91,7 @@ fun WorkoutPageContent(
     }
 
     var menuTarget by remember { mutableStateOf<MenuTarget?>(null) }
+    var deleteConfirmRecord by remember { mutableStateOf<WorkoutRecord?>(null) }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -107,7 +112,7 @@ fun WorkoutPageContent(
             } else {
                 WorkoutMuscleHeader(orderedRecords)
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(16.dp))
         }
         items(orderedRecords, key = { it.id }) { record ->
             ReorderableItem(reorderState, key = record.id) { _ ->
@@ -121,6 +126,13 @@ fun WorkoutPageContent(
                         dispatch(WorkoutContract.ViewAction.OpenExerciseFocus(exerciseId, null, true))
                     },
                     onExerciseMenu = { exercise -> menuTarget = MenuTarget(record, exercise) },
+                    // Tap anywhere else on the card → open focus for the record's
+                    // exercise (set rows / add-set / 3-dot consume their own taps first).
+                    onOpen = {
+                        record.exercises.firstOrNull()?.let {
+                            dispatch(WorkoutContract.ViewAction.OpenExerciseFocus(it.id, null, false))
+                        }
+                    },
                     modifier = Modifier
                         .padding(horizontal = 16.dp, vertical = 6.dp)
                         // Long-press to drag so the card's set taps / menu still fire.
@@ -145,6 +157,7 @@ fun WorkoutPageContent(
         val exercise = target.exercise
         val close = { menuTarget = null }
         WorkoutExerciseMenu(
+            exercise = exercise.exercise,
             exerciseName = exercise.exercise.name,
             hasNote = !exercise.comment.isNullOrBlank(),
             isSuperset = record.isSuperset,
@@ -156,8 +169,21 @@ fun WorkoutPageContent(
             onReplace = { close(); dispatch(WorkoutContract.ViewAction.ReplaceExercise(exercise.id)) },
             onAddToSuperset = { close(); dispatch(WorkoutContract.ViewAction.AddToSuperset(record)) },
             onRemoveFromSuperset = { close(); dispatch(WorkoutContract.ViewAction.RemoveFromSuperset(record, exercise)) },
-            onDelete = { close(); dispatch(WorkoutContract.ViewAction.DeleteRecord(record)) },
+            onDelete = { close(); deleteConfirmRecord = record },
             onDismiss = close,
+        )
+    }
+
+    deleteConfirmRecord?.let { record ->
+        ConfirmActionSheet(
+            title = stringResource(Res.string.workout_delete_title),
+            message = stringResource(Res.string.workout_delete_message),
+            confirmLabel = stringResource(Res.string.workout_menu_delete),
+            onConfirm = {
+                deleteConfirmRecord = null
+                dispatch(WorkoutContract.ViewAction.DeleteRecord(record))
+            },
+            onDismiss = { deleteConfirmRecord = null },
         )
     }
 }

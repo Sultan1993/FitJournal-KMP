@@ -2,6 +2,7 @@ package kz.maestrosultan.fitjournal.ui.workout.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -47,6 +48,10 @@ fun WorkoutRecordCard(
     onAddSet: (workoutExerciseId: String) -> Unit,
     onExerciseMenu: (WorkoutExercise) -> Unit,
     modifier: Modifier = Modifier,
+    // Tap anywhere on the card (outside a set row / the 3-dot / add-set) opens
+    // the exercise focus. Null in import mode, where the card is a selection
+    // target and the wrapper owns the tap.
+    onOpen: (() -> Unit)? = null,
     isImporting: Boolean = false,
     isSelected: Boolean = false,
 ) {
@@ -57,6 +62,7 @@ fun WorkoutRecordCard(
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
             .background(FjTheme.colors.surface)
+            .then(if (onOpen != null) Modifier.clickable(onClick = onOpen) else Modifier)
             .padding(top = 14.dp, bottom = 8.dp),
     ) {
         if (record.isSuperset) {

@@ -75,7 +75,7 @@ fun WorkoutSessionCard(
             .padding(horizontal = 16.dp)
             .clip(RoundedCornerShape(20.dp))
             .background(FjTheme.colors.surface)
-            .padding(start = 20.dp, top = 16.dp, bottom = 16.dp, end = 12.dp),
+            .padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {

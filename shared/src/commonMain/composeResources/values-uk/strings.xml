@@ -30,8 +30,8 @@
     <string name="workout_menu_delete">Видалити</string>
 
     <!-- Delete confirm -->
-    <string name="workout_delete_title">Видалити цю вправу?</string>
-    <string name="workout_delete_message">Цю дію не можна скасувати.</string>
+    <string name="workout_delete_title">Видалити вправу?</string>
+    <string name="workout_delete_message">Записані підходи буде видалено з сьогоднішнього тренування. Цю дію не можна скасувати.</string>
 
     <!-- Common -->
     <string name="common_cancel">Скасувати</string>
