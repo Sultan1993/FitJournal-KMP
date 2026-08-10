@@ -45,6 +45,12 @@ actual object LocaleFormatters {
             .withLocale(Locale.getDefault())
             .format(date.toJavaLocalDate())
 
+    // getBestDateTimePattern is Android-only; approximate the skeleton with a
+    // fixed pattern mirroring the same field set (day + short month [+ year]).
+    actual fun formatDayShortMonth(date: LocalDate, withYear: Boolean): String =
+        DateTimeFormatter.ofPattern(if (withYear) "d MMM y" else "d MMM", Locale.getDefault())
+            .format(date.toJavaLocalDate())
+
     actual fun ordinal(n: Int): String = when (Locale.getDefault().language) {
         "en" -> {
             val suffix = when {

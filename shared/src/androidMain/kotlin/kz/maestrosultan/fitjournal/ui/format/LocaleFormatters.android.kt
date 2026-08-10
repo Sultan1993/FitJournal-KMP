@@ -43,6 +43,9 @@ actual object LocaleFormatters {
 
     actual fun formatDayMonthYear(date: LocalDate): String = skeleton("dMMMMy", date)
 
+    actual fun formatDayShortMonth(date: LocalDate, withYear: Boolean): String =
+        skeleton(if (withYear) "dMMMy" else "dMMM", date)
+
     // Skeleton → best locale pattern (order/separators per region), formatted in
     // UTC against noon so the device zone can't shift the rendered calendar day.
     private fun skeleton(template: String, date: LocalDate): String {

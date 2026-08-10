@@ -41,6 +41,9 @@ expect object LocaleFormatters {
     /** Day + month + year for the current locale (skeleton "dMMMMy"). */
     fun formatDayMonthYear(date: LocalDate): String
 
+    /** Day + short month for the current locale (skeleton "dMMM"/"dMMMy" with [withYear]). */
+    fun formatDayShortMonth(date: LocalDate, withYear: Boolean = false): String
+
     /** Localized ordinal, e.g. 3 -> "3rd". */
     fun ordinal(n: Int): String
 
