@@ -81,6 +81,8 @@ private class FakeSessionRepo(
 
     override suspend fun getRunningSession(userId: String): WorkoutSession? = running
 
+    override suspend fun setSessionComment(userId: String, sessionUuid: String, comment: String?) = Unit
+
     override suspend fun endSession(userId: String): WorkoutSession? {
         endCalls++
         if (endDelayMillis > 0) delay(endDelayMillis)

@@ -11,6 +11,7 @@
 -- survive reinstall.
 --
 -- date = LocalDate.toString(); startedAt/endedAt = Instant ISO-8601 TEXT.
+-- comment = optional free-text note the user attaches to the workout (null = none).
 CREATE TABLE workoutSessions (
     uuid TEXT PRIMARY KEY NOT NULL,
     userId TEXT NOT NULL,
@@ -18,7 +19,8 @@ CREATE TABLE workoutSessions (
     date TEXT NOT NULL,
     workoutNumber INTEGER NOT NULL,
     startedAt TEXT NOT NULL,
-    endedAt TEXT
+    endedAt TEXT,
+    comment TEXT
 );
 
 -- One session per page: a (userId, journalId, date, workoutNumber) has at most
@@ -80,6 +82,14 @@ endSessionById:
 UPDATE workoutSessions
 SET endedAt = ?
 WHERE uuid = ? AND endedAt IS NULL;
+
+-- Set (or clear) the free-text note on one session. userId-scoped defensively
+-- so a stray uuid can never touch another user's row. Live or finished — a note
+-- can be added while the workout runs or after it's done.
+updateSessionComment:
+UPDATE workoutSessions
+SET comment = ?
+WHERE uuid = ? AND userId = ?;
 
 -- Discard ONE session by id — the empty-workout cleanup: a workout with no
 -- records is not a workout, so a session started-then-ended-with-nothing-logged

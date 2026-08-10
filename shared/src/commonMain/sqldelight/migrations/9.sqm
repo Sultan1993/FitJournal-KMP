@@ -17,7 +17,8 @@ CREATE TABLE workoutSessions (
     date TEXT NOT NULL,
     workoutNumber INTEGER NOT NULL,
     startedAt TEXT NOT NULL,
-    endedAt TEXT
+    endedAt TEXT,
+    comment TEXT
 );
 
 CREATE UNIQUE INDEX idx_workoutSessions_page

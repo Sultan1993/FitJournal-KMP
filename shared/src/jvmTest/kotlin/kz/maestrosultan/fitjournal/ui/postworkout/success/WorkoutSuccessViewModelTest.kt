@@ -513,6 +513,7 @@ class WorkoutSuccessViewModelTest {
         ): WorkoutSession = boom()
 
         override suspend fun endSession(userId: String): WorkoutSession? = boom()
+        override suspend fun setSessionComment(userId: String, sessionUuid: String, comment: String?) = boom()
         override suspend fun deleteSession(userId: String, sessionUuid: String) = boom()
         override suspend fun deleteUserSessions(userId: String) = boom()
     }
