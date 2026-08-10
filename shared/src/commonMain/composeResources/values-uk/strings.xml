@@ -149,4 +149,33 @@
     <string name="workout_first_workout_hint">Натисніть «+», щоб додати вправи та почати записувати підходи</string>
     <string name="common_today">Сьогодні</string>
     <string name="common_yesterday">Вчора</string>
+
+    <!-- History screen -->
+    <string name="history_empty_message">Тут з'являться ваші тренування</string>
+    <string name="history_this_week">Цей тиждень</string>
+    <string name="history_last_week">Минулий тиждень</string>
+    <plurals name="history_workout_count">
+        <item quantity="one">%1$d тренування</item>
+        <item quantity="few">%1$d тренування</item>
+        <item quantity="many">%1$d тренувань</item>
+        <item quantity="other">%1$d тренування</item>
+    </plurals>
+    <plurals name="history_exercise_count">
+        <item quantity="one">%1$d вправа</item>
+        <item quantity="few">%1$d вправи</item>
+        <item quantity="many">%1$d вправ</item>
+        <item quantity="other">%1$d вправи</item>
+    </plurals>
+    <plurals name="history_set_count">
+        <item quantity="one">%1$d підхід</item>
+        <item quantity="few">%1$d підходи</item>
+        <item quantity="many">%1$d підходів</item>
+        <item quantity="other">%1$d підходи</item>
+    </plurals>
+    <plurals name="history_days_left">
+        <item quantity="one">залишився %1$d день</item>
+        <item quantity="few">залишилося %1$d дні</item>
+        <item quantity="many">залишилося %1$d днів</item>
+        <item quantity="other">залишилося %1$d дня</item>
+    </plurals>
 </resources>

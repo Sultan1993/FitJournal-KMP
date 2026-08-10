@@ -149,4 +149,33 @@
     <string name="workout_first_workout_hint">Нажмите + чтобы добавить упражнения и начать записывать подходы</string>
     <string name="common_today">Сегодня</string>
     <string name="common_yesterday">Вчера</string>
+
+    <!-- History screen -->
+    <string name="history_empty_message">Здесь появятся ваши тренировки</string>
+    <string name="history_this_week">Эта неделя</string>
+    <string name="history_last_week">Прошлая неделя</string>
+    <plurals name="history_workout_count">
+        <item quantity="one">%1$d тренировка</item>
+        <item quantity="few">%1$d тренировки</item>
+        <item quantity="many">%1$d тренировок</item>
+        <item quantity="other">%1$d тренировки</item>
+    </plurals>
+    <plurals name="history_exercise_count">
+        <item quantity="one">%1$d упражнение</item>
+        <item quantity="few">%1$d упражнения</item>
+        <item quantity="many">%1$d упражнений</item>
+        <item quantity="other">%1$d упражнения</item>
+    </plurals>
+    <plurals name="history_set_count">
+        <item quantity="one">%1$d подход</item>
+        <item quantity="few">%1$d подхода</item>
+        <item quantity="many">%1$d подходов</item>
+        <item quantity="other">%1$d подхода</item>
+    </plurals>
+    <plurals name="history_days_left">
+        <item quantity="one">остался %1$d день</item>
+        <item quantity="few">осталось %1$d дня</item>
+        <item quantity="many">осталось %1$d дней</item>
+        <item quantity="other">осталось %1$d дня</item>
+    </plurals>
 </resources>

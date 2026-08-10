@@ -143,4 +143,25 @@
     <string name="workout_first_workout_hint">Drücke +, um Übungen hinzuzufügen und deine Sätze zu protokollieren</string>
     <string name="common_today">Heute</string>
     <string name="common_yesterday">Gestern</string>
+
+    <!-- History screen -->
+    <string name="history_empty_message">Deine Workouts erscheinen hier</string>
+    <string name="history_this_week">Diese Woche</string>
+    <string name="history_last_week">Letzte Woche</string>
+    <plurals name="history_workout_count">
+        <item quantity="one">%1$d Workout</item>
+        <item quantity="other">%1$d Workouts</item>
+    </plurals>
+    <plurals name="history_exercise_count">
+        <item quantity="one">%1$d Übung</item>
+        <item quantity="other">%1$d Übungen</item>
+    </plurals>
+    <plurals name="history_set_count">
+        <item quantity="one">%1$d Satz</item>
+        <item quantity="other">%1$d Sätze</item>
+    </plurals>
+    <plurals name="history_days_left">
+        <item quantity="one">noch %1$d Tag</item>
+        <item quantity="other">noch %1$d Tage</item>
+    </plurals>
 </resources>
