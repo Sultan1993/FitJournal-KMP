@@ -100,6 +100,7 @@ private fun WorkoutListBody(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WorkoutListContentArea(
     content: WorkoutListContract.Content,
@@ -115,17 +116,34 @@ private fun WorkoutListContentArea(
                 CircularProgressIndicator(color = FjTheme.colors.brand)
             }
 
-        is WorkoutListContract.Content.Empty ->
-            Column(modifier = modifier.fillMaxSize()) {
-                content.journalRow?.let { row ->
-                    WorkoutListJournalRow(
-                        name = row.name,
-                        onClick = { dispatch(WorkoutListContract.ViewAction.OpenJournalPicker) },
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
-                    )
+        is WorkoutListContract.Content.Empty -> {
+            // Native parity: the empty state stays pull-to-refreshable. A scrollable
+            // LazyColumn (empty item fills the viewport) gives PTR its overscroll
+            // gesture even with no rows; without an onRefresh, no PTR machinery.
+            val empty: @Composable (Modifier) -> Unit = { m ->
+                LazyColumn(modifier = m.fillMaxSize()) {
+                    content.journalRow?.let { row ->
+                        item(key = "journal") {
+                            WorkoutListJournalRow(
+                                name = row.name,
+                                onClick = { dispatch(WorkoutListContract.ViewAction.OpenJournalPicker) },
+                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                            )
+                        }
+                    }
+                    item(key = "empty") {
+                        WorkoutListEmptyState(modifier = Modifier.fillParentMaxSize())
+                    }
                 }
-                WorkoutListEmptyState(modifier = Modifier.fillMaxWidth().weight(1f))
             }
+            if (onRefresh != null) {
+                PullToRefreshBox(isRefreshing = isRefreshing, onRefresh = onRefresh, modifier = modifier) {
+                    empty(Modifier)
+                }
+            } else {
+                empty(modifier)
+            }
+        }
 
         is WorkoutListContract.Content.Loaded ->
             WorkoutListList(
