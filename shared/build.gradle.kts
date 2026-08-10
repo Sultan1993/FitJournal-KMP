@@ -75,11 +75,11 @@ kotlin {
             // Compose Multiplatform UI (kept in commonMain per the "one huge
             // module" directive — clean layering enforced by package discipline:
             // domain/ and data/ must NEVER import androidx.compose.*).
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material3)
-            implementation(compose.ui)
-            implementation(compose.components.resources)
+            implementation(libs.compose.runtime)
+            implementation(libs.compose.foundation)
+            implementation(libs.compose.material3)
+            implementation(libs.compose.ui.core)
+            implementation(libs.compose.components.resources)
             implementation(libs.androidx.lifecycle.viewmodel.compose)
             implementation(libs.androidx.lifecycle.runtime.compose)
             implementation(libs.calendar.compose)
