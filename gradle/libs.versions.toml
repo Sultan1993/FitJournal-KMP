@@ -10,6 +10,7 @@ compose = "1.11.1"
 lifecycle = "2.11.0"
 calendar = "2.10.1"
 reorderable = "3.1.0"
+vico = "3.2.3"
 
 [libraries]
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib-common", version.ref = "kotlin" }
@@ -24,6 +25,7 @@ androidx-lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecy
 androidx-lifecycle-runtime-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
 calendar-compose = { module = "com.kizitonwose.calendar:compose-multiplatform", version.ref = "calendar" }
 reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
+vico-compose = { group = "com.patrykandpatrick.vico", name = "compose", version.ref = "vico" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 # Compose Multiplatform's v2 UI test API (runComposeUiTest); call sites need
 # @OptIn(ExperimentalTestApi::class).
