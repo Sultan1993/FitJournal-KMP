@@ -1,4 +1,4 @@
-package kz.maestrosultan.fitjournal.ui.history
+package kz.maestrosultan.fitjournal.ui.workoutlist
 
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.DayOfWeek
@@ -16,8 +16,8 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 private const val HERO_WEEK_COUNT = 11
 
 /**
- * Folds the selected journal's recent records into the [HistoryContract.Content]
- * the History screen renders. Pure — no coroutines, no repositories, no unit
+ * Folds the selected journal's recent records into the [WorkoutListContract.Content]
+ * the WorkoutList screen renders. Pure — no coroutines, no repositories, no unit
  * conversion: tonnage stays in the raw stored number ([TonnageCalculator]), the
  * host relabels it at render time from the current measurement system.
  *
@@ -26,15 +26,15 @@ private const val HERO_WEEK_COUNT = 11
  * journal-switch row). `firstDayOfWeek` is passed explicitly so week bucketing
  * is deterministic and matches the calendar's locale week start.
  */
-fun buildHistoryFeed(
+fun buildWorkoutListFeed(
     records: List<WorkoutRecord>,
     journals: List<Journal>,
     selectedJournalId: String,
     today: LocalDate,
     firstDayOfWeek: DayOfWeek,
-): HistoryContract.Content {
+): WorkoutListContract.Content {
     val journalRow = journalRow(journals, selectedJournalId)
-    if (records.isEmpty()) return HistoryContract.Content.Empty(journalRow)
+    if (records.isEmpty()) return WorkoutListContract.Content.Empty(journalRow)
 
     fun weekStart(d: LocalDate): LocalDate {
         val daysFromStart = (d.dayOfWeek.isoDayNumber - firstDayOfWeek.isoDayNumber + 7) % 7
@@ -61,13 +61,13 @@ fun buildHistoryFeed(
         currentWeekStart.minus(back * 7, DateTimeUnit.DAY)
     }
     val todayOffset = (today.dayOfWeek.isoDayNumber - firstDayOfWeek.isoDayNumber + 7) % 7
-    val hero = HistoryContract.Hero(
+    val hero = WorkoutListContract.Hero(
         currentWeekTonnage = tonnageOf(currentWeekStart),
         delta = delta(currentWeekStart),
         workoutCount = distinctWorkoutCount(buckets[currentWeekStart].orEmpty()),
         daysLeft = 6 - todayOffset,
         slots = slotStarts.map { s ->
-            HistoryContract.WeekSlot(tonnage = tonnageOf(s), isCurrentWeek = s == currentWeekStart)
+            WorkoutListContract.WeekSlot(tonnage = tonnageOf(s), isCurrentWeek = s == currentWeekStart)
         },
         monthLabels = monthLabels(slotStarts),
     )
@@ -75,13 +75,13 @@ fun buildHistoryFeed(
     val weeks = buckets.keys.sortedDescending().map { s ->
         val weekRecords = buckets.getValue(s)
         val endInclusive = s.plus(6, DateTimeUnit.DAY)
-        HistoryContract.WeekSection(
+        WorkoutListContract.WeekSection(
             start = s,
             endInclusive = endInclusive,
             kind = when (s) {
-                currentWeekStart -> HistoryContract.WeekKind.ThisWeek
-                lastWeekStart -> HistoryContract.WeekKind.LastWeek
-                else -> HistoryContract.WeekKind.Older
+                currentWeekStart -> WorkoutListContract.WeekKind.ThisWeek
+                lastWeekStart -> WorkoutListContract.WeekKind.LastWeek
+                else -> WorkoutListContract.WeekKind.Older
             },
             workoutCount = distinctWorkoutCount(weekRecords),
             tonnage = tonnageOf(s),
@@ -92,34 +92,34 @@ fun buildHistoryFeed(
         )
     }
 
-    return HistoryContract.Content.Loaded(journalRow = journalRow, hero = hero, weeks = weeks)
+    return WorkoutListContract.Content.Loaded(journalRow = journalRow, hero = hero, weeks = weeks)
 }
 
-private fun journalRow(journals: List<Journal>, selectedJournalId: String): HistoryContract.JournalRow? {
+private fun journalRow(journals: List<Journal>, selectedJournalId: String): WorkoutListContract.JournalRow? {
     if (journals.size <= 1) return null
     val journal = journals.firstOrNull { it.id == selectedJournalId } ?: journals.first()
-    return HistoryContract.JournalRow(journal.name)
+    return WorkoutListContract.JournalRow(journal.name)
 }
 
 /** A "workout" is a distinct (date, workoutNumber) pair. */
 private fun distinctWorkoutCount(records: List<WorkoutRecord>): Int =
     records.map { it.date to it.workoutNumber }.distinct().size
 
-private fun monthLabels(slotStarts: List<LocalDate>): List<HistoryContract.MonthLabel> {
-    val labels = mutableListOf<HistoryContract.MonthLabel>()
+private fun monthLabels(slotStarts: List<LocalDate>): List<WorkoutListContract.MonthLabel> {
+    val labels = mutableListOf<WorkoutListContract.MonthLabel>()
     for (start in slotStarts) {
         val month = start.monthNumber
         val last = labels.lastOrNull()
         if (last != null && last.month1to12 == month) {
             labels[labels.lastIndex] = last.copy(slotCount = last.slotCount + 1)
         } else {
-            labels.add(HistoryContract.MonthLabel(month1to12 = month, slotCount = 1))
+            labels.add(WorkoutListContract.MonthLabel(month1to12 = month, slotCount = 1))
         }
     }
     return labels
 }
 
-private fun dayRows(weekRecords: List<WorkoutRecord>): List<HistoryContract.DayRow> =
+private fun dayRows(weekRecords: List<WorkoutRecord>): List<WorkoutListContract.DayRow> =
     weekRecords.groupBy { it.date }
         .entries
         .sortedByDescending { it.key }
@@ -132,7 +132,7 @@ private fun dayRows(weekRecords: List<WorkoutRecord>): List<HistoryContract.DayR
                 .sortedWith(compareByDescending<Map.Entry<CategoryType, Int>> { it.value }.thenBy { it.key.id })
                 .take(3)
                 .map { it.key }
-            HistoryContract.DayRow(
+            WorkoutListContract.DayRow(
                 date = date,
                 topCategories = topCategories,
                 tonnage = TonnageCalculator.forRecords(dayRecords),

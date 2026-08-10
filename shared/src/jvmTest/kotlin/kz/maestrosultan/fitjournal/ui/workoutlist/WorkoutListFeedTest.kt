@@ -1,4 +1,4 @@
-package kz.maestrosultan.fitjournal.ui.history
+package kz.maestrosultan.fitjournal.ui.workoutlist
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -19,14 +19,14 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSet
 
 /**
- * `buildHistoryFeed` — the pure aggregation the History screen renders. Clock is
+ * `buildWorkoutListFeed` — the pure aggregation the WorkoutList screen renders. Clock is
  * fixed at Wednesday 2026-08-05; `firstDayOfWeek` is passed explicitly so the
  * week-bucket math is deterministic and not read from the host locale.
  *
  * Under MONDAY the current week starts 2026-08-03 and the 11 hero slots run
  * 2026-05-25 (oldest) -> 2026-08-03 (current).
  */
-class HistoryFeedTest {
+class WorkoutListFeedTest {
 
     // ── fixtures ─────────────────────────────────────────────────────────
     private val MON = DayOfWeek.MONDAY
@@ -104,28 +104,28 @@ class HistoryFeedTest {
         journals: List<Journal> = listOf(journal("j1", "Main")),
         selectedJournalId: String = "j1",
         firstDayOfWeek: DayOfWeek = MON,
-    ) = buildHistoryFeed(records, journals, selectedJournalId, TODAY, firstDayOfWeek)
+    ) = buildWorkoutListFeed(records, journals, selectedJournalId, TODAY, firstDayOfWeek)
 
     private fun loaded(
         records: List<WorkoutRecord>,
         journals: List<Journal> = listOf(journal("j1", "Main")),
         selectedJournalId: String = "j1",
         firstDayOfWeek: DayOfWeek = MON,
-    ) = feed(records, journals, selectedJournalId, firstDayOfWeek) as HistoryContract.Content.Loaded
+    ) = feed(records, journals, selectedJournalId, firstDayOfWeek) as WorkoutListContract.Content.Loaded
 
     // ── empty state ──────────────────────────────────────────────────────
     @Test
     fun emptyWithOneJournal_hasNoJournalRow() {
         val content = feed(emptyList())
-        assertEquals(HistoryContract.Content.Empty(null), content)
+        assertEquals(WorkoutListContract.Content.Empty(null), content)
     }
 
     @Test
     fun emptyWithTwoJournals_carriesSelectedJournalRow_fallingBackToFirst() {
         val journals = listOf(journal("j1", "Main"), journal("j2", "Cut"))
-        val selected = feed(emptyList(), journals = journals, selectedJournalId = "j2") as HistoryContract.Content.Empty
+        val selected = feed(emptyList(), journals = journals, selectedJournalId = "j2") as WorkoutListContract.Content.Empty
         assertEquals("Cut", selected.journalRow?.name)
-        val fallback = feed(emptyList(), journals = journals, selectedJournalId = "does-not-exist") as HistoryContract.Content.Empty
+        val fallback = feed(emptyList(), journals = journals, selectedJournalId = "does-not-exist") as WorkoutListContract.Content.Empty
         assertEquals("Main", fallback.journalRow?.name, "unmatched id falls back to the first journal")
     }
 
@@ -144,7 +144,7 @@ class HistoryFeedTest {
     fun deltaNull_forEarliestDataWeek_andHeroWhenThisWeekIsFirst() {
         val loaded = loaded(listOf(rec(TODAY, CategoryType.CHEST, 60.0, 8)))
         assertNull(loaded.hero.delta, "no earlier week has data")
-        val thisWeek = loaded.weeks.single { it.kind == HistoryContract.WeekKind.ThisWeek }
+        val thisWeek = loaded.weeks.single { it.kind == WorkoutListContract.WeekKind.ThisWeek }
         assertNull(thisWeek.delta)
     }
 
@@ -158,9 +158,9 @@ class HistoryFeedTest {
             ),
         )
         assertEquals(80.0, loaded.hero.delta)
-        assertEquals(80.0, loaded.weeks.single { it.kind == HistoryContract.WeekKind.ThisWeek }.delta)
+        assertEquals(80.0, loaded.weeks.single { it.kind == WorkoutListContract.WeekKind.ThisWeek }.delta)
         assertNull(
-            loaded.weeks.single { it.kind == HistoryContract.WeekKind.LastWeek }.delta,
+            loaded.weeks.single { it.kind == WorkoutListContract.WeekKind.LastWeek }.delta,
             "the earliest data week has no earlier week to compare",
         )
     }
@@ -209,10 +209,10 @@ class HistoryFeedTest {
         assertEquals(11, hero.monthLabels.sumOf { it.slotCount })
         assertEquals(
             listOf(
-                HistoryContract.MonthLabel(5, 1),
-                HistoryContract.MonthLabel(6, 5),
-                HistoryContract.MonthLabel(7, 4),
-                HistoryContract.MonthLabel(8, 1),
+                WorkoutListContract.MonthLabel(5, 1),
+                WorkoutListContract.MonthLabel(6, 5),
+                WorkoutListContract.MonthLabel(7, 4),
+                WorkoutListContract.MonthLabel(8, 1),
             ),
             hero.monthLabels,
         )
@@ -245,7 +245,7 @@ class HistoryFeedTest {
         val cardio = exercise(TODAY, CategoryType.CARDIO, listOf(cardioSet(TODAY)))
         val loaded = loaded(listOf(record(TODAY, exercises = listOf(cardio))))
         assertEquals(0.0, loaded.hero.currentWeekTonnage)
-        val thisWeek = loaded.weeks.single { it.kind == HistoryContract.WeekKind.ThisWeek }
+        val thisWeek = loaded.weeks.single { it.kind == WorkoutListContract.WeekKind.ThisWeek }
         assertEquals(0.0, thisWeek.tonnage)
         assertEquals(0.0, thisWeek.days.single().tonnage)
     }
@@ -257,12 +257,12 @@ class HistoryFeedTest {
         val underMonday = loaded(listOf(rec(sunday, CategoryType.CHEST, 60.0, 8)), firstDayOfWeek = MON)
         // Monday-start: Sunday 08-02 belongs to the week starting 07-27 (last week).
         assertEquals(LocalDate(2026, 7, 27), underMonday.weeks.first().start)
-        assertEquals(HistoryContract.WeekKind.LastWeek, underMonday.weeks.first().kind)
+        assertEquals(WorkoutListContract.WeekKind.LastWeek, underMonday.weeks.first().kind)
 
         val underSunday = loaded(listOf(rec(sunday, CategoryType.CHEST, 60.0, 8)), firstDayOfWeek = SUN)
         // Sunday-start: 08-02 IS a week start, and it is the current week.
         assertEquals(LocalDate(2026, 8, 2), underSunday.weeks.first().start)
-        assertEquals(HistoryContract.WeekKind.ThisWeek, underSunday.weeks.first().kind)
+        assertEquals(WorkoutListContract.WeekKind.ThisWeek, underSunday.weeks.first().kind)
     }
 
     // ── journal row on the Loaded case ───────────────────────────────────
@@ -288,7 +288,7 @@ class HistoryFeedTest {
             ),
         )
         assertEquals(
-            listOf(HistoryContract.WeekKind.ThisWeek, HistoryContract.WeekKind.LastWeek, HistoryContract.WeekKind.Older),
+            listOf(WorkoutListContract.WeekKind.ThisWeek, WorkoutListContract.WeekKind.LastWeek, WorkoutListContract.WeekKind.Older),
             loaded.weeks.map { it.kind },
         )
         assertEquals(loaded.weeks.map { it.start }.sortedDescending(), loaded.weeks.map { it.start }, "weeks newest first")
@@ -331,7 +331,7 @@ class HistoryFeedTest {
                 rec(LocalDate(2025, 12, 15), CategoryType.CHEST, 60.0, 8), // last year -> true
             ),
         )
-        val thisYearWeek = loaded.weeks.single { it.endInclusive.year == 2026 && it.start.year == 2026 && it.kind == HistoryContract.WeekKind.Older }
+        val thisYearWeek = loaded.weeks.single { it.endInclusive.year == 2026 && it.start.year == 2026 && it.kind == WorkoutListContract.WeekKind.Older }
         assertTrue(!thisYearWeek.titleShowsYear, "a week entirely inside 2026 hides the year")
         val lastYearWeek = loaded.weeks.single { it.start.year == 2025 }
         assertTrue(lastYearWeek.titleShowsYear, "a week ending in 2025 shows the year")

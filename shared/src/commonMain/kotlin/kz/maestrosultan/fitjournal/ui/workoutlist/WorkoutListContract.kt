@@ -1,4 +1,4 @@
-package kz.maestrosultan.fitjournal.ui.history
+package kz.maestrosultan.fitjournal.ui.workoutlist
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
@@ -8,13 +8,13 @@ import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 
 /**
- * MVI contract for the Workout History screen (per-screen, not a shared generic
+ * MVI contract for the Workout WorkoutList screen (per-screen, not a shared generic
  * model — same shape as [kz.maestrosultan.fitjournal.ui.workout.WorkoutContract]).
  * Public rather than internal because the native iOS/Android hosts read
  * [ViewModel.viewState], collect [ViewModel.viewEffect] and call
  * [ViewModel.dispatch] across the SKIE bridge.
  */
-object HistoryContract {
+object WorkoutListContract {
 
     interface ViewModel {
         val viewState: StateFlow<ViewState>

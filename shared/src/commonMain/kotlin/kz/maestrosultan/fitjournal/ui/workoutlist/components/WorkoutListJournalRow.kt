@@ -1,4 +1,4 @@
-package kz.maestrosultan.fitjournal.ui.history.components
+package kz.maestrosultan.fitjournal.ui.workoutlist.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -28,7 +28,7 @@ import org.jetbrains.compose.resources.painterResource
  * host to present its native picker via [onClick] (OpenJournalPicker).
  */
 @Composable
-fun HistoryJournalRow(
+fun WorkoutListJournalRow(
     name: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,

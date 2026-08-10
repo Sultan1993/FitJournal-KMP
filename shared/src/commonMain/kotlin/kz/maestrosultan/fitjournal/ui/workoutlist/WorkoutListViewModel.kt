@@ -1,4 +1,4 @@
-package kz.maestrosultan.fitjournal.ui.history
+package kz.maestrosultan.fitjournal.ui.workoutlist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -32,8 +32,8 @@ import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
 import kz.maestrosultan.fitjournal.kmp.time.firstDayOfWeekFromLocale
 
 /**
- * Shared presentation for the Workout History screen — the ONE ViewModel both
- * apps use, in the per-screen MVI [HistoryContract] shape: one entry point
+ * Shared presentation for the Workout WorkoutList screen — the ONE ViewModel both
+ * apps use, in the per-screen MVI [WorkoutListContract] shape: one entry point
  * ([dispatch]) and two outputs ([viewState] + one-shot [viewEffect]). A sibling
  * of [kz.maestrosultan.fitjournal.ui.workout.WorkoutViewModel], built in its image.
  *
@@ -42,20 +42,20 @@ import kz.maestrosultan.fitjournal.kmp.time.firstDayOfWeekFromLocale
  * no network, no refreshing state — pull-to-refresh is a host concern injected
  * into the screen, never seen here.
  *
- * All aggregation runs in [kz.maestrosultan.fitjournal.ui.history.buildHistoryFeed],
+ * All aggregation runs in [kz.maestrosultan.fitjournal.ui.workoutlist.buildWorkoutListFeed],
  * hopped onto [Dispatchers.Default] so 3 years of record trees never fold on the
  * main thread (record-load perf contract). NAVIGATION (details, journal picker)
- * leaves as [HistoryContract.ViewEffect]s the native host performs.
+ * leaves as [WorkoutListContract.ViewEffect]s the native host performs.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class HistoryViewModel(
+class WorkoutListViewModel(
     private val recordRepository: RecordRepository,
     private val journalRepository: JournalRepository,
     sessionState: Flow<UserSessionState?> = UserSession.state,
     private val clock: Clock = Clock.System,
     private val timeZone: TimeZone = TimeZone.currentSystemDefault(),
     private val firstDayOfWeek: DayOfWeek = firstDayOfWeekFromLocale(),
-) : ViewModel(), HistoryContract.ViewModel {
+) : ViewModel(), WorkoutListContract.ViewModel {
 
     private val session = sessionState.filterNotNull()
 
@@ -63,14 +63,14 @@ class HistoryViewModel(
     private val calendarVisible = MutableStateFlow(false)
     private val workoutDays = MutableStateFlow<Map<LocalDate, List<CategoryType>>>(emptyMap())
 
-    private val _uiState = MutableStateFlow(HistoryContract.ViewState.initial(today()))
-    override val viewState: StateFlow<HistoryContract.ViewState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(WorkoutListContract.ViewState.initial(today()))
+    override val viewState: StateFlow<WorkoutListContract.ViewState> = _uiState.asStateFlow()
 
     // One-shot navigation outputs. Buffered single-consumer channel (the host)
     // via receiveAsFlow, so an effect emitted before the host starts collecting
     // isn't dropped — see kotlin-flow-state-event-modeling.
-    private val _effects = Channel<HistoryContract.ViewEffect>(Channel.BUFFERED)
-    override val viewEffect: Flow<HistoryContract.ViewEffect> = _effects.receiveAsFlow()
+    private val _effects = Channel<WorkoutListContract.ViewEffect>(Channel.BUFFERED)
+    override val viewEffect: Flow<WorkoutListContract.ViewEffect> = _effects.receiveAsFlow()
 
     // Latest identity, cached for the calendar-dot loaders (which run outside
     // the feed pipeline). Mirrors WorkoutViewModel's userId/journalId fields.
@@ -98,14 +98,14 @@ class HistoryViewModel(
         }.mapLatest { (s, records, journals) ->
             val today = today()
             val content = withContext(Dispatchers.Default) {
-                buildHistoryFeed(records, journals, s.journalId, today, firstDayOfWeek)
+                buildWorkoutListFeed(records, journals, s.journalId, today, firstDayOfWeek)
             }
             FeedResult(content, s.measurementSystem, today)
         }
 
         viewModelScope.launch {
             combine(feed, calendarVisible, workoutDays) { f, calVisible, days ->
-                HistoryContract.ViewState(
+                WorkoutListContract.ViewState(
                     content = f.content,
                     calendarVisible = calVisible,
                     workoutDays = days,
@@ -137,17 +137,17 @@ class HistoryViewModel(
 
     // ─── MVI entry point ────────────────────────────────────────────────
 
-    override fun dispatch(action: HistoryContract.ViewAction) {
+    override fun dispatch(action: WorkoutListContract.ViewAction) {
         when (action) {
-            HistoryContract.ViewAction.ToggleCalendar -> onToggleCalendar()
-            is HistoryContract.ViewAction.CalendarMonthChanged -> onCalendarMonthChanged(action.year, action.month)
-            is HistoryContract.ViewAction.SelectDate -> onSelectDate(action.date)
-            is HistoryContract.ViewAction.OpenDay -> emit(HistoryContract.ViewEffect.OpenWorkoutDetails(action.date))
-            HistoryContract.ViewAction.OpenJournalPicker -> emit(HistoryContract.ViewEffect.OpenJournalPicker)
+            WorkoutListContract.ViewAction.ToggleCalendar -> onToggleCalendar()
+            is WorkoutListContract.ViewAction.CalendarMonthChanged -> onCalendarMonthChanged(action.year, action.month)
+            is WorkoutListContract.ViewAction.SelectDate -> onSelectDate(action.date)
+            is WorkoutListContract.ViewAction.OpenDay -> emit(WorkoutListContract.ViewEffect.OpenWorkoutDetails(action.date))
+            WorkoutListContract.ViewAction.OpenJournalPicker -> emit(WorkoutListContract.ViewEffect.OpenJournalPicker)
         }
     }
 
-    private fun emit(effect: HistoryContract.ViewEffect) {
+    private fun emit(effect: WorkoutListContract.ViewEffect) {
         _effects.trySend(effect)
     }
 
@@ -182,7 +182,7 @@ class HistoryViewModel(
     private fun onSelectDate(date: LocalDate) {
         if (workoutDays.value[date]?.isNotEmpty() == true) {
             calendarVisible.value = false
-            emit(HistoryContract.ViewEffect.OpenWorkoutDetails(date))
+            emit(WorkoutListContract.ViewEffect.OpenWorkoutDetails(date))
         }
     }
 
@@ -223,7 +223,7 @@ class HistoryViewModel(
     }
 
     private data class FeedResult(
-        val content: HistoryContract.Content,
+        val content: WorkoutListContract.Content,
         val measurementSystem: MeasurementSystem,
         val today: LocalDate,
     )

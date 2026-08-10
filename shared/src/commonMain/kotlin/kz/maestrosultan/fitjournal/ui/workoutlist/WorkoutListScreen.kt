@@ -1,4 +1,4 @@
-package kz.maestrosultan.fitjournal.ui.history
+package kz.maestrosultan.fitjournal.ui.workoutlist
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -28,17 +28,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import kz.maestrosultan.fitjournal.ui.history.components.HistoryDayRow
-import kz.maestrosultan.fitjournal.ui.history.components.HistoryEmptyState
-import kz.maestrosultan.fitjournal.ui.history.components.HistoryHero
-import kz.maestrosultan.fitjournal.ui.history.components.HistoryJournalRow
-import kz.maestrosultan.fitjournal.ui.history.components.HistoryWeekHeader
+import kz.maestrosultan.fitjournal.ui.workoutlist.components.WorkoutListDayRow
+import kz.maestrosultan.fitjournal.ui.workoutlist.components.WorkoutListEmptyState
+import kz.maestrosultan.fitjournal.ui.workoutlist.components.WorkoutListHero
+import kz.maestrosultan.fitjournal.ui.workoutlist.components.WorkoutListJournalRow
+import kz.maestrosultan.fitjournal.ui.workoutlist.components.WorkoutListWeekHeader
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutCalendar
 
 /**
- * The shared Workout History body — the calendar overlay (in the layout flow,
+ * The shared Workout WorkoutList body — the calendar overlay (in the layout flow,
  * same animation as WorkoutScreen), then the content: a Vico weekly-volume hero
  * that scrolls with the list, week-grouped day rows, or the empty state. Hosted
  * inside each app's native nav shell (which owns the top bar and the calendar
@@ -47,14 +47,14 @@ import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutCalendar
  * are bound to sync, and never interprets [isRefreshing].
  */
 @Composable
-fun HistoryScreen(
-    viewModel: HistoryContract.ViewModel,
+fun WorkoutListScreen(
+    viewModel: WorkoutListContract.ViewModel,
     isRefreshing: Boolean = false,
     onRefresh: (() -> Unit)? = null,
 ) {
     val state by viewModel.viewState.collectAsState()
     FitJournalTheme {
-        HistoryBody(
+        WorkoutListBody(
             state = state,
             dispatch = viewModel::dispatch,
             isRefreshing = isRefreshing,
@@ -64,9 +64,9 @@ fun HistoryScreen(
 }
 
 @Composable
-private fun HistoryBody(
-    state: HistoryContract.ViewState,
-    dispatch: (HistoryContract.ViewAction) -> Unit,
+private fun WorkoutListBody(
+    state: WorkoutListContract.ViewState,
+    dispatch: (WorkoutListContract.ViewAction) -> Unit,
     isRefreshing: Boolean,
     onRefresh: (() -> Unit)?,
 ) {
@@ -82,13 +82,13 @@ private fun HistoryBody(
                 WorkoutCalendar(
                     selectedDate = state.today,
                     workoutDays = state.workoutDays,
-                    onDateSelected = { dispatch(HistoryContract.ViewAction.SelectDate(it)) },
-                    onMonthChanged = { year, month -> dispatch(HistoryContract.ViewAction.CalendarMonthChanged(year, month)) },
+                    onDateSelected = { dispatch(WorkoutListContract.ViewAction.SelectDate(it)) },
+                    onMonthChanged = { year, month -> dispatch(WorkoutListContract.ViewAction.CalendarMonthChanged(year, month)) },
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
 
-            HistoryContentArea(
+            WorkoutListContentArea(
                 content = state.content,
                 measurementSystem = state.measurementSystem,
                 dispatch = dispatch,
@@ -101,34 +101,34 @@ private fun HistoryBody(
 }
 
 @Composable
-private fun HistoryContentArea(
-    content: HistoryContract.Content,
+private fun WorkoutListContentArea(
+    content: WorkoutListContract.Content,
     measurementSystem: kz.maestrosultan.fitjournal.domain.user.MeasurementSystem,
-    dispatch: (HistoryContract.ViewAction) -> Unit,
+    dispatch: (WorkoutListContract.ViewAction) -> Unit,
     isRefreshing: Boolean,
     onRefresh: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     when (content) {
-        HistoryContract.Content.Loading ->
+        WorkoutListContract.Content.Loading ->
             Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = FjTheme.colors.brand)
             }
 
-        is HistoryContract.Content.Empty ->
+        is WorkoutListContract.Content.Empty ->
             Column(modifier = modifier.fillMaxSize()) {
                 content.journalRow?.let { row ->
-                    HistoryJournalRow(
+                    WorkoutListJournalRow(
                         name = row.name,
-                        onClick = { dispatch(HistoryContract.ViewAction.OpenJournalPicker) },
+                        onClick = { dispatch(WorkoutListContract.ViewAction.OpenJournalPicker) },
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
                     )
                 }
-                HistoryEmptyState(modifier = Modifier.fillMaxWidth().weight(1f))
+                WorkoutListEmptyState(modifier = Modifier.fillMaxWidth().weight(1f))
             }
 
-        is HistoryContract.Content.Loaded ->
-            HistoryList(
+        is WorkoutListContract.Content.Loaded ->
+            WorkoutListList(
                 loaded = content,
                 measurementSystem = measurementSystem,
                 dispatch = dispatch,
@@ -141,10 +141,10 @@ private fun HistoryContentArea(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HistoryList(
-    loaded: HistoryContract.Content.Loaded,
+private fun WorkoutListList(
+    loaded: WorkoutListContract.Content.Loaded,
     measurementSystem: kz.maestrosultan.fitjournal.domain.user.MeasurementSystem,
-    dispatch: (HistoryContract.ViewAction) -> Unit,
+    dispatch: (WorkoutListContract.ViewAction) -> Unit,
     isRefreshing: Boolean,
     onRefresh: (() -> Unit)?,
     modifier: Modifier = Modifier,
@@ -157,15 +157,15 @@ private fun HistoryList(
         ) {
             loaded.journalRow?.let { row ->
                 item(key = "journal") {
-                    HistoryJournalRow(
+                    WorkoutListJournalRow(
                         name = row.name,
-                        onClick = { dispatch(HistoryContract.ViewAction.OpenJournalPicker) },
+                        onClick = { dispatch(WorkoutListContract.ViewAction.OpenJournalPicker) },
                         modifier = Modifier.padding(vertical = 8.dp),
                     )
                 }
             }
             item(key = "hero") {
-                HistoryHero(
+                WorkoutListHero(
                     hero = loaded.hero,
                     measurementSystem = measurementSystem,
                     modifier = Modifier.padding(top = 8.dp, bottom = 12.dp),
@@ -173,17 +173,17 @@ private fun HistoryList(
             }
             loaded.weeks.forEach { week ->
                 item(key = "wh-${week.start}") {
-                    HistoryWeekHeader(
+                    WorkoutListWeekHeader(
                         section = week,
                         measurementSystem = measurementSystem,
                         modifier = Modifier.padding(top = 20.dp, bottom = 4.dp),
                     )
                 }
                 itemsIndexed(week.days, key = { _, day -> "day-${day.date}" }) { index, day ->
-                    HistoryDayRow(
+                    WorkoutListDayRow(
                         day = day,
                         measurementSystem = measurementSystem,
-                        onClick = { dispatch(HistoryContract.ViewAction.OpenDay(day.date)) },
+                        onClick = { dispatch(WorkoutListContract.ViewAction.OpenDay(day.date)) },
                     )
                     if (index < week.days.lastIndex) {
                         HorizontalDivider(

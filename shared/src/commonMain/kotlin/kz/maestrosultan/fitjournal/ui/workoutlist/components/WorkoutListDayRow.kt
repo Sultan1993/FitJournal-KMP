@@ -1,4 +1,4 @@
-package kz.maestrosultan.fitjournal.ui.history.components
+package kz.maestrosultan.fitjournal.ui.workoutlist.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,7 +22,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.history_set_count
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_workout_count
 import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
 import kz.maestrosultan.fitjournal.ui.format.NameStyle
-import kz.maestrosultan.fitjournal.ui.history.HistoryContract
+import kz.maestrosultan.fitjournal.ui.workoutlist.WorkoutListContract
 import kz.maestrosultan.fitjournal.ui.postworkout.format.nameRes
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
@@ -36,8 +36,8 @@ import org.jetbrains.compose.resources.stringResource
  * The whole row is tappable to open that day's details ([onClick] -> OpenDay).
  */
 @Composable
-fun HistoryDayRow(
-    day: HistoryContract.DayRow,
+fun WorkoutListDayRow(
+    day: WorkoutListContract.DayRow,
     measurementSystem: MeasurementSystem,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,

@@ -1,4 +1,4 @@
-package kz.maestrosultan.fitjournal.ui.history.components
+package kz.maestrosultan.fitjournal.ui.workoutlist.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -42,7 +42,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.history_this_week
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_workout_count
 import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
 import kz.maestrosultan.fitjournal.ui.format.NameStyle
-import kz.maestrosultan.fitjournal.ui.history.HistoryContract
+import kz.maestrosultan.fitjournal.ui.workoutlist.WorkoutListContract
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
 import org.jetbrains.compose.resources.pluralStringResource
@@ -55,11 +55,11 @@ private const val CHART_HEIGHT_DP = 76
  * The weekly-volume headline (design WH4): the current week's grouped tonnage +
  * unit, a delta pill against last week, a one-line "this week" subtitle, the
  * 11-week Vico column chart, and the month-label row. Pure presentation of a
- * pre-computed [HistoryContract.Hero] — no aggregation here.
+ * pre-computed [WorkoutListContract.Hero] — no aggregation here.
  */
 @Composable
-fun HistoryHero(
-    hero: HistoryContract.Hero,
+fun WorkoutListHero(
+    hero: WorkoutListContract.Hero,
     measurementSystem: MeasurementSystem,
     modifier: Modifier = Modifier,
 ) {
@@ -80,7 +80,7 @@ fun HistoryHero(
 
         hero.delta?.let { delta ->
             Spacer(Modifier.height(6.dp))
-            HistoryDeltaPill(delta = delta, measurementSystem = measurementSystem)
+            WorkoutListDeltaPill(delta = delta, measurementSystem = measurementSystem)
         }
 
         Spacer(Modifier.height(6.dp))
@@ -91,7 +91,7 @@ fun HistoryHero(
         )
 
         Spacer(Modifier.height(16.dp))
-        HistoryHeroChart(slots = hero.slots, modifier = Modifier.fillMaxWidth())
+        WorkoutListHeroChart(slots = hero.slots, modifier = Modifier.fillMaxWidth())
 
         Spacer(Modifier.height(6.dp))
         MonthLabelRow(labels = hero.monthLabels)
@@ -99,7 +99,7 @@ fun HistoryHero(
 }
 
 @Composable
-private fun heroSubtitle(hero: HistoryContract.Hero): String {
+private fun heroSubtitle(hero: WorkoutListContract.Hero): String {
     val workouts = pluralStringResource(Res.plurals.history_workout_count, hero.workoutCount, hero.workoutCount)
     val base = "${stringResource(Res.string.history_this_week)} · $workouts"
     return if (hero.daysLeft == 0) {
@@ -111,7 +111,7 @@ private fun heroSubtitle(hero: HistoryContract.Hero): String {
 }
 
 @Composable
-private fun MonthLabelRow(labels: List<HistoryContract.MonthLabel>, modifier: Modifier = Modifier) {
+private fun MonthLabelRow(labels: List<WorkoutListContract.MonthLabel>, modifier: Modifier = Modifier) {
     Row(modifier = modifier.fillMaxWidth()) {
         labels.forEachIndexed { index, label ->
             Text(
@@ -132,8 +132,8 @@ private fun MonthLabelRow(labels: List<HistoryContract.MonthLabel>, modifier: Mo
  * all-zero window still renders 11 stubs — never a blank box, never a divide.
  */
 @Composable
-private fun HistoryHeroChart(
-    slots: List<HistoryContract.WeekSlot>,
+private fun WorkoutListHeroChart(
+    slots: List<WorkoutListContract.WeekSlot>,
     modifier: Modifier = Modifier,
 ) {
     val tonnages = slots.map { it.tonnage }
@@ -189,7 +189,7 @@ private fun HistoryHeroChart(
  * negative in the negative tone. Not composed at all when the delta is null.
  */
 @Composable
-internal fun HistoryDeltaPill(
+internal fun WorkoutListDeltaPill(
     delta: Double,
     measurementSystem: MeasurementSystem,
     modifier: Modifier = Modifier,

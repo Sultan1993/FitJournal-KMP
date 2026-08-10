@@ -1,4 +1,4 @@
-package kz.maestrosultan.fitjournal.ui.history
+package kz.maestrosultan.fitjournal.ui.workoutlist
 
 import kz.maestrosultan.fitjournal.domain.journal.JournalRepository
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
@@ -11,12 +11,12 @@ import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
  * locale week start), which is the reason Swift wants this factory rather than
  * calling the constructor with its defaulted params directly.
  *
- * Swift: `HistoryViewModelFactoryKt.createHistoryViewModel(...)`.
+ * Swift: `WorkoutListViewModelFactoryKt.createWorkoutListViewModel(...)`.
  */
-fun createHistoryViewModel(
+fun createWorkoutListViewModel(
     recordRepository: RecordRepository,
     journalRepository: JournalRepository,
-): HistoryViewModel = HistoryViewModel(
+): WorkoutListViewModel = WorkoutListViewModel(
     recordRepository = recordRepository,
     journalRepository = journalRepository,
 )

@@ -1,4 +1,4 @@
-package kz.maestrosultan.fitjournal.ui.history
+package kz.maestrosultan.fitjournal.ui.workoutlist
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -44,11 +44,11 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 
 /**
- * `HistoryViewModel` end-to-end through the in-memory SQLite jvm driver (same
+ * `WorkoutListViewModel` end-to-end through the in-memory SQLite jvm driver (same
  * harness as `RecordRepositoryTest`) with real `Default*` repositories. Covers
  * the journal-switch seam and the calendar-dot loader's identity/cancellation
- * guard — the two behaviours the pure `HistoryFeedTest` cannot exercise because
- * they live in the VM's flow wiring, not in `buildHistoryFeed`.
+ * guard — the two behaviours the pure `WorkoutListFeedTest` cannot exercise because
+ * they live in the VM's flow wiring, not in `buildWorkoutListFeed`.
  *
  * Determinism is injected through the constructor: a fixed `Clock`, `TimeZone.UTC`,
  * `firstDayOfWeek = MONDAY`, and a test-owned `sessionState` flow — never the
@@ -58,7 +58,7 @@ import kotlin.time.Instant
  * observed by awaiting the `StateFlow` rather than by advancing virtual time.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class HistoryViewModelJournalSwitchTest {
+class WorkoutListViewModelJournalSwitchTest {
 
     private val db = newTestDb()
     private val catDs = CategoriesDBDataSource(db.categoryQueries)
@@ -114,7 +114,7 @@ class HistoryViewModelJournalSwitchTest {
 
         val vm = vm()
         sessionFlow.value = session("j1")
-        vm.dispatch(HistoryContract.ViewAction.ToggleCalendar)
+        vm.dispatch(WorkoutListContract.ViewAction.ToggleCalendar)
 
         val j1Dots = mapOf(J1_DOT_DAY to listOf(CategoryType.CHEST))
         vm.viewState.awaitValue { it.workoutDays == j1Dots }
@@ -146,7 +146,7 @@ class HistoryViewModelJournalSwitchTest {
 
         val vm = vm(gatedRepo)
         sessionFlow.value = session("j1")
-        vm.dispatch(HistoryContract.ViewAction.ToggleCalendar) // launches the gated j1 dot load
+        vm.dispatch(WorkoutListContract.ViewAction.ToggleCalendar) // launches the gated j1 dot load
 
         // Switch before the OLD load can publish: dots clear, then the NEW
         // journal's dots load and publish (j2 is not gated).
@@ -166,7 +166,7 @@ class HistoryViewModelJournalSwitchTest {
 
     // ── harness ──────────────────────────────────────────────────────────
 
-    private fun vm(recordRepository: RecordRepository = recordRepo) = HistoryViewModel(
+    private fun vm(recordRepository: RecordRepository = recordRepo) = WorkoutListViewModel(
         recordRepository = recordRepository,
         journalRepository = journalRepo,
         sessionState = sessionFlow,
@@ -201,8 +201,8 @@ class HistoryViewModelJournalSwitchTest {
         recordRepo.addSet(userId, journalId, weId, weight, reps, null, null)
     }
 
-    private fun HistoryContract.ViewState.currentWeekTonnage(): Double? =
-        (content as? HistoryContract.Content.Loaded)?.hero?.currentWeekTonnage
+    private fun WorkoutListContract.ViewState.currentWeekTonnage(): Double? =
+        (content as? WorkoutListContract.Content.Loaded)?.hero?.currentWeekTonnage
 
     private suspend fun <T> StateFlow<T>.awaitValue(predicate: (T) -> Boolean): T =
         withTimeout(AWAIT_TIMEOUT_MS) { first(predicate) }

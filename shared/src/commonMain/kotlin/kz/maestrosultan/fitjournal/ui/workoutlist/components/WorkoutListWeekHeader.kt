@@ -1,4 +1,4 @@
-package kz.maestrosultan.fitjournal.ui.history.components
+package kz.maestrosultan.fitjournal.ui.workoutlist.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
@@ -21,7 +21,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.history_last_week
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_this_week
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_workout_count
 import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
-import kz.maestrosultan.fitjournal.ui.history.HistoryContract
+import kz.maestrosultan.fitjournal.ui.workoutlist.WorkoutListContract
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.theme.composeColor
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
@@ -32,18 +32,18 @@ import org.jetbrains.compose.resources.stringResource
  * A week section's header (design WH4): its title ("This week" / "Last week" /
  * "20 Jul – 26 Jul"), a "{workouts} · {tonnage}" summary with the delta pill,
  * and the hand-rolled muscle-split bar (one weighted segment per
- * [HistoryContract.WeekSection.muscleSplit] entry — no chart library).
+ * [WorkoutListContract.WeekSection.muscleSplit] entry — no chart library).
  */
 @Composable
-fun HistoryWeekHeader(
-    section: HistoryContract.WeekSection,
+fun WorkoutListWeekHeader(
+    section: WorkoutListContract.WeekSection,
     measurementSystem: MeasurementSystem,
     modifier: Modifier = Modifier,
 ) {
     val title = when (section.kind) {
-        HistoryContract.WeekKind.ThisWeek -> stringResource(Res.string.history_this_week)
-        HistoryContract.WeekKind.LastWeek -> stringResource(Res.string.history_last_week)
-        HistoryContract.WeekKind.Older ->
+        WorkoutListContract.WeekKind.ThisWeek -> stringResource(Res.string.history_this_week)
+        WorkoutListContract.WeekKind.LastWeek -> stringResource(Res.string.history_last_week)
+        WorkoutListContract.WeekKind.Older ->
             "${LocaleFormatters.formatDayShortMonth(section.start)} – " +
                 LocaleFormatters.formatDayShortMonth(section.endInclusive, withYear = section.titleShowsYear)
     }
@@ -64,7 +64,7 @@ fun HistoryWeekHeader(
                 color = FjTheme.colors.textSecondary,
                 modifier = Modifier.weight(1f),
             )
-            section.delta?.let { HistoryDeltaPill(delta = it, measurementSystem = measurementSystem) }
+            section.delta?.let { WorkoutListDeltaPill(delta = it, measurementSystem = measurementSystem) }
         }
         Spacer(Modifier.height(8.dp))
         MuscleSplitBar(entries = section.muscleSplit)

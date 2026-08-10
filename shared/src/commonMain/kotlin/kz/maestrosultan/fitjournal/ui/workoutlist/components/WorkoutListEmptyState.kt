@@ -1,4 +1,4 @@
-package kz.maestrosultan.fitjournal.ui.history.components
+package kz.maestrosultan.fitjournal.ui.workoutlist.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -25,10 +25,10 @@ import org.jetbrains.compose.resources.stringResource
 /**
  * The zero-records state (design WH1/WH2): the plates illustration + one muted
  * line. Illustration and line only — the journal row, when present, is composed
- * ABOVE this by [kz.maestrosultan.fitjournal.ui.history.HistoryScreen], not here.
+ * ABOVE this by [kz.maestrosultan.fitjournal.ui.workoutlist.WorkoutListScreen], not here.
  */
 @Composable
-fun HistoryEmptyState(modifier: Modifier = Modifier) {
+fun WorkoutListEmptyState(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier.fillMaxSize().padding(horizontal = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
