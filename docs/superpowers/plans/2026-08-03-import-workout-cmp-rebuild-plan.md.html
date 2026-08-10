@@ -1,0 +1,104 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Implementation plan</title>
+<style>
+:root{--bg:#f5f7fa;--sf:#fff;--sf2:#eef1f6;--bd:#d7dde6;--ink:#1a2029;--soft:#54606f;--faint:#8791a0;
+--mech:#1f9d68;--std:#2560c4;--fro:#7c53e6;--bad:#cc4444;--mono:ui-monospace,Menlo,Consolas,monospace}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1117;--sf:#161c25;--sf2:#1c232e;--bd:#2a3441;--ink:#e7ecf3;--soft:#9aa6b6;--faint:#647084;--mech:#43c78c;--std:#5b8cf0;--fro:#a689f7;--bad:#e5706b}}
+:root[data-theme="light"]{--bg:#f5f7fa;--sf:#fff;--sf2:#eef1f6;--bd:#d7dde6;--ink:#1a2029;--soft:#54606f;--faint:#8791a0;--mech:#1f9d68;--std:#2560c4;--fro:#7c53e6;--bad:#cc4444}
+:root[data-theme="dark"]{--bg:#0d1117;--sf:#161c25;--sf2:#1c232e;--bd:#2a3441;--ink:#e7ecf3;--soft:#9aa6b6;--faint:#647084;--mech:#43c78c;--std:#5b8cf0;--fro:#a689f7;--bad:#e5706b}
+*{box-sizing:border-box}
+body{margin:0 auto;max-width:1180px;background:var(--bg);color:var(--ink);font:15px/1.62 system-ui,-apple-system,sans-serif;padding:40px 24px 72px}
+a{color:var(--std)}
+h1{font-size:27px;line-height:1.25;margin:0 0 6px;letter-spacing:-.01em}
+h3{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono);margin:0 0 14px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.wnum{color:var(--ink);font-weight:700}.wmeta{color:var(--faint);text-transform:none;letter-spacing:0}
+.sub{color:var(--soft);font-family:var(--mono);font-size:12.5px;margin-bottom:24px;word-break:break-all}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:30px}
+.stat{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:9px 15px}
+.stat b{font-size:19px;display:block;line-height:1.2}.stat span{font-size:11px;color:var(--faint);font-family:var(--mono)}
+.brief{background:var(--sf);border:1px solid var(--bd);border-left:3px solid var(--std);border-radius:10px;padding:4px 20px;margin-bottom:34px}
+.brief h4{font-size:14px;margin:14px 0 6px}
+.wave{margin-bottom:34px}.wave.bad .wnum{color:var(--bad)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;align-items:start}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:15px 17px 5px}
+.card header{border-bottom:1px solid var(--bd);padding-bottom:10px;margin-bottom:12px}
+.card h4{margin:0 0 7px;font-size:15px;line-height:1.35}
+.meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.after{font-family:var(--mono);font-size:10.5px;color:var(--faint)}.after.free{opacity:.65}
+.blk{margin-bottom:14px}
+.blk h5{margin:0 0 5px;font:600 10.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.07em;color:var(--faint)}
+.blk p{margin:0 0 7px}.blk ul,.blk ol{margin:0 0 7px;padding-left:20px}.blk li{margin:2px 0}
+.blk :last-child{margin-bottom:0}
+.crit li{color:var(--soft)}
+.files code{display:inline-block;margin:0 4px 4px 0}
+pre.code{background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:9px 11px;overflow-x:auto;max-height:260px;overflow-y:auto;margin:0 0 7px}
+pre.code code{background:none;padding:0;font-size:11.5px;line-height:1.5;white-space:pre}
+code{font-family:var(--mono);font-size:.88em;background:color-mix(in srgb,var(--bd) 45%,transparent);padding:1px 5px;border-radius:4px;word-break:break-word}
+.chip{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+.chip.mechanical{color:var(--mech);background:color-mix(in srgb,var(--mech) 14%,transparent)}
+.chip.standard{color:var(--std);background:color-mix(in srgb,var(--std) 14%,transparent)}
+.chip.frontier{color:var(--fro);background:color-mix(in srgb,var(--fro) 14%,transparent)}
+.chip.bad{color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent)}
+details.checks{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:12px 18px;margin-top:10px}
+details.checks summary{cursor:pointer;font:600 11.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--faint)}
+details.checks ul{margin:12px 0 2px;padding-left:20px}
+details.checks li{margin:4px 0;color:var(--soft)}
+details.checks b{color:var(--bad);font-family:var(--mono);font-size:12.5px}
+details.checks .ok{color:var(--mech)}
+</style>
+<h1>Implementation plan</h1>
+<div class="sub">/Users/sultan/Development/FitJournal/Multiplatform/docs/superpowers/plans/2026-08-03-import-workout-cmp-rebuild-plan.md &nbsp;·&nbsp; spec: docs/superpowers/specs/2026-08-03-import-workout-cmp-rebuild-design.md</div>
+<div class="stats">
+  <div class="stat"><b>0</b><span>tasks</span></div>
+  <div class="stat"><b>0</b><span>waves</span></div>
+  <div class="stat"><b style="color:var(--mech)">0</b><span>mechanical</span></div>
+  <div class="stat"><b style="color:var(--std)">0</b><span>standard</span></div>
+  <div class="stat"><b style="color:var(--fro)">0</b><span>frontier</span></div>
+</div>
+<div class="brief"><p>Visual rebuild of the shared CMP &quot;Copy from a workout&quot; picker: new shared icon/string resources, import-mode flags on the shared workout card components (mirroring iOS <code>isImporting</code>/<code>isSelected</code>), a rich read-only <code>ImportRecordCard</code> wrapper, the <code>ImportWorkoutScreen</code> layout rebuild (brand date pill, calendar push-down, pager + dots + top fade, inset-aware CTA), focused Compose-UI tests for the new behaviors, then build-target verification and a human on-device checklist. Contract, ViewModel, hosts, and behavior are untouched. One deviation from the originally suggested shape: the card-components task is blocked by the resources task because the selection circle references <code>Res.drawable.ic_common_check</code> — a real compile dependency, not an ordering preference.</p>
+<h4>Cross-task contracts</h4>
+<ul>
+<li><strong>Build unit &amp; verify.</strong> All tasks share one build unit (<code>:shared</code>); every code task must leave <code>./gradlew :shared:assembleDebug</code> green (each task's verify). Never gate on <code>verifyCommonMainFitJournalDatabaseMigration</code> (known-always-red, unrelated).</li>
+<li><strong>Testing policy.</strong> The shared module HAS a Compose-UI test harness: <code>shared/build.gradle.kts:93</code> declares <code>implementation(libs.compose.ui.test)</code>, and <code>shared/src/jvmTest</code> contains <code>runComposeUiTest</code> suites (<code>ui/postworkout/success/WorkoutSuccessScreenTest.kt</code>, <code>ui/postworkout/confirm/FinishConfirmSheetContentTest.kt</code>, <code>ui/postworkout/composer/ShareComposerScreenTest.kt</code>, …). Task 4 therefore ADDS focused Compose-UI tests for the new behaviors: the import-mode card (selection circle, no add-set row, inert set rows, single-toggle tap), a main-list regression guard (defaults keep the interactive chrome — spec criterion 11), and the CTA state matrix (including the otherwise-transient importing spinner). ViewModel/contract logic stays covered by the locked <code>ImportWorkoutViewModelTest</code>. <strong>TDD ordering, stated honestly:</strong> the new UI tests reference the new <code>isImporting</code> API and the rebuilt CTA, so they can only compile after Tasks 1–3; they are authored immediately after and run red→green against the finished components, not pre-implementation.</li>
+<li><strong>Commit boundaries.</strong> Per superlazy-build wave mechanics, wave agents do NOT commit. The coordinator commits <strong>one commit per task</strong> for Tasks 0–4 at that task's wave join, after its verify is green. Tasks 5–6 are verification-only — no commit.</li>
+<li><strong>Read before editing.</strong> Implementers must READ the actual on-disk signature of each file they modify and preserve every existing parameter, adding only the new ones pinned below. Do not reorder or rename existing params.</li>
+</ul>
+<p>Pinned public signatures (Task 1 produces, Tasks 2–4 consume; new params go AFTER <code>modifier</code>, callers use named args). Note the split: <code>WorkoutSetRail</code> gets ONLY the nullable <code>onSetClick</code> — the <code>isImporting</code>/<code>isSelected</code> flags go ONLY on <code>WorkoutExerciseItem</code> and <code>WorkoutRecordCard</code>:</p>
+<pre class="code"><code>// ui/workout/components/WorkoutSetRail.kt — nullable onSetClick ONLY; no new flags
+fun WorkoutSetRail(sets: List&lt;SetDisplay&gt;, showAddSet: Boolean,
+    onSetClick: ((setId: String) -&gt; Unit)?,        // null = inert rows (import mode)
+    onAddSet: () -&gt; Unit, modifier: Modifier = Modifier)
+
+// ui/workout/components/WorkoutExerciseItem.kt
+fun WorkoutExerciseItem(exercise: WorkoutExercise, measurementSystem: MeasurementSystem,
+    onSetClick: (workoutSetId: String) -&gt; Unit, onAddSet: () -&gt; Unit, onMenu: () -&gt; Unit,
+    modifier: Modifier = Modifier, isImporting: Boolean = false, isSelected: Boolean = false)
+
+// ui/workout/components/WorkoutRecordCard.kt
+fun WorkoutRecordCard(record: WorkoutRecord, measurementSystem: MeasurementSystem,
+    onSetClick: (workoutExerciseId: String, workoutSetId: String) -&gt; Unit,
+    onAddSet: (workoutExerciseId: String) -&gt; Unit, onExerciseMenu: (WorkoutExercise) -&gt; Unit,
+    modifier: Modifier = Modifier, isImporting: Boolean = false, isSelected: Boolean = false)
+
+// ui/importworkout/ImportRecordCard.kt (Task 2 rewrites to exactly this)
+fun ImportRecordCard(record: WorkoutRecord, measurementSystem: MeasurementSystem,
+    isSelected: Boolean, onToggle: () -&gt; Unit, modifier: Modifier = Modifier)</code></pre>
+<p>The signatures above are Fable's reconstruction — each implementer MUST read the actual on-disk signature of the file it edits and preserve every existing parameter/name exactly, adding only the new params.</p>
+<p>Pinned PRIVATE signatures inside <code>ImportWorkoutScreen.kt</code> (Task 2 threads them, Task 3 keeps them — the two tasks must agree exactly; note <code>ImportPager</code> uses its own <code>measurementSystem</code> parameter, never <code>state.</code>):</p>
+<pre class="code"><code>private fun ImportContentArea(content: ImportContent, measurementSystem: MeasurementSystem,
+    dispatch: (ImportWorkoutContract.ViewAction) -&gt; Unit, modifier: Modifier = Modifier)
+
+private fun ImportPager(loaded: ImportContent.Loaded, measurementSystem: MeasurementSystem,
+    dispatch: (ImportWorkoutContract.ViewAction) -&gt; Unit, modifier: Modifier = Modifier)</code></pre>
+<p><code>ImportButton</code> is declared <strong><code>internal</code></strong> (not private) in <code>ImportWorkoutScreen.kt</code> so Task 4 composes it directly.</p>
+<p>Pinned test hooks (<code>Modifier.testTag</code>, semantics-only — zero visual change; added where stated in Tasks 1–3 so Task 4 never edits component files):</p>
+<p>| Tag | Node | Added in | | --- | --- | --- | | <code>&quot;set_row&quot;</code> | each set row in <code>WorkoutSetRail</code> | Task 1 | | <code>&quot;add_set_row&quot;</code> | the add-set row in <code>WorkoutSetRail</code> | Task 1 | | <code>&quot;exercise_options&quot;</code> | the options-icon Box in <code>WorkoutExerciseItem</code> | Task 1 | | <code>&quot;selection_circle&quot;</code> | the <code>SelectionCircle</code> Box | Task 1 | | <code>&quot;import_record_card&quot;</code> | the <code>ImportRecordCard</code> wrapper root | Task 2 | | <code>&quot;import_button&quot;</code> / <code>&quot;import_button_spinner&quot;</code> / <code>&quot;import_button_label&quot;</code> | CTA root / spinner / label | Task 3 |</p>
+<p>Pinned resource accessors (Task 0 produces, generated into <code>kz.maestrosultan.fitjournal.shared.generated.resources</code>): <code>Res.drawable.ic_common_arrow_down</code>, <code>Res.drawable.ic_common_check</code>, <code>Res.string.import_workout_placeholder</code>.</p>
+<p>Pinned CTA spinner: <code>CircularProgressIndicator(color = Color.White, strokeWidth = 2.5.dp, modifier = Modifier.size(22.dp))</code>.</p>
+<p>All paths below are relative to <code>/Users/sultan/Development/FitJournal/</code>.</p></div>
+
+
+<details class="checks">
+  <summary>Structural checks (0)</summary>
+  <ul><li class="ok">none — plan is structurally clean</li></ul>
+</details>

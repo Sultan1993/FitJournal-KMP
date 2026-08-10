@@ -1,0 +1,44 @@
+[
+  {
+    "id": 0,
+    "subject": "Add shared arrow/check icons + placeholder string (x4)",
+    "description": "Create ic_common_arrow_down.xml (port from Android) + ic_common_check.xml (new, stroke matching ic_common_plus) in shared composeResources/drawable, and add import_workout_placeholder to values{,-de,-ru,-uk}/strings.xml verbatim from the Android legacy strings. Produces Res.drawable.ic_common_arrow_down, Res.drawable.ic_common_check, Res.string.import_workout_placeholder.",
+    "blockedBy": []
+  },
+  {
+    "id": 1,
+    "subject": "Add import mode to shared workout card components",
+    "description": "WorkoutSetRail: make onSetClick NULLABLE only (no new flags) with end-to-end null propagation (nullable public param, nullable private-row onClick, cb-wrapping call site, clip+clickable only when non-null). WorkoutExerciseItem + WorkoutRecordCard: add isImporting/isSelected (default false); import mode renders a 36.dp selection circle (brand+check selected / brand@10%+plus unselected) where the options icon sits, no add-set row, inert set rows. Add testTags set_row/add_set_row/exercise_options/selection_circle. Main-list call sites stay unchanged via defaults.",
+    "blockedBy": [0]
+  },
+  {
+    "id": 2,
+    "subject": "Rewrite ImportRecordCard as rich read-only wrapper",
+    "description": "Rewrite ImportRecordCard.kt to (record, measurementSystem, isSelected, onToggle, modifier) delegating to WorkoutRecordCard(isImporting=true, isSelected=..) with no-op callbacks, import_record_card testTag, and a whole-card toggle; no border/fill change. Thread measurementSystem through the pinned private ImportContentArea/ImportPager signatures in ImportWorkoutScreen.kt (pager uses the threaded param, not state.) so :shared compiles.",
+    "blockedBy": [1]
+  },
+  {
+    "id": 3,
+    "subject": "Rebuild ImportWorkoutScreen: pill, calendar, pager, CTA",
+    "description": "Rebuild the screen body per spec section 2: brand date pill collapsed with white date + arrow chip, WorkoutCalendar push-down + centered placeholder while open, pager keeping existing LaunchedEffect wiring + TopFadeScrim + PageDots + per-page WorkoutMuscleHeader, inset-aware LazyColumn bottom padding, and an internal ImportButton with the priority state matrix (brand + pinned White/2.5dp/22dp spinner while importing) + testTags. Keeps the pinned private signatures. No contract/VM/factory/host changes.",
+    "blockedBy": [0, 2]
+  },
+  {
+    "id": 4,
+    "subject": "Compose UI tests: import card, main-list guard, CTA",
+    "description": "Add runComposeUiTest jvmTest suites ImportRecordCardTest.kt + ImportWorkoutScreenTest.kt (mirroring WorkoutSuccessScreenTest / FinishConfirmSheetContentTest). Cover the import-mode card (selection circles per exercise, no add-set/options, inert set rows, single-toggle tap), a main-list regression guard (defaults keep options + add-set + clickable sets, no circle), and the CTA state matrix via the internal ImportButton (disabled+label / enabled+label / importing shows spinner not label and is not clickable). No production files modified.",
+    "blockedBy": [1, 3]
+  },
+  {
+    "id": 5,
+    "subject": "Verify all build targets + ImportWorkoutViewModelTest",
+    "description": "Run shared assemble, shared jvmTest (ImportWorkoutViewModelTest — verify both locked methods passed via the jvmTest XML/HTML report, not stdout), Android :app:compileDebugKotlin, and the arm64-sim xcodebuild (EXCLUDED_ARCHS=x86_64, no -derivedDataPath). All must pass; locked tests unmodified. Report failures verbatim; never gate on verifyCommonMainFitJournalDatabaseMigration. Verification only, no commit.",
+    "blockedBy": [4]
+  },
+  {
+    "id": 6,
+    "subject": "Manual on-device acceptance checklist",
+    "description": "HUMAN-run (surfaced to the user at finish, not agent-executed): after fixture setup (source day with 2+ workouts, a superset, a note, populated sets), verify spec criteria 5-11 on-device — brand pill, calendar push-down + placeholder, rich cards, selection circles, pager dots/muscle header/top-fade, CTA state matrix, inset clearance on a large-bottom-inset device, and main-list regression. Record platform + device + inset configuration. No commit.",
+    "blockedBy": [5]
+  }
+]

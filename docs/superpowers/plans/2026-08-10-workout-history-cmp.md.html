@@ -1,0 +1,1197 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Implementation plan</title>
+<style>
+:root{--bg:#f5f7fa;--sf:#fff;--sf2:#eef1f6;--bd:#d7dde6;--ink:#1a2029;--soft:#54606f;--faint:#8791a0;
+--mech:#1f9d68;--std:#2560c4;--fro:#7c53e6;--bad:#cc4444;--mono:ui-monospace,Menlo,Consolas,monospace}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1117;--sf:#161c25;--sf2:#1c232e;--bd:#2a3441;--ink:#e7ecf3;--soft:#9aa6b6;--faint:#647084;--mech:#43c78c;--std:#5b8cf0;--fro:#a689f7;--bad:#e5706b}}
+:root[data-theme="light"]{--bg:#f5f7fa;--sf:#fff;--sf2:#eef1f6;--bd:#d7dde6;--ink:#1a2029;--soft:#54606f;--faint:#8791a0;--mech:#1f9d68;--std:#2560c4;--fro:#7c53e6;--bad:#cc4444}
+:root[data-theme="dark"]{--bg:#0d1117;--sf:#161c25;--sf2:#1c232e;--bd:#2a3441;--ink:#e7ecf3;--soft:#9aa6b6;--faint:#647084;--mech:#43c78c;--std:#5b8cf0;--fro:#a689f7;--bad:#e5706b}
+*{box-sizing:border-box}
+body{margin:0 auto;max-width:1180px;background:var(--bg);color:var(--ink);font:15px/1.62 system-ui,-apple-system,sans-serif;padding:40px 24px 72px}
+a{color:var(--std)}
+h1{font-size:27px;line-height:1.25;margin:0 0 6px;letter-spacing:-.01em}
+h3{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono);margin:0 0 14px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.wnum{color:var(--ink);font-weight:700}.wmeta{color:var(--faint);text-transform:none;letter-spacing:0}
+.sub{color:var(--soft);font-family:var(--mono);font-size:12.5px;margin-bottom:24px;word-break:break-all}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:30px}
+.stat{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:9px 15px}
+.stat b{font-size:19px;display:block;line-height:1.2}.stat span{font-size:11px;color:var(--faint);font-family:var(--mono)}
+.brief{background:var(--sf);border:1px solid var(--bd);border-left:3px solid var(--std);border-radius:10px;padding:4px 20px;margin-bottom:34px}
+.brief h4{font-size:14px;margin:14px 0 6px}
+.wave{margin-bottom:34px}.wave.bad .wnum{color:var(--bad)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;align-items:start}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:15px 17px 5px}
+.card header{border-bottom:1px solid var(--bd);padding-bottom:10px;margin-bottom:12px}
+.card h4{margin:0 0 7px;font-size:15px;line-height:1.35}
+.meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.after{font-family:var(--mono);font-size:10.5px;color:var(--faint)}.after.free{opacity:.65}
+.blk{margin-bottom:14px}
+.blk h5{margin:0 0 5px;font:600 10.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.07em;color:var(--faint)}
+.blk p{margin:0 0 7px}.blk ul,.blk ol{margin:0 0 7px;padding-left:20px}.blk li{margin:2px 0}
+.blk :last-child{margin-bottom:0}
+.crit li{color:var(--soft)}
+.files code{display:inline-block;margin:0 4px 4px 0}
+pre.code{background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:9px 11px;overflow-x:auto;max-height:260px;overflow-y:auto;margin:0 0 7px}
+pre.code code{background:none;padding:0;font-size:11.5px;line-height:1.5;white-space:pre}
+code{font-family:var(--mono);font-size:.88em;background:color-mix(in srgb,var(--bd) 45%,transparent);padding:1px 5px;border-radius:4px;word-break:break-word}
+.chip{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+.chip.mechanical{color:var(--mech);background:color-mix(in srgb,var(--mech) 14%,transparent)}
+.chip.standard{color:var(--std);background:color-mix(in srgb,var(--std) 14%,transparent)}
+.chip.frontier{color:var(--fro);background:color-mix(in srgb,var(--fro) 14%,transparent)}
+.chip.bad{color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent)}
+details.checks{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:12px 18px;margin-top:10px}
+details.checks summary{cursor:pointer;font:600 11.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--faint)}
+details.checks ul{margin:12px 0 2px;padding-left:20px}
+details.checks li{margin:4px 0;color:var(--soft)}
+details.checks b{color:var(--bad);font-family:var(--mono);font-size:12.5px}
+details.checks .ok{color:var(--mech)}
+</style>
+<h1>Implementation plan</h1>
+<div class="sub">/Users/sultan/Development/FitJournal/Multiplatform/docs/superpowers/plans/2026-08-10-workout-history-cmp.md &nbsp;·&nbsp; spec: /Users/sultan/Development/FitJournal/Multiplatform/docs/superpowers/specs/2026-08-10-workout-history-cmp-design.md</div>
+<div class="stats">
+  <div class="stat"><b>10</b><span>tasks</span></div>
+  <div class="stat"><b>10</b><span>waves</span></div>
+  <div class="stat"><b style="color:var(--mech)">2</b><span>mechanical</span></div>
+  <div class="stat"><b style="color:var(--std)">3</b><span>standard</span></div>
+  <div class="stat"><b style="color:var(--fro)">5</b><span>frontier</span></div>
+</div>
+<div class="brief"><h4>Global Constraints</h4>
+<p>Every task's requirements implicitly include this section. Values are carried from the spec's Global constraints + Execution notes.</p>
+<ul>
+<li><strong>Offline-first / local-only:</strong> <code>ui/history</code> and <code>HistoryViewModel</code> import only KMP repositories (<code>RecordRepository</code>, <code>JournalRepository</code>), <code>UserSession</code>, calculators, and formatters. No AWS, no Amplify, no <code>SyncTrigger</code>/<code>SyncOrchestrator</code> anywhere in shared code — pull-to-refresh arrives on both platforms as an opaque host-injected <code>onRefresh</code> lambda plus an <code>isRefreshing</code> Boolean. No network, no error alerts, no sync-state UI invented in shared code: <code>Content.Loading</code> and the host-driven pull indicator are the only transient visuals.</li>
+<li><strong>Layering:</strong> <code>domain/</code> and <code>data/</code> in <code>Multiplatform/shared</code> must never import <code>androidx.compose.*</code>. All new UI lives under <code>ui/history/</code>. Provable: <code>rg &quot;androidx.compose&quot; Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/data</code> returns no matches; <code>rg &quot;amplify|SyncTrigger|SyncOrchestrator|aws&quot; -i Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history</code> returns no matches.</li>
+<li><strong>Parity:</strong> the body is written once in KMP; both hosts wire the same two effects (<code>OpenWorkoutDetails</code>, <code>OpenJournalPicker</code>) and the same <code>ToggleCalendar</code> button. Pull-to-refresh exists on BOTH platforms and preserves each host's exact current semantics, and BOTH hosts drive <code>isRefreshing</code>: Android holds a ~1-second spinner after firing <code>requestTick</code> (verified against the old <code>WorkoutListViewModel.kt</code> lines 219–230 — <code>requestTick(SyncReason.UserRefresh)</code>, then <code>isRefreshing = true</code>, <code>delay(REFRESH_SPINNER_MS = 1000L)</code> (<code>:241</code>), then <code>isRefreshing = false</code>); iOS shows the spinner until its awaited <code>tick()</code> completes. <strong>This supersedes the spec's assumption 4 and criterion 11 where they describe Android as &quot;fire-and-forget with <code>isRefreshing</code> permanently false&quot; — the verified current behavior is a held 1-second spinner, and the new host must preserve it.</strong></li>
+<li><strong>Vico pin:</strong> <code>com.patrykandpatrick.vico:compose:3.2.3</code> in <code>commonMain</code> (verified: klibs.io lists <code>com.patrykandpatrick.vico:compose</code> as a KMP package with iOS targets), compile-verified against Kotlin <strong>2.3.21</strong> / CMP <strong>1.11.1</strong> as the FIRST task. <strong>If 3.2.3 cannot resolve or compile, Task 0 is BLOCKED and escalates to the user — no silent chart-library or version substitution anywhere in the run.</strong> <code>com.patrykandpatrick.vico:multiplatform:2.1.4</code> (the v2 line's CMP artifact) is a documented option the USER may approve if 3.2.3 is blocked; it is never an implementer-selected fallback. No other new dependencies. No Kotlin/CMP/AGP/SKIE version changes (SKIE 0.10.13 caps Kotlin at 2.3.x).</li>
+<li><strong>MVI convention:</strong> per-screen public contract (SKIE bridge), single <code>dispatch</code> entry point, <code>StateFlow</code> state + buffered-channel effects, host-owned VM with <code>dispose()</code> — exactly the <code>WorkoutContract</code> shape. SKIE naming gotcha: Swift sees nested data classes DOTTED (<code>HistoryContract.ViewState</code>) but sealed cases CONCATENATED (<code>HistoryContractViewEffectOpenWorkoutDetails</code>); top-level KMP functions surface as BARE globals (<code>createHistoryViewModel(...)</code>, never <code>…Kt.</code>-prefixed); only a full xcodebuild catches mismatches.</li>
+<li><strong>Copy/naming:</strong> new string keys prefixed <code>history_</code>; category names reuse existing <code>category_name_*</code> keys; all four locales (en/de/ru/uk) updated in the same change. Contract tonnage fields are unit-neutral — no <code>Kg</code> suffixes; the unit string is applied at render time by <code>WorkoutValueFormatter</code> (relabel, never convert).</li>
+<li><strong>Aggregation off-main:</strong> feed building runs under <code>Dispatchers.Default</code>; repository reads stay on their internal IO dispatchers. 3 years of record trees must never be folded on the main thread.</li>
+<li><strong>Three git repos:</strong> commits land in <code>Multiplatform/</code> (shared screen), <code>Android/</code> (host swap + deletions), <code>iOS/</code> (host swap + deletions). The top-level directory is NOT a repo — <code>cd</code> into each subproject for git/build commands (always absolute paths; cwd resets between shell calls). One branch name across all three: <code>feature/workout-history-cmp</code>. GitHub operations use the <code>Sultan1993</code> account. <strong>The working trees carry uncommitted WIP (the workoutNumber sync-pull fix) — build on top of it, NEVER stash/revert/discard it.</strong></li>
+<li><strong>Build verification:</strong> Multiplatform: <code>./gradlew :shared:jvmTest</code> + <code>./gradlew :shared:assemble</code>. Android: <code>./gradlew :app:compileDebugKotlin</code> for iteration, <code>./gradlew assembleDebug</code> as gate — plain <code>./gradlew</code>, never set <code>GRADLE_USER_HOME</code>. iOS: real <code>xcodebuild -scheme FitJournal -configuration Debug -destination 'platform=iOS Simulator,arch=arm64'</code> — <strong>arm64 simulator only</strong> (x86_64 drops SKIE symbols), NO <code>-derivedDataPath</code> (share Xcode's default DerivedData; if Xcode is mid-build, wait). SourceKit diagnostics are NOT verification.</li>
+<li><strong>No two tasks that build <code>:shared</code> (directly, via the Android composite build, or via the iOS embedAndSignAppleFrameworkForXcode phase) may run in the same wave</strong> — each build-producing task gets its own wave; run the executor --serial if in doubt. This is why the task chain is near-linear (0→1→2→3→4→5→6→7→8→9).</li>
+<li><strong>Never gate on</strong> <code>verifyCommonMainFitJournalDatabaseMigration</code> (known-always-red); this feature touches no <code>.sq</code> files.</li>
+<li><strong>Shell:</strong> harness shell is zsh — never use <code>status</code>/<code>path</code>/<code>argv</code>/<code>options</code> as variable names; use <code>rc=$?</code>.</li>
+</ul>
+<h4>Cross-Task Contracts</h4>
+<p>Names one task references from a sibling — pinned here so tasks can't drift:</p>
+<ul>
+<li><code>HistoryContract</code> (public object, package <code>kz.maestrosultan.fitjournal.ui.history</code>) — the spec's &quot;Contract&quot; section PLUS two fields pinned by this revision: <code>ViewModel</code>, <code>ViewState(content, calendarVisible, workoutDays: Map&lt;LocalDate, List&lt;CategoryType&gt;&gt;, measurementSystem, today: LocalDate)</code>, sealed <code>Content</code> (<code>Loading</code> / <code>Empty(journalRow: JournalRow?)</code> / <code>Loaded(journalRow, hero, weeks)</code>), <code>JournalRow(name)</code>, <code>Hero(currentWeekTonnage, delta, workoutCount, daysLeft, slots: List&lt;WeekSlot&gt;, monthLabels: List&lt;MonthLabel&gt;)</code>, <code>WeekSlot(tonnage, isCurrentWeek)</code>, <code>MonthLabel(month1to12, slotCount)</code>, <code>WeekSection(start, endInclusive, kind, workoutCount, tonnage, delta, muscleSplit, titleShowsYear: Boolean, days)</code>, <code>WeekKind</code>, <code>DayRow(date, topCategories, tonnage, workoutCount, exerciseCount, setCount)</code>, <code>ViewAction</code> (<code>ToggleCalendar</code>, <code>CalendarMonthChanged(year, month)</code>, <code>SelectDate(date)</code>, <code>OpenDay(date)</code>, <code>OpenJournalPicker</code>), <code>ViewEffect</code> (<code>OpenWorkoutDetails(date)</code>, <code>OpenJournalPicker</code>).</li>
+<li><strong><code>ViewState.today: LocalDate</code></strong> — the calendar's <code>selectedDate</code> source, mirroring how <code>WorkoutScreen.kt:111</code> passes state-carried <code>WorkoutContract.ViewState.selectedDate</code> (<code>WorkoutContract.kt:61</code>). The VM fills it from <code>clock.todayIn(timeZone)</code> (the exact <code>today()</code> pattern at <code>WorkoutViewModel.kt:129</code>); <code>ViewState.initial(today: LocalDate)</code> takes it as a parameter, mirroring <code>WorkoutContract.ViewState.initial(initialDate, …)</code>.</li>
+<li><strong><code>WeekSection.titleShowsYear: Boolean</code></strong> — computed inside <code>buildHistoryFeed</code> as <code>endInclusive.year != today.year</code> (the feed already receives <code>today</code>), so <code>HistoryWeekHeader</code> formats older-week titles without needing a clock or <code>today</code>.</li>
+<li><code>fun buildHistoryFeed(records: List&lt;WorkoutRecord&gt;, journals: List&lt;Journal&gt;, selectedJournalId: String, today: LocalDate, firstDayOfWeek: DayOfWeek): HistoryContract.Content</code> in <code>HistoryFeed.kt</code>.</li>
+<li><code>fun createHistoryViewModel(recordRepository: RecordRepository, journalRepository: JournalRepository): HistoryViewModel</code> in <code>HistoryViewModelFactory.kt</code>. Swift calls it as the BARE global <code>createHistoryViewModel(recordRepository:journalRepository:)</code> — KMP top-level functions are exported as bare globals, never <code>…Kt.</code>-prefixed (verified: existing Swift calls <code>createWorkoutViewModel(...)</code> and <code>WorkoutScreenController(viewModel:)</code> directly).</li>
+<li><code>@Composable fun HistoryScreen(viewModel: HistoryContract.ViewModel, isRefreshing: Boolean = false, onRefresh: (() -&gt; Unit)? = null)</code>.</li>
+<li>iosMain, pinned VERBATIM (the bridge must expose readable state the same-file top-level controller function can collect — a <code>private</code> flow alone cannot be collected from outside the class):</li>
+</ul>
+<pre class="code"><code>  class HistoryRefreshBridge {
+      private val _refreshing = MutableStateFlow(false)
+      internal val refreshing: StateFlow&lt;Boolean&gt; get() = _refreshing
+      fun setRefreshing(refreshing: Boolean) { _refreshing.value = refreshing }
+  }</code></pre>
+<p>  plus <code>fun HistoryScreenController(viewModel: HistoryViewModel, refreshBridge: HistoryRefreshBridge, onRefresh: () -&gt; Unit): UIViewController</code> — the controller collects <code>refreshBridge.refreshing</code> as state. Swift calls the controller as the BARE global <code>HistoryScreenController(viewModel:refreshBridge:onRefresh:)</code> and, from Swift, only <code>setRefreshing</code> is visible (<code>internal val refreshing</code> stays framework-internal).</p>
+<ul>
+<li><code>LocaleFormatters.formatDayShortMonth(date: LocalDate, withYear: Boolean = false): String</code> (expect + android/ios/jvm actuals).</li>
+<li>String keys: <code>history_empty_message</code>, <code>history_this_week</code>, <code>history_last_week</code>; plurals <code>history_workout_count</code>, <code>history_exercise_count</code>, <code>history_set_count</code>, <code>history_days_left</code>. Drawable: <code>empty_plates</code>.</li>
+<li>Versions-catalog alias: <code>libs.vico.compose</code> (<code>vico = &quot;3.2.3&quot;</code>). No fallback coordinate exists in the build — if 3.2.3 is blocked, the run stops at Task 0 (user escalation).</li>
+<li>Android host refresh timing, pinned from the verified old <code>WorkoutListViewModel.kt:219–230</code> + <code>:241</code>: <code>requestTick(SyncReason.UserRefresh)</code> FIRST, then <code>isRefreshing = true</code>, <code>delay(REFRESH_SPINNER_MS)</code> with <code>const val REFRESH_SPINNER_MS = 1000L</code>, then <code>isRefreshing = false</code>.</li>
+<li>KMP repos consumed by hosts: <code>domain.workout.RecordRepository</code>, <code>domain.journal.JournalRepository</code> (Android Hilt binding already exists — <code>Android/feature/journal/src/main/kotlin/kz/maestrosultan/fitjournal/feature/journal/di/JournalModule.kt</code> provides KMP <code>JournalRepository</code>; verified at plan time, no DI change needed. iOS: <code>sharedRecordRepository</code> / <code>sharedJournalRepository</code> globals already exist).</li>
+<li>Test policy: all Multiplatform tasks share the <code>:shared</code> build unit — each task runs its own new jvmTest class(es) plus <code>:shared:assemble</code> as the compile gate; no task may break a sibling's tests. Tasks that build <code>:shared</code> are serialized into their own waves (see Global Constraints), which is why <code>blockedBy</code> forms a single chain.</li>
+</ul>
+<h4>Task 0: Pin Vico in commonMain and compile-verify all targets</h4>
+<h4>Goal</h4>
+<p>(Multiplatform repo) Add the pinned Vico Compose dependency to <code>commonMain</code> and prove it resolves and compiles against Kotlin 2.3.21 / CMP 1.11.1 for android + iosArm64 + iosSimulatorArm64 — the load-bearing pin gate for the whole feature.</p>
+<h4>Files</h4>
+<ul>
+<li>Multiplatform/gradle/libs.versions.toml (modify)</li>
+<li>Multiplatform/shared/build.gradle.kts (modify)</li>
+</ul>
+<h4>Steps</h4>
+<ol>
+<li>In <code>Multiplatform/gradle/libs.versions.toml</code> add under <code>[versions]</code>: <code>vico = &quot;3.2.3&quot;</code>; under <code>[libraries]</code>: <code>vico-compose = { group = &quot;com.patrykandpatrick.vico&quot;, name = &quot;compose&quot;, version.ref = &quot;vico&quot; }</code>.</li>
+<li>In <code>Multiplatform/shared/build.gradle.kts</code>, inside <code>commonMain.dependencies { }</code>, add <code>implementation(libs.vico.compose)</code>. Touch nothing else — no toolchain, plugin, or target changes.</li>
+<li>Run <code>cd /Users/sultan/Development/FitJournal/Multiplatform &amp;&amp; ./gradlew :shared:assemble</code>.</li>
+<li><strong>Blocked path (only if step 3 fails on dependency resolution or a Kotlin/CMP floor):</strong> do NOT substitute another library, artifact, or version — report this task as <strong>BLOCKED</strong>, quoting the exact Gradle error, and surface it as a user escalation. <code>com.patrykandpatrick.vico:multiplatform:2.1.4</code> (the v2 line) is a documented option the USER may approve in response; it is never an implementer-selected auto-fallback, and Task 5 has no alternate API path.</li>
+<li>Report the exact dependency line that compiled (<code>3.2.3</code>), or the BLOCKED escalation.</li>
+</ol>
+<h4>Acceptance Criteria</h4>
+<ul>
+<li><code>:shared:assemble</code> succeeds with the Vico 3.2.3 dependency present (spec criterion 2 for this diff), OR the task is reported BLOCKED with the exact Gradle error — never a silently substituted coordinate.</li>
+<li>Exactly one new dependency; <code>kotlin</code>, CMP, AGP, SKIE versions unchanged in the diff.</li>
+<li>The landed coordinate (<code>com.patrykandpatrick.vico:compose:3.2.3</code>) is stated in the task report.</li>
+</ul>
+<h4>Verify</h4>
+<pre class="code"><code>cd /Users/sultan/Development/FitJournal/Multiplatform &amp;&amp; ./gradlew :shared:assemble</code></pre>
+<pre class="code"><code>{
+  &quot;id&quot;: 0,
+  &quot;modelTier&quot;: &quot;mechanical&quot;,
+  &quot;blockedBy&quot;: [],
+  &quot;files&quot;: [
+    &quot;Multiplatform/gradle/libs.versions.toml&quot;,
+    &quot;Multiplatform/shared/build.gradle.kts&quot;
+  ],
+  &quot;verifyCommand&quot;: &quot;cd /Users/sultan/Development/FitJournal/Multiplatform &amp;&amp; ./gradlew :shared:assemble&quot;,
+  &quot;acceptanceCriteria&quot;: [
+    &quot;`:shared:assemble` succeeds with the Vico 3.2.3 dependency present (spec criterion 2 for this diff), OR the task is reported BLOCKED with the exact Gradle error — never a silently substituted coordinate.&quot;,
+    &quot;Exactly one new dependency; `kotlin`, CMP, AGP, SKIE versions unchanged in the diff.&quot;,
+    &quot;The landed coordinate (`com.patrykandpatrick.vico:compose:3.2.3`) is stated in the task report.&quot;
+  ]
+}</code></pre>
+<h4>Task 1: HistoryContract + HistoryFeed aggregation + jvmTests</h4>
+<h4>Goal</h4>
+<p>(Multiplatform repo) Create the public MVI contract and the pure <code>buildHistoryFeed</code> aggregation with full jvmTest coverage — the tested unit everything else consumes.</p>
+<h4>Files</h4>
+<ul>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/HistoryContract.kt (create)</li>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/HistoryFeed.kt (create)</li>
+<li>Multiplatform/shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/ui/history/HistoryFeedTest.kt (create)</li>
+</ul>
+<h4>Steps</h4>
+<ol>
+<li>Invoke skills <code>kotlin-flow-state-event-modeling</code> (sealed Loading/Empty/Loaded content — data lives in the case; no loading Booleans) and <code>compose-state-hoisting</code> before writing.</li>
+<li>Write <code>HistoryContract.kt</code> from the spec's &quot;Contract&quot; section, including all KDoc comments, PLUS the two fields pinned in Cross-Task Contracts (this revision supersedes the spec listing on exactly these two points):</li>
+</ol>
+<ul>
+<li><code>ViewState</code> gains a final field <code>today: LocalDate</code> (KDoc: calendar <code>selectedDate</code> source, mirror of <code>WorkoutContract.ViewState.selectedDate</code>), and <code>ViewState.initial()</code> becomes <code>fun initial(today: LocalDate) = ViewState(Content.Loading, false, emptyMap(), MeasurementSystem.KG_KM, today)</code> — mirroring <code>WorkoutContract.ViewState.initial(initialDate, …)</code>, which also takes its date as a parameter.</li>
+<li><code>WeekSection</code> gains <code>titleShowsYear: Boolean</code> (KDoc: <code>endInclusive.year != today.year</code>, computed by the feed so headers need no clock), placed between <code>muscleSplit</code> and <code>days</code>.</li>
+</ul>
+<p>   Mirror <code>ui/workout/WorkoutContract.kt</code> for style. Tonnage fields stay unit-neutral (<code>tonnage</code>/<code>delta</code> — never <code>Kg</code> suffixes).</p>
+<ol>
+<li>Stub <code>HistoryFeed.kt</code> with ONLY the pinned signature, body <code>TODO(&quot;Task 1 step 6&quot;)</code> — this exists so the RED run fails on assertions, not on unresolved references.</li>
+<li><strong>TDD — RED first.</strong> Write <code>HistoryFeedTest.kt</code> BEFORE any real implementation. <code>buildHistoryFeed</code> is pure — <code>today</code> and <code>firstDayOfWeek</code> are explicit parameters, so there is no clock at feed level: fix <code>today</code> per test (e.g. <code>LocalDate(2026, 8, 5)</code>, a Wednesday) and pass <code>firstDayOfWeek</code> explicitly (<code>DayOfWeek.MONDAY</code> except in the week-bucketing case, which also runs <code>SUNDAY</code>). Fixture builders (private helpers at the bottom of the test class — constructor shapes verified against <code>Multiplatform/shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/domain/DisplaySetValuesTest.kt:33–69</code> and <code>domain/ExerciseSearchTest.kt:14</code>):</li>
+</ol>
+<pre class="code"><code>   private val TODAY = LocalDate(2026, 8, 5)                  // fixed — never Clock.System
+   private val FIXED_INSTANT = Instant.parse(&quot;2026-08-05T10:00:00Z&quot;)
+   private const val USER = &quot;user-1&quot;
+
+   private fun journal(id: String, name: String) =
+       Journal(id = id, name = name, comments = null, isPersonal = true)
+
+   private fun set(date: LocalDate, weight: Double? = 60.0, reps: Int? = 8) =
+       WorkoutSet(id = randomUuid(), userId = USER, journalId = &quot;j1&quot;, date = date,
+           weight = weight, reps = reps, distance = null, duration = null,
+           resultType = ResultType.WEIGHT_REPS)
+   // cardio fixture: weight = null, reps = null, distance/duration set, ResultType.DISTANCE_DURATION
+
+   // Catalog Exercise + Category, inlined with the REAL constructors
+   // (exact shape of DisplaySetValuesTest.kt:54–65 / ExerciseSearchTest.kt:14):
+   private fun catalogExercise(category: CategoryType) = Exercise(
+       uuid = randomUuid(),
+       remoteId = null,
+       name = &quot;Ex ${category.name}&quot;,
+       details = null,
+       primaryCategory = Category(&quot;c-${category.id}&quot;, &quot;c-${category.id}&quot;, category.name, category, null),
+       secondaryCategories = emptyList(),
+       image1 = null,
+       image2 = null,
+       resultType = ResultType.WEIGHT_REPS,
+       isPersonal = false,
+   )
+
+   private fun exercise(date: LocalDate, category: CategoryType, sets: List&lt;WorkoutSet&gt;) =
+       WorkoutExercise(id = randomUuid(), userId = USER, journalId = &quot;j1&quot;, date = date,
+           exercise = catalogExercise(category),
+           sets = sets, comment = null, lastOccurrence = null)
+
+   private fun record(date: LocalDate, workoutNumber: Int = 1, exercises: List&lt;WorkoutExercise&gt; = emptyList()) =
+       WorkoutRecord(id = randomUuid(), userId = USER, journalId = &quot;j1&quot;, position = 0,
+           workoutNumber = workoutNumber, date = date, exercises = exercises,
+           createdDate = FIXED_INSTANT, updatedDate = FIXED_INSTANT)</code></pre>
+<p>   Cases (each a named test, from spec criterion 1):</p>
+<ul>
+<li>empty records + 1 journal → <code>Content.Empty</code> with <code>journalRow == null</code>; empty + 2 journals → <code>Empty</code> with <code>journalRow.name</code> = selected journal's name (fallback to first when id unmatched);</li>
+<li>hero has exactly 11 slots, current week last (<code>isCurrentWeek</code> only on last), older empty weeks zero-filled from the right;</li>
+<li>delta <code>null</code> for the earliest data-bearing week and for the hero when this week is first; otherwise <code>tonnage − previousCalendarWeekTonnage</code>; rest week → next week's delta = its full tonnage; zero delta is <code>0.0</code> (renders &quot;+0&quot;);</li>
+<li>all records older than 11 weeks → <code>Loaded</code> with 11 slots each <code>tonnage == 0.0</code> (no exception, no division) AND week sections for the old weeks;</li>
+<li>month labels: <code>slotCount</code>s sum to 11, months correct for a fixed clock, consecutive same-month slots collapsed;</li>
+<li>two workouts on one day → <code>DayRow.workoutCount == 2</code> (distinct <code>workoutNumber</code>), exercise/set sums correct; sets counted only when <code>weight != null || distance != null</code>;</li>
+<li>cardio-only records → <code>tonnage == 0.0</code>;</li>
+<li>MONDAY vs SUNDAY <code>firstDayOfWeek</code> bucket a Sunday workout differently;</li>
+<li>Loaded: 1 journal → <code>journalRow == null</code>; 2 journals → <code>journalRow.name</code> = selected journal's;</li>
+<li><code>WeekKind</code>: <code>ThisWeek</code>, <code>LastWeek</code> (start == current − 7d), <code>Older</code>; weeks newest-first; days newest-first; <code>topCategories</code> ranked by day set count desc, max 3; hero <code>daysLeft</code> = days strictly after today through the locale week's end (0..6);</li>
+<li><strong><code>titleShowsYear</code>:</strong> an <code>Older</code> week entirely inside <code>TODAY</code>'s year → <code>titleShowsYear == false</code>; a week whose <code>endInclusive</code> falls in a previous year (e.g. records at <code>LocalDate(2025, 12, 15)</code> with <code>TODAY</code> in 2026) → <code>titleShowsYear == true</code>.</li>
+</ul>
+<ol>
+<li><strong>Run RED:</strong> <code>cd /Users/sultan/Development/FitJournal/Multiplatform &amp;&amp; ./gradlew :shared:jvmTest --tests &quot;kz.maestrosultan.fitjournal.ui.history.HistoryFeedTest&quot;; rc=$?; echo &quot;RED rc=$rc&quot;</code> — confirm <code>rc != 0</code> (tests fail on the <code>TODO()</code>). Do not proceed until RED is confirmed.</li>
+<li>Implement <code>buildHistoryFeed</code> per the spec's &quot;Aggregation&quot; rules: <code>weekStart(d)</code> = latest date ≤ d with <code>dayOfWeek == firstDayOfWeek</code>; <code>records.groupBy { weekStart(it.date) }</code>; tonnage ONLY via <code>TonnageCalculator.forRecords(...)</code> at every level; <code>muscleSplit = WorkloadCalculator.calculate(weekRecords, showOther = true)</code>; <code>titleShowsYear = endInclusive.year != today.year</code> per section; no unit conversion, no labeling. Pure function — no coroutines, no repositories, no androidx.compose imports.</li>
+<li><strong>Run GREEN:</strong> same test command — confirm <code>rc == 0</code> with the test class listed as executed; then run <code>:shared:assemble</code> to prove all targets still compile.</li>
+</ol>
+<h4>Acceptance Criteria</h4>
+<ul>
+<li>All test cases above green under <code>kz.maestrosultan.fitjournal.ui.history.HistoryFeedTest</code> (spec criterion 1, feed-level rows; criterion 6's feed-level journal-row rule; the <code>titleShowsYear</code> pair), with a RED run evidenced before implementation.</li>
+<li>Contract matches the spec's listing in types, fields, order, and nullability, PLUS exactly the two revision-pinned fields (<code>ViewState.today</code>, <code>WeekSection.titleShowsYear</code>) — nothing else added.</li>
+<li><code>HistoryFeed.kt</code> imports no <code>androidx.compose.*</code>, no repositories, no sync types.</li>
+</ul>
+<h4>Verify</h4>
+<pre class="code"><code>cd /Users/sultan/Development/FitJournal/Multiplatform &amp;&amp; ./gradlew :shared:jvmTest --tests &quot;kz.maestrosultan.fitjournal.ui.history.HistoryFeedTest&quot; &amp;&amp; ./gradlew :shared:assemble</code></pre>
+<pre class="code"><code>{
+  &quot;id&quot;: 1,
+  &quot;modelTier&quot;: &quot;frontier&quot;,
+  &quot;blockedBy&quot;: [
+    0
+  ],
+  &quot;files&quot;: [
+    &quot;Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/HistoryContract.kt&quot;,
+    &quot;Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/HistoryFeed.kt&quot;,
+    &quot;Multiplatform/shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/ui/history/HistoryFeedTest.kt&quot;
+  ],
+  &quot;verifyCommand&quot;: &quot;cd /Users/sultan/Development/FitJournal/Multiplatform &amp;&amp; ./gradlew :shared:jvmTest --tests \&quot;kz.maestrosultan.fitjournal.ui.history.HistoryFeedTest\&quot; &amp;&amp; ./gradlew :shared:assemble&quot;,
+  &quot;acceptanceCriteria&quot;: [
+    &quot;All test cases above green under `kz.maestrosultan.fitjournal.ui.history.HistoryFeedTest` (spec criterion 1, feed-level rows; criterion 6's feed-level journal-row rule; the `titleShowsYear` pair), with a RED run evidenced before implementation.&quot;,
+    &quot;Contract matches the spec's listing in types, fields, order, and nullability, PLUS exactly the two revision-pinned fields (`ViewState.today`, `WeekSection.titleShowsYear`) — nothing else added.&quot;,
+    &quot;`HistoryFeed.kt` imports no `androidx.compose.*`, no repositories, no sync types.&quot;
+  ]
+}</code></pre>
+<h4>Task 2: HistoryViewModel, factory, journal-switch/dot-race tests</h4>
+<h4>Goal</h4>
+<p>(Multiplatform repo) Implement the shared ViewModel — session-driven pipeline, calendar-dot loading with the single-job + identity guard, one-shot effects — plus the factory, with VM-level jvmTests for the journal-switch seam and the stale dot-load race.</p>
+<h4>Files</h4>
+<ul>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/HistoryViewModel.kt (create)</li>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/HistoryViewModelFactory.kt (create)</li>
+<li>Multiplatform/shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/ui/history/HistoryViewModelJournalSwitchTest.kt (create)</li>
+</ul>
+<h4>Steps</h4>
+<ol>
+<li>Invoke skills <code>compose-state-hoisting</code>, <code>compose-side-effects</code>, and <code>kotlin-flow-state-event-modeling</code> before writing. Read <code>ui/workout/WorkoutViewModel.kt</code> + <code>WorkoutViewModelFactory.kt</code> as the mirror.</li>
+<li><strong>TDD — RED first.</strong> Write <code>HistoryViewModelJournalSwitchTest.kt</code> BEFORE the ViewModel. Harness: the existing jvmTest in-memory SQLite driver (<code>data/TestDb.kt</code>) + real <code>Default*</code> repositories, exactly as <code>RecordRepositoryTest</code> does. Determinism is injected through the constructor — the test NEVER touches the process-global <code>UserSession</code> or <code>Clock.System</code>:</li>
+</ol>
+<pre class="code"><code>   private val sessionFlow = MutableStateFlow&lt;UserSessionState?&gt;(null)   // test-owned session source
+   private val FIXED_NOW = Instant.parse(&quot;2026-08-05T10:00:00Z&quot;)
+
+   private fun vm(recordRepository: RecordRepository, journalRepository: JournalRepository) =
+       HistoryViewModel(
+           recordRepository = recordRepository,
+           journalRepository = journalRepository,
+           sessionState = sessionFlow,
+           clock = object : Clock { override fun now() = FIXED_NOW },
+           timeZone = TimeZone.UTC,
+           firstDayOfWeek = DayOfWeek.MONDAY,
+       )
+   // journal switch = sessionFlow.value = UserSessionState(userId = USER, journalId = &quot;j2&quot;, ...)</code></pre>
+<p>   Record/journal rows are seeded through the repositories (fixtures as in Task 1, two journals &quot;j1&quot;/&quot;j2&quot; with distinct records). For the race case, wrap the real <code>RecordRepository</code> in a delegating fake whose <code>getRecordsByMonth</code> suspends on a <code>CompletableDeferred</code> gate for the OLD journal's request and is released only AFTER the new journal's dots have been published. Cases:</p>
+<ul>
+<li><strong>content re-scope:</strong> a <code>sessionFlow</code> emission with a new <code>journalId</code> re-emits content scoped to the new journal (end-to-end through the jvm driver);</li>
+<li><strong>dot clear + reload:</strong> with the calendar open, a journal switch clears <code>workoutDays</code> to <code>emptyMap()</code> and republishes the visible month's dots scoped to the new journal — no dot from the previous journal survives;</li>
+<li><strong>stale dot-load race:</strong> the gated OLD-journal dot load completing AFTER the new journal's dots were published must NOT overwrite <code>workoutDays</code> (cancelled or dropped by the identity guard).</li>
+</ul>
+<ol>
+<li><strong>Run RED:</strong> <code>cd /Users/sultan/Development/FitJournal/Multiplatform &amp;&amp; ./gradlew :shared:jvmTest --tests &quot;kz.maestrosultan.fitjournal.ui.history.HistoryViewModelJournalSwitchTest&quot;; rc=$?; echo &quot;RED rc=$rc&quot;</code> — confirm <code>rc != 0</code> (before the VM exists this fails at compilation; a compile failure of the new test source is a valid RED). Do not proceed until confirmed.</li>
+<li>Implement <code>HistoryViewModel</code> exactly per the spec's &quot;ViewModel&quot; section: constructor <code>(recordRepository: RecordRepository, journalRepository: JournalRepository, sessionState: Flow&lt;UserSessionState?&gt; = UserSession.state, clock: Clock = Clock.System, timeZone: TimeZone = TimeZone.currentSystemDefault(), firstDayOfWeek: DayOfWeek = firstDayOfWeekFromLocale())</code>.</li>
+</ol>
+<ul>
+<li><code>private fun today(): LocalDate = clock.todayIn(timeZone)</code> — the exact pattern at <code>WorkoutViewModel.kt:129</code>. <code>_uiState</code> is initialized with <code>ViewState.initial(today())</code>, and every feed rebuild computes <code>today()</code> ONCE per emission, passing the same value to <code>buildHistoryFeed(...)</code> AND into <code>ViewState.today</code> — the calendar's <code>selectedDate</code> and the feed's week math can never disagree within one emission.</li>
+<li>Pipeline: <code>sessionState.filterNotNull().flatMapLatest { combine(recordRepository.observeRecordsChanged(...).mapLatest { getRecentRecords(...) }, journalRepository.getJournalsFlow(...)) }</code> → <code>mapLatest { withContext(Dispatchers.Default) { buildHistoryFeed(...) } }</code>, combined with <code>calendarVisible</code> + <code>workoutDays</code> MutableStateFlows into <code>ViewState</code>. NO <code>distinctUntilChangedBy</code>. <code>measurementSystem</code> from the latest session emission. The <code>Dispatchers.Default</code> hop is mandatory.</li>
+<li>Session-change guard: cache last <code>(userId, journalId)</code>; on change → reset <code>workoutDays = emptyMap()</code>, cancel in-flight <code>workoutDaysJob</code>, and if <code>calendarVisible</code> reload the tracked <code>visibleMonth</code> under the new identity; else lazy reload on next open. Track <code>visibleMonth: Pair&lt;Int, Int&gt;</code> set on calendar open and updated by <code>CalendarMonthChanged</code>.</li>
+<li>Dot loader: ONE private loader, single cancellable <code>workoutDaysJob: Job?</code>; each load cancels the previous job, captures request identity <code>(userId, journalId, year, month)</code>, and publishes ONLY if identity still matches current session + <code>visibleMonth</code>. (Do NOT copy <code>WorkoutViewModel.loadWorkoutDays</code>'s untracked <code>viewModelScope.launch</code> — it has this race; fixing it there is out of scope.) Dots mapped exactly as <code>WorkoutViewModel.loadWorkoutDays</code> (distinct <code>primaryCategory.type</code> per day via <code>getRecordsByMonth</code>).</li>
+<li>Actions per spec: <code>ToggleCalendar</code> (flip; on open set <code>visibleMonth</code> = current month + guarded load), <code>CalendarMonthChanged</code> (update + guarded load), <code>SelectDate</code> (dotted day → <code>calendarVisible = false</code> + emit <code>OpenWorkoutDetails(date)</code>; empty day → no-op), <code>OpenDay</code> → <code>OpenWorkoutDetails(date)</code>, <code>OpenJournalPicker</code> → effect.</li>
+<li>Effects: <code>Channel&lt;ViewEffect&gt;(Channel.BUFFERED).receiveAsFlow()</code>. <code>dispose()</code> cancels <code>viewModelScope</code>.</li>
+</ul>
+<ol>
+<li>Write <code>HistoryViewModelFactory.kt</code>: <code>fun createHistoryViewModel(recordRepository, journalRepository): HistoryViewModel</code> — defaults supply <code>UserSession.state</code>, clock, zone, locale week start.</li>
+<li><strong>Run GREEN:</strong> the step-3 command — confirm <code>rc == 0</code> with all three cases executed; then run the full history package tests + <code>:shared:assemble</code>.</li>
+</ol>
+<h4>Acceptance Criteria</h4>
+<ul>
+<li>The three journal-switch/dot-race cases pass in <code>HistoryViewModelJournalSwitchTest</code> (spec criterion 1, VM-level rows), with a RED run evidenced before implementation.</li>
+<li><code>HistoryViewModel</code> imports no <code>SyncTrigger</code>/<code>SyncOrchestrator</code>/Amplify/AWS and carries no refreshing state (spec criterion 5 scope).</li>
+<li>Feed building demonstrably runs under <code>Dispatchers.Default</code> (code inspection: <code>withContext(Dispatchers.Default)</code> wraps <code>buildHistoryFeed</code>).</li>
+<li><code>ViewState.today</code> is populated from the VM's injected <code>clock</code> + <code>timeZone</code> (never <code>Clock.System</code> directly) and matches the <code>today</code> passed to <code>buildHistoryFeed</code> in the same emission.</li>
+<li><code>HistoryFeedTest</code> from Task 1 still green (shared build unit).</li>
+</ul>
+<h4>Verify</h4>
+<pre class="code"><code>cd /Users/sultan/Development/FitJournal/Multiplatform &amp;&amp; ./gradlew :shared:jvmTest --tests &quot;kz.maestrosultan.fitjournal.ui.history.*&quot; &amp;&amp; ./gradlew :shared:assemble</code></pre>
+<pre class="code"><code>{
+  &quot;id&quot;: 2,
+  &quot;modelTier&quot;: &quot;frontier&quot;,
+  &quot;blockedBy&quot;: [
+    1
+  ],
+  &quot;files&quot;: [
+    &quot;Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/HistoryViewModel.kt&quot;,
+    &quot;Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/HistoryViewModelFactory.kt&quot;,
+    &quot;Multiplatform/shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/ui/history/HistoryViewModelJournalSwitchTest.kt&quot;
+  ],
+  &quot;verifyCommand&quot;: &quot;cd /Users/sultan/Development/FitJournal/Multiplatform &amp;&amp; ./gradlew :shared:jvmTest --tests \&quot;kz.maestrosultan.fitjournal.ui.history.*\&quot; &amp;&amp; ./gradlew :shared:assemble&quot;,
+  &quot;acceptanceCriteria&quot;: [
+    &quot;The three journal-switch/dot-race cases pass in `HistoryViewModelJournalSwitchTest` (spec criterion 1, VM-level rows), with a RED run evidenced before implementation.&quot;,
+    &quot;`HistoryViewModel` imports no `SyncTrigger`/`SyncOrchestrator`/Amplify/AWS and carries no refreshing state (spec criterion 5 scope).&quot;,
+    &quot;Feed building demonstrably runs under `Dispatchers.Default` (code inspection: `withContext(Dispatchers.Default)` wraps `buildHistoryFeed`).&quot;,
+    &quot;`ViewState.today` is populated from the VM's injected `clock` + `timeZone` (never `Clock.System` directly) and matches the `today` passed to `buildHistoryFeed` in the same emission.&quot;,
+    &quot;`HistoryFeedTest` from Task 1 still green (shared build unit).&quot;
+  ]
+}</code></pre>
+<h4>Task 3: LocaleFormatters.formatDayShortMonth expect + 3 actuals</h4>
+<h4>Goal</h4>
+<p>(Multiplatform repo) Add the locale-ordered day+short-month formatter (<code>&quot;20 Jul&quot;</code> / <code>&quot;Jul 20&quot;</code>, optional year) as an expect function with android/ios/jvm actuals, mirroring the existing <code>formatDayMonthYear</code>.</p>
+<h4>Files</h4>
+<ul>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/format/LocaleFormatters.kt (modify)</li>
+<li>Multiplatform/shared/src/androidMain/kotlin/kz/maestrosultan/fitjournal/ui/format/LocaleFormatters.android.kt (modify)</li>
+<li>Multiplatform/shared/src/iosMain/kotlin/kz/maestrosultan/fitjournal/ui/format/LocaleFormatters.ios.kt (modify)</li>
+<li>Multiplatform/shared/src/jvmMain/kotlin/kz/maestrosultan/fitjournal/ui/format/LocaleFormatters.jvm.kt (modify)</li>
+</ul>
+<h4>Steps</h4>
+<ol>
+<li>Read the existing <code>formatDayMonthYear</code> expect/actual quartet in the four files above; clone its exact pattern (skeleton-based, locale-ordered).</li>
+<li>Add to commonMain: <code>expect fun formatDayShortMonth(date: LocalDate, withYear: Boolean = false): String</code> (or matching the file's existing declaration style — object member vs top-level — copy whatever <code>formatDayMonthYear</code> does), using skeleton <code>&quot;dMMM&quot;</code> when <code>withYear == false</code> and <code>&quot;dMMMy&quot;</code> when true.</li>
+<li>Implement the android, ios, and jvm actuals exactly like their <code>formatDayMonthYear</code> siblings (Android <code>DateFormat.getBestDateTimePattern</code> path, iOS <code>NSDateFormatter</code> <code>dateFormatFromTemplate</code> path, jvm <code>DateTimeFormatterBuilder</code>/<code>getLocalizedDateTimePattern</code> path — whichever each actual already uses).</li>
+<li>Compile all targets.</li>
+</ol>
+<h4>Acceptance Criteria</h4>
+<ul>
+<li><code>:shared:assemble</code> green with the new expect + all three actuals (a missing actual fails this build).</li>
+<li>Skeletons are <code>&quot;dMMM&quot;</code>/<code>&quot;dMMMy&quot;</code> — output is locale-ordered (&quot;20 Jul&quot; en-GB style vs &quot;Jul 20&quot; en-US style), not a hardcoded pattern.</li>
+<li>No other formatter touched.</li>
+</ul>
+<h4>Verify</h4>
+<pre class="code"><code>cd /Users/sultan/Development/FitJournal/Multiplatform &amp;&amp; ./gradlew :shared:assemble</code></pre>
+<pre class="code"><code>{
+  &quot;id&quot;: 3,
+  &quot;modelTier&quot;: &quot;standard&quot;,
+  &quot;blockedBy&quot;: [
+    2
+  ],
+  &quot;files&quot;: [
+    &quot;Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/format/LocaleFormatters.kt&quot;,
+    &quot;Multiplatform/shared/src/androidMain/kotlin/kz/maestrosultan/fitjournal/ui/format/LocaleFormatters.android.kt&quot;,
+    &quot;Multiplatform/shared/src/iosMain/kotlin/kz/maestrosultan/fitjournal/ui/format/LocaleFormatters.ios.kt&quot;,
+    &quot;Multiplatform/shared/src/jvmMain/kotlin/kz/maestrosultan/fitjournal/ui/format/LocaleFormatters.jvm.kt&quot;
+  ],
+  &quot;verifyCommand&quot;: &quot;cd /Users/sultan/Development/FitJournal/Multiplatform &amp;&amp; ./gradlew :shared:assemble&quot;,
+  &quot;acceptanceCriteria&quot;: [
+    &quot;`:shared:assemble` green with the new expect + all three actuals (a missing actual fails this build).&quot;,
+    &quot;Skeletons are `\&quot;dMMM\&quot;`/`\&quot;dMMMy\&quot;` — output is locale-ordered (\&quot;20 Jul\&quot; en-GB style vs \&quot;Jul 20\&quot; en-US style), not a hardcoded pattern.&quot;,
+    &quot;No other formatter touched.&quot;
+  ]
+}</code></pre>
+<h4>Task 4: History strings (en/de/ru/uk) + empty_plates asset</h4>
+<h4>Goal</h4>
+<p>(Multiplatform repo) Add the seven <code>history_</code> string/plural resources in all four locales and copy the empty-state illustration into composeResources.</p>
+<h4>Files</h4>
+<ul>
+<li>Multiplatform/shared/src/commonMain/composeResources/values/strings.xml (modify)</li>
+<li>Multiplatform/shared/src/commonMain/composeResources/values-de/strings.xml (modify)</li>
+<li>Multiplatform/shared/src/commonMain/composeResources/values-ru/strings.xml (modify)</li>
+<li>Multiplatform/shared/src/commonMain/composeResources/values-uk/strings.xml (modify)</li>
+<li>Multiplatform/shared/src/commonMain/composeResources/drawable/empty_plates.png (create)</li>
+</ul>
+<h4>Steps</h4>
+<ol>
+<li>Copy the asset:</li>
+</ol>
+<pre class="code"><code>   cp /Users/sultan/Development/FitJournal/design/assets/empty-plates.png /Users/sultan/Development/FitJournal/Multiplatform/shared/src/commonMain/composeResources/drawable/empty_plates.png</code></pre>
+<ol>
+<li>Check an existing plural in <code>values/strings.xml</code> for the format-arg convention (<code>%1$d</code> vs <code>%d</code>); if the file's convention differs from the blocks below, match the file. Append inside <code>&lt;resources&gt;</code> of each file:</li>
+</ol>
+<p>   <strong>values/strings.xml (en):</strong></p>
+<pre class="code"><code>   &lt;string name=&quot;history_empty_message&quot;&gt;Your workouts will appear here&lt;/string&gt;
+   &lt;string name=&quot;history_this_week&quot;&gt;This week&lt;/string&gt;
+   &lt;string name=&quot;history_last_week&quot;&gt;Last week&lt;/string&gt;
+   &lt;plurals name=&quot;history_workout_count&quot;&gt;
+       &lt;item quantity=&quot;one&quot;&gt;%1$d workout&lt;/item&gt;
+       &lt;item quantity=&quot;other&quot;&gt;%1$d workouts&lt;/item&gt;
+   &lt;/plurals&gt;
+   &lt;plurals name=&quot;history_exercise_count&quot;&gt;
+       &lt;item quantity=&quot;one&quot;&gt;%1$d exercise&lt;/item&gt;
+       &lt;item quantity=&quot;other&quot;&gt;%1$d exercises&lt;/item&gt;
+   &lt;/plurals&gt;
+   &lt;plurals name=&quot;history_set_count&quot;&gt;
+       &lt;item quantity=&quot;one&quot;&gt;%1$d set&lt;/item&gt;
+       &lt;item quantity=&quot;other&quot;&gt;%1$d sets&lt;/item&gt;
+   &lt;/plurals&gt;
+   &lt;plurals name=&quot;history_days_left&quot;&gt;
+       &lt;item quantity=&quot;one&quot;&gt;%1$d day left&lt;/item&gt;
+       &lt;item quantity=&quot;other&quot;&gt;%1$d days left&lt;/item&gt;
+   &lt;/plurals&gt;</code></pre>
+<p>   <strong>values-de/strings.xml:</strong></p>
+<pre class="code"><code>   &lt;string name=&quot;history_empty_message&quot;&gt;Deine Workouts erscheinen hier&lt;/string&gt;
+   &lt;string name=&quot;history_this_week&quot;&gt;Diese Woche&lt;/string&gt;
+   &lt;string name=&quot;history_last_week&quot;&gt;Letzte Woche&lt;/string&gt;
+   &lt;plurals name=&quot;history_workout_count&quot;&gt;
+       &lt;item quantity=&quot;one&quot;&gt;%1$d Workout&lt;/item&gt;
+       &lt;item quantity=&quot;other&quot;&gt;%1$d Workouts&lt;/item&gt;
+   &lt;/plurals&gt;
+   &lt;plurals name=&quot;history_exercise_count&quot;&gt;
+       &lt;item quantity=&quot;one&quot;&gt;%1$d Übung&lt;/item&gt;
+       &lt;item quantity=&quot;other&quot;&gt;%1$d Übungen&lt;/item&gt;
+   &lt;/plurals&gt;
+   &lt;plurals name=&quot;history_set_count&quot;&gt;
+       &lt;item quantity=&quot;one&quot;&gt;%1$d Satz&lt;/item&gt;
+       &lt;item quantity=&quot;other&quot;&gt;%1$d Sätze&lt;/item&gt;
+   &lt;/plurals&gt;
+   &lt;plurals name=&quot;history_days_left&quot;&gt;
+       &lt;item quantity=&quot;one&quot;&gt;noch %1$d Tag&lt;/item&gt;
+       &lt;item quantity=&quot;other&quot;&gt;noch %1$d Tage&lt;/item&gt;
+   &lt;/plurals&gt;</code></pre>
+<p>   <strong>values-ru/strings.xml:</strong></p>
+<pre class="code"><code>   &lt;string name=&quot;history_empty_message&quot;&gt;Здесь появятся ваши тренировки&lt;/string&gt;
+   &lt;string name=&quot;history_this_week&quot;&gt;Эта неделя&lt;/string&gt;
+   &lt;string name=&quot;history_last_week&quot;&gt;Прошлая неделя&lt;/string&gt;
+   &lt;plurals name=&quot;history_workout_count&quot;&gt;
+       &lt;item quantity=&quot;one&quot;&gt;%1$d тренировка&lt;/item&gt;
+       &lt;item quantity=&quot;few&quot;&gt;%1$d тренировки&lt;/item&gt;
+       &lt;item quantity=&quot;many&quot;&gt;%1$d тренировок&lt;/item&gt;
+       &lt;item quantity=&quot;other&quot;&gt;%1$d тренировки&lt;/item&gt;
+   &lt;/plurals&gt;
+   &lt;plurals name=&quot;history_exercise_count&quot;&gt;
+       &lt;item quantity=&quot;one&quot;&gt;%1$d упражнение&lt;/item&gt;
+       &lt;item quantity=&quot;few&quot;&gt;%1$d упражнения&lt;/item&gt;
+       &lt;item quantity=&quot;many&quot;&gt;%1$d упражнений&lt;/item&gt;
+       &lt;item quantity=&quot;other&quot;&gt;%1$d упражнения&lt;/item&gt;
+   &lt;/plurals&gt;
+   &lt;plurals name=&quot;history_set_count&quot;&gt;
+       &lt;item quantity=&quot;one&quot;&gt;%1$d подход&lt;/item&gt;
+       &lt;item quantity=&quot;few&quot;&gt;%1$d подхода&lt;/item&gt;
+       &lt;item quantity=&quot;many&quot;&gt;%1$d подходов&lt;/item&gt;
+       &lt;item quantity=&quot;other&quot;&gt;%1$d подхода&lt;/item&gt;
+   &lt;/plurals&gt;
+   &lt;plurals name=&quot;history_days_left&quot;&gt;
+       &lt;item quantity=&quot;one&quot;&gt;остался %1$d день&lt;/item&gt;
+       &lt;item quantity=&quot;few&quot;&gt;осталось %1$d дня&lt;/item&gt;
+       &lt;item quantity=&quot;many&quot;&gt;осталось %1$d дней&lt;/item&gt;
+       &lt;item quantity=&quot;other&quot;&gt;осталось %1$d дня&lt;/item&gt;
+   &lt;/plurals&gt;</code></pre>
+<p>   <strong>values-uk/strings.xml:</strong></p>
+<pre class="code"><code>   &lt;string name=&quot;history_empty_message&quot;&gt;Тут з\'являться ваші тренування&lt;/string&gt;
+   &lt;string name=&quot;history_this_week&quot;&gt;Цей тиждень&lt;/string&gt;
+   &lt;string name=&quot;history_last_week&quot;&gt;Минулий тиждень&lt;/string&gt;
+   &lt;plurals name=&quot;history_workout_count&quot;&gt;
+       &lt;item quantity=&quot;one&quot;&gt;%1$d тренування&lt;/item&gt;
+       &lt;item quantity=&quot;few&quot;&gt;%1$d тренування&lt;/item&gt;
+       &lt;item quantity=&quot;many&quot;&gt;%1$d тренувань&lt;/item&gt;
+       &lt;item quantity=&quot;other&quot;&gt;%1$d тренування&lt;/item&gt;
+   &lt;/plurals&gt;
+   &lt;plurals name=&quot;history_exercise_count&quot;&gt;
+       &lt;item quantity=&quot;one&quot;&gt;%1$d вправа&lt;/item&gt;
+       &lt;item quantity=&quot;few&quot;&gt;%1$d вправи&lt;/item&gt;
+       &lt;item quantity=&quot;many&quot;&gt;%1$d вправ&lt;/item&gt;
+       &lt;item quantity=&quot;other&quot;&gt;%1$d вправи&lt;/item&gt;
+   &lt;/plurals&gt;
+   &lt;plurals name=&quot;history_set_count&quot;&gt;
+       &lt;item quantity=&quot;one&quot;&gt;%1$d підхід&lt;/item&gt;
+       &lt;item quantity=&quot;few&quot;&gt;%1$d підходи&lt;/item&gt;
+       &lt;item quantity=&quot;many&quot;&gt;%1$d підходів&lt;/item&gt;
+       &lt;item quantity=&quot;other&quot;&gt;%1$d підходи&lt;/item&gt;
+   &lt;/plurals&gt;
+   &lt;plurals name=&quot;history_days_left&quot;&gt;
+       &lt;item quantity=&quot;one&quot;&gt;залишився %1$d день&lt;/item&gt;
+       &lt;item quantity=&quot;few&quot;&gt;залишилося %1$d дні&lt;/item&gt;
+       &lt;item quantity=&quot;many&quot;&gt;залишилося %1$d днів&lt;/item&gt;
+       &lt;item quantity=&quot;other&quot;&gt;залишилося %1$d дні&lt;/item&gt;
+   &lt;/plurals&gt;</code></pre>
+<ol>
+<li>Run the verify command (regenerates the compose <code>Res</code> class and compiles).</li>
+</ol>
+<h4>Acceptance Criteria</h4>
+<ul>
+<li>All four locale files gain the same 3 strings + 4 plurals; keys exactly as pinned in Cross-Task Contracts, all prefixed <code>history_</code> (spec copy/naming constraint: all four locales in the same change).</li>
+<li><code>empty_plates.png</code> exists in <code>composeResources/drawable/</code> and is byte-identical to <code>design/assets/empty-plates.png</code>.</li>
+<li><code>:shared:assemble</code> green (Res accessors generate; XML is well-formed, apostrophes escaped).</li>
+</ul>
+<h4>Verify</h4>
+<pre class="code"><code>cd /Users/sultan/Development/FitJournal/Multiplatform &amp;&amp; ./gradlew :shared:assemble</code></pre>
+<pre class="code"><code>{
+  &quot;id&quot;: 4,
+  &quot;modelTier&quot;: &quot;mechanical&quot;,
+  &quot;blockedBy&quot;: [
+    3
+  ],
+  &quot;files&quot;: [
+    &quot;Multiplatform/shared/src/commonMain/composeResources/values/strings.xml&quot;,
+    &quot;Multiplatform/shared/src/commonMain/composeResources/values-de/strings.xml&quot;,
+    &quot;Multiplatform/shared/src/commonMain/composeResources/values-ru/strings.xml&quot;,
+    &quot;Multiplatform/shared/src/commonMain/composeResources/values-uk/strings.xml&quot;,
+    &quot;Multiplatform/shared/src/commonMain/composeResources/drawable/empty_plates.png&quot;
+  ],
+  &quot;verifyCommand&quot;: &quot;cd /Users/sultan/Development/FitJournal/Multiplatform &amp;&amp; ./gradlew :shared:assemble&quot;,
+  &quot;acceptanceCriteria&quot;: [
+    &quot;All four locale files gain the same 3 strings + 4 plurals; keys exactly as pinned in Cross-Task Contracts, all prefixed `history_` (spec copy/naming constraint: all four locales in the same change).&quot;,
+    &quot;`empty_plates.png` exists in `composeResources/drawable/` and is byte-identical to `design/assets/empty-plates.png`.&quot;,
+    &quot;`:shared:assemble` green (Res accessors generate; XML is well-formed, apostrophes escaped).&quot;
+  ]
+}</code></pre>
+<h4>Task 5: HistoryScreen + components (Vico hero, weeks, empty)</h4>
+<h4>Goal</h4>
+<p>(Multiplatform repo) Build the shared Compose screen body: calendar overlay reuse, pull-to-refresh wrapper, journal row, Vico hero with always-present baseline stubs, week headers with muscle-split bar, day rows, and the empty state.</p>
+<h4>Files</h4>
+<ul>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/HistoryScreen.kt (create)</li>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/components/HistoryHero.kt (create)</li>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/components/HistoryWeekHeader.kt (create)</li>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/components/HistoryDayRow.kt (create)</li>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/components/HistoryJournalRow.kt (create)</li>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/components/HistoryEmptyState.kt (create)</li>
+</ul>
+<h4>Steps</h4>
+<ol>
+<li>Invoke skills <code>compose-slot-api-pattern</code>, <code>compose-modifier-and-layout-style</code>, and <code>compose-state-deferred-reads</code> (the chart reads state that must not force whole-screen recomposition) before writing. Read <code>ui/workout/WorkoutScreen.kt</code> (calendar <code>AnimatedVisibility</code> spec, lines 105–117; content padding convention) and <code>ui/workout/components/WorkoutCalendar.kt</code> as the mirrors. This task targets the single verified Vico <strong>3.2.3</strong> API — Task 0's pin gate has already proven it compiles; there is no alternate import surface to check for.</li>
+<li><code>HistoryScreen.kt</code> — signature from Cross-Task Contracts. Layout per spec: <code>Box(fillMaxSize().background(FjTheme.colors.background))</code> → <code>Column</code> of (1) <code>AnimatedVisibility(calendarVisible)</code> hosting <code>WorkoutCalendar(selectedDate = state.today, workoutDays, onDateSelected = { dispatch(SelectDate(it)) }, onMonthChanged = { y, m -&gt; dispatch(CalendarMonthChanged(y, m)) })</code> — <code>state.today</code> is the VM-filled <code>ViewState.today</code>, mirroring how <code>WorkoutScreen.kt:111</code> passes the state-carried <code>state.selectedDate</code> (the calendar computes its own today-highlight internally; <code>selectedDate</code> is the highlighted day) — with the IDENTICAL enter/exit animation as WorkoutScreen, and (2) one <code>LazyColumn</code> (horizontal contentPadding 20.dp, bottom = safe-drawing bottom inset + 30.dp; host pads only the top) with items <code>[journalRow?] [hero] [per week: header + day rows with 50dp-inset dividers]</code>. Hero is a scrolling list item, not chrome. When <code>onRefresh != null</code>, wrap the LazyColumn in Material3 <code>PullToRefreshBox(isRefreshing = isRefreshing, onRefresh = onRefresh)</code> (<code>androidx.compose.material3.pulltorefresh</code>, <code>@OptIn(ExperimentalMaterial3Api::class)</code> if required); when <code>onRefresh == null</code>, compose no pull-to-refresh machinery at all. Shared code never interprets <code>isRefreshing</code>. <code>Content.Empty</code> → journal row (iff non-null) above <code>HistoryEmptyState</code>; <code>Content.Loading</code> → the existing shared loading convention used by WorkoutScreen.</li>
+<li><code>HistoryJournalRow.kt</code> — 16dp-radius <code>FjTheme.colors.surface</code> card, brand-tinted name + <code>ic_common_arrow_down</code> chevron, <code>noRipple</code>-style click → <code>dispatch(OpenJournalPicker)</code>. Composed only when <code>journalRow != null</code>, in BOTH Loaded and Empty.</li>
+<li><code>HistoryHero.kt</code> — per spec: <code>WorkoutValueFormatter.groupedTonnageNumber(currentWeekTonnage)</code> big number + <code>WorkoutValueFormatter.unit(WEIGHT_REPS, measurementSystem)</code> small unit + delta pill; subtitle <code>history_this_week</code> + &quot; · &quot; + <code>history_workout_count</code> plural + optional &quot;, &quot; + <code>history_days_left</code> plural (omitted when <code>daysLeft == 0</code>); 76dp chart block; month-label <code>Row</code> (each label <code>weight(slotCount)</code>, first start-aligned, last end-aligned, middle start-aligned).</li>
+</ol>
+<ul>
+<li><strong>Vico chart (3.2.3 wiring — symbol names verified via Context7 <code>/patrykandpatrick/vico</code>):</strong></li>
+</ul>
+<pre class="code"><code>     // Model. Verified 3.2.3 API: the transaction builder is `columnModel` (v2's `columnSeries`
+     // was renamed on the 3.x line). Each `columnModel { }` block feeds ONE ColumnCartesianLayer,
+     // matched in order — stub block first, so the stub layer draws behind. (Two series() calls in
+     // ONE block would land in one layer and render side-by-side per MergeMode.Grouped — wrong shape.)
+     val maxY = max(slots.maxOf { it.tonnage }, 1.0)          // pinned range — never degenerate on all-zero
+     val stubY = maxY * 3.0 / 76.0                            // renders exactly 3dp of the 76dp block
+     val modelProducer = remember { CartesianChartModelProducer() }
+     LaunchedEffect(slots) {
+         modelProducer.runTransaction {
+             columnModel { series(List(11) { stubY }) }               // stub layer: 11 unconditional entries, x = 0..10
+             columnModel { series(slots.map { it.tonnage }) }         // data layer: true tonnage (0.0 = zero-height = invisible; the stub is its visual)
+         }
+     }
+
+     val rangeProvider = remember(maxY) { CartesianLayerRangeProvider.fixed(minY = 0.0, maxY = maxY) }  // shared by BOTH layers
+     val stubColumn = rememberLineComponent(fill = Fill(FjTheme.colors.divider), thickness = 3.dp, shape = CorneredShape.Pill)
+     val currentColumn = rememberLineComponent(fill = Fill(FjTheme.colors.brand), thickness = 3.dp, shape = CorneredShape.Pill)
+     val pastColumn = rememberLineComponent(fill = Fill(FjTheme.colors.brand.copy(alpha = 0.38f)), thickness = 3.dp, shape = CorneredShape.Pill)
+
+     val stubLayer = rememberColumnCartesianLayer(
+         columnProvider = ColumnCartesianLayer.ColumnProvider.series(stubColumn),   // 11 uniform 3dp divider-tone columns
+         rangeProvider = rangeProvider,
+     )
+     val dataLayer = rememberColumnCartesianLayer(
+         columnProvider = remember(currentColumn, pastColumn) {
+             object : ColumnCartesianLayer.ColumnProvider {                          // per-entry style
+                 override fun getColumn(entry: ColumnCartesianLayerModel.Entry, extraStore: ExtraStore) =
+                     if (entry.x.toInt() == 10) currentColumn else pastColumn        // x = 0..10; last slot = current week
+                 override fun getWidestSeriesColumn(seriesKey: Any, seriesIndex: Int, extraStore: ExtraStore) = currentColumn
+             }
+         },
+         rangeProvider = rangeProvider,
+     )
+
+     CartesianChartHost(
+         chart = rememberCartesianChart(stubLayer, dataLayer),                       // layers draw in order: stubs behind
+         modelProducer = modelProducer,
+         scrollState = rememberVicoScrollState(scrollEnabled = false),
+         zoomState = rememberVicoZoomState(zoomEnabled = false),
+         modifier = Modifier.fillMaxWidth().height(76.dp),
+     )</code></pre>
+<p>     Static rendering only — no axes, no markers. Zero-tonnage entries need no special-casing: y = 0.0 draws a zero-height (invisible) column, and the stub layer is its visual.</p>
+<ul>
+<li><strong>No fallback API:</strong> this task targets 3.2.3 only. If Task 0 had failed on 3.2.3 the run would already be BLOCKED awaiting the user's decision (<code>com.patrykandpatrick.vico:multiplatform:2.1.4</code> is a documented option only the user may approve) — never guess a second chart API here.</li>
+<li><strong>Delta pill</strong> (one shared private composable reused by hero + week headers): <code>&quot;+&quot;</code>/<code>&quot;−&quot;</code> + <code>WorkoutValueFormatter.groupedTonnage(abs(delta), system)</code>; <code>delta &gt;= 0</code> → <code>FjTheme.colors.positive</code> on positive-at-16%-alpha, negative equivalent; 99dp-radius; not composed when <code>delta == null</code>.</li>
+<li>If an exact <code>FjTheme</code> token named in the spec (<code>divider</code>/<code>positive</code>/<code>negative</code>/<code>brand</code>/<code>surface</code>) doesn't exist under that name, use the existing equivalent token — never hardcode a color; note the mapping in the task report.</li>
+</ul>
+<ol>
+<li><code>HistoryWeekHeader.kt</code> — title: <code>ThisWeek</code>/<code>LastWeek</code> → <code>history_this_week</code>/<code>history_last_week</code>; <code>Older</code> → <code>&quot;${LocaleFormatters.formatDayShortMonth(section.start)} – ${LocaleFormatters.formatDayShortMonth(section.endInclusive, withYear = section.titleShowsYear)}&quot;</code> — the year decision comes from the feed-computed <code>titleShowsYear</code>; the header needs no clock and no <code>today</code>. Summary <code>&quot;{history_workout_count} · {groupedTonnage}&quot;</code>, delta pill, then the split bar: 5dp <code>Row</code> (2dp gaps), one segment per <code>WorkloadMuscleEntry</code> with <code>weight(percentage)</code> and <code>entry.category.composeColor()</code> — hand-rolled, no chart lib.</li>
+<li><code>HistoryDayRow.kt</code> — 34dp leading column (day-of-month large + <code>LocaleFormatters.weekdayName(date.dayOfWeek, NameStyle.Short)</code> small); category line = <code>topCategories</code> via existing <code>CategoryType.nameRes</code> joined <code>&quot; · &quot;</code>; <code>WorkoutValueFormatter.groupedTonnage(tonnage, system)</code>; meta line <code>[{history_workout_count} · ]{history_exercise_count} · {history_set_count}</code> with the workouts segment only when <code>workoutCount &gt; 1</code>. Whole row clickable → <code>dispatch(OpenDay(date))</code>.</li>
+<li><code>HistoryEmptyState.kt</code> — centered <code>empty_plates</code> image (214×166dp, 0.85 alpha, same file both themes) + one <code>textSecondary</code> line (<code>history_empty_message</code>). Illustration + line only — journal row placement is the screen's job.</li>
+<li>Compile all targets.</li>
+</ol>
+<h4>Acceptance Criteria</h4>
+<ul>
+<li><code>:shared:assemble</code> green (Vico usage compiles for android + both iOS targets — spec criterion 2).</li>
+<li>Journal-row rule in composition: <code>journalRow == null</code> → row absent in BOTH Loaded and Empty; non-null → composed in both (spec criteria 6, 8).</li>
+<li>Stub layer is data-independent (its <code>columnModel</code> block always carries 11 entries) and both layers use the shared fixed range provider <code>max(maxTonnage, 1.0)</code> — code inspection (spec assumption 17, criterion 10's all-zero render).</li>
+<li>Calendar receives <code>selectedDate = state.today</code> (the VM-filled <code>ViewState.today</code>) and week headers read <code>section.titleShowsYear</code> — no <code>Clock.System</code> and no locally derived &quot;today&quot; anywhere in <code>ui/history</code> composables.</li>
+<li><code>rg &quot;amplify|SyncTrigger|SyncOrchestrator|aws&quot; -i Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history</code> → no matches (spec criterion 5).</li>
+<li>No pull-to-refresh machinery composed when <code>onRefresh == null</code>; <code>isRefreshing</code> rendered, never interpreted (spec non-goal 3).</li>
+<li>All values from <code>FjTheme</code>; strings only via the <code>history_</code>/existing keys; calendar animation spec identical to WorkoutScreen.</li>
+</ul>
+<h4>Verify</h4>
+<pre class="code"><code>cd /Users/sultan/Development/FitJournal/Multiplatform
+./gradlew :shared:assemble; rc=$?; echo &quot;assemble rc=$rc&quot;
+if [ $rc -ne 0 ]; then echo &quot;FAIL: :shared:assemble&quot;; exit 1; fi
+rg -i &quot;amplify|SyncTrigger|SyncOrchestrator|aws&quot; shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history; rc=$?; echo &quot;rg rc=$rc (1 = no matches = clean)&quot;
+if [ $rc -ne 1 ]; then echo &quot;FAIL: layer-discipline probe&quot;; exit 1; fi
+echo &quot;PASS&quot;</code></pre>
+<pre class="code"><code>{
+  &quot;id&quot;: 5,
+  &quot;modelTier&quot;: &quot;frontier&quot;,
+  &quot;blockedBy&quot;: [
+    4
+  ],
+  &quot;files&quot;: [
+    &quot;Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/HistoryScreen.kt&quot;,
+    &quot;Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/components/HistoryHero.kt&quot;,
+    &quot;Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/components/HistoryWeekHeader.kt&quot;,
+    &quot;Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/components/HistoryDayRow.kt&quot;,
+    &quot;Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/components/HistoryJournalRow.kt&quot;,
+    &quot;Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/components/HistoryEmptyState.kt&quot;
+  ],
+  &quot;verifyCommand&quot;: &quot;cd /Users/sultan/Development/FitJournal/Multiplatform\n./gradlew :shared:assemble; rc=$?; echo \&quot;assemble rc=$rc\&quot;\nif [ $rc -ne 0 ]; then echo \&quot;FAIL: :shared:assemble\&quot;; exit 1; fi\nrg -i \&quot;amplify|SyncTrigger|SyncOrchestrator|aws\&quot; shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history; rc=$?; echo \&quot;rg rc=$rc (1 = no matches = clean)\&quot;\nif [ $rc -ne 1 ]; then echo \&quot;FAIL: layer-discipline probe\&quot;; exit 1; fi\necho \&quot;PASS\&quot;&quot;,
+  &quot;acceptanceCriteria&quot;: [
+    &quot;`:shared:assemble` green (Vico usage compiles for android + both iOS targets — spec criterion 2).&quot;,
+    &quot;Journal-row rule in composition: `journalRow == null` → row absent in BOTH Loaded and Empty; non-null → composed in both (spec criteria 6, 8).&quot;,
+    &quot;Stub layer is data-independent (its `columnModel` block always carries 11 entries) and both layers use the shared fixed range provider `max(maxTonnage, 1.0)` — code inspection (spec assumption 17, criterion 10's all-zero render).&quot;,
+    &quot;Calendar receives `selectedDate = state.today` (the VM-filled `ViewState.today`) and week headers read `section.titleShowsYear` — no `Clock.System` and no locally derived \&quot;today\&quot; anywhere in `ui/history` composables.&quot;,
+    &quot;`rg \&quot;amplify|SyncTrigger|SyncOrchestrator|aws\&quot; -i Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history` → no matches (spec criterion 5).&quot;,
+    &quot;No pull-to-refresh machinery composed when `onRefresh == null`; `isRefreshing` rendered, never interpreted (spec non-goal 3).&quot;,
+    &quot;All values from `FjTheme`; strings only via the `history_`/existing keys; calendar animation spec identical to WorkoutScreen.&quot;
+  ]
+}</code></pre>
+<h4>Task 6: iosMain HistoryScreenController + refresh bridge</h4>
+<h4>Goal</h4>
+<p>(Multiplatform repo) Add the iOS embedding entry point: <code>HistoryRefreshBridge</code> (host-driven refresh Boolean) + <code>HistoryScreenController</code> ComposeUIViewController factory, cloned from <code>WorkoutScreenController.kt</code> plus the refresh threading.</p>
+<h4>Files</h4>
+<ul>
+<li>Multiplatform/shared/src/iosMain/kotlin/kz/maestrosultan/fitjournal/ui/history/HistoryScreenController.kt (create)</li>
+</ul>
+<h4>Steps</h4>
+<ol>
+<li>Invoke skill <code>compose-side-effects</code> (bridge-state collection inside the controller composition). Read <code>Multiplatform/shared/src/iosMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/WorkoutScreenController.kt</code> and clone its structure/style.</li>
+<li>In one file, implement:</li>
+</ol>
+<ul>
+<li><code>class HistoryRefreshBridge</code> — VERBATIM as pinned in Cross-Task Contracts (the top-level controller function in this same file must be able to collect the state, so a <code>private</code> flow alone is not enough — it needs the <code>internal</code> read surface):</li>
+</ul>
+<pre class="code"><code>     class HistoryRefreshBridge {
+         private val _refreshing = MutableStateFlow(false)
+         internal val refreshing: StateFlow&lt;Boolean&gt; get() = _refreshing
+         fun setRefreshing(refreshing: Boolean) { _refreshing.value = refreshing }
+     }</code></pre>
+<p>     Swift sees only <code>setRefreshing(refreshing:)</code>; <code>internal val refreshing</code> stays framework-internal.</p>
+<ul>
+<li><code>fun HistoryScreenController(viewModel: HistoryViewModel, refreshBridge: HistoryRefreshBridge, onRefresh: () -&gt; Unit): UIViewController = ComposeUIViewController { ... }</code> — collect <code>refreshBridge.refreshing</code> as state (<code>val isRefreshing by refreshBridge.refreshing.collectAsState()</code>) and call <code>HistoryScreen(viewModel = viewModel, isRefreshing = isRefreshing, onRefresh = onRefresh)</code>, wrapped exactly as WorkoutScreenController wraps its screen (theme etc.). Swift will call this as the bare global <code>HistoryScreenController(viewModel:refreshBridge:onRefresh:)</code> (same export shape as the existing <code>WorkoutScreenController(viewModel:)</code>).</li>
+</ul>
+<ol>
+<li>Compile the iOS framework: <code>./gradlew :shared:linkDebugFrameworkIosSimulatorArm64</code>.</li>
+</ol>
+<h4>Acceptance Criteria</h4>
+<ul>
+<li><code>linkDebugFrameworkIosSimulatorArm64</code> green (arm64-only — KMP has no x86_64).</li>
+<li>The bridge matches the pinned shape (<code>private val _refreshing</code> + <code>internal val refreshing: StateFlow&lt;Boolean&gt;</code> + public <code>setRefreshing</code>); the controller collects <code>refreshBridge.refreshing</code> and threads it into <code>HistoryScreen</code>'s <code>isRefreshing</code> parameter; the controller adds no sync knowledge (only the opaque lambda + Boolean).</li>
+<li>Structure mirrors <code>WorkoutScreenController.kt</code> (no new abstractions).</li>
+</ul>
+<h4>Verify</h4>
+<pre class="code"><code>cd /Users/sultan/Development/FitJournal/Multiplatform &amp;&amp; ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64</code></pre>
+<pre class="code"><code>{
+  &quot;id&quot;: 6,
+  &quot;modelTier&quot;: &quot;standard&quot;,
+  &quot;blockedBy&quot;: [
+    2,
+    5
+  ],
+  &quot;files&quot;: [
+    &quot;Multiplatform/shared/src/iosMain/kotlin/kz/maestrosultan/fitjournal/ui/history/HistoryScreenController.kt&quot;
+  ],
+  &quot;verifyCommand&quot;: &quot;cd /Users/sultan/Development/FitJournal/Multiplatform &amp;&amp; ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64&quot;,
+  &quot;acceptanceCriteria&quot;: [
+    &quot;`linkDebugFrameworkIosSimulatorArm64` green (arm64-only — KMP has no x86_64).&quot;,
+    &quot;The bridge matches the pinned shape (`private val _refreshing` + `internal val refreshing: StateFlow&lt;Boolean&gt;` + public `setRefreshing`); the controller collects `refreshBridge.refreshing` and threads it into `HistoryScreen`'s `isRefreshing` parameter; the controller adds no sync knowledge (only the opaque lambda + Boolean).&quot;,
+    &quot;Structure mirrors `WorkoutScreenController.kt` (no new abstractions).&quot;
+  ]
+}</code></pre>
+<h4>Task 7: Android host swap: WorkoutHistoryScreen + delete list</h4>
+<h4>Goal</h4>
+<p>(Android repo) Replace the native workout list with the thin CMP host — <code>FJScaffold</code> chrome, calendar bar-button, Hilt host VM with journal-switch seam and pull-to-refresh trigger — at the existing route, and delete the native list stack.</p>
+<h4>Files</h4>
+<ul>
+<li>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/history/presentation/WorkoutHistoryScreen.kt (create)</li>
+<li>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/history/presentation/WorkoutHistoryHostViewModel.kt (create)</li>
+<li>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/main/presentation/UserSessionResolver.kt (create)</li>
+<li>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/main/presentation/WorkoutCmpHostViewModel.kt (modify)</li>
+<li>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/WorkoutHistoryNavGraph.kt (modify)</li>
+<li>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/WorkoutListScreen.kt (delete)</li>
+<li>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/WorkoutListContract.kt (delete)</li>
+<li>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/WorkoutListViewModel.kt (delete)</li>
+<li>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/cell/header/WorkoutListHeader.kt (delete)</li>
+<li>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/cell/header/WorkoutListHeaderViewState.kt (delete)</li>
+<li>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/cell/item/WorkoutListItem.kt (delete)</li>
+<li>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/cell/item/WorkoutListItemViewState.kt (delete)</li>
+<li>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/domain/GetWorkoutListItemsUseCase.kt (delete)</li>
+</ul>
+<h4>Steps</h4>
+<ol>
+<li>Invoke skills <code>compose-state-hoisting</code>, <code>compose-side-effects</code>, and <code>kotlin-flow-state-event-modeling</code> before writing. Read <code>workout/main/presentation/WorkoutScreen.kt</code> (host scaffold mirror, calendar IconButton at ~line 78), <code>WorkoutCmpHostViewModel.kt</code> (mirror; <code>resolveUserSession</code> at lines 260–267), and the OLD <code>workout/list/presentation/WorkoutListScreen.kt</code>/<code>WorkoutListViewModel.kt</code> — especially <code>refresh()</code> at lines 219–230 and <code>REFRESH_SPINNER_MS = 1000L</code> at line 241: it fires <code>syncTrigger.requestTick(SyncReason.UserRefresh)</code> FIRST, then holds <code>isRefreshing = true</code> for one second before resetting — BEFORE deleting them.</li>
+<li>Promote <code>resolveUserSession</code>: move the private helper from <code>WorkoutCmpHostViewModel.kt:260</code> into new <code>workout/main/presentation/UserSessionResolver.kt</code> as an <code>internal suspend fun resolveUserSession(userManager: UserManager): UserSessionState</code> (body unchanged, still ends with <code>.also { UserSession.set(it) }</code>); update <code>WorkoutCmpHostViewModel.kt</code> to call it (delete the private copy).</li>
+<li><code>WorkoutHistoryHostViewModel.kt</code> — <code>@HiltViewModel</code>, mirroring <code>WorkoutCmpHostViewModel</code>:</li>
+</ol>
+<ul>
+<li>inject KMP <code>RecordRepository</code> + KMP <code>domain.journal.JournalRepository</code> (both already Hilt-bound — <code>workout/di/WorkoutModule.kt</code> and <code>feature/journal/.../di/JournalModule.kt</code>; no DI changes needed), <code>SyncTrigger</code>, <code>UserManager</code>, <code>ComposeNavigator</code>, and the old list VM's menu dependency (<code>MenuManager</code>);</li>
+<li>construct <code>HistoryViewModel(recordRepository, journalRepository)</code> directly (expose as <code>val historyViewModel</code>);</li>
+<li><strong>pull-to-refresh, PRESERVING the old 1-second spinner</strong> (mirror <code>WorkoutListViewModel.kt:219–230</code> + <code>:241</code> exactly — trigger first, then a held spinner):</li>
+</ul>
+<pre class="code"><code>     private val _isRefreshing = MutableStateFlow(false)
+     val isRefreshing: StateFlow&lt;Boolean&gt; = _isRefreshing.asStateFlow()
+
+     fun onPullToRefresh() {
+         syncTrigger.requestTick(reason = SyncReason.UserRefresh)
+         viewModelScope.launch {
+             _isRefreshing.value = true
+             delay(REFRESH_SPINNER_MS)
+             _isRefreshing.value = false
+         }
+     }
+
+     private companion object { const val REFRESH_SPINNER_MS = 1000L }</code></pre>
+<p>     This is Android's ONLY sync touchpoint, and it lives host-side;</p>
+<ul>
+<li>journal-switch seam: <code>viewModelScope.launch { userManager.getJournalIdFlow().distinctUntilChanged().collect { resolveUserSession(userManager) } }</code> — every emission including the first;</li>
+<li>collect <code>historyViewModel.viewEffect</code>: <code>OpenWorkoutDetails(date)</code> → <code>composeNavigator.navigate(WorkoutDetailsDestination.workoutDetailsRoute(date.toJavaDate()))</code>; <code>OpenJournalPicker</code> → <code>composeNavigator.navigate(JournalPickerDestination.route)</code> (picker persists via <code>SelectJournalUseCase</code> → <code>getJournalIdFlow()</code>, which the seam converts to <code>UserSession.set</code>);</li>
+<li><code>onBackClick</code>: menu open on root / <code>navigateUp</code> otherwise — carried from the old list VM; <code>onCleared()</code> → <code>historyViewModel.dispose()</code>.</li>
+</ul>
+<ol>
+<li><code>WorkoutHistoryScreen.kt</code> — thin host mirroring <code>WorkoutScreen.kt</code>: <code>FJScaffold(topAppBarConfig = TopAppBarConfig(title = stringResource(R.string.workout_list_title), type = if (isRootScreen) MENU else BACK, onNavigationClick = host::onBackClick, actions = { IconButton(enabled always) { historyViewModel.dispatch(ToggleCalendar) } with R.drawable.ic_common_calendar }))</code> wrapping the shared screen with the host-driven refresh state:</li>
+</ol>
+<pre class="code"><code>   val refreshing by hostViewModel.isRefreshing.collectAsStateWithLifecycle()
+   HistoryScreen(
+       viewModel = hostViewModel.historyViewModel,
+       isRefreshing = refreshing,
+       onRefresh = hostViewModel::onPullToRefresh,
+   )</code></pre>
+<p>   Calendar button ALWAYS enabled (spec assumption 15 — unlike the old list). Carry over the old screen's exact title string key if it differs from <code>workout_list_title</code>.</p>
+<ol>
+<li><code>WorkoutHistoryNavGraph.kt</code> — swap the <code>WorkoutListDestination</code> composable to <code>WorkoutHistoryScreen(isRootScreen = isRootGraph)</code>. <code>WorkoutListDestination.kt</code> (at <code>workout/list/presentation/WorkoutListDestination.kt</code>) is KEPT — route string unchanged (NavHost, menu, Home entries untouched).</li>
+<li>Delete the 8 listed files. <code>FJCalendar</code> and <code>JournalSelector</code> are NOT deleted (other screens use them); fix any dangling imports.</li>
+<li>Build: <code>./gradlew :app:compileDebugKotlin</code>, then <code>./gradlew assembleDebug</code>.</li>
+</ol>
+<h4>Acceptance Criteria</h4>
+<ul>
+<li><code>cd Android &amp;&amp; ./gradlew :app:compileDebugKotlin &amp;&amp; ./gradlew assembleDebug</code> green with the native list stack deleted (spec criteria 3, 9).</li>
+<li>The 8 deleted files no longer exist; <code>workout/list/presentation/WorkoutListDestination.kt</code> still exists with an unchanged route string.</li>
+<li><code>onPullToRefresh</code> fires <code>syncTrigger.requestTick(reason = SyncReason.UserRefresh)</code> FIRST, then drives <code>isRefreshing</code> true → <code>delay(REFRESH_SPINNER_MS = 1000L)</code> → false, exactly mirroring the old <code>WorkoutListViewModel.kt:219–230</code>/<code>:241</code> timing; the host passes that state into <code>HistoryScreen(isRefreshing = ...)</code>. No <code>SyncTrigger</code> reference added to Multiplatform (criterion 11's Android half, as corrected: a held ~1-second spinner, NOT fire-and-forget).</li>
+<li>Journal-switch seam collects <code>getJournalIdFlow().distinctUntilChanged()</code> and calls the promoted <code>resolveUserSession</code> (which calls <code>UserSession.set</code>).</li>
+<li><code>WorkoutCmpHostViewModel</code> behavior unchanged (only the helper's home moved).</li>
+</ul>
+<h4>Verify</h4>
+<pre class="code"><code>cd /Users/sultan/Development/FitJournal/Android &amp;&amp; ./gradlew :app:compileDebugKotlin &amp;&amp; ./gradlew assembleDebug</code></pre>
+<pre class="code"><code>{
+  &quot;id&quot;: 7,
+  &quot;modelTier&quot;: &quot;frontier&quot;,
+  &quot;blockedBy&quot;: [
+    6
+  ],
+  &quot;files&quot;: [
+    &quot;Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/history/presentation/WorkoutHistoryScreen.kt&quot;,
+    &quot;Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/history/presentation/WorkoutHistoryHostViewModel.kt&quot;,
+    &quot;Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/main/presentation/UserSessionResolver.kt&quot;,
+    &quot;Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/main/presentation/WorkoutCmpHostViewModel.kt&quot;,
+    &quot;Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/WorkoutHistoryNavGraph.kt&quot;,
+    &quot;Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/WorkoutListScreen.kt&quot;,
+    &quot;Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/WorkoutListContract.kt&quot;,
+    &quot;Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/WorkoutListViewModel.kt&quot;,
+    &quot;Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/cell/header/WorkoutListHeader.kt&quot;,
+    &quot;Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/cell/header/WorkoutListHeaderViewState.kt&quot;,
+    &quot;Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/cell/item/WorkoutListItem.kt&quot;,
+    &quot;Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/cell/item/WorkoutListItemViewState.kt&quot;,
+    &quot;Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/domain/GetWorkoutListItemsUseCase.kt&quot;
+  ],
+  &quot;verifyCommand&quot;: &quot;cd /Users/sultan/Development/FitJournal/Android &amp;&amp; ./gradlew :app:compileDebugKotlin &amp;&amp; ./gradlew assembleDebug&quot;,
+  &quot;acceptanceCriteria&quot;: [
+    &quot;`cd Android &amp;&amp; ./gradlew :app:compileDebugKotlin &amp;&amp; ./gradlew assembleDebug` green with the native list stack deleted (spec criteria 3, 9).&quot;,
+    &quot;The 8 deleted files no longer exist; `workout/list/presentation/WorkoutListDestination.kt` still exists with an unchanged route string.&quot;,
+    &quot;`onPullToRefresh` fires `syncTrigger.requestTick(reason = SyncReason.UserRefresh)` FIRST, then drives `isRefreshing` true → `delay(REFRESH_SPINNER_MS = 1000L)` → false, exactly mirroring the old `WorkoutListViewModel.kt:219–230`/`:241` timing; the host passes that state into `HistoryScreen(isRefreshing = ...)`. No `SyncTrigger` reference added to Multiplatform (criterion 11's Android half, as corrected: a held ~1-second spinner, NOT fire-and-forget).&quot;,
+    &quot;Journal-switch seam collects `getJournalIdFlow().distinctUntilChanged()` and calls the promoted `resolveUserSession` (which calls `UserSession.set`).&quot;,
+    &quot;`WorkoutCmpHostViewModel` behavior unchanged (only the helper's home moved).&quot;
+  ]
+}</code></pre>
+<h4>Task 8: iOS host swap: WorkoutHistoryCmpViewController + deletes</h4>
+<h4>Goal</h4>
+<p>(iOS repo) Replace the native list VC with <code>WorkoutHistoryCmpViewController</code> (nav-bar chrome, calendar bar-button, refresh bridge around the awaited sync tick, SKIE effect loop), rewire <code>WorkoutCoordinator.openWorkoutList()</code>, and delete the native list stack.</p>
+<h4>Files</h4>
+<ul>
+<li>iOS/FitJournal/Workout/List/Presentation/WorkoutHistoryCmpViewController.swift (create)</li>
+<li>iOS/FitJournal/Workout/WorkoutCoordinator.swift (modify)</li>
+<li>iOS/FitJournal/Workout/List/Presentation/WorkoutListViewController.swift (delete)</li>
+<li>iOS/FitJournal/Workout/List/Presentation/WorkoutListViewController.xib (delete)</li>
+<li>iOS/FitJournal/Workout/List/Presentation/WorkoutListViewModel.swift (delete)</li>
+<li>iOS/FitJournal/Workout/List/Presentation/Cell/Header/WorkoutListHeaderCell.swift (delete)</li>
+<li>iOS/FitJournal/Workout/List/Presentation/Cell/Header/WorkoutListHeaderCell.xib (delete)</li>
+<li>iOS/FitJournal/Workout/List/Presentation/Cell/Header/WorkoutListHeaderCellViewModel.swift (delete)</li>
+<li>iOS/FitJournal/Workout/List/Presentation/Cell/Item/WorkoutListItemCell.swift (delete)</li>
+<li>iOS/FitJournal/Workout/List/Presentation/Cell/Item/WorkoutListItemCell.xib (delete)</li>
+<li>iOS/FitJournal/Workout/List/Presentation/Cell/Item/WorkoutListItemCellViewModel.swift (delete)</li>
+<li>iOS/FitJournal/Workout/List/Presentation/Cell/Journal/WorkoutListJournalCell.swift (delete)</li>
+<li>iOS/FitJournal/Workout/List/Domain/UseCase/GetWorkoutListItemsUseCase.swift (delete)</li>
+</ul>
+<h4>Steps</h4>
+<ol>
+<li>Invoke skill <code>swift-concurrency</code> before writing. Read <code>FitJournal/Workout/Main/Presentation/WorkoutCmpViewController.swift</code> (the clone source; the <code>Date(_: Kotlinx_datetimeLocalDate)</code> bridge use at ~line 123) and the OLD <code>WorkoutListViewController.swift</code> (title, menu/back left-item wiring, UIRefreshControl at :75/:107/:115/:119, and its journal-picker presentation path including the duplicate-presentation guard) + <code>WorkoutListViewModel.swift</code> (<code>tick()</code> await at :84) BEFORE deleting.</li>
+<li><code>WorkoutHistoryCmpViewController.swift</code> — clone of <code>WorkoutCmpViewController</code> minus pager/pop-gesture/Live Activity:</li>
+</ol>
+<ul>
+<li>Owns <code>FitJournalKMP.HistoryViewModel</code> (constructed by the coordinator). <code>navigationItem</code> title = the old list VC's localized title; right bar button <code>UIImage(named: &quot;common.calendar&quot;)</code> → <code>viewModel.dispatch(action: HistoryContractViewActionToggleCalendar.shared)</code>; menu/back left-item wiring copied from the old list VC (<code>menuDelegate</code> when root).</li>
+<li>Create <code>HistoryRefreshBridge()</code>; embed the shared controller via the BARE global <code>HistoryScreenController(viewModel: viewModel, refreshBridge: bridge, onRefresh: { ... })</code> as a child VC via <code>addSubviewMatchParent</code> (KMP top-level functions surface unprefixed — same shape as the existing <code>WorkoutScreenController(viewModel:)</code> call). <code>onRefresh</code> starts a TRACKED <code>Task { bridge.setRefreshing(true); await sharedSyncOrchestrator.tick(); bridge.setRefreshing(false) }</code> — indicator persists until the tick completes, preserving the old <code>beginRefreshing</code>/<code>endRefreshing</code> behavior exactly. <code>SyncOrchestrator</code> stays Swift-side only.</li>
+<li>Effect loop: SKIE plain <code>for await effect in viewModel.viewEffect</code> (NEVER a FlowCollector bridge) in a tracked Task: <code>HistoryContractViewEffectOpenWorkoutDetails</code> → delegate → <code>WorkoutCoordinator.openWorkoutDetails(date:)</code> via the existing <code>Date(_:)</code> bridge; <code>HistoryContractViewEffectOpenJournalPicker</code> → present the EXISTING <code>JournalPickerViewController(journals:selectedJournalId:onSelect:)</code>, pinned as follows:</li>
+<li><strong>Journal fetch:</strong> via the RETAINED <code>GetAllJournalsUseCase</code>, constructed exactly as its existing callers do (over <code>sharedJournalRepository</code>); <code>let journals = (try? await useCase.execute()) ?? []</code> — a throw yields an empty list, never a crash.</li>
+<li><strong>Selected id:</strong> <code>UserStore.selectedJournalId</code>.</li>
+<li><strong>Duplicate-presentation guard:</strong> reuse the old <code>WorkoutListViewController</code>'s guard — if a picker is already presented, do NOT present a second one.</li>
+<li><strong><code>onSelect</code>:</strong> call <code>SelectJournalUseCase().execute(journal:)</code> and NOTHING else. Verified at plan time: <code>execute(journal:)</code> calls <code>UserStore.saveJournal(journal)</code>, whose <code>selectedJournalId</code> setter calls <code>syncSession()</code> → <code>UserSession.shared.set(state: UserSessionState(journalId: selectedJournalId, ...))</code> (<code>UserStorage.swift:242/127/250-254</code>) — so the shared VM is re-driven automatically; do NOT add an explicit <code>UserSession.set</code> in the completion.</li>
+<li><code>viewDidDisappear</code> with <code>isMovingFromParent || isBeingDismissed</code> → cancel all tracked Tasks (including any in-flight refresh) + <code>viewModel.dispose()</code>.</li>
+</ul>
+<ol>
+<li><code>WorkoutCoordinator.swift</code> — <code>openWorkoutList()</code> builds the new VC: construct the shared VM via the BARE global <code>createHistoryViewModel(recordRepository: sharedRecordRepository, journalRepository: sharedJournalRepository)</code>; the old native wiring at lines 104–115 goes away. <code>openWorkoutDetails(date:)</code> unchanged. Remove now-dead imports.</li>
+<li>Delete the 11 listed files (synchronized folders — NO <code>project.pbxproj</code> edit needed). KEEP <code>JournalPickerViewController</code> (reused) and KEEP <code>GetRecentRecordsUseCase.swift</code>, <code>GetAllJournalsUseCase.swift</code>, <code>SelectJournalUseCase.swift</code> — reference check done at plan time: Home (<code>GetHomeScreenItemsUseCase</code>/<code>HomeCoordinator</code>), Profile, Health, and Journal (<code>JournalCoordinator</code>/<code>JournalListViewModel</code>) still use them, and this task's picker path now uses <code>GetAllJournalsUseCase</code> directly.</li>
+<li>Build: real <code>xcodebuild -scheme FitJournal -configuration Debug -destination 'platform=iOS Simulator,arch=arm64' build</code> (no <code>-derivedDataPath</code>; wait if Xcode is mid-build). The full build is what proves the SKIE surface: sealed cases surface CONCATENATED (<code>HistoryContractViewEffectOpenWorkoutDetails</code>), nested data classes DOTTED (<code>HistoryContract.ViewState</code>), and top-level functions as BARE globals (<code>createHistoryViewModel(...)</code>, <code>HistoryScreenController(...)</code>) — all pinned in Cross-Task Contracts, not discovered by trial.</li>
+</ol>
+<h4>Acceptance Criteria</h4>
+<ul>
+<li><code>xcodebuild</code> (arm64 sim, shared DerivedData) succeeds with the native list stack deleted (spec criteria 4, 9). SourceKit-only checks are not acceptance.</li>
+<li><code>onRefresh</code> drives <code>setRefreshing(true)</code> → <code>await sharedSyncOrchestrator.tick()</code> → <code>setRefreshing(false)</code>; no sync type crosses into shared code (spec criterion 11, iOS half: spinner until the awaited tick completes).</li>
+<li>Journal-picker path: journals fetched via the retained <code>GetAllJournalsUseCase</code> with <code>(try? await …) ?? []</code> (throw → empty list, no crash); selected id from <code>UserStore.selectedJournalId</code>; the old VC's duplicate-presentation guard is carried over (no double-present).</li>
+<li><code>onSelect</code> contains exactly the <code>SelectJournalUseCase().execute(journal:)</code> call — no explicit <code>UserSession.set</code> (the <code>UserStore.saveJournal</code> → <code>syncSession()</code> chain does it).</li>
+<li>Effect handling uses plain <code>for await</code> on SKIE flows; all Tasks tracked and cancelled + <code>viewModel.dispose()</code> on real dismissal.</li>
+<li>The three kept use cases still exist; the 11 deleted files are gone; <code>JournalPickerViewController</code> untouched.</li>
+</ul>
+<h4>Verify</h4>
+<pre class="code"><code>cd /Users/sultan/Development/FitJournal/iOS &amp;&amp; xcodebuild -scheme FitJournal -configuration Debug -destination 'platform=iOS Simulator,arch=arm64' build</code></pre>
+<pre class="code"><code>{
+  &quot;id&quot;: 8,
+  &quot;modelTier&quot;: &quot;frontier&quot;,
+  &quot;blockedBy&quot;: [
+    6,
+    7
+  ],
+  &quot;files&quot;: [
+    &quot;iOS/FitJournal/Workout/List/Presentation/WorkoutHistoryCmpViewController.swift&quot;,
+    &quot;iOS/FitJournal/Workout/WorkoutCoordinator.swift&quot;,
+    &quot;iOS/FitJournal/Workout/List/Presentation/WorkoutListViewController.swift&quot;,
+    &quot;iOS/FitJournal/Workout/List/Presentation/WorkoutListViewController.xib&quot;,
+    &quot;iOS/FitJournal/Workout/List/Presentation/WorkoutListViewModel.swift&quot;,
+    &quot;iOS/FitJournal/Workout/List/Presentation/Cell/Header/WorkoutListHeaderCell.swift&quot;,
+    &quot;iOS/FitJournal/Workout/List/Presentation/Cell/Header/WorkoutListHeaderCell.xib&quot;,
+    &quot;iOS/FitJournal/Workout/List/Presentation/Cell/Header/WorkoutListHeaderCellViewModel.swift&quot;,
+    &quot;iOS/FitJournal/Workout/List/Presentation/Cell/Item/WorkoutListItemCell.swift&quot;,
+    &quot;iOS/FitJournal/Workout/List/Presentation/Cell/Item/WorkoutListItemCell.xib&quot;,
+    &quot;iOS/FitJournal/Workout/List/Presentation/Cell/Item/WorkoutListItemCellViewModel.swift&quot;,
+    &quot;iOS/FitJournal/Workout/List/Presentation/Cell/Journal/WorkoutListJournalCell.swift&quot;,
+    &quot;iOS/FitJournal/Workout/List/Domain/UseCase/GetWorkoutListItemsUseCase.swift&quot;
+  ],
+  &quot;verifyCommand&quot;: &quot;cd /Users/sultan/Development/FitJournal/iOS &amp;&amp; xcodebuild -scheme FitJournal -configuration Debug -destination 'platform=iOS Simulator,arch=arm64' build&quot;,
+  &quot;acceptanceCriteria&quot;: [
+    &quot;`xcodebuild` (arm64 sim, shared DerivedData) succeeds with the native list stack deleted (spec criteria 4, 9). SourceKit-only checks are not acceptance.&quot;,
+    &quot;`onRefresh` drives `setRefreshing(true)` → `await sharedSyncOrchestrator.tick()` → `setRefreshing(false)`; no sync type crosses into shared code (spec criterion 11, iOS half: spinner until the awaited tick completes).&quot;,
+    &quot;Journal-picker path: journals fetched via the retained `GetAllJournalsUseCase` with `(try? await …) ?? []` (throw → empty list, no crash); selected id from `UserStore.selectedJournalId`; the old VC's duplicate-presentation guard is carried over (no double-present).&quot;,
+    &quot;`onSelect` contains exactly the `SelectJournalUseCase().execute(journal:)` call — no explicit `UserSession.set` (the `UserStore.saveJournal` → `syncSession()` chain does it).&quot;,
+    &quot;Effect handling uses plain `for await` on SKIE flows; all Tasks tracked and cancelled + `viewModel.dispose()` on real dismissal.&quot;,
+    &quot;The three kept use cases still exist; the 11 deleted files are gone; `JournalPickerViewController` untouched.&quot;
+  ]
+}</code></pre>
+<h4>Task 9: Verification gate: builds, rg checks, WH1-WH5, refresh</h4>
+<h4>Goal</h4>
+<p>(All three repos, read-only) Prove the finished feature against the spec's success criteria: all builds green, layer discipline rg-clean, deletions confirmed, manual WH1–WH5 visual parity and pull-to-refresh parity documented — evidence only, no diff.</p>
+<h4>Files</h4>
+<p>(none — verification gate; writes nothing, commits nothing)</p>
+<h4>Steps</h4>
+<ol>
+<li>Run the Verify block below as sequential GUARDED steps: each build/probe is its own command, its <code>rc=$?</code> is captured and echoed, and any build failure is FATAL — nothing after a failed build may run and mask it (a negated <code>rg</code> probe or an <code>&amp;&amp;</code> chain must never absorb a failed <code>:shared:assemble</code>/<code>assembleDebug</code>/<code>xcodebuild</code>). The block aborts on the first failure. Its final line on success is <code>AUTOMATED GATE PASS: criteria 1-5, 9 green</code> — that is NOT the overall gate result; it covers only the automated half. Capture full output. (zsh: <code>rc=$?</code>, never <code>status=$?</code>.)</li>
+<li>Deletions (criterion 9) are checked inline in the Verify block: <code>test ! -e &lt;path&gt;</code> for EVERY path in Task 7's and Task 8's Delete lists, <code>test -e &lt;path&gt;</code> for the retained paths, aggregated to a single PASS/FAIL.</li>
+<li>Manual visual pass (criterion 10) on an arm64 iOS simulator and an Android emulator, against <code>design/FitJournal.dc.html</code> frames WH1–WH5 + <code>design/screens</code>, per platform, four states — empty (WH1/WH2), first workout logged (WH3), populated dark (WH4), populated light (WH5) — checking spacing, colors, typography, chrome per state; PLUS the all-zero-hero render check: a journal whose only records are older than 11 weeks shows all 11 baseline stubs, column-aligned, no crash. Do NOT assert cross-unit-switch correctness of historical tonnage (relabel-not-convert is app-wide, spec assumption 6). Also check criteria 6–8 on device: journal-row presence/absence in both states + picker opens; calendar toggle/dotted-day-tap/empty-day-no-op parity; empty state composition.</li>
+<li>Pull-to-refresh parity (criterion 11, as corrected by this plan — the spec's &quot;Android fire-and-forget&quot; wording is superseded by the verified 1-second-spinner behavior): Android — pull fires <code>SyncTrigger.requestTick(SyncReason.UserRefresh)</code> (confirm via the <code>[FJ_SYNC]</code> reason log) and the indicator holds for ~1 second after the trigger, then settles (mirroring the old <code>REFRESH_SPINNER_MS = 1000L</code> timing); iOS — indicator persists until <code>sharedSyncOrchestrator.tick()</code> completes. Both platforms visibly drive <code>isRefreshing</code>.</li>
+<li>Report a per-criterion evidence table (criteria 1–11: command + exit code, or checklist item + pass/fail + screenshot reference). Any item that could not be executed is reported NOT RUN, never claimed as pass. <strong>The aggregate <code>GATE PASS</code> line is emitted by the agent ONLY after the manual evidence-table items (criteria 6–8, 10, 11) are ALL recorded PASS.</strong> If any manual item is NOT RUN or failed, the overall result is <code>GATE FAIL</code> (or <code>GATE INCOMPLETE</code> when the only issue is unrun manual items) — never <code>GATE PASS</code>. The Verify block's <code>AUTOMATED GATE PASS</code> line alone never justifies an overall pass.</li>
+</ol>
+<h4>Acceptance Criteria</h4>
+<ul>
+<li>Criterion 1: the history jvmTest command exits 0, listing both test classes — echoed <code>rc=0</code> captured.</li>
+<li>Criteria 2–4: <code>:shared:assemble</code>, Android <code>assembleDebug</code>, and arm64-sim <code>xcodebuild</code> each run as their own guarded command, each echoed <code>rc=0</code>; a nonzero rc on any of them aborts the gate as FAIL before any later probe runs.</li>
+<li>Criterion 5: both rg probes return no matches (each echoed <code>rc=1</code>), executed only after all builds passed.</li>
+<li>Criterion 9: every Task 7/Task 8 Delete path fails <code>test -e</code> (absent) and every retained path passes <code>test -e</code> (present) — aggregated to a single PASS/FAIL in the output.</li>
+<li>Criteria 6–8, 10: the WH1–WH5 four-state checklist + all-zero-hero + journal-row/calendar/empty-state checks documented per platform with explicit pass/fail per item.</li>
+<li>Criterion 11: both platforms' refresh behavior documented as specified — Android: <code>requestTick</code> fired first (captured <code>[FJ_SYNC]</code> UserRefresh log line) with the indicator held ~1 second then settling; iOS: spinner-until-tick-completes. (This supersedes the spec's &quot;fire-and-forget&quot; wording for Android.)</li>
+<li>The Verify block's final automated line is <code>AUTOMATED GATE PASS: criteria 1-5, 9 green</code> when every automated step passed; otherwise <code>GATE FAIL</code> naming the first failed step. The overall aggregate <code>GATE PASS</code> is reported ONLY after criteria 6–8, 10, 11 are all recorded PASS in the evidence table; any NOT RUN or failed manual item makes the overall result <code>GATE FAIL</code>/<code>GATE INCOMPLETE</code>, never PASS.</li>
+</ul>
+<h4>Verify</h4>
+<pre class="code"><code>cd /Users/sultan/Development/FitJournal/Multiplatform || exit 1
+./gradlew :shared:jvmTest --tests &quot;kz.maestrosultan.fitjournal.ui.history.*&quot;; rc=$?; echo &quot;C1 jvmTest rc=$rc&quot;
+if [ $rc -ne 0 ]; then echo &quot;GATE FAIL: criterion 1 (jvmTest)&quot;; exit 1; fi
+./gradlew :shared:assemble; rc=$?; echo &quot;C2 shared assemble rc=$rc&quot;
+if [ $rc -ne 0 ]; then echo &quot;GATE FAIL: criterion 2 (:shared:assemble)&quot;; exit 1; fi
+cd /Users/sultan/Development/FitJournal/Android || exit 1
+./gradlew assembleDebug; rc=$?; echo &quot;C3 android assembleDebug rc=$rc&quot;
+if [ $rc -ne 0 ]; then echo &quot;GATE FAIL: criterion 3 (assembleDebug)&quot;; exit 1; fi
+cd /Users/sultan/Development/FitJournal/iOS || exit 1
+xcodebuild -scheme FitJournal -configuration Debug -destination 'platform=iOS Simulator,arch=arm64' build; rc=$?; echo &quot;C4 xcodebuild rc=$rc&quot;
+if [ $rc -ne 0 ]; then echo &quot;GATE FAIL: criterion 4 (xcodebuild)&quot;; exit 1; fi
+cd /Users/sultan/Development/FitJournal || exit 1
+rg &quot;androidx.compose&quot; Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/data; rc=$?; echo &quot;C5a rg rc=$rc (1 = clean)&quot;
+if [ $rc -ne 1 ]; then echo &quot;GATE FAIL: criterion 5 (compose import in domain/data)&quot;; exit 1; fi
+rg -i &quot;amplify|SyncTrigger|SyncOrchestrator|aws&quot; Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history; rc=$?; echo &quot;C5b rg rc=$rc (1 = clean)&quot;
+if [ $rc -ne 1 ]; then echo &quot;GATE FAIL: criterion 5 (sync types in ui/history)&quot;; exit 1; fi
+del_fail=0
+for p in \
+  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/WorkoutListScreen.kt \
+  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/WorkoutListContract.kt \
+  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/WorkoutListViewModel.kt \
+  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/cell/header/WorkoutListHeader.kt \
+  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/cell/header/WorkoutListHeaderViewState.kt \
+  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/cell/item/WorkoutListItem.kt \
+  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/cell/item/WorkoutListItemViewState.kt \
+  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/domain/GetWorkoutListItemsUseCase.kt \
+  iOS/FitJournal/Workout/List/Presentation/WorkoutListViewController.swift \
+  iOS/FitJournal/Workout/List/Presentation/WorkoutListViewController.xib \
+  iOS/FitJournal/Workout/List/Presentation/WorkoutListViewModel.swift \
+  iOS/FitJournal/Workout/List/Presentation/Cell/Header/WorkoutListHeaderCell.swift \
+  iOS/FitJournal/Workout/List/Presentation/Cell/Header/WorkoutListHeaderCell.xib \
+  iOS/FitJournal/Workout/List/Presentation/Cell/Header/WorkoutListHeaderCellViewModel.swift \
+  iOS/FitJournal/Workout/List/Presentation/Cell/Item/WorkoutListItemCell.swift \
+  iOS/FitJournal/Workout/List/Presentation/Cell/Item/WorkoutListItemCell.xib \
+  iOS/FitJournal/Workout/List/Presentation/Cell/Item/WorkoutListItemCellViewModel.swift \
+  iOS/FitJournal/Workout/List/Presentation/Cell/Journal/WorkoutListJournalCell.swift \
+  iOS/FitJournal/Workout/List/Domain/UseCase/GetWorkoutListItemsUseCase.swift ; do
+  if test ! -e &quot;$p&quot;; then echo &quot;C9 absent OK: $p&quot;; else echo &quot;C9 STILL PRESENT: $p&quot;; del_fail=1; fi
+done
+for p in \
+  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/WorkoutListDestination.kt \
+  iOS/FitJournal/Journal/Presentation/Picker/JournalPickerViewController.swift \
+  iOS/FitJournal/Workout/Common/Domain/UseCase/GetRecentRecordsUseCase.swift \
+  iOS/FitJournal/Journal/Domain/UseCase/GetAllJournalsUseCase.swift \
+  iOS/FitJournal/Journal/Domain/UseCase/SelectJournalUseCase.swift ; do
+  if test -e &quot;$p&quot;; then echo &quot;C9 kept OK: $p&quot;; else echo &quot;C9 MISSING KEPT FILE: $p&quot;; del_fail=1; fi
+done
+if [ $del_fail -ne 0 ]; then echo &quot;GATE FAIL: criterion 9 (deletions/kept files)&quot;; exit 1; fi
+echo &quot;AUTOMATED GATE PASS: criteria 1-5, 9 green&quot;</code></pre>
+<pre class="code"><code>{
+  &quot;id&quot;: 9,
+  &quot;modelTier&quot;: &quot;standard&quot;,
+  &quot;blockedBy&quot;: [
+    7,
+    8
+  ],
+  &quot;files&quot;: [],
+  &quot;verifyCommand&quot;: &quot;cd /Users/sultan/Development/FitJournal/Multiplatform || exit 1\n./gradlew :shared:jvmTest --tests \&quot;kz.maestrosultan.fitjournal.ui.history.*\&quot;; rc=$?; echo \&quot;C1 jvmTest rc=$rc\&quot;\nif [ $rc -ne 0 ]; then echo \&quot;GATE FAIL: criterion 1 (jvmTest)\&quot;; exit 1; fi\n./gradlew :shared:assemble; rc=$?; echo \&quot;C2 shared assemble rc=$rc\&quot;\nif [ $rc -ne 0 ]; then echo \&quot;GATE FAIL: criterion 2 (:shared:assemble)\&quot;; exit 1; fi\ncd /Users/sultan/Development/FitJournal/Android || exit 1\n./gradlew assembleDebug; rc=$?; echo \&quot;C3 android assembleDebug rc=$rc\&quot;\nif [ $rc -ne 0 ]; then echo \&quot;GATE FAIL: criterion 3 (assembleDebug)\&quot;; exit 1; fi\ncd /Users/sultan/Development/FitJournal/iOS || exit 1\nxcodebuild -scheme FitJournal -configuration Debug -destination 'platform=iOS Simulator,arch=arm64' build; rc=$?; echo \&quot;C4 xcodebuild rc=$rc\&quot;\nif [ $rc -ne 0 ]; then echo \&quot;GATE FAIL: criterion 4 (xcodebuild)\&quot;; exit 1; fi\ncd /Users/sultan/Development/FitJournal || exit 1\nrg \&quot;androidx.compose\&quot; Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/data; rc=$?; echo \&quot;C5a rg rc=$rc (1 = clean)\&quot;\nif [ $rc -ne 1 ]; then echo \&quot;GATE FAIL: criterion 5 (compose import in domain/data)\&quot;; exit 1; fi\nrg -i \&quot;amplify|SyncTrigger|SyncOrchestrator|aws\&quot; Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history; rc=$?; echo \&quot;C5b rg rc=$rc (1 = clean)\&quot;\nif [ $rc -ne 1 ]; then echo \&quot;GATE FAIL: criterion 5 (sync types in ui/history)\&quot;; exit 1; fi\ndel_fail=0\nfor p in \\\n  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/WorkoutListScreen.kt \\\n  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/WorkoutListContract.kt \\\n  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/WorkoutListViewModel.kt \\\n  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/cell/header/WorkoutListHeader.kt \\\n  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/cell/header/WorkoutListHeaderViewState.kt \\\n  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/cell/item/WorkoutListItem.kt \\\n  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/cell/item/WorkoutListItemViewState.kt \\\n  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/domain/GetWorkoutListItemsUseCase.kt \\\n  iOS/FitJournal/Workout/List/Presentation/WorkoutListViewController.swift \\\n  iOS/FitJournal/Workout/List/Presentation/WorkoutListViewController.xib \\\n  iOS/FitJournal/Workout/List/Presentation/WorkoutListViewModel.swift \\\n  iOS/FitJournal/Workout/List/Presentation/Cell/Header/WorkoutListHeaderCell.swift \\\n  iOS/FitJournal/Workout/List/Presentation/Cell/Header/WorkoutListHeaderCell.xib \\\n  iOS/FitJournal/Workout/List/Presentation/Cell/Header/WorkoutListHeaderCellViewModel.swift \\\n  iOS/FitJournal/Workout/List/Presentation/Cell/Item/WorkoutListItemCell.swift \\\n  iOS/FitJournal/Workout/List/Presentation/Cell/Item/WorkoutListItemCell.xib \\\n  iOS/FitJournal/Workout/List/Presentation/Cell/Item/WorkoutListItemCellViewModel.swift \\\n  iOS/FitJournal/Workout/List/Presentation/Cell/Journal/WorkoutListJournalCell.swift \\\n  iOS/FitJournal/Workout/List/Domain/UseCase/GetWorkoutListItemsUseCase.swift ; do\n  if test ! -e \&quot;$p\&quot;; then echo \&quot;C9 absent OK: $p\&quot;; else echo \&quot;C9 STILL PRESENT: $p\&quot;; del_fail=1; fi\ndone\nfor p in \\\n  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/WorkoutListDestination.kt \\\n  iOS/FitJournal/Journal/Presentation/Picker/JournalPickerViewController.swift \\\n  iOS/FitJournal/Workout/Common/Domain/UseCase/GetRecentRecordsUseCase.swift \\\n  iOS/FitJournal/Journal/Domain/UseCase/GetAllJournalsUseCase.swift \\\n  iOS/FitJournal/Journal/Domain/UseCase/SelectJournalUseCase.swift ; do\n  if test -e \&quot;$p\&quot;; then echo \&quot;C9 kept OK: $p\&quot;; else echo \&quot;C9 MISSING KEPT FILE: $p\&quot;; del_fail=1; fi\ndone\nif [ $del_fail -ne 0 ]; then echo \&quot;GATE FAIL: criterion 9 (deletions/kept files)\&quot;; exit 1; fi\necho \&quot;AUTOMATED GATE PASS: criteria 1-5, 9 green\&quot;&quot;,
+  &quot;acceptanceCriteria&quot;: [
+    &quot;Criterion 1: the history jvmTest command exits 0, listing both test classes — echoed `rc=0` captured.&quot;,
+    &quot;Criteria 2–4: `:shared:assemble`, Android `assembleDebug`, and arm64-sim `xcodebuild` each run as their own guarded command, each echoed `rc=0`; a nonzero rc on any of them aborts the gate as FAIL before any later probe runs.&quot;,
+    &quot;Criterion 5: both rg probes return no matches (each echoed `rc=1`), executed only after all builds passed.&quot;,
+    &quot;Criterion 9: every Task 7/Task 8 Delete path fails `test -e` (absent) and every retained path passes `test -e` (present) — aggregated to a single PASS/FAIL in the output.&quot;,
+    &quot;Criteria 6–8, 10: the WH1–WH5 four-state checklist + all-zero-hero + journal-row/calendar/empty-state checks documented per platform with explicit pass/fail per item.&quot;,
+    &quot;Criterion 11: both platforms' refresh behavior documented as specified — Android: `requestTick` fired first (captured `[FJ_SYNC]` UserRefresh log line) with the indicator held ~1 second then settling; iOS: spinner-until-tick-completes. (This supersedes the spec's \&quot;fire-and-forget\&quot; wording for Android.)&quot;,
+    &quot;The Verify block's final automated line is `AUTOMATED GATE PASS: criteria 1-5, 9 green` when every automated step passed; otherwise `GATE FAIL` naming the first failed step. The overall aggregate `GATE PASS` is reported ONLY after criteria 6–8, 10, 11 are all recorded PASS in the evidence table; any NOT RUN or failed manual item makes the overall result `GATE FAIL`/`GATE INCOMPLETE`, never PASS.&quot;
+  ]
+}</code></pre></div>
+
+<section class="wave">
+  <h3><span class="wnum">Wave 1</span>
+    <span class="wmeta">1 task</span></h3>
+  <div class="grid"><article class="card" id="task-0">
+  <header>
+    <h4>Pin Vico in commonMain and compile-verify all targets</h4>
+    <div class="meta">
+      <span class="chip mechanical">mechanical</span>
+      <span class="after free">no dependencies</span>
+    </div>
+  </header>
+  
+  <div class="blk"><h5>Files</h5><p class="files"><code>Multiplatform/gradle/libs.versions.toml</code> <code>Multiplatform/shared/build.gradle.kts</code></p></div>
+  
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li><code>:shared:assemble</code> succeeds with the Vico 3.2.3 dependency present (spec criterion 2 for this diff), OR the task is reported BLOCKED with the exact Gradle error — never a silently substituted coordinate.</li><li>Exactly one new dependency; <code>kotlin</code>, CMP, AGP, SKIE versions unchanged in the diff.</li><li>The landed coordinate (<code>com.patrykandpatrick.vico:compose:3.2.3</code>) is stated in the task report.</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>cd /Users/sultan/Development/FitJournal/Multiplatform &amp;&amp; ./gradlew :shared:assemble</code></pre></div>
+</article></div>
+</section>
+<section class="wave">
+  <h3><span class="wnum">Wave 2</span>
+    <span class="wmeta">1 task</span></h3>
+  <div class="grid"><article class="card" id="task-1">
+  <header>
+    <h4>HistoryContract + HistoryFeed aggregation + jvmTests</h4>
+    <div class="meta">
+      <span class="chip frontier">frontier</span>
+      <span class="after">after <a href="#task-0">Pin Vico in commonMain and compile-verify all targets</a></span>
+    </div>
+  </header>
+  
+  <div class="blk"><h5>Files</h5><p class="files"><code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/HistoryContract.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/HistoryFeed.kt</code> <code>Multiplatform/shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/ui/history/HistoryFeedTest.kt</code></p></div>
+  
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>All test cases above green under <code>kz.maestrosultan.fitjournal.ui.history.HistoryFeedTest</code> (spec criterion 1, feed-level rows; criterion 6's feed-level journal-row rule; the <code>titleShowsYear</code> pair), with a RED run evidenced before implementation.</li><li>Contract matches the spec's listing in types, fields, order, and nullability, PLUS exactly the two revision-pinned fields (<code>ViewState.today</code>, <code>WeekSection.titleShowsYear</code>) — nothing else added.</li><li><code>HistoryFeed.kt</code> imports no <code>androidx.compose.*</code>, no repositories, no sync types.</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>cd /Users/sultan/Development/FitJournal/Multiplatform &amp;&amp; ./gradlew :shared:jvmTest --tests &quot;kz.maestrosultan.fitjournal.ui.history.HistoryFeedTest&quot; &amp;&amp; ./gradlew :shared:assemble</code></pre></div>
+</article></div>
+</section>
+<section class="wave">
+  <h3><span class="wnum">Wave 3</span>
+    <span class="wmeta">1 task</span></h3>
+  <div class="grid"><article class="card" id="task-2">
+  <header>
+    <h4>HistoryViewModel, factory, journal-switch/dot-race tests</h4>
+    <div class="meta">
+      <span class="chip frontier">frontier</span>
+      <span class="after">after <a href="#task-1">HistoryContract + HistoryFeed aggregation + jvmTests</a></span>
+    </div>
+  </header>
+  
+  <div class="blk"><h5>Files</h5><p class="files"><code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/HistoryViewModel.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/HistoryViewModelFactory.kt</code> <code>Multiplatform/shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/ui/history/HistoryViewModelJournalSwitchTest.kt</code></p></div>
+  
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>The three journal-switch/dot-race cases pass in <code>HistoryViewModelJournalSwitchTest</code> (spec criterion 1, VM-level rows), with a RED run evidenced before implementation.</li><li><code>HistoryViewModel</code> imports no <code>SyncTrigger</code>/<code>SyncOrchestrator</code>/Amplify/AWS and carries no refreshing state (spec criterion 5 scope).</li><li>Feed building demonstrably runs under <code>Dispatchers.Default</code> (code inspection: <code>withContext(Dispatchers.Default)</code> wraps <code>buildHistoryFeed</code>).</li><li><code>ViewState.today</code> is populated from the VM's injected <code>clock</code> + <code>timeZone</code> (never <code>Clock.System</code> directly) and matches the <code>today</code> passed to <code>buildHistoryFeed</code> in the same emission.</li><li><code>HistoryFeedTest</code> from Task 1 still green (shared build unit).</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>cd /Users/sultan/Development/FitJournal/Multiplatform &amp;&amp; ./gradlew :shared:jvmTest --tests &quot;kz.maestrosultan.fitjournal.ui.history.*&quot; &amp;&amp; ./gradlew :shared:assemble</code></pre></div>
+</article></div>
+</section>
+<section class="wave">
+  <h3><span class="wnum">Wave 4</span>
+    <span class="wmeta">1 task</span></h3>
+  <div class="grid"><article class="card" id="task-3">
+  <header>
+    <h4>LocaleFormatters.formatDayShortMonth expect + 3 actuals</h4>
+    <div class="meta">
+      <span class="chip standard">standard</span>
+      <span class="after">after <a href="#task-2">HistoryViewModel, factory, journal-switch/dot-race tests</a></span>
+    </div>
+  </header>
+  
+  <div class="blk"><h5>Files</h5><p class="files"><code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/format/LocaleFormatters.kt</code> <code>Multiplatform/shared/src/androidMain/kotlin/kz/maestrosultan/fitjournal/ui/format/LocaleFormatters.android.kt</code> <code>Multiplatform/shared/src/iosMain/kotlin/kz/maestrosultan/fitjournal/ui/format/LocaleFormatters.ios.kt</code> <code>Multiplatform/shared/src/jvmMain/kotlin/kz/maestrosultan/fitjournal/ui/format/LocaleFormatters.jvm.kt</code></p></div>
+  
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li><code>:shared:assemble</code> green with the new expect + all three actuals (a missing actual fails this build).</li><li>Skeletons are <code>&quot;dMMM&quot;</code>/<code>&quot;dMMMy&quot;</code> — output is locale-ordered (&quot;20 Jul&quot; en-GB style vs &quot;Jul 20&quot; en-US style), not a hardcoded pattern.</li><li>No other formatter touched.</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>cd /Users/sultan/Development/FitJournal/Multiplatform &amp;&amp; ./gradlew :shared:assemble</code></pre></div>
+</article></div>
+</section>
+<section class="wave">
+  <h3><span class="wnum">Wave 5</span>
+    <span class="wmeta">1 task</span></h3>
+  <div class="grid"><article class="card" id="task-4">
+  <header>
+    <h4>History strings (en/de/ru/uk) + empty_plates asset</h4>
+    <div class="meta">
+      <span class="chip mechanical">mechanical</span>
+      <span class="after">after <a href="#task-3">LocaleFormatters.formatDayShortMonth expect + 3 actuals</a></span>
+    </div>
+  </header>
+  
+  <div class="blk"><h5>Files</h5><p class="files"><code>Multiplatform/shared/src/commonMain/composeResources/values/strings.xml</code> <code>Multiplatform/shared/src/commonMain/composeResources/values-de/strings.xml</code> <code>Multiplatform/shared/src/commonMain/composeResources/values-ru/strings.xml</code> <code>Multiplatform/shared/src/commonMain/composeResources/values-uk/strings.xml</code> <code>Multiplatform/shared/src/commonMain/composeResources/drawable/empty_plates.png</code></p></div>
+  
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>All four locale files gain the same 3 strings + 4 plurals; keys exactly as pinned in Cross-Task Contracts, all prefixed <code>history_</code> (spec copy/naming constraint: all four locales in the same change).</li><li><code>empty_plates.png</code> exists in <code>composeResources/drawable/</code> and is byte-identical to <code>design/assets/empty-plates.png</code>.</li><li><code>:shared:assemble</code> green (Res accessors generate; XML is well-formed, apostrophes escaped).</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>cd /Users/sultan/Development/FitJournal/Multiplatform &amp;&amp; ./gradlew :shared:assemble</code></pre></div>
+</article></div>
+</section>
+<section class="wave">
+  <h3><span class="wnum">Wave 6</span>
+    <span class="wmeta">1 task</span></h3>
+  <div class="grid"><article class="card" id="task-5">
+  <header>
+    <h4>HistoryScreen + components (Vico hero, weeks, empty)</h4>
+    <div class="meta">
+      <span class="chip frontier">frontier</span>
+      <span class="after">after <a href="#task-4">History strings (en/de/ru/uk) + empty_plates asset</a></span>
+    </div>
+  </header>
+  
+  <div class="blk"><h5>Files</h5><p class="files"><code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/HistoryScreen.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/components/HistoryHero.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/components/HistoryWeekHeader.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/components/HistoryDayRow.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/components/HistoryJournalRow.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history/components/HistoryEmptyState.kt</code></p></div>
+  
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li><code>:shared:assemble</code> green (Vico usage compiles for android + both iOS targets — spec criterion 2).</li><li>Journal-row rule in composition: <code>journalRow == null</code> → row absent in BOTH Loaded and Empty; non-null → composed in both (spec criteria 6, 8).</li><li>Stub layer is data-independent (its <code>columnModel</code> block always carries 11 entries) and both layers use the shared fixed range provider <code>max(maxTonnage, 1.0)</code> — code inspection (spec assumption 17, criterion 10's all-zero render).</li><li>Calendar receives <code>selectedDate = state.today</code> (the VM-filled <code>ViewState.today</code>) and week headers read <code>section.titleShowsYear</code> — no <code>Clock.System</code> and no locally derived &quot;today&quot; anywhere in <code>ui/history</code> composables.</li><li><code>rg &quot;amplify|SyncTrigger|SyncOrchestrator|aws&quot; -i Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history</code> → no matches (spec criterion 5).</li><li>No pull-to-refresh machinery composed when <code>onRefresh == null</code>; <code>isRefreshing</code> rendered, never interpreted (spec non-goal 3).</li><li>All values from <code>FjTheme</code>; strings only via the <code>history_</code>/existing keys; calendar animation spec identical to WorkoutScreen.</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>cd /Users/sultan/Development/FitJournal/Multiplatform
+./gradlew :shared:assemble; rc=$?; echo &quot;assemble rc=$rc&quot;
+if [ $rc -ne 0 ]; then echo &quot;FAIL: :shared:assemble&quot;; exit 1; fi
+rg -i &quot;amplify|SyncTrigger|SyncOrchestrator|aws&quot; shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history; rc=$?; echo &quot;rg rc=$rc (1 = no matches = clean)&quot;
+if [ $rc -ne 1 ]; then echo &quot;FAIL: layer-discipline probe&quot;; exit 1; fi
+echo &quot;PASS&quot;</code></pre></div>
+</article></div>
+</section>
+<section class="wave">
+  <h3><span class="wnum">Wave 7</span>
+    <span class="wmeta">1 task</span></h3>
+  <div class="grid"><article class="card" id="task-6">
+  <header>
+    <h4>iosMain HistoryScreenController + refresh bridge</h4>
+    <div class="meta">
+      <span class="chip standard">standard</span>
+      <span class="after">after <a href="#task-2">HistoryViewModel, factory, journal-switch/dot-race tests</a>, <a href="#task-5">HistoryScreen + components (Vico hero, weeks, empty)</a></span>
+    </div>
+  </header>
+  
+  <div class="blk"><h5>Files</h5><p class="files"><code>Multiplatform/shared/src/iosMain/kotlin/kz/maestrosultan/fitjournal/ui/history/HistoryScreenController.kt</code></p></div>
+  
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li><code>linkDebugFrameworkIosSimulatorArm64</code> green (arm64-only — KMP has no x86_64).</li><li>The bridge matches the pinned shape (<code>private val _refreshing</code> + <code>internal val refreshing: StateFlow&lt;Boolean&gt;</code> + public <code>setRefreshing</code>); the controller collects <code>refreshBridge.refreshing</code> and threads it into <code>HistoryScreen</code>'s <code>isRefreshing</code> parameter; the controller adds no sync knowledge (only the opaque lambda + Boolean).</li><li>Structure mirrors <code>WorkoutScreenController.kt</code> (no new abstractions).</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>cd /Users/sultan/Development/FitJournal/Multiplatform &amp;&amp; ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64</code></pre></div>
+</article></div>
+</section>
+<section class="wave">
+  <h3><span class="wnum">Wave 8</span>
+    <span class="wmeta">1 task</span></h3>
+  <div class="grid"><article class="card" id="task-7">
+  <header>
+    <h4>Android host swap: WorkoutHistoryScreen + delete list</h4>
+    <div class="meta">
+      <span class="chip frontier">frontier</span>
+      <span class="after">after <a href="#task-6">iosMain HistoryScreenController + refresh bridge</a></span>
+    </div>
+  </header>
+  
+  <div class="blk"><h5>Files</h5><p class="files"><code>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/history/presentation/WorkoutHistoryScreen.kt</code> <code>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/history/presentation/WorkoutHistoryHostViewModel.kt</code> <code>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/main/presentation/UserSessionResolver.kt</code> <code>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/main/presentation/WorkoutCmpHostViewModel.kt</code> <code>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/WorkoutHistoryNavGraph.kt</code> <code>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/WorkoutListScreen.kt</code> <code>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/WorkoutListContract.kt</code> <code>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/WorkoutListViewModel.kt</code> <code>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/cell/header/WorkoutListHeader.kt</code> <code>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/cell/header/WorkoutListHeaderViewState.kt</code> <code>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/cell/item/WorkoutListItem.kt</code> <code>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/cell/item/WorkoutListItemViewState.kt</code> <code>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/domain/GetWorkoutListItemsUseCase.kt</code></p></div>
+  
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li><code>cd Android &amp;&amp; ./gradlew :app:compileDebugKotlin &amp;&amp; ./gradlew assembleDebug</code> green with the native list stack deleted (spec criteria 3, 9).</li><li>The 8 deleted files no longer exist; <code>workout/list/presentation/WorkoutListDestination.kt</code> still exists with an unchanged route string.</li><li><code>onPullToRefresh</code> fires <code>syncTrigger.requestTick(reason = SyncReason.UserRefresh)</code> FIRST, then drives <code>isRefreshing</code> true → <code>delay(REFRESH_SPINNER_MS = 1000L)</code> → false, exactly mirroring the old <code>WorkoutListViewModel.kt:219–230</code>/<code>:241</code> timing; the host passes that state into <code>HistoryScreen(isRefreshing = ...)</code>. No <code>SyncTrigger</code> reference added to Multiplatform (criterion 11's Android half, as corrected: a held ~1-second spinner, NOT fire-and-forget).</li><li>Journal-switch seam collects <code>getJournalIdFlow().distinctUntilChanged()</code> and calls the promoted <code>resolveUserSession</code> (which calls <code>UserSession.set</code>).</li><li><code>WorkoutCmpHostViewModel</code> behavior unchanged (only the helper's home moved).</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>cd /Users/sultan/Development/FitJournal/Android &amp;&amp; ./gradlew :app:compileDebugKotlin &amp;&amp; ./gradlew assembleDebug</code></pre></div>
+</article></div>
+</section>
+<section class="wave">
+  <h3><span class="wnum">Wave 9</span>
+    <span class="wmeta">1 task</span></h3>
+  <div class="grid"><article class="card" id="task-8">
+  <header>
+    <h4>iOS host swap: WorkoutHistoryCmpViewController + deletes</h4>
+    <div class="meta">
+      <span class="chip frontier">frontier</span>
+      <span class="after">after <a href="#task-6">iosMain HistoryScreenController + refresh bridge</a>, <a href="#task-7">Android host swap: WorkoutHistoryScreen + delete list</a></span>
+    </div>
+  </header>
+  
+  <div class="blk"><h5>Files</h5><p class="files"><code>iOS/FitJournal/Workout/List/Presentation/WorkoutHistoryCmpViewController.swift</code> <code>iOS/FitJournal/Workout/WorkoutCoordinator.swift</code> <code>iOS/FitJournal/Workout/List/Presentation/WorkoutListViewController.swift</code> <code>iOS/FitJournal/Workout/List/Presentation/WorkoutListViewController.xib</code> <code>iOS/FitJournal/Workout/List/Presentation/WorkoutListViewModel.swift</code> <code>iOS/FitJournal/Workout/List/Presentation/Cell/Header/WorkoutListHeaderCell.swift</code> <code>iOS/FitJournal/Workout/List/Presentation/Cell/Header/WorkoutListHeaderCell.xib</code> <code>iOS/FitJournal/Workout/List/Presentation/Cell/Header/WorkoutListHeaderCellViewModel.swift</code> <code>iOS/FitJournal/Workout/List/Presentation/Cell/Item/WorkoutListItemCell.swift</code> <code>iOS/FitJournal/Workout/List/Presentation/Cell/Item/WorkoutListItemCell.xib</code> <code>iOS/FitJournal/Workout/List/Presentation/Cell/Item/WorkoutListItemCellViewModel.swift</code> <code>iOS/FitJournal/Workout/List/Presentation/Cell/Journal/WorkoutListJournalCell.swift</code> <code>iOS/FitJournal/Workout/List/Domain/UseCase/GetWorkoutListItemsUseCase.swift</code></p></div>
+  
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li><code>xcodebuild</code> (arm64 sim, shared DerivedData) succeeds with the native list stack deleted (spec criteria 4, 9). SourceKit-only checks are not acceptance.</li><li><code>onRefresh</code> drives <code>setRefreshing(true)</code> → <code>await sharedSyncOrchestrator.tick()</code> → <code>setRefreshing(false)</code>; no sync type crosses into shared code (spec criterion 11, iOS half: spinner until the awaited tick completes).</li><li>Journal-picker path: journals fetched via the retained <code>GetAllJournalsUseCase</code> with <code>(try? await …) ?? []</code> (throw → empty list, no crash); selected id from <code>UserStore.selectedJournalId</code>; the old VC's duplicate-presentation guard is carried over (no double-present).</li><li><code>onSelect</code> contains exactly the <code>SelectJournalUseCase().execute(journal:)</code> call — no explicit <code>UserSession.set</code> (the <code>UserStore.saveJournal</code> → <code>syncSession()</code> chain does it).</li><li>Effect handling uses plain <code>for await</code> on SKIE flows; all Tasks tracked and cancelled + <code>viewModel.dispose()</code> on real dismissal.</li><li>The three kept use cases still exist; the 11 deleted files are gone; <code>JournalPickerViewController</code> untouched.</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>cd /Users/sultan/Development/FitJournal/iOS &amp;&amp; xcodebuild -scheme FitJournal -configuration Debug -destination 'platform=iOS Simulator,arch=arm64' build</code></pre></div>
+</article></div>
+</section>
+<section class="wave">
+  <h3><span class="wnum">Wave 10</span>
+    <span class="wmeta">1 task</span></h3>
+  <div class="grid"><article class="card" id="task-9">
+  <header>
+    <h4>Verification gate: builds, rg checks, WH1-WH5, refresh</h4>
+    <div class="meta">
+      <span class="chip standard">standard</span>
+      <span class="after">after <a href="#task-7">Android host swap: WorkoutHistoryScreen + delete list</a>, <a href="#task-8">iOS host swap: WorkoutHistoryCmpViewController + deletes</a></span>
+    </div>
+  </header>
+  
+  
+  
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>Criterion 1: the history jvmTest command exits 0, listing both test classes — echoed <code>rc=0</code> captured.</li><li>Criteria 2–4: <code>:shared:assemble</code>, Android <code>assembleDebug</code>, and arm64-sim <code>xcodebuild</code> each run as their own guarded command, each echoed <code>rc=0</code>; a nonzero rc on any of them aborts the gate as FAIL before any later probe runs.</li><li>Criterion 5: both rg probes return no matches (each echoed <code>rc=1</code>), executed only after all builds passed.</li><li>Criterion 9: every Task 7/Task 8 Delete path fails <code>test -e</code> (absent) and every retained path passes <code>test -e</code> (present) — aggregated to a single PASS/FAIL in the output.</li><li>Criteria 6–8, 10: the WH1–WH5 four-state checklist + all-zero-hero + journal-row/calendar/empty-state checks documented per platform with explicit pass/fail per item.</li><li>Criterion 11: both platforms' refresh behavior documented as specified — Android: <code>requestTick</code> fired first (captured <code>[FJ_SYNC]</code> UserRefresh log line) with the indicator held ~1 second then settling; iOS: spinner-until-tick-completes. (This supersedes the spec's &quot;fire-and-forget&quot; wording for Android.)</li><li>The Verify block's final automated line is <code>AUTOMATED GATE PASS: criteria 1-5, 9 green</code> when every automated step passed; otherwise <code>GATE FAIL</code> naming the first failed step. The overall aggregate <code>GATE PASS</code> is reported ONLY after criteria 6–8, 10, 11 are all recorded PASS in the evidence table; any NOT RUN or failed manual item makes the overall result <code>GATE FAIL</code>/<code>GATE INCOMPLETE</code>, never PASS.</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>cd /Users/sultan/Development/FitJournal/Multiplatform || exit 1
+./gradlew :shared:jvmTest --tests &quot;kz.maestrosultan.fitjournal.ui.history.*&quot;; rc=$?; echo &quot;C1 jvmTest rc=$rc&quot;
+if [ $rc -ne 0 ]; then echo &quot;GATE FAIL: criterion 1 (jvmTest)&quot;; exit 1; fi
+./gradlew :shared:assemble; rc=$?; echo &quot;C2 shared assemble rc=$rc&quot;
+if [ $rc -ne 0 ]; then echo &quot;GATE FAIL: criterion 2 (:shared:assemble)&quot;; exit 1; fi
+cd /Users/sultan/Development/FitJournal/Android || exit 1
+./gradlew assembleDebug; rc=$?; echo &quot;C3 android assembleDebug rc=$rc&quot;
+if [ $rc -ne 0 ]; then echo &quot;GATE FAIL: criterion 3 (assembleDebug)&quot;; exit 1; fi
+cd /Users/sultan/Development/FitJournal/iOS || exit 1
+xcodebuild -scheme FitJournal -configuration Debug -destination 'platform=iOS Simulator,arch=arm64' build; rc=$?; echo &quot;C4 xcodebuild rc=$rc&quot;
+if [ $rc -ne 0 ]; then echo &quot;GATE FAIL: criterion 4 (xcodebuild)&quot;; exit 1; fi
+cd /Users/sultan/Development/FitJournal || exit 1
+rg &quot;androidx.compose&quot; Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/data; rc=$?; echo &quot;C5a rg rc=$rc (1 = clean)&quot;
+if [ $rc -ne 1 ]; then echo &quot;GATE FAIL: criterion 5 (compose import in domain/data)&quot;; exit 1; fi
+rg -i &quot;amplify|SyncTrigger|SyncOrchestrator|aws&quot; Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/history; rc=$?; echo &quot;C5b rg rc=$rc (1 = clean)&quot;
+if [ $rc -ne 1 ]; then echo &quot;GATE FAIL: criterion 5 (sync types in ui/history)&quot;; exit 1; fi
+del_fail=0
+for p in \
+  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/WorkoutListScreen.kt \
+  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/WorkoutListContract.kt \
+  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/WorkoutListViewModel.kt \
+  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/cell/header/WorkoutListHeader.kt \
+  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/cell/header/WorkoutListHeaderViewState.kt \
+  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/cell/item/WorkoutListItem.kt \
+  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/cell/item/WorkoutListItemViewState.kt \
+  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/domain/GetWorkoutListItemsUseCase.kt \
+  iOS/FitJournal/Workout/List/Presentation/WorkoutListViewController.swift \
+  iOS/FitJournal/Workout/List/Presentation/WorkoutListViewController.xib \
+  iOS/FitJournal/Workout/List/Presentation/WorkoutListViewModel.swift \
+  iOS/FitJournal/Workout/List/Presentation/Cell/Header/WorkoutListHeaderCell.swift \
+  iOS/FitJournal/Workout/List/Presentation/Cell/Header/WorkoutListHeaderCell.xib \
+  iOS/FitJournal/Workout/List/Presentation/Cell/Header/WorkoutListHeaderCellViewModel.swift \
+  iOS/FitJournal/Workout/List/Presentation/Cell/Item/WorkoutListItemCell.swift \
+  iOS/FitJournal/Workout/List/Presentation/Cell/Item/WorkoutListItemCell.xib \
+  iOS/FitJournal/Workout/List/Presentation/Cell/Item/WorkoutListItemCellViewModel.swift \
+  iOS/FitJournal/Workout/List/Presentation/Cell/Journal/WorkoutListJournalCell.swift \
+  iOS/FitJournal/Workout/List/Domain/UseCase/GetWorkoutListItemsUseCase.swift ; do
+  if test ! -e &quot;$p&quot;; then echo &quot;C9 absent OK: $p&quot;; else echo &quot;C9 STILL PRESENT: $p&quot;; del_fail=1; fi
+done
+for p in \
+  Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/WorkoutListDestination.kt \
+  iOS/FitJournal/Journal/Presentation/Picker/JournalPickerViewController.swift \
+  iOS/FitJournal/Workout/Common/Domain/UseCase/GetRecentRecordsUseCase.swift \
+  iOS/FitJournal/Journal/Domain/UseCase/GetAllJournalsUseCase.swift \
+  iOS/FitJournal/Journal/Domain/UseCase/SelectJournalUseCase.swift ; do
+  if test -e &quot;$p&quot;; then echo &quot;C9 kept OK: $p&quot;; else echo &quot;C9 MISSING KEPT FILE: $p&quot;; del_fail=1; fi
+done
+if [ $del_fail -ne 0 ]; then echo &quot;GATE FAIL: criterion 9 (deletions/kept files)&quot;; exit 1; fi
+echo &quot;AUTOMATED GATE PASS: criteria 1-5, 9 green&quot;</code></pre></div>
+</article></div>
+</section>
+
+<details class="checks" open>
+  <summary>Structural checks (1)</summary>
+  <ul><li><b>frontier-heavy</b> — 5/10 tasks are frontier (&gt;30%) — plan smell: incomplete specification</li></ul>
+</details>
