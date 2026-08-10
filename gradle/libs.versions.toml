@@ -30,6 +30,11 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 # Compose Multiplatform's v2 UI test API (runComposeUiTest); call sites need
 # @OptIn(ExperimentalTestApi::class).
 compose-ui-test = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "compose" }
+# Android Studio's @Preview renderer. compose.uiTooling (the compose plugin's
+# DSL accessor) is deprecated in favor of this explicit coordinate.
+compose-ui-tooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "compose" }
+# The @Preview annotation itself (androidx.compose.ui.tooling.preview.Preview).
+compose-ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "compose" }
 
 [plugins]
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

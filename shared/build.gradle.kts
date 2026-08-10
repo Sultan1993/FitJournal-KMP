@@ -97,6 +97,17 @@ kotlin {
         // Android
         androidMain.dependencies {
             implementation(libs.sqldelight.android)
+            // @Preview annotation + Android Studio's preview renderer, androidMain-only:
+            // compose.components.uiToolingPreview in commonMain breaks
+            // compileCommonMainKotlinMetadata (no compatible variant for this module's
+            // bare jvm() test target), so the preview files live in androidMain instead
+            // (see ui/workoutlist/preview/). com.android.kotlin.multiplatform.library
+            // (this module's android target) also has no debug/release variants — only
+            // one "androidMain" — so there's no debugImplementation config to scope
+            // ui-tooling to; it ships in the single variant like every other dependency
+            // here.
+            implementation(libs.compose.ui.tooling.preview)
+            implementation(libs.compose.ui.tooling)
         }
 
         // iOS — iosArm64Main / iosSimulatorArm64Main come from the default
