@@ -3,6 +3,7 @@ package kz.maestrosultan.fitjournal.ui.history
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,6 +12,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
@@ -221,8 +223,23 @@ class HistoryViewModelJournalSwitchTest {
             month: String,
             year: String,
         ): List<WorkoutRecord> {
-            if (journalId == gateJournalId) gate.await()
-            return delegate.getRecordsByMonth(userId, journalId, month, year)
+            // NonCancellable wraps the gate wait AND the delegate read: the VM
+            // cancels workoutDaysJob on switch, and a cancelled Job's ambient
+            // withContext(Dispatchers.IO) checkpoints inside the real repository
+            // throw CancellationException immediately (ensureActive on resume) —
+            // wrapping only the gate.await() would still die there before ever
+            // reaching the VM's identity check. Running the whole OLD read
+            // NonCancellable is what makes it truly complete past its suspension
+            // point, so the write is dropped by the identity guard, not by
+            // cancellation.
+            return if (journalId == gateJournalId) {
+                withContext(NonCancellable) {
+                    gate.await()
+                    delegate.getRecordsByMonth(userId, journalId, month, year)
+                }
+            } else {
+                delegate.getRecordsByMonth(userId, journalId, month, year)
+            }
         }
     }
 

@@ -160,9 +160,9 @@ class HistoryViewModel(
         val show = !calendarVisible.value
         calendarVisible.value = show
         if (show) {
-            val s = latestSession ?: return
             val today = today()
             visibleMonth = today.year to today.monthNumber
+            val s = latestSession ?: return
             loadWorkoutDays(s.userId, s.journalId, today.year, today.monthNumber)
         }
     }
