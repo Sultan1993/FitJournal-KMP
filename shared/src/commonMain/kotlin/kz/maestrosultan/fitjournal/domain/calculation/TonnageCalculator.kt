@@ -30,6 +30,10 @@ object TonnageCalculator {
      */
     fun cardioDurationSeconds(record: WorkoutRecord): Int =
         record.exercises.sumOf { exercise ->
+            // WorkoutSet.duration is stored in MINUTES (see BuildSessionSummaryUseCase);
+            // convert to the seconds this function's contract promises.
             exercise.sets.sumOf { it.duration ?: 0 }
-        }
+        } * SECONDS_PER_MINUTE
+
+    private const val SECONDS_PER_MINUTE = 60
 }
