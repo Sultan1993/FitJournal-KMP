@@ -38,6 +38,14 @@ expect object LocaleFormatters {
     /** Weekday + day + month for the current locale (skeleton "EEEEdMMMM"), no year. */
     fun formatFullDate(date: LocalDate): String
 
+    /**
+     * Short weekday + day + month for the current locale (skeleton "EEEdMMMM"),
+     * no year, e.g. "Wed, 29 July" (en-GB) / "Wed, July 29" (en-US) / "Mi., 29.
+     * Juli" (de). The component ORDER is locale-decided by the skeleton, not a
+     * fixed literal order.
+     */
+    fun formatShortWeekdayDate(date: LocalDate): String
+
     /** Day + month + year for the current locale (skeleton "dMMMMy"). */
     fun formatDayMonthYear(date: LocalDate): String
 

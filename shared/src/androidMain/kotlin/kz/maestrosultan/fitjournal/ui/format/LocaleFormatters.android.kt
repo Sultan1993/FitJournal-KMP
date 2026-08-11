@@ -41,6 +41,8 @@ actual object LocaleFormatters {
 
     actual fun formatFullDate(date: LocalDate): String = skeleton("EEEEdMMMM", date)
 
+    actual fun formatShortWeekdayDate(date: LocalDate): String = skeleton("EEEdMMMM", date)
+
     actual fun formatDayMonthYear(date: LocalDate): String = skeleton("dMMMMy", date)
 
     actual fun formatDayShortMonth(date: LocalDate, withYear: Boolean): String =

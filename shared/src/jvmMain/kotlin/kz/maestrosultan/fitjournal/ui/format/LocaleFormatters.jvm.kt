@@ -4,7 +4,9 @@ import java.text.DateFormat
 import java.text.NumberFormat
 import java.time.DayOfWeek as JavaDayOfWeek
 import java.time.Month
+import java.time.chrono.IsoChronology
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeFormatterBuilder
 import java.time.format.FormatStyle
 import java.time.format.TextStyle
 import java.util.Date
@@ -24,6 +26,13 @@ import kotlinx.datetime.toJavaLocalDate
  * NO year, matching the "EEEEdMMMM" skeleton) and [formatDayMonthYear] as a
  * localized long date. Only jvmTest runs this; field-order regionality isn't
  * exercised, but the no-year field set now matches production.
+ *
+ * [formatShortWeekdayDate] is the one exception: it derives the REAL per-locale
+ * field order from `DateTimeFormatterBuilder.getLocalizedDateTimePattern`
+ * (java.time's own CLDR-backed pattern lookup, the closest JVM analog to
+ * Android's `getBestDateTimePattern`) instead of a fixed pattern, so — unlike
+ * its neighbors above — component order genuinely varies per locale here too;
+ * see [shortWeekdaySkeletonPattern].
  */
 actual object LocaleFormatters {
 
@@ -39,6 +48,12 @@ actual object LocaleFormatters {
     actual fun formatFullDate(date: LocalDate): String =
         DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale.getDefault())
             .format(date.toJavaLocalDate())
+
+    actual fun formatShortWeekdayDate(date: LocalDate): String {
+        val locale = Locale.getDefault()
+        return DateTimeFormatter.ofPattern(shortWeekdaySkeletonPattern(locale), locale)
+            .format(date.toJavaLocalDate())
+    }
 
     actual fun formatDayMonthYear(date: LocalDate): String =
         DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG)
@@ -75,4 +90,26 @@ actual object LocaleFormatters {
 
     private fun NameStyle.standalone(): TextStyle =
         if (this == NameStyle.Full) TextStyle.FULL_STANDALONE else TextStyle.SHORT_STANDALONE
+
+    // FULL style is the only java.time style that carries a weekday, and its
+    // pattern is the real CLDR-derived field ORDER for the locale (e.g.
+    // "EEEE, d MMMM y" en-GB vs "EEEE, MMMM d, y" en-US) — not a literal we
+    // wrote. Narrow it down to the "EEEdMMMM" field set: drop the year field
+    // (with any locale-specific suffix riding along it, e.g. Russian's
+    // trailing "'г'." era marker) and shrink the weekday from FULL's "EEEE"
+    // to the abbreviated "EEE". The locale still decides the order; this only
+    // trims the field set.
+    private val yearField = Regex("(?U)[,.]?\\s*y+\\s*('[^']*')?\\.?\\s*$")
+    private val weekdayField = Regex("E+")
+
+    private fun shortWeekdaySkeletonPattern(locale: Locale): String {
+        val fullDatePattern = DateTimeFormatterBuilder.getLocalizedDateTimePattern(
+            FormatStyle.FULL,
+            null,
+            IsoChronology.INSTANCE,
+            locale,
+        )
+        val withoutYear = yearField.replace(fullDatePattern, "")
+        return weekdayField.replace(withoutYear, "EEE")
+    }
 }
