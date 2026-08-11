@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.empty_plates
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_empty_message
@@ -30,7 +31,7 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun WorkoutListEmptyState(modifier: Modifier = Modifier) {
     Column(
-        modifier = modifier.fillMaxSize().padding(horizontal = 20.dp),
+        modifier = modifier.fillMaxSize().padding(horizontal = 44.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -39,10 +40,10 @@ fun WorkoutListEmptyState(modifier: Modifier = Modifier) {
             contentDescription = null,
             modifier = Modifier.size(width = 214.dp, height = 166.dp).alpha(0.85f),
         )
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(22.dp))
         Text(
             text = stringResource(Res.string.history_empty_message),
-            style = FjTheme.typography.body,
+            style = FjTheme.typography.body.copy(fontSize = 15.5.sp, lineHeight = 23.25.sp),
             color = FjTheme.colors.textSecondary,
             textAlign = TextAlign.Center,
         )

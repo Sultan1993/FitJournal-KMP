@@ -6,15 +6,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_exercise_count
@@ -30,10 +33,11 @@ import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * One day in a week section (design WH4): a 34dp day-of-month + weekday leading
- * column, the day's top muscle groups, its tonnage, and a "{workouts ·]
- * exercises · sets" meta line (the workouts segment only when more than one).
- * The whole row is tappable to open that day's details ([onClick] -> OpenDay).
+ * One day in a week section (design WH4/WH5): a 34dp day-of-month + weekday
+ * leading column, then a content column with the muted top muscle-groups line and,
+ * below it, the day's large tonnage beside a "{workouts ·] exercises · sets" meta
+ * line (workouts segment only when more than one). Tapping the row opens that
+ * day's details ([onClick] -> OpenDay).
  */
 @Composable
 fun WorkoutListDayRow(
@@ -61,8 +65,8 @@ fun WorkoutListDayRow(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(vertical = 13.dp),
+        verticalAlignment = Alignment.Top,
     ) {
         Column(
             modifier = Modifier.width(34.dp),
@@ -71,37 +75,43 @@ fun WorkoutListDayRow(
         ) {
             Text(
                 text = day.date.dayOfMonth.toString(),
-                style = FjTheme.typography.numberLarge,
+                style = FjTheme.typography.bodyStrong.copy(fontSize = 19.sp, lineHeight = 19.sp),
                 color = FjTheme.colors.textPrimary,
                 textAlign = TextAlign.Center,
             )
             Text(
                 text = LocaleFormatters.weekdayName(day.date.dayOfWeek, NameStyle.Short),
                 style = FjTheme.typography.label,
-                color = FjTheme.colors.textTertiary,
+                color = FjTheme.colors.textSecondary,
                 textAlign = TextAlign.Center,
             )
         }
-        Spacer(Modifier.width(14.dp))
+        Spacer(Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = categoryTitle,
-                style = FjTheme.typography.bodyStrong,
-                color = FjTheme.colors.textPrimary,
+                style = FjTheme.typography.caption.copy(fontWeight = FontWeight.Medium),
+                color = FjTheme.colors.textSecondary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            Text(
-                text = metaLine,
-                style = FjTheme.typography.caption,
-                color = FjTheme.colors.textSecondary,
-            )
+            Spacer(Modifier.height(5.dp))
+            Row(
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text(
+                    text = WorkoutValueFormatter.groupedTonnage(day.tonnage, measurementSystem),
+                    style = FjTheme.typography.bodyStrong.copy(fontSize = 22.sp, lineHeight = 22.sp),
+                    color = FjTheme.colors.textPrimary,
+                )
+                Text(
+                    text = metaLine,
+                    style = FjTheme.typography.caption.copy(fontSize = 12.5.sp),
+                    color = FjTheme.colors.textSecondary,
+                    modifier = Modifier.padding(bottom = 2.dp),
+                )
+            }
         }
-        Spacer(Modifier.width(14.dp))
-        Text(
-            text = WorkoutValueFormatter.groupedTonnage(day.tonnage, measurementSystem),
-            style = FjTheme.typography.bodyStrong,
-            color = FjTheme.colors.textPrimary,
-        )
     }
 }

@@ -27,6 +27,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import kz.maestrosultan.fitjournal.ui.workoutlist.components.WorkoutListDayRow
 import kz.maestrosultan.fitjournal.ui.workoutlist.components.WorkoutListEmptyState
@@ -178,7 +183,7 @@ private fun WorkoutListList(
                     WorkoutListJournalRow(
                         name = row.name,
                         onClick = { dispatch(WorkoutListContract.ViewAction.OpenJournalPicker) },
-                        modifier = Modifier.padding(vertical = 8.dp),
+                        modifier = Modifier.padding(top = 12.dp, bottom = 8.dp),
                     )
                 }
             }
@@ -186,7 +191,7 @@ private fun WorkoutListList(
                 WorkoutListHero(
                     hero = loaded.hero,
                     measurementSystem = measurementSystem,
-                    modifier = Modifier.padding(top = 8.dp, bottom = 12.dp),
+                    modifier = Modifier.padding(top = 12.dp),
                 )
             }
             loaded.weeks.forEach { week ->
@@ -194,7 +199,7 @@ private fun WorkoutListList(
                     WorkoutListWeekHeader(
                         section = week,
                         measurementSystem = measurementSystem,
-                        modifier = Modifier.padding(top = 20.dp, bottom = 4.dp),
+                        modifier = Modifier.padding(top = 22.dp, bottom = 8.dp),
                     )
                 }
                 itemsIndexed(week.days, key = { _, day -> "day-${day.date}" }) { index, day ->
@@ -214,13 +219,33 @@ private fun WorkoutListList(
         }
     }
 
+    // Bottom scroll fade (design WH4/WH5): a 40dp transparent -> background
+    // gradient over the list's bottom edge. Drawn via drawWithContent so it never
+    // intercepts touches (the last row and PTR stay fully interactive).
+    val background = FjTheme.colors.background
+    val faded = modifier.drawWithContent {
+        drawContent()
+        val fade = 40.dp.toPx()
+        drawRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(Color.Transparent, background),
+                startY = size.height - fade,
+                endY = size.height,
+            ),
+            topLeft = Offset(0f, size.height - fade),
+            size = Size(size.width, fade),
+        )
+    }
+
     // PTR machinery composes ONLY when a refresh lambda was injected; otherwise
     // no PullToRefreshBox at all. isRefreshing is passed through, never read here.
-    if (onRefresh != null) {
-        PullToRefreshBox(isRefreshing = isRefreshing, onRefresh = onRefresh, modifier = modifier) {
-            list(Modifier)
+    Box(modifier = faded) {
+        if (onRefresh != null) {
+            PullToRefreshBox(isRefreshing = isRefreshing, onRefresh = onRefresh, modifier = Modifier.fillMaxSize()) {
+                list(Modifier)
+            }
+        } else {
+            list(Modifier.fillMaxSize())
         }
-    } else {
-        list(modifier)
     }
 }
