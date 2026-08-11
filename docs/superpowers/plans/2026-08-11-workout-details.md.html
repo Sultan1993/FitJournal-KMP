@@ -1,0 +1,476 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Implementation plan</title>
+<style>
+:root{--bg:#f5f7fa;--sf:#fff;--sf2:#eef1f6;--bd:#d7dde6;--ink:#1a2029;--soft:#54606f;--faint:#8791a0;
+--mech:#1f9d68;--std:#2560c4;--fro:#7c53e6;--bad:#cc4444;--mono:ui-monospace,Menlo,Consolas,monospace}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1117;--sf:#161c25;--sf2:#1c232e;--bd:#2a3441;--ink:#e7ecf3;--soft:#9aa6b6;--faint:#647084;--mech:#43c78c;--std:#5b8cf0;--fro:#a689f7;--bad:#e5706b}}
+:root[data-theme="light"]{--bg:#f5f7fa;--sf:#fff;--sf2:#eef1f6;--bd:#d7dde6;--ink:#1a2029;--soft:#54606f;--faint:#8791a0;--mech:#1f9d68;--std:#2560c4;--fro:#7c53e6;--bad:#cc4444}
+:root[data-theme="dark"]{--bg:#0d1117;--sf:#161c25;--sf2:#1c232e;--bd:#2a3441;--ink:#e7ecf3;--soft:#9aa6b6;--faint:#647084;--mech:#43c78c;--std:#5b8cf0;--fro:#a689f7;--bad:#e5706b}
+*{box-sizing:border-box}
+body{margin:0 auto;max-width:1180px;background:var(--bg);color:var(--ink);font:15px/1.62 system-ui,-apple-system,sans-serif;padding:40px 24px 72px}
+a{color:var(--std)}
+h1{font-size:27px;line-height:1.25;margin:0 0 6px;letter-spacing:-.01em}
+h3{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono);margin:0 0 14px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.wnum{color:var(--ink);font-weight:700}.wmeta{color:var(--faint);text-transform:none;letter-spacing:0}
+.sub{color:var(--soft);font-family:var(--mono);font-size:12.5px;margin-bottom:24px;word-break:break-all}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:30px}
+.stat{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:9px 15px}
+.stat b{font-size:19px;display:block;line-height:1.2}.stat span{font-size:11px;color:var(--faint);font-family:var(--mono)}
+.brief{background:var(--sf);border:1px solid var(--bd);border-left:3px solid var(--std);border-radius:10px;padding:4px 20px;margin-bottom:34px}
+.brief h4{font-size:14px;margin:14px 0 6px}
+.wave{margin-bottom:34px}.wave.bad .wnum{color:var(--bad)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;align-items:start}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:15px 17px 5px}
+.card header{border-bottom:1px solid var(--bd);padding-bottom:10px;margin-bottom:12px}
+.card h4{margin:0 0 7px;font-size:15px;line-height:1.35}
+.meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.after{font-family:var(--mono);font-size:10.5px;color:var(--faint)}.after.free{opacity:.65}
+.blk{margin-bottom:14px}
+.blk h5{margin:0 0 5px;font:600 10.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.07em;color:var(--faint)}
+.blk p{margin:0 0 7px}.blk ul,.blk ol{margin:0 0 7px;padding-left:20px}.blk li{margin:2px 0}
+.blk :last-child{margin-bottom:0}
+.crit li{color:var(--soft)}
+.files code{display:inline-block;margin:0 4px 4px 0}
+pre.code{background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:9px 11px;overflow-x:auto;max-height:260px;overflow-y:auto;margin:0 0 7px}
+pre.code code{background:none;padding:0;font-size:11.5px;line-height:1.5;white-space:pre}
+code{font-family:var(--mono);font-size:.88em;background:color-mix(in srgb,var(--bd) 45%,transparent);padding:1px 5px;border-radius:4px;word-break:break-word}
+.chip{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+.chip.mechanical{color:var(--mech);background:color-mix(in srgb,var(--mech) 14%,transparent)}
+.chip.standard{color:var(--std);background:color-mix(in srgb,var(--std) 14%,transparent)}
+.chip.frontier{color:var(--fro);background:color-mix(in srgb,var(--fro) 14%,transparent)}
+.chip.bad{color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent)}
+details.checks{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:12px 18px;margin-top:10px}
+details.checks summary{cursor:pointer;font:600 11.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--faint)}
+details.checks ul{margin:12px 0 2px;padding-left:20px}
+details.checks li{margin:4px 0;color:var(--soft)}
+details.checks b{color:var(--bad);font-family:var(--mono);font-size:12.5px}
+details.checks .ok{color:var(--mech)}
+</style>
+<h1>Implementation plan</h1>
+<div class="sub">docs/superpowers/plans/2026-08-11-workout-details.md &nbsp;·&nbsp; spec: docs/superpowers/specs/2026-08-11-workout-details-design.md</div>
+<div class="stats">
+  <div class="stat"><b>15</b><span>tasks</span></div>
+  <div class="stat"><b>7</b><span>waves</span></div>
+  <div class="stat"><b style="color:var(--mech)">0</b><span>mechanical</span></div>
+  <div class="stat"><b style="color:var(--std)">0</b><span>standard</span></div>
+  <div class="stat"><b style="color:var(--fro)">0</b><span>frontier</span></div>
+</div>
+<div class="brief"><h4>Global Constraints</h4>
+<ul>
+<li><strong>Offline-first</strong>: the shared VM reads ONLY local KMP repos (<code>RecordRepository</code>, <code>WorkoutSessionRepository</code>) — no AWS imports, no network. The sole sync touch is <code>syncTrigger.requestTick(SyncReason.PostWrite.WorkoutRecord)</code> inside <code>DeleteWorkoutUseCase</code>, fired only AFTER the delete transaction commits (spec §14, §17).</li>
+<li><strong>Parity</strong>: every behavior in spec §5–§10 lands on BOTH platforms within this plan; all logic lives in <code>Multiplatform/shared</code>; native hosts are thin glue.</li>
+<li><strong>Themes</strong>: light + dark via <code>FjTheme</code> tokens only, including the NEW <code>card</code> token (<code>0xFFF1F3F9</code> light / <code>0xFF18181F</code> dark). Only literal colors allowed: the accent-card inks <code>#8A7326</code>/<code>#040415</code> and the WD3 focused-row shadow <code>rgba(0,0,0,0.35)</code> (spec §4.1). The delta pill REUSES the theme-agnostic <code>WorkoutListDeltaPill</code> — the mock's per-theme pill inks are deliberately NOT introduced.</li>
+<li><strong>SKIE</strong>: top-level factories bridge as BARE global Swift functions (no <code>*Kt.</code> wrapper); nested types bridge DOTTED, sealed cases CONCATENATED (spec §8). Verified against the generated header from a REAL <code>xcodebuild</code> — SourceKit is not verification. Never throw across the SKIE boundary (iOS SIGABRT rule).</li>
+<li><strong>Never re-derive numbers</strong>: every figure comes from <code>TonnageCalculator</code> / <code>WorkoutValueFormatter</code> / <code>WorkloadCalculator</code> / <code>LocaleFormatters</code> / <code>formatDuration</code> per the spec §6.1 table; composables format nothing.</li>
+<li><strong>Three repos each end GREEN</strong>, and each repo stays buildable at every wave barrier: <code>Multiplatform</code> (<code>:shared:jvmTest</code> + <code>:shared:assemble</code>), <code>Android</code> (<code>:app:compileDebugKotlin</code>), <code>iOS</code> (real arm64-sim <code>xcodebuild</code>). Base state: <code>feature/workout-history-cmp</code> in all three repos (the <code>ui/workoutlist</code> package and its hosts must exist), which rebases onto the uncommitted workoutNumber-sync fix (spec §17).</li>
+<li><strong>Cross-task contracts (pinned; siblings reference these exact names)</strong>:</li>
+<li>Package <code>kz.maestrosultan.fitjournal.ui.workoutdetails</code> (commonMain + iosMain), mirroring <code>ui/workoutlist/</code>.</li>
+<li><code>WorkoutDetailsContract</code> — the spec §5 code verbatim (<code>HeaderNav</code>, <code>ViewModel</code>, <code>ViewState</code>, <code>Content</code>, <code>Header</code>, <code>Hero</code>, <code>StackRow</code>, <code>WorkoutUi</code>, <code>NewBestUi</code>, <code>NoteUi</code>, <code>WorkloadRow</code>, <code>ExerciseGroup</code>, <code>ExerciseRow</code>, <code>DeltaUi</code>, <code>SetChip</code>, <code>NoteEditor</code>, <code>ViewAction</code>, <code>ViewEffect</code>).</li>
+<li>Screen takes the INTERFACE: <code>@Composable fun WorkoutDetailsScreen(viewModel: WorkoutDetailsContract.ViewModel, modifier: Modifier = Modifier)</code> — so screen and concrete VM build in parallel and the screen test fakes the contract.</li>
+<li>Builder: <code>internal fun buildWorkoutDetailsUi(...): WorkoutDetailsContract.Content.Loaded</code> in <code>ui/workoutdetails/components/WorkoutDetailsUiBuilder.kt</code> (exact parameter list fixed by Task 6; Task 7 is blocked on it and reads the real signature).</li>
+<li>Factory (commonMain, Swift-facing): <code>createWorkoutDetailsViewModel(recordRepository, sessionRepository, syncTrigger, userId, journalId, measurementSystem, date, initialWorkoutNumber: Int?, headerNav): WorkoutDetailsViewModel</code> in <code>WorkoutDetailsViewModelFactory.kt</code> (spec §6).</li>
+<li>iosMain controller: <code>fun WorkoutDetailsScreenController(viewModel: WorkoutDetailsViewModel, onDismiss: () -&gt; Unit, onEditWorkout: (LocalDate, Int) -&gt; Unit, onShareWorkout: (LocalDate, Int) -&gt; Unit): UIViewController</code> (spec §8).</li>
+<li>Repo method: <code>suspend fun deleteWorkoutAtomic(userId: String, journalId: String, date: LocalDate, workoutNumber: Int)</code> on <code>domain/workout/RecordRepository</code>; the <code>internal</code> mid-transaction test seam <code>afterRecordTombstones: (() -&gt; Unit)?</code> (default null) lives on <code>DefaultRecordRepository</code> ONLY (spec §14).</li>
+<li>Use case: <code>class DeleteWorkoutUseCase(recordRepository, syncTrigger)</code> with <code>suspend operator fun invoke(userId, journalId, date, workoutNumber)</code> in <code>domain/workout/usecase/DeleteWorkoutUseCase.kt</code>, mirroring <code>EndWorkoutUseCase</code> (no stored scopes).</li>
+<li>Formatter: <code>LocaleFormatters.formatShortWeekdayDate(date: LocalDate): String</code>, skeleton <code>EEEdMMMM</code>, locale-ordered — never a literal pattern (spec §14).</li>
+<li>Android route: keep <code>workout_details/{workout_date}</code>; add optional <code>workoutNumber</code> (Int, default −1 = none) and <code>origin</code> (<code>push</code>|<code>finish</code>, default <code>push</code>); new helper <code>workoutDetailsRoute(date, workoutNumber = null, origin = Push)</code> plus the legacy <code>workoutDetailsRoute(Date)</code> overload preserved (spec §10).</li>
+<li>String keys: exactly the spec §12 list; plurals reuse the existing workoutlist plurals where already defined — never duplicated. Pluralization mechanism mirrors whatever <code>ui/workoutlist</code> does for its meta rows (spec §5 note).</li>
+<li><strong>Test policy</strong> (shared build unit): each Multiplatform task runs its own named suites in Verify; the FULL <code>:shared:jvmTest</code> must be green at the final gate (Task 15). WDS1–WDS6 (spec §16) are the manual on-device acceptance — JVM tests and compiles cannot prove rendering, transitions, or back-vs-close.</li>
+</ul>
+<p>---</p></div>
+
+<section class="wave">
+  <h3><span class="wnum">Wave 1</span>
+    <span class="wmeta">5 tasks · run in parallel</span></h3>
+  <div class="grid"><article class="card" id="task-0">
+  <header>
+    <h4>Task 1: Add shared `card` color token (ColorTokens + FjTheme)</h4>
+    <div class="meta">
+      <span class="chip bad">no tier</span>
+      <span class="after free">no dependencies</span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Add the one new semantic token this change introduces (spec §4.1): <code>val card = ColorToken(0xFFF1F3F9 /* light */, 0xFF18181F /* dark */)</code> in <code>ColorTokens.kt</code> beside <code>sheet</code> (constructor is light-first), exposed as <code>card: Color</code> on <code>FjColorScheme</code> and mapped in <code>fjColorScheme</code> so UI code reads <code>FjTheme.colors.card</code>. No other token or consumer changes.</p></div>
+  <div class="blk"><h5>Files</h5><ul>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/kmp/design/ColorTokens.kt (Modify)</li>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/theme/FjColors.kt (Modify)</li>
+</ul></div>
+  
+  <div class="blk"><h5>Done when</h5><ul>
+<li><code>ColorTokens.kt</code> defines <code>card</code> with exactly <code>0xFFF1F3F9</code> light / <code>0xFF18181F</code> dark, light-first, matching the existing <code>ColorToken</code> style.</li>
+<li><code>FjColorScheme</code> gains a <code>card: Color</code> property and <code>fjColorScheme</code> maps it from the token; <code>FjTheme.colors.card</code> resolves in commonMain.</li>
+<li>No existing token values or names changed; diff touches only the two files.</li>
+</ul></div>
+  <div class="blk"><h5>Verify</h5><p><code>cd Multiplatform &amp;&amp; ./gradlew :shared:assembleDebug</code></p>
+<pre class="code"><code>{&quot;modelTier&quot;: &quot;mechanical&quot;, &quot;blockedBy&quot;: []}</code></pre></div>
+</article><article class="card" id="task-1">
+  <header>
+    <h4>Task 2: deleteWorkoutAtomic + DeleteWorkoutUseCase + tests</h4>
+    <div class="meta">
+      <span class="chip bad">no tier</span>
+      <span class="after free">no dependencies</span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Implement the atomic delete (spec §14): a new <code>RecordRepository.deleteWorkoutAtomic(userId, journalId, date, workoutNumber)</code> whose <code>DefaultRecordRepository</code> implementation runs ONE <code>database.transaction {}</code> that (a) applies the same per-row soft delete <code>deleteRecord</code> performs (deletedAt tombstone + <code>pendingUpload = 1</code>) to every record of that workout, and (b) hard-deletes the workout's session row — any throw rolls back BOTH tables. Add the <code>internal</code> mid-transaction test seam <code>afterRecordTombstones</code> (impl-only, default no-op). Then <code>DeleteWorkoutUseCase</code>: call the repo method; on success — and only then — <code>syncTrigger.requestTick(SyncReason.PostWrite.WorkoutRecord)</code>; a repo throw skips the tick and propagates (spec §13). Tests per spec §15: use-case happy path (tombstones + session gone + exactly one tick, after commit) and the end-to-end rollback through real SQLite via the seam (no tombstones, session survives, no tick, subsequent seamless re-run completes; idempotent re-run after success). Implementer: invoke <code>kotlin-coroutines-structured-concurrency</code> before writing the use case.</p></div>
+  <div class="blk"><h5>Files</h5><ul>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/workout/RecordRepository.kt (Modify)</li>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/data/record/repository/DefaultRecordRepository.kt (Modify)</li>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/workout/usecase/DeleteWorkoutUseCase.kt (Create)</li>
+<li>Multiplatform/shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/domain/workout/usecase/DeleteWorkoutUseCaseTest.kt (Create)</li>
+<li>Multiplatform/shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/data/RecordRepositoryTest.kt (Modify)</li>
+</ul></div>
+  
+  <div class="blk"><h5>Done when</h5><ul>
+<li>Interface method matches the pinned signature; <code>WorkoutSessionRepository.deleteSession</code> is untouched; the repo stays 100% local (no AWS imports).</li>
+<li>Record tombstones and the session hard-delete run inside a single <code>database.transaction {}</code>; the seam is invoked between the tombstone statements and the session delete, is <code>internal</code>, defaults to no-op, and appears nowhere in production call paths.</li>
+<li>Use case fires the tick exactly once, strictly after the transaction commits; failure path fires no tick.</li>
+<li>Rollback test proves BOTH tables unchanged after a seam-forced mid-transaction throw, through real SQLite (the <code>RecordRepositoryTest</code> fixture), and that a re-run without the seam then succeeds.</li>
+<li>All listed tests green.</li>
+</ul></div>
+  <div class="blk"><h5>Verify</h5><p><code>cd Multiplatform &amp;&amp; ./gradlew :shared:jvmTest --tests &quot;*DeleteWorkoutUseCaseTest&quot; --tests &quot;*RecordRepositoryTest&quot; :shared:assembleDebug</code></p>
+<pre class="code"><code>{&quot;modelTier&quot;: &quot;standard&quot;, &quot;blockedBy&quot;: []}</code></pre></div>
+</article><article class="card" id="task-2">
+  <header>
+    <h4>Task 3: LocaleFormatters.formatShortWeekdayDate + actuals</h4>
+    <div class="meta">
+      <span class="chip bad">no tier</span>
+      <span class="after free">no dependencies</span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Add <code>formatShortWeekdayDate(date: LocalDate): String</code> to the <code>LocaleFormatters</code> expect surface with three actuals beside the existing <code>formatFullDate</code> implementations — android/jvm via the skeleton API, iOS via <code>dateFormat(fromTemplate:)</code> — all driven by skeleton <code>EEEdMMMM</code> (spec §14). The skeleton's locale-specific component ORDER is intended localization (&quot;Wed, 29 July&quot; en-GB vs &quot;Wed, July 29&quot; en-US vs &quot;Mi., 29. Juli&quot; de); nothing hard-codes order or separators. Extend the existing jvm suite with locale-order cases proving the skeleton (not a literal pattern) decides the order (spec §15).</p></div>
+  <div class="blk"><h5>Files</h5><ul>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/format/LocaleFormatters.kt (Modify)</li>
+<li>Multiplatform/shared/src/androidMain/kotlin/kz/maestrosultan/fitjournal/ui/format/LocaleFormatters.android.kt (Modify)</li>
+<li>Multiplatform/shared/src/jvmMain/kotlin/kz/maestrosultan/fitjournal/ui/format/LocaleFormatters.jvm.kt (Modify)</li>
+<li>Multiplatform/shared/src/iosMain/kotlin/kz/maestrosultan/fitjournal/ui/format/LocaleFormatters.ios.kt (Modify)</li>
+<li>Multiplatform/shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/ui/postworkout/LocaleFormattersTest.kt (Modify)</li>
+</ul></div>
+  
+  <div class="blk"><h5>Done when</h5><ul>
+<li>Expect + three actuals compile on all targets; each actual mirrors the style of its sibling <code>formatFullDate</code> actual.</li>
+<li>No actual contains a literal date pattern — skeleton <code>EEEdMMMM</code> only.</li>
+<li>jvm tests assert at least two locales rendering different component orders (e.g. en-GB vs en-US), and pass.</li>
+</ul></div>
+  <div class="blk"><h5>Verify</h5><p><code>cd Multiplatform &amp;&amp; ./gradlew :shared:jvmTest --tests &quot;*LocaleFormattersTest&quot; :shared:assemble</code></p>
+<pre class="code"><code>{&quot;modelTier&quot;: &quot;standard&quot;, &quot;blockedBy&quot;: []}</code></pre></div>
+</article><article class="card" id="task-3">
+  <header>
+    <h4>Task 4: WorkoutDetailsContract (commonMain MVI contract)</h4>
+    <div class="meta">
+      <span class="chip bad">no tier</span>
+      <span class="after free">no dependencies</span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Create <code>WorkoutDetailsContract.kt</code> containing exactly the spec §5 code (types, fields, order, KDoc), same public/SKIE-bridged shape as <code>WorkoutListContract</code>, with correct imports (<code>LocalDate</code>, <code>CategoryType</code>, <code>Exercise</code>, <code>StateFlow</code>, <code>Flow</code>). This is the single type surface every later task compiles against — no additions, no renames.</p></div>
+  <div class="blk"><h5>Files</h5><ul>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workoutdetails/WorkoutDetailsContract.kt (Create)</li>
+</ul></div>
+  
+  <div class="blk"><h5>Done when</h5><ul>
+<li>Every type and member of spec §5 present with the exact names, nullability, and doc comments; nothing extra.</li>
+<li><code>ViewState.initial(headerNav)</code> companion factory present.</li>
+<li>Compiles for the Android target from commonMain.</li>
+</ul></div>
+  <div class="blk"><h5>Verify</h5><p><code>cd Multiplatform &amp;&amp; ./gradlew :shared:assembleDebug</code></p>
+<pre class="code"><code>{&quot;modelTier&quot;: &quot;standard&quot;, &quot;blockedBy&quot;: []}</code></pre></div>
+</article><article class="card" id="task-4">
+  <header>
+    <h4>Task 5: Shared workout-details strings (en/de/ru/uk)</h4>
+    <div class="meta">
+      <span class="chip bad">no tier</span>
+      <span class="after free">no dependencies</span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Add the spec §12 keys to the shared compose resources in all four locales (the same files the workoutlist strings live in): <code>workout_details_total_volume</code>, <code>workout_details_day_volume</code>, <code>workout_details_tile_duration</code>, <code>workout_details_tile_exercises</code>, <code>workout_details_tile_sets</code>, <code>workout_details_new_best</code>, <code>workout_details_note</code>, <code>workout_details_add_note</code>, <code>workout_details_workload</code>, <code>workout_details_edit</code>, <code>workout_details_delete</code>, <code>workout_details_share</code>, <code>workout_details_delete_confirm_title</code>, <code>workout_details_delete_confirm_message</code>, <code>workout_details_note_save</code>, <code>workout_details_note_placeholder</code>, plus plurals for <code>workouts</code>/<code>exercises</code>/<code>sets</code> ONLY where the workoutlist does not already define them — existing plurals are reused, never duplicated.</p></div>
+  <div class="blk"><h5>Files</h5><ul>
+<li>Multiplatform/shared/src/commonMain/composeResources/values/strings.xml (Modify)</li>
+<li>Multiplatform/shared/src/commonMain/composeResources/values-de/strings.xml (Modify)</li>
+<li>Multiplatform/shared/src/commonMain/composeResources/values-ru/strings.xml (Modify)</li>
+<li>Multiplatform/shared/src/commonMain/composeResources/values-uk/strings.xml (Modify)</li>
+</ul></div>
+  
+  <div class="blk"><h5>Done when</h5><ul>
+<li>All §12 keys present in all four locale files; ru/uk plurals carry the full plural quantity set the existing plurals in those files use.</li>
+<li>Zero duplicate keys/plurals vs the existing workoutlist entries (grep proves it).</li>
+<li>Resource accessors regenerate and the module compiles.</li>
+</ul></div>
+  <div class="blk"><h5>Verify</h5><p><code>cd Multiplatform &amp;&amp; ./gradlew :shared:assembleDebug</code></p>
+<pre class="code"><code>{&quot;modelTier&quot;: &quot;mechanical&quot;, &quot;blockedBy&quot;: []}</code></pre></div>
+</article></div>
+</section>
+<section class="wave">
+  <h3><span class="wnum">Wave 2</span>
+    <span class="wmeta">2 tasks · run in parallel</span></h3>
+  <div class="grid"><article class="card" id="task-5">
+  <header>
+    <h4>Task 6: buildWorkoutDetailsUi builder + BuilderTest</h4>
+    <div class="meta">
+      <span class="chip bad">no tier</span>
+      <span class="after">after <a href="#task-2">Task 3: LocaleFormatters.formatShortWeekdayDate + actuals</a>, <a href="#task-3">Task 4: WorkoutDetailsContract (commonMain MVI contract)</a>, <a href="#task-4">Task 5: Shared workout-details strings (en/de/ru/uk)</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Implement the pure builder (spec §6.1): records (with <code>lastOccurrence</code>) + day sessions + <code>measurementSystem</code> + per-workout <code>SessionBest?</code> (+ focused number, timezone/now) → <code>Content.Loaded</code>, with EVERY figure sourced per the §6.1 table (<code>TonnageCalculator</code>, <code>WorkoutValueFormatter</code>, <code>WorkloadCalculator</code>, <code>MuscleTitleFormatter</code>, <code>formatDuration</code>, <code>LocaleFormatters.formatTimeShort</code>/<code>formatShortWeekdayDate</code>/<code>formatFullDate</code>) — the composables never re-derive. Encodes: WD1 vs WD3 shape (stack only when &gt;1 workout), day-vs-workout hero scope, the mixed-scope <code>Hero.cardioText</code> rule and the cardio-only duration-hero rule (§4.2/§4.3), delta pills per Assumption 2, workload kg-per-bucket with OTHER and zero-kg → <code>tonnageText = null</code>, session↔workout join by <code>workoutNumber</code> with unmatched sessions ignored (defensive), sessionless workouts hiding duration/note/share, set chips own-numbers-only (Assumption 11). <code>WorkoutDetailsBuilderTest</code> covers every §15 builder case. Implementer: invoke <code>kotlin-flow-state-event-modeling</code> before writing.</p></div>
+  <div class="blk"><h5>Files</h5><ul>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workoutdetails/components/WorkoutDetailsUiBuilder.kt (Create)</li>
+<li>Multiplatform/shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/ui/workoutdetails/WorkoutDetailsBuilderTest.kt (Create)</li>
+</ul></div>
+  
+  <div class="blk"><h5>Done when</h5><ul>
+<li>Builder is a pure <code>internal</code> function (no repos, no clocks beyond injected now/timezone) named and located per the pinned contract.</li>
+<li>Every §6.1 table row is implemented via the named calculator/formatter — no arithmetic re-derivation, no literal date/number formatting.</li>
+<li><code>WorkoutDetailsBuilderTest</code> has passing cases for: WD1 vs WD3 shape; hero day-vs-workout totals; muscle-title ranking with day-order ties; delta present/absent incl. cardio distance delta and no-prior → no pill; workload kg + OTHER; sessionless hides duration/note/share; cardio-only hero; mixed workout AND mixed day carry tonnage hero + <code>cardioText</code>; unmatched session ignored; set-chip own-numbers-only.</li>
+<li>Counts needing pluralization use the same Res mechanism the workoutlist uses for its meta rows.</li>
+</ul></div>
+  <div class="blk"><h5>Verify</h5><p><code>cd Multiplatform &amp;&amp; ./gradlew :shared:jvmTest --tests &quot;*WorkoutDetailsBuilderTest&quot; :shared:assembleDebug</code></p>
+<pre class="code"><code>{&quot;modelTier&quot;: &quot;standard&quot;, &quot;blockedBy&quot;: [2, 3, 4]}</code></pre></div>
+</article><article class="card" id="task-7">
+  <header>
+    <h4>Task 8: WorkoutDetailsScreen + components + ScreenTest</h4>
+    <div class="meta">
+      <span class="chip bad">no tier</span>
+      <span class="after">after <a href="#task-0">Task 1: Add shared `card` color token (ColorTokens + FjTheme)</a>, <a href="#task-3">Task 4: WorkoutDetailsContract (commonMain MVI contract)</a>, <a href="#task-4">Task 5: Shared workout-details strings (en/de/ru/uk)</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Build the design-fidelity screen (spec §4.2/§4.3/§7): <code>WorkoutDetailsScreen(viewModel: WorkoutDetailsContract.ViewModel, modifier)</code> — fixed inline header, scrollable body with bottom fade scrim, pinned Share footer — and the ten components (<code>WorkoutDetailsHeader</code>, <code>WorkoutDetailsHero</code>, <code>WorkoutStackCard</code>, <code>WorkoutStatTiles</code>, <code>NewBestCard</code>, <code>SessionNoteCard</code> filled+empty, <code>WorkloadSection</code>, <code>ExerciseRowList</code> with superset rail + set-strip end fade, <code>WorkoutActionButtons</code>, <code>SessionNoteEditorSheet</code> on <code>surfaceElevated</code>), every metric/typography/spacing value exactly per §4.2–§4.3 and every color via the §4.1 token map (<code>card</code> for tiles/NOTE/Edit-Delete/WD3 outer container; <code>surface</code> + shadow for the focused stack row; literal inks only where §4.1 allows). Reuse as-is: <code>ExerciseAvatar</code>, <code>ConfirmActionSheet</code> (destructive delete copy), <code>FjPrimaryButton</code> if metrics match, the <code>TopFadeScrim</code> technique, <code>WorkoutListDeltaPill</code> untouched. <code>WorkoutDetailsScreenTest</code> (compose-jvm, <code>WorkoutListScreenTest</code> pattern, fake contract VM) covers the §15 screen cases. Implementer: invoke <code>compose-modifier-and-layout-style</code>, <code>compose-slot-api-pattern</code>, and <code>compose-ui-testing-patterns</code> before writing.</p></div>
+  <div class="blk"><h5>Files</h5><ul>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workoutdetails/WorkoutDetailsScreen.kt (Create)</li>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workoutdetails/components/WorkoutDetailsHeader.kt (Create)</li>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workoutdetails/components/WorkoutDetailsHero.kt (Create)</li>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workoutdetails/components/WorkoutStackCard.kt (Create)</li>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workoutdetails/components/WorkoutStatTiles.kt (Create)</li>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workoutdetails/components/NewBestCard.kt (Create)</li>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workoutdetails/components/SessionNoteCard.kt (Create)</li>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workoutdetails/components/WorkloadSection.kt (Create)</li>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workoutdetails/components/ExerciseRowList.kt (Create)</li>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workoutdetails/components/WorkoutActionButtons.kt (Create)</li>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workoutdetails/components/SessionNoteEditorSheet.kt (Create)</li>
+<li>Multiplatform/shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/ui/workoutdetails/WorkoutDetailsScreenTest.kt (Create)</li>
+</ul></div>
+  
+  <div class="blk"><h5>Done when</h5><ul>
+<li>Screen signature takes <code>WorkoutDetailsContract.ViewModel</code> (the interface) and is content-only: renders on <code>FjTheme.colors.background</code>, host applies theme + safe area.</li>
+<li>Zero literal colors outside the §4.1 allowances; the new <code>card</code> token used exactly where §4.1 assigns it; superset rail uses <code>brand</code> in both themes (Assumption 1); delta pill is the untouched <code>WorkoutListDeltaPill</code>.</li>
+<li>Composables never re-derive numbers — every displayed string comes from <code>ViewState</code> (or the pinned plural mechanism for counts).</li>
+<li>WD3 stack: focused row = <code>surface</code> + shadow lift; unfocused rows transparent; tap dispatches <code>SelectWorkout</code>; body below renders the focused workout only, full WD1 body (spec §4.3.4).</li>
+<li><code>WorkoutDetailsScreenTest</code> green: WD1 sections render/hide per state (tiles, NEW BEST, NOTE filled/empty, WORKLOAD, footer gating by <code>canShare</code>); WD3 stack focus tap dispatches; delete flows through <code>ConfirmActionSheet</code>; note editor opens from both filled and empty states.</li>
+<li>Manual (run once a host exists; latest at Task 15's gate): WDS3, WDS4, WDS5, WDS6 plus the §4.2 top-to-bottom section check of WDS1 — in BOTH light and dark.</li>
+</ul></div>
+  <div class="blk"><h5>Verify</h5><p><code>cd Multiplatform &amp;&amp; ./gradlew :shared:jvmTest --tests &quot;*WorkoutDetailsScreenTest&quot; :shared:assembleDebug</code></p>
+<pre class="code"><code>{&quot;modelTier&quot;: &quot;frontier&quot;, &quot;blockedBy&quot;: [0, 3, 4]}</code></pre></div>
+</article></div>
+</section>
+<section class="wave">
+  <h3><span class="wnum">Wave 3</span>
+    <span class="wmeta">1 task</span></h3>
+  <div class="grid"><article class="card" id="task-6">
+  <header>
+    <h4>Task 7: WorkoutDetailsViewModel + factory + VM tests</h4>
+    <div class="meta">
+      <span class="chip bad">no tier</span>
+      <span class="after">after <a href="#task-1">Task 2: deleteWorkoutAtomic + DeleteWorkoutUseCase + tests</a>, <a href="#task-3">Task 4: WorkoutDetailsContract (commonMain MVI contract)</a>, <a href="#task-4">Task 5: Shared workout-details strings (en/de/ru/uk)</a>, <a href="#task-5">Task 6: buildWorkoutDetailsUi builder + BuilderTest</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Implement <code>WorkoutDetailsViewModel</code> per spec §6: constructor as specced; <code>combine(observeRecordsChanged(u,j).mapLatest { getRecordsByDate(u, j, date, includeLastOccurrence = true) }, getSessionsForDayFlow(u,j,date))</code> → <code>mapLatest</code> into the Task-6 builder on <code>Dispatchers.Default</code> (record-load perf contract), combined with the <code>focusedWorkoutNumber</code>/<code>noteEditor</code>/<code>confirmingDelete</code> <code>MutableStateFlow</code>s; per-emission <code>runCatching</code> INSIDE <code>mapLatest</code> so a builder throw drops only that emission and can never terminate the flow (§6/§13); empty-day → single <code>Dismiss</code>; effects via <code>Channel(BUFFERED).receiveAsFlow()</code>; all §6 actions incl. delete-confirm → <code>DeleteWorkoutUseCase</code> with focus fallback to the lowest remaining number, <code>NoteSaved</code> → <code>setSessionComment</code> with no sync tick; <code>dispose()</code> exposed. Plus the commonMain factory <code>createWorkoutDetailsViewModel(...)</code> (pinned signature) composing <code>DetectSessionBestUseCase</code>/<code>DeleteWorkoutUseCase</code> internally and wrapping the plain values in a private <code>WorkoutUserContext</code>. <code>WorkoutDetailsViewModelTest</code> covers every §15 VM case with fake repos. Implementer: invoke <code>kotlin-coroutines-structured-concurrency</code> and <code>kotlin-flow-state-event-modeling</code> before writing.</p></div>
+  <div class="blk"><h5>Files</h5><ul>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workoutdetails/WorkoutDetailsViewModel.kt (Create)</li>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workoutdetails/WorkoutDetailsViewModelFactory.kt (Create)</li>
+<li>Multiplatform/shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/ui/workoutdetails/WorkoutDetailsViewModelTest.kt (Create)</li>
+</ul></div>
+  
+  <div class="blk"><h5>Done when</h5><ul>
+<li>Constructor and factory match the pinned signatures exactly; <code>initialWorkoutNumber</code> is <code>Int?</code> (no sentinel); NEW BEST resolved per workout via <code>DetectSessionBestUseCase</code> per spec §6.</li>
+<li>The <code>runCatching</code> sits inside <code>mapLatest</code>; no exception path can terminate the combined flow; no throw can cross the SKIE boundary.</li>
+<li>No AWS/network imports; the only sync reference is inside <code>DeleteWorkoutUseCase</code> (already gated post-commit).</li>
+<li><code>WorkoutDetailsViewModelTest</code> green on all §15 cases: happy path; <code>SelectWorkout</code> refocus; 2-workout delete keeps screen + refocuses; last-workout delete emits <code>Dismiss</code>; <code>NoteSaved</code> writes through + clears editor; <code>ShareTapped</code>/<code>EditTapped</code> carry the focused number; empty first load dismisses; recovery after a failed refresh (fault-primed builder input → pipeline survives, next signal yields <code>Loaded</code>).</li>
+</ul></div>
+  <div class="blk"><h5>Verify</h5><p><code>cd Multiplatform &amp;&amp; ./gradlew :shared:jvmTest --tests &quot;*WorkoutDetailsViewModelTest&quot; :shared:assembleDebug</code></p>
+<pre class="code"><code>{&quot;modelTier&quot;: &quot;standard&quot;, &quot;blockedBy&quot;: [1, 3, 4, 5]}</code></pre></div>
+</article></div>
+</section>
+<section class="wave">
+  <h3><span class="wnum">Wave 4</span>
+    <span class="wmeta">2 tasks · run in parallel</span></h3>
+  <div class="grid"><article class="card" id="task-8">
+  <header>
+    <h4>Task 9: iosMain WorkoutDetailsScreenController</h4>
+    <div class="meta">
+      <span class="chip bad">no tier</span>
+      <span class="after">after <a href="#task-6">Task 7: WorkoutDetailsViewModel + factory + VM tests</a>, <a href="#task-7">Task 8: WorkoutDetailsScreen + components + ScreenTest</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Create the iosMain <code>ComposeUIViewController</code> factory per spec §8, mirroring <code>WorkoutListScreenController</code> + <code>FinishConfirmController</code>: wraps <code>WorkoutDetailsScreen</code> in <code>FitJournalTheme</code>, collects <code>viewEffect</code> in a <code>LaunchedEffect</code> routing <code>Dismiss</code>/<code>OpenEditWorkout</code>/<code>OpenShareComposer</code> to the three closures, applies <code>safeDrawingPadding</code> inside a <code>background(FjTheme.colors.background)</code> box. Pin the SKIE naming conventions in code comments (DOTTED nested types, CONCATENATED sealed cases, BARE global function bridging — no <code>*Kt.</code> wrapper); the definitive generated-header verification happens in Task 10's real xcodebuild. Implementer: invoke <code>compose-side-effects</code> before writing the effect collection.</p></div>
+  <div class="blk"><h5>Files</h5><ul>
+<li>Multiplatform/shared/src/iosMain/kotlin/kz/maestrosultan/fitjournal/ui/workoutdetails/WorkoutDetailsScreenController.kt (Create)</li>
+</ul></div>
+  
+  <div class="blk"><h5>Done when</h5><ul>
+<li>Signature matches the pinned contract exactly; structure mirrors <code>WorkoutListScreenController</code> (content-only, closure-based effects, no Swift-side flow collection needed).</li>
+<li>Effect collection lives in a <code>LaunchedEffect(viewModel)</code>; all three <code>ViewEffect</code> cases routed; nothing can throw across the SKIE boundary.</li>
+<li>iOS frameworks link: <code>:shared:assemble</code> green for all targets.</li>
+</ul></div>
+  <div class="blk"><h5>Verify</h5><p><code>cd Multiplatform &amp;&amp; ./gradlew :shared:assemble</code></p>
+<pre class="code"><code>{&quot;modelTier&quot;: &quot;standard&quot;, &quot;blockedBy&quot;: [6, 7]}</code></pre></div>
+</article><article class="card" id="task-10">
+  <header>
+    <h4>Task 11: Android host: destination, host VM, finish rewiring</h4>
+    <div class="meta">
+      <span class="chip bad">no tier</span>
+      <span class="after">after <a href="#task-6">Task 7: WorkoutDetailsViewModel + factory + VM tests</a>, <a href="#task-7">Task 8: WorkoutDetailsScreen + components + ScreenTest</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Rewire Android per spec §10, keeping the package so <code>HomeViewModel</code>/<code>WorkoutListHostViewModel</code> route lines compile unchanged. Modify <code>WorkoutDetailsDestination.kt</code>: keep the object + <code>workout_details/{workout_date}</code> route, add the optional <code>workoutNumber</code>/<code>origin</code> args + new route helper (legacy overload preserved), and the origin-conditional <code>enterTransition</code>/<code>popExitTransition</code> (finish → <code>slideInVertically</code>/<code>slideOutVertically</code> per the <code>ExerciseFocusDestination</code> precedent; else <code>null</code> deferring to the default horizontal push), pointing content at the new host. Create <code>WorkoutDetailsHostViewModel</code> (Hilt): builds the shared VM from the injected KMP singletons + the existing <code>WorkoutUserContext</code> implementation <code>WorkoutCmpHostViewModel</code> uses, <code>dispose()</code> in <code>onCleared</code>, and collects effects with the §10 origin-aware handling — <code>Dismiss</code>: push → <code>navigateUp()</code>, finish → <code>popBackStack(WorkoutNavGraphDestination.route, inclusive = true)</code> with the <code>navigateUp()</code> fallback when the pop returns false; <code>OpenEditWorkout</code>: <code>workoutGraphRoute(date)</code> with finish-origin <code>popUpTo(WorkoutNavGraphDestination.route){ inclusive = true }</code>; <code>OpenShareComposer</code>: rebuild via <code>buildFinishResultForWorkout</code>, stash on <code>postWorkoutFlowHolder()</code>, navigate to <code>ShareComposerDestination.route</code> (the <code>WorkoutCmpHostViewModel.requestShareComposer</code> pattern). Create <code>WorkoutDetailsScreenHost</code> composable: no <code>FJScaffold</code>, <code>FitJournalTheme</code> + <code>fillMaxSize().background(FjTheme.colors.background).safeDrawingPadding()</code>, plus <code>BackHandler(enabled = origin == finish)</code> dispatching <code>NavTapped</code>. Modify <code>FinishConfirmSheetHost</code> to navigate to <code>workoutDetailsRoute(result.context.date, result.context.workoutNumber, origin = finish)</code> with its existing popUpTo options instead of <code>WorkoutSuccessDestination.route</code>. Implementer: invoke <code>compose-side-effects</code> and <code>android</code> before writing.</p></div>
+  <div class="blk"><h5>Files</h5><ul>
+<li>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/details/presentation/WorkoutDetailsDestination.kt (Modify)</li>
+<li>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/details/presentation/WorkoutDetailsHostViewModel.kt (Create)</li>
+<li>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/details/presentation/WorkoutDetailsScreenHost.kt (Create)</li>
+<li>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/postworkout/FinishConfirmSheetHost.kt (Modify)</li>
+</ul></div>
+  
+  <div class="blk"><h5>Done when</h5><ul>
+<li>Route id + legacy helper preserved (Assumption 9): <code>HomeViewModel</code> and <code>WorkoutListHostViewModel</code> compile with zero changes.</li>
+<li>Transitions are origin-conditional exactly per §10 (finish vertical, push default-horizontal via <code>null</code>).</li>
+<li>Finish-origin <code>Dismiss</code> AND system back both route through the whole-flow teardown (<code>popBackStack</code> through the workout graph, fallback guarded); push-origin back/<code>Dismiss</code> pop only the details.</li>
+<li>Finish-origin Edit's single navigate drops both the details entry and the surviving workout screen (popUpTo inclusive through the graph); push-origin Edit is a plain navigate.</li>
+<li>Share rebuilds a fresh <code>FinishResult</code> (never reads a stale holder value) and hands off via the existing channel/holder pattern; legacy <code>workout/details</code> internals and <code>WorkoutSuccessDestination</code> remain but are unreachable, and the app still compiles.</li>
+<li>Manual: WDS1 and WDS2 on Android, both themes — WDS2 must confirm close (and system back) lands on home/list and one further back does NOT surface the workout screen.</li>
+</ul></div>
+  <div class="blk"><h5>Verify</h5><p><code>cd Android &amp;&amp; ./gradlew :app:compileDebugKotlin</code></p>
+<pre class="code"><code>{&quot;modelTier&quot;: &quot;frontier&quot;, &quot;blockedBy&quot;: [6, 7]}</code></pre></div>
+</article></div>
+</section>
+<section class="wave">
+  <h3><span class="wnum">Wave 5</span>
+    <span class="wmeta">2 tasks · run in parallel</span></h3>
+  <div class="grid"><article class="card" id="task-9">
+  <header>
+    <h4>Task 10: iOS host: details VC + coordinator rewiring</h4>
+    <div class="meta">
+      <span class="chip bad">no tier</span>
+      <span class="after">after <a href="#task-8">Task 9: iosMain WorkoutDetailsScreenController</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Rewire iOS per spec §9. Create <code>WorkoutDetailsCmpViewController.swift</code> (the <code>WorkoutListCmpViewController</code> embed pattern): owns the VM (<code>dispose()</code> when <code>isMovingFromParent || isBeingDismissed</code>), hides the nav bar in <code>viewWillAppear</code> / restores in <code>viewWillDisappear</code> for the pushed case, keeps <code>interactivePopGestureRecognizer</code> working by assigning its delegate while the bar is hidden. In <code>WorkoutCoordinator.swift</code>: re-point <code>openWorkoutDetails(date:)</code> to <code>createWorkoutDetailsViewModel(... headerNav: .back)</code> + push via <code>navigationController.show</code> (dismiss → pop, preserving the <code>.workoutDetails</code> start-point bookkeeping; edit → <code>openWorkout(for:)</code>; share → the existing <code>presentShareComposer(forWorkoutDate:workoutNumber:from:)</code>); replace <code>presentPostWorkoutSuccess()</code> with <code>presentWorkoutDetailsModal(for:)</code> (<code>headerNav: .close</code>, <code>initialWorkoutNumber: result.context.workoutNumber</code>, <code>ComposeHostViewController</code>, <code>.fullScreen</code>, no <code>addCloseChrome</code>); implement <code>dismissWorkoutFlowAfterFinish()</code> in EXACTLY the §9 order (clear <code>pendingFinishResult</code> + tear down composer host → pop the workout VC non-animated FIRST → tear down + dismiss the modal animated → fire the <code>workoutDidDismiss</code> start-point bookkeeping) so ✕ exits the WHOLE flow; finish-origin Edit dismisses the modal only, with the §9 defensive fallback. Remove ALL coordinator references to <code>WorkoutSuccessController</code>/<code>createWorkoutSuccessViewModel</code>, the legacy <code>WorkoutDetailsViewController</code>, and delete the <code>WorkoutDetailsControllerDelegate</code> extension — so Task 12 is pure file deletion and Task 14 can prune the shared controllers. Verify the SKIE header from THIS build: <code>createWorkoutDetailsViewModel</code> and <code>WorkoutDetailsScreenController</code> appear as bare global Swift functions with the expected labels/optional bridging. Implementer: invoke <code>swift-concurrency</code> before writing.</p></div>
+  <div class="blk"><h5>Files</h5><ul>
+<li>iOS/FitJournal/Workout/Details/Presentation/WorkoutDetailsCmpViewController.swift (Create)</li>
+<li>iOS/FitJournal/Workout/WorkoutCoordinator.swift (Modify)</li>
+</ul></div>
+  
+  <div class="blk"><h5>Done when</h5><ul>
+<li><code>openWorkoutDetails(date:)</code> pushes the new host with <code>.back</code>; list/Home back simply pops the details; Home's <code>.workoutDetails(date:)</code> start point and the list delegate flow through unchanged.</li>
+<li>Finish flow presents the same screen <code>.fullScreen</code> with <code>.close</code> and the finish workout number; <code>dismissWorkoutFlowAfterFinish()</code> implements the 4-step §9 order verbatim; finish-origin Edit dismisses the modal only (defensive fallback present).</li>
+<li>Zero remaining references to <code>WorkoutSuccessController</code>, <code>createWorkoutSuccessViewModel</code>, <code>WorkoutDetailsViewController</code>, or <code>WorkoutDetailsControllerDelegate</code> in the coordinator (grep proves it); legacy files themselves remain until Task 12 and still compile.</li>
+<li>SKIE generated header (from the real build's DerivedData, not SourceKit) shows both factories as bare global functions; call sites use no <code>*Kt.</code> prefix.</li>
+<li>Real arm64-sim xcodebuild green (shared DerivedData, no <code>-derivedDataPath</code>).</li>
+<li>Manual: WDS1 and WDS2 on iOS, both themes — WDS2 must confirm ✕ lands on home/list and one further back does NOT surface the workout screen.</li>
+</ul></div>
+  <div class="blk"><h5>Verify</h5><p><code>cd iOS &amp;&amp; xcodebuild -scheme FitJournal -configuration Debug -destination 'platform=iOS Simulator,arch=arm64' build</code></p>
+<pre class="code"><code>{&quot;modelTier&quot;: &quot;frontier&quot;, &quot;blockedBy&quot;: [8]}</code></pre></div>
+</article><article class="card" id="task-12">
+  <header>
+    <h4>Task 13: Android: delete legacy details + success destination</h4>
+    <div class="meta">
+      <span class="chip bad">no tier</span>
+      <span class="after">after <a href="#task-10">Task 11: Android host: destination, host VM, finish rewiring</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Delete the legacy Android details internals and the success destination (spec §10 Delete list): the old <code>WorkoutDetailsViewModel</code>/<code>WorkoutDetailsContract</code>/<code>WorkoutDetailsScreen</code> + <code>cell/*</code> + <code>GetWorkoutDetailsItemsUseCase</code>, and <code>WorkoutSuccessDestination.kt</code> with its <code>WorkoutSuccessViewModelFactory</code> binding in <code>PostWorkoutModule</code> and its <code>postWorkoutNavGraph()</code> entry. <code>ShareComposerDestination</code>, <code>FinishConfirmSheetHost</code>, <code>PostWorkoutFlowHolder</code> stay. This unblocks the shared success-screen deletion (Task 14) — after this task the Android app no longer references any shared <code>WorkoutSuccess*</code> symbol. Enumerate the exact legacy set from the working tree under <code>workout/details/presentation/</code> (minus the Task-11 files) + <code>workout/details/domain/</code>.</p></div>
+  <div class="blk"><h5>Files</h5><ul>
+<li>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/details/presentation/ (Delete — the legacy WorkoutDetailsViewModel/Contract/Screen + cell/*; KEEP the Task-11 WorkoutDetailsDestination.kt, WorkoutDetailsHostViewModel.kt, WorkoutDetailsScreenHost.kt)</li>
+<li>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/details/domain/usecase/GetWorkoutDetailsItemsUseCase.kt (Delete)</li>
+<li>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/postworkout/WorkoutSuccessDestination.kt (Delete)</li>
+<li>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/postworkout/PostWorkoutModule.kt (Modify)</li>
+<li>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/postworkout/PostWorkoutNavGraph.kt (Modify)</li>
+</ul></div>
+  
+  <div class="blk"><h5>Done when</h5><ul>
+<li>All legacy details internals + <code>WorkoutSuccessDestination</code> gone; the Task-11 destination/host/host-composable retained; <code>PostWorkoutModule</code> no longer binds <code>WorkoutSuccessViewModelFactory</code>; <code>postWorkoutNavGraph()</code> no longer registers the success destination.</li>
+<li>Zero remaining references in <code>Android/app</code> to shared <code>WorkoutSuccess*</code> symbols or the deleted legacy types (grep proves it); <code>ShareComposerDestination</code>, <code>FinishConfirmSheetHost</code>, <code>PostWorkoutFlowHolder</code> untouched.</li>
+<li><code>:app:compileDebugKotlin</code> green.</li>
+</ul></div>
+  <div class="blk"><h5>Verify</h5><p><code>cd Android &amp;&amp; ./gradlew :app:compileDebugKotlin</code></p>
+<pre class="code"><code>{&quot;modelTier&quot;: &quot;mechanical&quot;, &quot;blockedBy&quot;: [10]}</code></pre></div>
+</article></div>
+</section>
+<section class="wave">
+  <h3><span class="wnum">Wave 6</span>
+    <span class="wmeta">2 tasks · run in parallel</span></h3>
+  <div class="grid"><article class="card" id="task-11">
+  <header>
+    <h4>Task 12: iOS: delete legacy Workout/Details screens</h4>
+    <div class="meta">
+      <span class="chip bad">no tier</span>
+      <span class="after">after <a href="#task-9">Task 10: iOS host: details VC + coordinator rewiring</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Pure deletion (Task 10 already removed every reference): drop the legacy UIKit details screen — VC + xib + ViewModel + all cells + <code>GetWorkoutDetailsUseCase</code> — and the <code>Workout/Details/Domain/Model</code> neighbors if the build confirms nothing else references them (spec §9). <code>WorkoutDetailsCmpViewController.swift</code> in the same folder stays. <code>WorkloadDistribution*</code> stays (Home still opens it). Synchronized root group: no pbxproj edit needed. The exact legacy file set is what <code>iOS/FitJournal/Workout/Details/Presentation/</code> (minus the new CmpViewController) + <code>Workout/Details/Domain/</code> contains — enumerate them in the working tree, delete the UIKit screen/xib/VM/cells + <code>GetWorkoutDetailsUseCase</code>, and retain any <code>Domain/Model</code> file the build proves is still referenced elsewhere.</p></div>
+  <div class="blk"><h5>Files</h5><ul>
+<li>iOS/FitJournal/Workout/Details/Presentation/ (Delete — the legacy UIKit VC, its .xib, the legacy ViewModel, and every Cell/*.swift + Cell/*.xib; KEEP WorkoutDetailsCmpViewController.swift)</li>
+<li>iOS/FitJournal/Workout/Details/Domain/UseCase/GetWorkoutDetailsUseCase.swift (Delete)</li>
+<li>iOS/FitJournal/Workout/Details/Domain/Model/ (Delete only the files the build proves unreferenced; retain any still referenced and note it)</li>
+</ul></div>
+  
+  <div class="blk"><h5>Done when</h5><ul>
+<li>The legacy UIKit details screen (VC + xib + ViewModel + all cells) and <code>GetWorkoutDetailsUseCase</code> are gone; <code>WorkoutDetailsCmpViewController.swift</code> and everything <code>WorkloadDistribution*</code> untouched.</li>
+<li>Any <code>Domain/Model</code> file with a surviving external reference is RETAINED (not stubbed) and the retention stated in the task report.</li>
+<li>Real arm64-sim xcodebuild green after the deletions.</li>
+</ul></div>
+  <div class="blk"><h5>Verify</h5><p><code>cd iOS &amp;&amp; xcodebuild -scheme FitJournal -configuration Debug -destination 'platform=iOS Simulator,arch=arm64' build</code></p>
+<pre class="code"><code>{&quot;modelTier&quot;: &quot;mechanical&quot;, &quot;blockedBy&quot;: [9]}</code></pre></div>
+</article><article class="card" id="task-13">
+  <header>
+    <h4>Task 14: Shared: delete postworkout success screen</h4>
+    <div class="meta">
+      <span class="chip bad">no tier</span>
+      <span class="after">after <a href="#task-9">Task 10: iOS host: details VC + coordinator rewiring</a>, <a href="#task-12">Task 13: Android: delete legacy details + success destination</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>With neither host referencing it any longer (Tasks 10 and 13), remove the shared success screen per spec §11: delete <code>ui/postworkout/success/</code> (contract, VM, screen) and its two jvmTest suites; in iosMain <code>PostWorkoutControllers.kt</code> delete <code>WorkoutSuccessController</code> + <code>createWorkoutSuccessViewModel</code> (keeping <code>FinishConfirmController</code>, <code>ShareComposerController</code>, <code>createFinishConfirmViewModel</code>, <code>createShareComposerViewModel</code>); in <code>PostWorkoutContracts.kt</code> keep <code>FinishResult</code>/<code>PostWorkoutContext</code> and prune only <code>PostWorkoutCallbacks</code> members that served the success screen alone — the compile decides. <code>buildFinishResultForWorkout</code>, <code>BuildSessionSummaryUseCase</code>, <code>DetectSessionBestUseCase</code>, <code>MuscleTitleFormatter</code> all stay (details + composer consume them).</p></div>
+  <div class="blk"><h5>Files</h5><ul>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/postworkout/success/WorkoutSuccessContract.kt (Delete)</li>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/postworkout/success/WorkoutSuccessViewModel.kt (Delete)</li>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/postworkout/success/WorkoutSuccessScreen.kt (Delete)</li>
+<li>Multiplatform/shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/ui/postworkout/success/WorkoutSuccessScreenTest.kt (Delete)</li>
+<li>Multiplatform/shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/ui/postworkout/success/WorkoutSuccessViewModelTest.kt (Delete)</li>
+<li>Multiplatform/shared/src/iosMain/kotlin/kz/maestrosultan/fitjournal/ui/postworkout/PostWorkoutControllers.kt (Modify)</li>
+<li>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/postworkout/PostWorkoutContracts.kt (Modify)</li>
+</ul></div>
+  
+  <div class="blk"><h5>Done when</h5><ul>
+<li>The <code>success/</code> package and both test suites are gone; zero references to <code>WorkoutSuccess*</code> remain anywhere in <code>shared/src</code> (grep proves it).</li>
+<li><code>PostWorkoutControllers.kt</code> retains the confirm + composer controllers/factories unchanged; <code>PostWorkoutContracts.kt</code> retains <code>FinishResult</code>/<code>PostWorkoutContext</code>; only compile-proven-dead callbacks pruned.</li>
+<li>Full <code>:shared:jvmTest</code> and <code>:shared:assemble</code> green (all targets — proves neither remaining shared code nor the iOS framework surface referenced the deleted symbols).</li>
+</ul></div>
+  <div class="blk"><h5>Verify</h5><p><code>cd Multiplatform &amp;&amp; ./gradlew :shared:jvmTest :shared:assemble</code></p>
+<pre class="code"><code>{&quot;modelTier&quot;: &quot;mechanical&quot;, &quot;blockedBy&quot;: [9, 12]}</code></pre></div>
+</article></div>
+</section>
+<section class="wave">
+  <h3><span class="wnum">Wave 7</span>
+    <span class="wmeta">1 task</span></h3>
+  <div class="grid"><article class="card" id="task-14">
+  <header>
+    <h4>Task 15: Final gate: 3-repo GREEN + WDS smoke checklist</h4>
+    <div class="meta">
+      <span class="chip bad">no tier</span>
+      <span class="after">after <a href="#task-11">Task 12: iOS: delete legacy Workout/Details screens</a>, <a href="#task-12">Task 13: Android: delete legacy details + success destination</a>, <a href="#task-13">Task 14: Shared: delete postworkout success screen</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Verification-only gate; writes nothing. Run all three repo gates end-state (spec §16) and report pass/fail evidence for each, then emit the WDS1–WDS6 manual checklist for the user's on-device acceptance. Also re-grep the three trees for stragglers the removals could have missed.</p></div>
+  <div class="blk"><h5>Files</h5><p>none — verification gate, no commits.</p></div>
+  
+  <div class="blk"><h5>Done when</h5><ul>
+<li><code>cd Multiplatform &amp;&amp; ./gradlew :shared:jvmTest :shared:assemble</code> exits 0; the report names the new suites (<code>WorkoutDetailsBuilderTest</code>, <code>WorkoutDetailsViewModelTest</code>, <code>WorkoutDetailsScreenTest</code>, <code>DeleteWorkoutUseCaseTest</code>) among the executed tests.</li>
+<li><code>cd Android &amp;&amp; ./gradlew :app:compileDebugKotlin</code> exits 0.</li>
+<li><code>cd iOS &amp;&amp; xcodebuild ... build</code> exits 0 (real arm64 simulator, shared DerivedData), and the report quotes the generated-header lines showing <code>createWorkoutDetailsViewModel</code> and <code>WorkoutDetailsScreenController</code> as bare global Swift functions.</li>
+<li>Greps return zero hits: <code>WorkoutSuccess</code> in <code>Multiplatform/shared/src</code>, <code>Android/app/src</code>, and <code>iOS/FitJournal</code> (excluding docs/history); <code>WorkoutDetailsViewController</code> and <code>WorkoutDetailsControllerDelegate</code> in <code>iOS/FitJournal</code>; <code>GetWorkoutDetailsItemsUseCase</code> in <code>Android/app/src</code>.</li>
+<li>Report ends with the WDS1–WDS6 table (spec §16) as the user's manual checklist — each scenario to be run on BOTH platforms, in BOTH light and dark, with WDS2's &quot;back once more after close must not surface the workout screen&quot; probe called out explicitly.</li>
+</ul></div>
+  <div class="blk"><h5>Verify</h5><p><code>cd Multiplatform &amp;&amp; ./gradlew :shared:jvmTest :shared:assemble &amp;&amp; cd ../Android &amp;&amp; ./gradlew :app:compileDebugKotlin &amp;&amp; cd ../iOS &amp;&amp; xcodebuild -scheme FitJournal -configuration Debug -destination 'platform=iOS Simulator,arch=arm64' build</code></p>
+<pre class="code"><code>{&quot;modelTier&quot;: &quot;standard&quot;, &quot;blockedBy&quot;: [11, 12, 13]}</code></pre></div>
+</article></div>
+</section>
+
+<details class="checks" open>
+  <summary>Structural checks (15)</summary>
+  <ul><li><b>no-metadata</b> · task 0 — missing or unparseable json:metadata fence</li><li><b>no-metadata</b> · task 1 — missing or unparseable json:metadata fence</li><li><b>no-metadata</b> · task 2 — missing or unparseable json:metadata fence</li><li><b>no-metadata</b> · task 3 — missing or unparseable json:metadata fence</li><li><b>no-metadata</b> · task 4 — missing or unparseable json:metadata fence</li><li><b>no-metadata</b> · task 5 — missing or unparseable json:metadata fence</li><li><b>no-metadata</b> · task 6 — missing or unparseable json:metadata fence</li><li><b>no-metadata</b> · task 7 — missing or unparseable json:metadata fence</li><li><b>no-metadata</b> · task 8 — missing or unparseable json:metadata fence</li><li><b>no-metadata</b> · task 9 — missing or unparseable json:metadata fence</li><li><b>no-metadata</b> · task 10 — missing or unparseable json:metadata fence</li><li><b>no-metadata</b> · task 11 — missing or unparseable json:metadata fence</li><li><b>no-metadata</b> · task 12 — missing or unparseable json:metadata fence</li><li><b>no-metadata</b> · task 13 — missing or unparseable json:metadata fence</li><li><b>no-metadata</b> · task 14 — missing or unparseable json:metadata fence</li></ul>
+</details>

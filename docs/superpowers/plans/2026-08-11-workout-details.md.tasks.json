@@ -1,0 +1,159 @@
+{
+  "plan": "docs/superpowers/plans/2026-08-11-workout-details.md",
+  "spec": "docs/superpowers/specs/2026-08-11-workout-details-design.md",
+  "lastUpdated": "2026-08-11",
+  "tasks": [
+    {
+      "id": 0,
+      "subject": "Task 1: Add shared `card` color token (ColorTokens + FjTheme)",
+      "description": "Add `card = ColorToken(0xFFF1F3F9 light, 0xFF18181F dark)` to ColorTokens.kt and expose FjTheme.colors.card via FjColorScheme/fjColorScheme. No other token/consumer changes.",
+      "modelTier": "mechanical",
+      "blockedBy": [],
+      "status": "pending"
+    },
+    {
+      "id": 1,
+      "subject": "Task 2: deleteWorkoutAtomic + DeleteWorkoutUseCase + tests",
+      "description": "RecordRepository.deleteWorkoutAtomic in one SQLDelight transaction (record tombstones + session hard-delete, rollback both on throw) + internal afterRecordTombstones test seam; DeleteWorkoutUseCase ticks only after commit; use-case + rollback tests.",
+      "modelTier": "standard",
+      "blockedBy": [],
+      "status": "pending"
+    },
+    {
+      "id": 2,
+      "subject": "Task 3: LocaleFormatters.formatShortWeekdayDate + actuals",
+      "description": "Add formatShortWeekdayDate (skeleton EEEdMMMM, locale-ordered) expect + android/jvm/ios actuals; locale-order test cases.",
+      "modelTier": "standard",
+      "blockedBy": [],
+      "status": "pending"
+    },
+    {
+      "id": 3,
+      "subject": "Task 4: WorkoutDetailsContract (commonMain MVI contract)",
+      "description": "Create WorkoutDetailsContract.kt exactly per spec §5 (HeaderNav/ViewState/Content/Header/Hero/StackRow/WorkoutUi/... /ViewAction/ViewEffect). Single type surface siblings compile against.",
+      "modelTier": "standard",
+      "blockedBy": [],
+      "status": "pending"
+    },
+    {
+      "id": 4,
+      "subject": "Task 5: Shared workout-details strings (en/de/ru/uk)",
+      "description": "Add the spec §12 workout_details_* keys (+ plurals only where not already defined) to the 4 locale strings.xml files; no duplicates.",
+      "modelTier": "mechanical",
+      "blockedBy": [],
+      "status": "pending"
+    },
+    {
+      "id": 5,
+      "subject": "Task 6: buildWorkoutDetailsUi builder + BuilderTest",
+      "description": "Pure internal builder: records+sessions+ms+SessionBest -> Content.Loaded, every figure via existing calculators/formatters; WD1/WD3 shape, mixed cardioText, deltas, workload, sessionless hiding. Full BuilderTest.",
+      "modelTier": "standard",
+      "blockedBy": [
+        2,
+        3,
+        4
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 6,
+      "subject": "Task 7: WorkoutDetailsViewModel + factory + VM tests",
+      "description": "Session-driven VM (combine records+sessions -> builder on Default, per-emission runCatching, empty-day Dismiss, all actions incl. delete/note/share/edit) + createWorkoutDetailsViewModel factory; VM tests.",
+      "modelTier": "standard",
+      "blockedBy": [
+        1,
+        3,
+        4,
+        5
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 7,
+      "subject": "Task 8: WorkoutDetailsScreen + components + ScreenTest",
+      "description": "Design-fidelity screen (interface-typed) + 10 components (header/hero/stack/tiles/newbest/note/workload/exercise-list+superset/actions/note-editor) per WD1/WD2/WD3 both themes via tokens; ScreenTest.",
+      "modelTier": "frontier",
+      "blockedBy": [
+        0,
+        3,
+        4
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 8,
+      "subject": "Task 9: iosMain WorkoutDetailsScreenController",
+      "description": "ComposeUIViewController factory mirroring WorkoutListScreenController: closure-based effect routing (Dismiss/OpenEditWorkout/OpenShareComposer), content-only, SKIE conventions pinned.",
+      "modelTier": "standard",
+      "blockedBy": [
+        6,
+        7
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 9,
+      "subject": "Task 10: iOS host: details VC + coordinator rewiring",
+      "description": "WorkoutDetailsCmpViewController (embed pattern, nav bar hidden, pop gesture) + WorkoutCoordinator: openWorkoutDetails pushes (.back); finish presents modal (.close) with dismissWorkoutFlowAfterFinish teardown; remove all WorkoutSuccess/legacy-detail refs. Verify SKIE bare-func header.",
+      "modelTier": "frontier",
+      "blockedBy": [
+        8
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 10,
+      "subject": "Task 11: Android host: destination, host VM, finish rewiring",
+      "description": "WorkoutDetailsDestination origin-aware transitions (finish=slideInVertically, push=default) + route args; WorkoutDetailsHostViewModel (effects: Dismiss/Edit/Share origin-aware, whole-flow teardown on finish); WorkoutDetailsScreenHost; FinishConfirmSheetHost -> details(origin=finish).",
+      "modelTier": "frontier",
+      "blockedBy": [
+        6,
+        7
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 11,
+      "subject": "Task 12: iOS: delete legacy Workout/Details screens",
+      "description": "Delete the legacy UIKit details VC/xib/VM/cells + GetWorkoutDetailsUseCase (keep WorkoutDetailsCmpViewController, WorkloadDistribution*); retain any still-referenced Domain/Model file. Build green.",
+      "modelTier": "mechanical",
+      "blockedBy": [
+        9
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 12,
+      "subject": "Task 13: Android: delete legacy details + success destination",
+      "description": "Delete legacy WorkoutDetails VM/Contract/Screen/cells + GetWorkoutDetailsItemsUseCase + WorkoutSuccessDestination (+ its module binding + navgraph entry); keep Task-11 files. Compile green.",
+      "modelTier": "mechanical",
+      "blockedBy": [
+        10
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 13,
+      "subject": "Task 14: Shared: delete postworkout success screen",
+      "description": "Delete ui/postworkout/success/ (contract/vm/screen + 2 tests) + WorkoutSuccessController/createWorkoutSuccessViewModel in PostWorkoutControllers; prune dead PostWorkoutCallbacks. Keep FinishConfirm/ShareComposer/buildFinishResultForWorkout. Full jvmTest+assemble green.",
+      "modelTier": "mechanical",
+      "blockedBy": [
+        9,
+        12
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 14,
+      "subject": "Task 15: Final gate: 3-repo GREEN + WDS smoke checklist",
+      "description": "Verification-only: run all 3 repo gates (Multiplatform jvmTest+assemble, Android compileDebugKotlin, iOS xcodebuild) + straggler greps; emit WDS1-WDS6 manual on-device checklist. No commits.",
+      "modelTier": "standard",
+      "blockedBy": [
+        11,
+        12,
+        13
+      ],
+      "status": "pending"
+    }
+  ]
+}
