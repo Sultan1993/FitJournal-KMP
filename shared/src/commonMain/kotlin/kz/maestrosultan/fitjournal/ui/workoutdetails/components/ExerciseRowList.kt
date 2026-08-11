@@ -276,27 +276,4 @@ private fun LayersGlyph(color: Color, modifier: Modifier = Modifier) {
     }
 }
 
-@Composable
-private fun PencilGlyph(size: Dp, color: Color, modifier: Modifier = Modifier) {
-    Canvas(modifier.size(size)) {
-        val w = this.size.width
-        val h = this.size.height
-        val stroke = w * 0.12f
-        val body = Path().apply {
-            moveTo(w * 0.64f, h * 0.16f)
-            lineTo(w * 0.84f, h * 0.36f)
-            lineTo(w * 0.38f, h * 0.82f)
-            lineTo(w * 0.16f, h * 0.86f)
-            lineTo(w * 0.20f, h * 0.64f)
-            close()
-        }
-        drawPath(body, color, style = Stroke(width = stroke, join = StrokeJoin.Round))
-        drawLine(
-            color = color,
-            start = Offset(w * 0.52f, h * 0.28f),
-            end = Offset(w * 0.72f, h * 0.48f),
-            strokeWidth = stroke,
-            cap = StrokeCap.Round,
-        )
-    }
-}
+// PencilGlyph extracted to Glyphs.kt (shared by SessionNoteCard + WorkoutActionButtons).
