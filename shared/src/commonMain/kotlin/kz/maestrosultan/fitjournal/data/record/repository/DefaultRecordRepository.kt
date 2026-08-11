@@ -3,6 +3,7 @@ package kz.maestrosultan.fitjournal.data.record.repository
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import kotlin.time.Clock
@@ -20,6 +21,7 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSet
 import kz.maestrosultan.fitjournal.domain.workout.summary.WeightedSetOccurrence
+import kz.maestrosultan.fitjournal.data.db.FitJournalDatabase
 import kz.maestrosultan.fitjournal.data.exercise.datasource.ExercisesDBDataSource
 import kz.maestrosultan.fitjournal.domain.identifier.randomUuid
 import kz.maestrosultan.fitjournal.data.exercise.entity.DBExerciseObject
@@ -30,6 +32,7 @@ import kz.maestrosultan.fitjournal.data.record.entity.DBWorkoutExerciseWithSets
 import kz.maestrosultan.fitjournal.data.record.entity.DBWorkoutRecord
 import kz.maestrosultan.fitjournal.data.record.entity.DBWorkoutRecordRow
 import kz.maestrosultan.fitjournal.data.record.entity.DBWorkoutSetObject
+import kz.maestrosultan.fitjournal.data.time.toStoredString
 
 /**
  * Local-first RecordRepository (KMP shared). KMP SQLite is the only
@@ -57,12 +60,40 @@ import kz.maestrosultan.fitjournal.data.record.entity.DBWorkoutSetObject
  *
  * No network calls. The legacy `WorkoutRecordsRemoteDataSource` is only
  * (was consumed by the one-shot Parse `WorkoutsMigrator` import, now deleted).
+ *
+ * [database] backs ONLY [deleteWorkoutAtomic] — every other method goes
+ * through [workoutsDB] / [exercisesDB] as before. It is nullable so the
+ * legacy 3-arg constructor below (which has no database reference to give)
+ * can pass `null`; [deleteWorkoutAtomic] requires it and throws if a caller
+ * built this repository without one. [afterRecordTombstones] is an
+ * `internal` mid-transaction test seam for jvmTest to force a rollback (see
+ * [deleteWorkoutAtomic]) — always `null` outside tests.
  */
 class DefaultRecordRepository(
     private val workoutsDB: WorkoutsDBDataSource,
     private val exercisesDB: ExercisesDBDataSource,
     private val mapper: (DBExerciseObject) -> Exercise,
+    private val database: FitJournalDatabase?,
+    internal val afterRecordTombstones: (() -> Unit)? = null,
 ) : RecordRepository {
+
+    /**
+     * Swift-facing entry point, mirroring `DefaultWorkoutSessionRepository`'s
+     * secondary-constructor pattern: Kotlin/Native does not reliably bridge
+     * default parameter values to Swift call sites, so iOS (and every
+     * pre-existing caller) keeps this narrower 3-arg shape. [database] has no
+     * default on the primary constructor above deliberately — that keeps this
+     * overload's arity (3) from ever overlapping with the primary's (4-5), so
+     * there is no resolution ambiguity for existing 3-arg call sites.
+     * [deleteWorkoutAtomic] is unavailable through this constructor (throws)
+     * until the caller is migrated to the primary constructor with a real
+     * [database].
+     */
+    constructor(
+        workoutsDB: WorkoutsDBDataSource,
+        exercisesDB: ExercisesDBDataSource,
+        mapper: (DBExerciseObject) -> Exercise,
+    ) : this(workoutsDB, exercisesDB, mapper, database = null)
 
     // ─── Reads ─────────────────────────────────────────────────────────
 
@@ -670,6 +701,62 @@ class DefaultRecordRepository(
 
     override suspend fun deleteUserRecords(userId: String) {
         workoutsDB.deleteAllForUser(userId)
+    }
+
+    /**
+     * ONE `database.transaction {}` covering both tables: every live record on
+     * (date, workoutNumber) gets the exact tombstone [deleteRecord] applies
+     * (raw `softDeleteWorkoutRecord`, same as [WorkoutsDBDataSource]'s), then
+     * the page's session row (if any) is hard-deleted. Any throw inside the
+     * block rolls back BOTH — this method is the only place cross-table
+     * atomicity for record+session lives, deliberately: SQLDelight
+     * transactions don't compose across suspend repository-method calls (each
+     * of [workoutsDB] / a `WorkoutSessionRepository`'s methods already opens
+     * and closes its own), so true atomicity needs raw same-transaction
+     * `Queries` calls, which only a method holding [database] directly can
+     * make.
+     *
+     * [afterRecordTombstones] fires between the record loop and the session
+     * lookup — the `internal` jvmTest seam that forces a mid-transaction
+     * throw to prove the rollback (see `RecordRepositoryTest`). It is always
+     * `null` in production.
+     */
+    override suspend fun deleteWorkoutAtomic(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+        workoutNumber: Int,
+    ) {
+        val db = checkNotNull(database) {
+            "DefaultRecordRepository.deleteWorkoutAtomic requires the primary constructor's " +
+                "`database` parameter — this instance was built via the legacy 3-arg constructor."
+        }
+        val dateStr = date.toString()
+        val nextDayStr = date.plusDaysSafe(1).toString()
+        val workoutNumberLong = workoutNumber.toLong()
+        val nowText = Clock.System.now().toStoredString()
+        withContext(Dispatchers.IO) {
+            db.transaction {
+                db.workoutRecordsQueries
+                    .getWorkoutRecordsByJournal(userId, journalId, dateStr, nextDayStr)
+                    .executeAsList()
+                    .filter { it.workoutNumber == workoutNumberLong }
+                    .forEach { record ->
+                        db.workoutRecordsQueries.softDeleteWorkoutRecord(
+                            deletedAt = nowText,
+                            updatedDate = nowText,
+                            uuid = record.uuid,
+                        )
+                    }
+                afterRecordTombstones?.invoke()
+                db.workoutSessionsQueries
+                    .getSessionByWorkoutNumber(userId, journalId, dateStr, workoutNumberLong)
+                    .executeAsOneOrNull()
+                    ?.let { session ->
+                        db.workoutSessionsQueries.deleteWorkoutSessionByUuid(session.uuid, userId)
+                    }
+            }
+        }
     }
 
     override suspend fun addSet(

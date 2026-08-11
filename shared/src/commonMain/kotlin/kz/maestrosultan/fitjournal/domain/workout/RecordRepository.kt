@@ -249,6 +249,33 @@ interface RecordRepository {
 
     suspend fun deleteUserRecords(userId: String)
 
+    /**
+     * Deletes an ENTIRE workout ([workoutNumber] on [date]) atomically: every
+     * live record on that page gets the same tombstone [deleteRecord] applies
+     * (deletedAt + `pendingUpload=1`, so sync pushes the tombstones), AND the
+     * workout's session row (local-only, no tombstone) is hard-deleted — both
+     * in ONE transaction, so a mid-write failure leaves nothing observably
+     * changed: no half-tombstoned workout, no session orphaned against a gone
+     * workout (an orphan would corrupt
+     * `WorkoutSessionRepository.countCompletedSessionsBetween`'s weekly
+     * ordinals).
+     *
+     * The default composes from [getRecordsByDate] + [deleteRecord] so any
+     * fake that doesn't override this needs no change — it is NOT atomic and
+     * does NOT touch the session table. The real repository overrides it with
+     * the single-transaction implementation.
+     */
+    suspend fun deleteWorkoutAtomic(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+        workoutNumber: Int,
+    ) {
+        getRecordsByDate(userId, journalId, date, includeLastOccurrence = false)
+            .filter { it.workoutNumber == workoutNumber }
+            .forEach { deleteRecord(userId, journalId, it) }
+    }
+
     suspend fun addSet(
         userId: String,
         journalId: String,

@@ -8,11 +8,14 @@ import kz.maestrosultan.fitjournal.data.exercise.mapper.ExerciseDBMapper
 import kz.maestrosultan.fitjournal.data.exercise.repository.DefaultExerciseRepository
 import kz.maestrosultan.fitjournal.data.record.datasource.WorkoutsDBDataSource
 import kz.maestrosultan.fitjournal.data.record.repository.DefaultRecordRepository
+import kz.maestrosultan.fitjournal.data.session.datasource.WorkoutSessionsDBDataSource
+import kz.maestrosultan.fitjournal.data.session.repository.DefaultWorkoutSessionRepository
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -24,7 +27,7 @@ class RecordRepositoryTest {
     private val exRepo = DefaultExerciseRepository(exDs, testExerciseMapper)
     private val workoutsDB =
         WorkoutsDBDataSource(db.workoutRecordsQueries, db.workoutExercisesQueries, db.workoutSetsQueries)
-    private val repo = DefaultRecordRepository(workoutsDB, exDs, testExerciseMapper)
+    private val repo = DefaultRecordRepository(workoutsDB, exDs, testExerciseMapper, database = db)
     private val userId = "user-1"
     private val journalId = "journal-1"
     private val date = LocalDate(2026, 1, 15)
@@ -514,5 +517,66 @@ class RecordRepositoryTest {
         val copied = repo.getRecordsByDate(userId, journalId, target)
         assertEquals(listOf(1, 2), copied.map { it.workoutNumber }, "a 2-workout day copies back as 2 workouts")
         assertEquals(listOf(0, 0), copied.map { it.position }, "each copied workout starts page-relative at 0")
+    }
+
+    @Test
+    fun deleteWorkoutAtomic_rollsBackBothTables_onMidTransactionFailure_thenRerunSucceeds(): Unit = runBlocking {
+        // End to end through real SQLite (§14/§15 of the workout-details design
+        // doc): the `afterRecordTombstones` seam forces a throw between the
+        // record tombstones and the session hard-delete, so a genuine
+        // rollback must leave BOTH tables exactly as they were.
+        val exId = seedCatalogExercise()
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId, exId))
+        val recordIds = repo.getRecordsByDate(userId, journalId, date).map { it.id }
+        assertEquals(2, recordIds.size)
+
+        val sessionsDB = WorkoutSessionsDBDataSource(db.workoutSessionsQueries)
+        val sessionRepo = DefaultWorkoutSessionRepository(sessionsDB)
+        sessionRepo.startSession(userId, journalId, date, 1)
+
+        val failingRepo = DefaultRecordRepository(
+            workoutsDB,
+            exDs,
+            testExerciseMapper,
+            database = db,
+            afterRecordTombstones = { throw RuntimeException("forced rollback") },
+        )
+
+        assertFailsWith<RuntimeException> {
+            failingRepo.deleteWorkoutAtomic(userId, journalId, date, workoutNumber = 1)
+        }
+
+        // Nothing observable changed: every record is still live, untombstoned...
+        assertEquals(2, repo.getRecordsByDate(userId, journalId, date).size, "rollback must leave records live")
+        recordIds.forEach { id ->
+            assertNull(
+                workoutsDB.getWorkoutRecordByIdIncludingDeleted(id)?.row?.deletedAt,
+                "rollback must leave no partial tombstone",
+            )
+        }
+        // ...and the session row still exists.
+        assertNotNull(
+            sessionRepo.getSessionByWorkoutNumber(userId, journalId, date, 1),
+            "rollback must leave the session row intact",
+        )
+
+        // A subsequent re-run (no seam) completes both deletes.
+        repo.deleteWorkoutAtomic(userId, journalId, date, workoutNumber = 1)
+
+        assertTrue(repo.getRecordsByDate(userId, journalId, date).isEmpty(), "retry must remove the records")
+        recordIds.forEach { id ->
+            assertNotNull(
+                workoutsDB.getWorkoutRecordByIdIncludingDeleted(id)?.row?.deletedAt,
+                "retry must tombstone every record",
+            )
+        }
+        assertNull(
+            sessionRepo.getSessionByWorkoutNumber(userId, journalId, date, 1),
+            "retry must hard-delete the session",
+        )
+
+        // Idempotent re-run after success: nothing left to change, no throw.
+        repo.deleteWorkoutAtomic(userId, journalId, date, workoutNumber = 1)
+        assertTrue(repo.getRecordsByDate(userId, journalId, date).isEmpty())
     }
 }
