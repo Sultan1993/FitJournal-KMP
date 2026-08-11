@@ -4,11 +4,11 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.yield
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -142,7 +142,10 @@ class WorkoutListViewModelJournalSwitchTest {
         // Gate the OLD journal's month read so its dot load is still in flight
         // when the switch lands.
         val oldGate = CompletableDeferred<Unit>()
-        val gatedRepo = GatedMonthRecordRepository(recordRepo, gateJournalId = "j1", gate = oldGate)
+        val oldReadReturned = CompletableDeferred<Unit>()
+        val gatedRepo = GatedMonthRecordRepository(
+            recordRepo, gateJournalId = "j1", gate = oldGate, readReturned = oldReadReturned,
+        )
 
         val vm = vm(gatedRepo)
         sessionFlow.value = session("j1")
@@ -157,7 +160,14 @@ class WorkoutListViewModelJournalSwitchTest {
         // Only now let the OLD load complete — it must be dropped (cancelled or
         // rejected by the identity guard), never overwrite the new dots.
         oldGate.complete(Unit)
-        delay(200) // give any late OLD completion a real chance to (wrongly) publish
+        // Deterministic barrier (no wall-clock sleep): wait until the OLD read has
+        // actually returned its result, then hop onto the VM's Main dispatcher.
+        // The OLD job's post-read identity check runs to completion — its only
+        // chance to (wrongly) publish j1's dots — in the same uninterrupted Main
+        // dispatch before this hop's continuation is serviced, so the assertion
+        // below sees the final state, not a race.
+        withTimeout(AWAIT_TIMEOUT_MS) { oldReadReturned.await() }
+        withContext(Dispatchers.Main) { yield() }
 
         assertEquals(j2Dots, vm.viewState.value.workoutDays, "a late OLD-journal dot load must not clobber")
         assertTrue(J1_DOT_DAY !in vm.viewState.value.workoutDays)
@@ -216,6 +226,8 @@ class WorkoutListViewModelJournalSwitchTest {
         private val delegate: RecordRepository,
         private val gateJournalId: String,
         private val gate: CompletableDeferred<Unit>,
+        /** Completed the instant the gated OLD read returns — the test's barrier. */
+        private val readReturned: CompletableDeferred<Unit>,
     ) : RecordRepository by delegate {
         override suspend fun getRecordsByMonth(
             userId: String,
@@ -235,7 +247,13 @@ class WorkoutListViewModelJournalSwitchTest {
             return if (journalId == gateJournalId) {
                 withContext(NonCancellable) {
                     gate.await()
-                    delegate.getRecordsByMonth(userId, journalId, month, year)
+                    delegate.getRecordsByMonth(userId, journalId, month, year).also {
+                        // Signal that the OLD read has produced its result and is
+                        // about to return to the VM's post-read identity check —
+                        // the deterministic point the test waits for instead of a
+                        // wall-clock sleep.
+                        readReturned.complete(Unit)
+                    }
                 }
             } else {
                 delegate.getRecordsByMonth(userId, journalId, month, year)
