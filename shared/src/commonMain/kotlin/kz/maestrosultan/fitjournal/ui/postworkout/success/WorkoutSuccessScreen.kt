@@ -129,28 +129,6 @@ fun WorkoutSuccessScreen(
     }
 
     Column(modifier.fillMaxSize().background(FjTheme.colors.background)) {
-        // Fixed header row — design W4b marks it `flex: none`, so the
-        // confirmation never scrolls away. The frame pairs it with the close
-        // affordance on this same row; that button is native chrome owned by
-        // the host (top-trailing liquid glass on iOS, the back convention on
-        // Android), so the chip takes the leading side instead of colliding.
-        if (!state.loading) {
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(start = 24.dp, end = 24.dp, top = 4.dp)
-                    // The frame's row is sized by the 40dp close control, not by
-                    // the chip. That control is native chrome here, so without a
-                    // floor the row shrinks to the shorter chip and everything
-                    // below starts ~7dp high. It also centres the chip against
-                    // the host's close button on iOS.
-                    .heightIn(min = HeaderRowMinHeight),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                SavedToJournalChip()
-            }
-        }
-
         Box(Modifier.weight(1f)) {
             Column(
                 Modifier
@@ -254,26 +232,6 @@ fun WorkoutSuccessScreen(
                 leadingIcon = { ShareGlyph() },
             )
         }
-    }
-}
-
-/** Static confirmation pill — the records were persisted before this screen opened. */
-@Composable
-private fun SavedToJournalChip() {
-    Row(
-        Modifier
-            .clip(CircleShape)
-            .background(FjTheme.colors.surface)
-            .padding(horizontal = 14.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        CheckGlyph()
-        Spacer(Modifier.width(7.dp))
-        Text(
-            text = stringResource(Res.string.postworkout_saved_to_journal),
-            style = FjTheme.typography.caption.copy(fontSize = 12.5.sp, fontWeight = FontWeight.Medium),
-            color = FjTheme.colors.textPrimary,
-        )
     }
 }
 
