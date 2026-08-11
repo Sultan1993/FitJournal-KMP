@@ -167,4 +167,22 @@
         <item quantity="one">noch %1$d Tag</item>
         <item quantity="other">noch %1$d Tage</item>
     </plurals>
+
+    <!-- Workout details screen -->
+    <string name="workout_details_total_volume">Gesamtvolumen</string>
+    <string name="workout_details_day_volume">Tagesvolumen</string>
+    <string name="workout_details_tile_duration">DAUER</string>
+    <string name="workout_details_tile_exercises">ÜBUNGEN</string>
+    <string name="workout_details_tile_sets">SÄTZE</string>
+    <string name="workout_details_new_best">NEUER REKORD</string>
+    <string name="workout_details_note">NOTIZ</string>
+    <string name="workout_details_add_note">Trainingsnotiz hinzufügen</string>
+    <string name="workout_details_workload">BELASTUNG</string>
+    <string name="workout_details_edit">Training bearbeiten</string>
+    <string name="workout_details_delete">Training löschen</string>
+    <string name="workout_details_share">Training teilen</string>
+    <string name="workout_details_delete_confirm_title">Training löschen?</string>
+    <string name="workout_details_delete_confirm_message">Das Training vom %1$s wird endgültig gelöscht. Das kann nicht rückgängig gemacht werden.</string>
+    <string name="workout_details_note_save">Speichern</string>
+    <string name="workout_details_note_placeholder">Notiz zum Training hinzufügen…</string>
 </resources>

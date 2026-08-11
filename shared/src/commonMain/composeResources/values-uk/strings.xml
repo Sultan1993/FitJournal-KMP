@@ -181,4 +181,22 @@
         <item quantity="many">залишилося %1$d днів</item>
         <item quantity="other">залишилося %1$d дня</item>
     </plurals>
+
+    <!-- Workout details screen -->
+    <string name="workout_details_total_volume">Загальний обсяг</string>
+    <string name="workout_details_day_volume">Обсяг за день</string>
+    <string name="workout_details_tile_duration">ТРИВАЛІСТЬ</string>
+    <string name="workout_details_tile_exercises">ВПРАВИ</string>
+    <string name="workout_details_tile_sets">ПІДХОДИ</string>
+    <string name="workout_details_new_best">НОВИЙ РЕКОРД</string>
+    <string name="workout_details_note">НОТАТКА</string>
+    <string name="workout_details_add_note">Додати нотатку до тренування</string>
+    <string name="workout_details_workload">НАВАНТАЖЕННЯ</string>
+    <string name="workout_details_edit">Редагувати тренування</string>
+    <string name="workout_details_delete">Видалити тренування</string>
+    <string name="workout_details_share">Поділитися тренуванням</string>
+    <string name="workout_details_delete_confirm_title">Видалити тренування?</string>
+    <string name="workout_details_delete_confirm_message">Тренування за %1$s буде видалено. Цю дію не можна скасувати.</string>
+    <string name="workout_details_note_save">Зберегти</string>
+    <string name="workout_details_note_placeholder">Додайте нотатку про тренування…</string>
 </resources>

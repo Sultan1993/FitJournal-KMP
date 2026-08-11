@@ -168,4 +168,22 @@
         <item quantity="one">%1$d day left</item>
         <item quantity="other">%1$d days left</item>
     </plurals>
+
+    <!-- Workout details screen -->
+    <string name="workout_details_total_volume">Total volume</string>
+    <string name="workout_details_day_volume">Day volume</string>
+    <string name="workout_details_tile_duration">DURATION</string>
+    <string name="workout_details_tile_exercises">EXERCISES</string>
+    <string name="workout_details_tile_sets">SETS</string>
+    <string name="workout_details_new_best">NEW BEST</string>
+    <string name="workout_details_note">NOTE</string>
+    <string name="workout_details_add_note">Add workout note</string>
+    <string name="workout_details_workload">WORKLOAD</string>
+    <string name="workout_details_edit">Edit workout</string>
+    <string name="workout_details_delete">Delete workout</string>
+    <string name="workout_details_share">Share workout</string>
+    <string name="workout_details_delete_confirm_title">Delete workout?</string>
+    <string name="workout_details_delete_confirm_message">This will permanently delete the workout on %1$s. This can't be undone.</string>
+    <string name="workout_details_note_save">Save</string>
+    <string name="workout_details_note_placeholder">Add a note about this workout…</string>
 </resources>
