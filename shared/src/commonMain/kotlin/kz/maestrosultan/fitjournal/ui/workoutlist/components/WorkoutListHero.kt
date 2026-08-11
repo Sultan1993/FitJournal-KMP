@@ -1,17 +1,24 @@
 package kz.maestrosultan.fitjournal.ui.workoutlist.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,10 +28,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlin.math.abs
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.plus
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
+import kz.maestrosultan.fitjournal.shared.generated.resources.history_cardio
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_days_left
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_this_week
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_workout_count
@@ -52,61 +62,102 @@ fun WorkoutListHero(
     measurementSystem: MeasurementSystem,
     modifier: Modifier = Modifier,
 ) {
+    // The rail is selectable: the number + subtitle describe the SELECTED week
+    // (default = current), and tapping a bar re-points them and highlights it.
+    // Pure UI state — reset to the current week whenever the feed rebuilds.
+    val defaultWeek = hero.slots.firstOrNull { it.isCurrentWeek }?.weekStart
+    var selectedWeekStart by remember(hero) { mutableStateOf(defaultWeek) }
+    val selected = hero.slots.firstOrNull { it.weekStart == selectedWeekStart } ?: hero.slots.lastOrNull()
+
     Column(modifier = modifier.fillMaxWidth()) {
-        // Number, unit, and delta pill share one baseline row (design: gap 9px).
-        Row(
-            verticalAlignment = Alignment.Bottom,
-            horizontalArrangement = Arrangement.spacedBy(9.dp),
-        ) {
-            Text(
-                text = WorkoutValueFormatter.groupedTonnageNumber(hero.currentWeekTonnage),
-                style = FjTheme.typography.numberLarge.copy(
-                    fontSize = 34.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = (-0.68).sp, // -0.02em of 34px
-                    lineHeight = 34.sp,
-                ),
-                color = FjTheme.colors.textPrimary,
-            )
-            Text(
-                text = WorkoutValueFormatter.unit(ResultType.WEIGHT_REPS, measurementSystem),
-                style = FjTheme.typography.bodyStrong.copy(fontSize = 14.sp),
-                color = FjTheme.colors.textTertiary,
-                modifier = Modifier.padding(bottom = 6.dp),
-            )
-            hero.delta?.let {
-                WorkoutListDeltaPill(
-                    delta = it,
-                    measurementSystem = measurementSystem,
-                    modifier = Modifier.padding(bottom = 4.dp),
+        // Headline (baseline-aligned): the selected week's tonnage (+ "kg") and, when
+        // it has cardio, its duration (+ "cardio"). No comparison pill — the volume is
+        // a fact about the week. Tonnage is primary; a cardio-only week promotes the
+        // duration to the headline size instead.
+        val hasWeight = (selected?.tonnage ?: 0.0) > 0.0
+        val cardioMinutes = selected?.durationMinutes ?: 0
+        val hasCardio = cardioMinutes > 0
+        val showWeight = hasWeight || !hasCardio
+        Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+            if (showWeight) {
+                Text(
+                    text = WorkoutValueFormatter.groupedTonnageNumber(selected?.tonnage ?: hero.currentWeekTonnage),
+                    style = FjTheme.typography.numberLarge.copy(
+                        fontSize = 34.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = (-0.68).sp, // -0.02em of 34px
+                        lineHeight = 34.sp,
+                    ),
+                    color = FjTheme.colors.textPrimary,
+                    modifier = Modifier.alignByBaseline(),
+                )
+                Text(
+                    text = WorkoutValueFormatter.unit(ResultType.WEIGHT_REPS, measurementSystem),
+                    style = FjTheme.typography.bodyStrong.copy(fontSize = 14.sp),
+                    color = FjTheme.colors.textTertiary,
+                    modifier = Modifier.alignByBaseline(),
+                )
+            }
+            if (hasCardio) {
+                val durationSize = if (showWeight) 22.sp else 34.sp
+                Text(
+                    text = WorkoutValueFormatter.duration(cardioMinutes),
+                    style = FjTheme.typography.numberLarge.copy(
+                        fontSize = durationSize,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = durationSize,
+                    ),
+                    color = FjTheme.colors.textPrimary,
+                    modifier = Modifier.alignByBaseline(),
+                )
+                Text(
+                    text = stringResource(Res.string.history_cardio),
+                    style = FjTheme.typography.bodyStrong.copy(fontSize = 14.sp),
+                    color = FjTheme.colors.textTertiary,
+                    modifier = Modifier.alignByBaseline(),
                 )
             }
         }
 
-        Spacer(Modifier.height(7.dp))
         Text(
-            text = heroSubtitle(hero),
+            text = heroSubtitle(selected, hero.daysLeft),
             style = FjTheme.typography.caption.copy(fontSize = 12.5.sp),
             color = FjTheme.colors.textSecondary,
         )
 
         Spacer(Modifier.height(16.dp))
-        WorkoutListHeroChart(slots = hero.slots, modifier = Modifier.fillMaxWidth())
+        WorkoutListHeroChart(
+            slots = hero.slots,
+            selectedWeekStart = selectedWeekStart,
+            onSelect = { selectedWeekStart = it },
+            modifier = Modifier.fillMaxWidth(),
+        )
 
         Spacer(Modifier.height(7.dp))
         MonthLabelRow(labels = hero.monthLabels)
     }
 }
 
+/**
+ * Subtitle for the selected week: "This week · N workouts[, M days left]" when the
+ * current week is selected (days-left only applies to it), otherwise that week's
+ * date range + workout count, e.g. "20 – 26 Jul · 3 workouts".
+ */
 @Composable
-private fun heroSubtitle(hero: WorkoutListContract.Hero): String {
-    val workouts = pluralStringResource(Res.plurals.history_workout_count, hero.workoutCount, hero.workoutCount)
-    val base = "${stringResource(Res.string.history_this_week)} · $workouts"
-    return if (hero.daysLeft == 0) {
-        base
+private fun heroSubtitle(selected: WorkoutListContract.WeekSlot?, daysLeft: Int): String {
+    if (selected == null) return ""
+    val workouts = pluralStringResource(Res.plurals.history_workout_count, selected.workoutCount, selected.workoutCount)
+    return if (selected.isCurrentWeek) {
+        val base = "${stringResource(Res.string.history_this_week)} · $workouts"
+        if (daysLeft <= 0) {
+            base
+        } else {
+            "$base, ${pluralStringResource(Res.plurals.history_days_left, daysLeft, daysLeft)}"
+        }
     } else {
-        val daysLeft = pluralStringResource(Res.plurals.history_days_left, hero.daysLeft, hero.daysLeft)
-        "$base, $daysLeft"
+        val end = selected.weekStart.plus(6, DateTimeUnit.DAY)
+        val range = "${LocaleFormatters.formatDayShortMonth(selected.weekStart)} – ${LocaleFormatters.formatDayShortMonth(end)}"
+        "$range · $workouts"
     }
 }
 
@@ -135,6 +186,8 @@ private fun MonthLabelRow(labels: List<WorkoutListContract.MonthLabel>, modifier
 @Composable
 private fun WorkoutListHeroChart(
     slots: List<WorkoutListContract.WeekSlot>,
+    selectedWeekStart: LocalDate?,
+    onSelect: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val isDark = FjTheme.colors.isDark
@@ -145,7 +198,6 @@ private fun WorkoutListHeroChart(
     Row(
         modifier = modifier.height(CHART_HEIGHT_DP.dp),
         horizontalArrangement = Arrangement.spacedBy(5.dp),
-        verticalAlignment = Alignment.Bottom,
     ) {
         slots.forEach { slot ->
             val empty = slot.tonnage <= 0.0
@@ -154,57 +206,35 @@ private fun WorkoutListHeroChart(
             } else {
                 (MAX_BAR_DP * (slot.tonnage / maxTonnage).toFloat()).dp.coerceAtLeast(4.dp)
             }
+            // Selected week is brand-highlighted; other data weeks muted; empty a track.
             val color = when {
                 empty -> trackColor
-                slot.isCurrentWeek -> brand
+                slot.weekStart == selectedWeekStart -> brand
                 else -> pastColor
             }
+            // Full-height tappable column (empty weeks aren't selectable — no data);
+            // the bar itself is drawn at the bottom of the cell. No ripple — the
+            // highlight + value change is the feedback, not an indication on the column.
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .height(barHeight)
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(color),
-            )
+                    .fillMaxHeight()
+                    .clickable(
+                        enabled = !empty,
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                    ) { onSelect(slot.weekStart) },
+                contentAlignment = Alignment.BottomCenter,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(barHeight)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(color),
+                )
+            }
         }
     }
 }
 
-/**
- * The signed tonnage-delta pill, shared by the hero and the week headers. The
- * text is a lighter tone than the fill (design WH4 dark / WH5 light); dark uses
- * the positive/negative token at 16% alpha for the background, light uses a solid
- * tint. These text and light-background tones are design-specific and
- * intentionally not part of the shared ColorTokens. Never composed when delta is null.
- */
-@Composable
-internal fun WorkoutListDeltaPill(
-    delta: Double,
-    measurementSystem: MeasurementSystem,
-    modifier: Modifier = Modifier,
-) {
-    val positive = delta >= 0
-    val isDark = FjTheme.colors.isDark
-    val textColor = when {
-        positive && isDark -> Color(0xFF4FBF7E)
-        positive -> Color(0xFF1E9444)
-        isDark -> Color(0xFFF0918F)
-        else -> Color(0xFFD64545)
-    }
-    val backgroundColor = when {
-        positive && isDark -> FjTheme.colors.positive.copy(alpha = 0.16f)
-        positive -> Color(0xFFE6F7EC)
-        isDark -> FjTheme.colors.negative.copy(alpha = 0.16f)
-        else -> Color(0xFFFDEAEA)
-    }
-    val sign = if (positive) "+" else "−"
-    Text(
-        text = "$sign${WorkoutValueFormatter.groupedTonnage(abs(delta), measurementSystem)}",
-        style = FjTheme.typography.label.copy(fontSize = 11.5.sp, fontWeight = FontWeight.Bold),
-        color = textColor,
-        modifier = modifier
-            .clip(RoundedCornerShape(99.dp))
-            .background(backgroundColor)
-            .padding(horizontal = 8.dp, vertical = 3.dp),
-    )
-}

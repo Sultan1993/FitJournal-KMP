@@ -1,4 +1,4 @@
-package kz.maestrosultan.fitjournal.ui.workoutlist
+package kz.maestrosultan.fitjournal.ui.workoutlist.components
 
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.DayOfWeek
@@ -10,13 +10,15 @@ import kz.maestrosultan.fitjournal.domain.calculation.TonnageCalculator
 import kz.maestrosultan.fitjournal.domain.calculation.WorkloadCalculator
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.journal.Journal
+import kz.maestrosultan.fitjournal.domain.workout.ResultType
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
+import kz.maestrosultan.fitjournal.ui.workoutlist.WorkoutListContract
 
 /** Weeks in the hero rail — 11 consecutive calendar weeks ending at the current one. */
 private const val HERO_WEEK_COUNT = 11
 
 /**
- * Folds the selected journal's recent records into the [WorkoutListContract.Content]
+ * Folds the selected journal's recent records into the [kz.maestrosultan.fitjournal.ui.workoutlist.WorkoutListContract.Content]
  * the WorkoutList screen renders. Pure — no coroutines, no repositories, no unit
  * conversion: tonnage stays in the raw stored number ([TonnageCalculator]), the
  * host relabels it at render time from the current measurement system.
@@ -67,7 +69,13 @@ fun buildWorkoutListFeed(
         workoutCount = distinctWorkoutCount(buckets[currentWeekStart].orEmpty()),
         daysLeft = 6 - todayOffset,
         slots = slotStarts.map { s ->
-            WorkoutListContract.WeekSlot(tonnage = tonnageOf(s), isCurrentWeek = s == currentWeekStart)
+            WorkoutListContract.WeekSlot(
+                tonnage = tonnageOf(s),
+                isCurrentWeek = s == currentWeekStart,
+                weekStart = s,
+                workoutCount = distinctWorkoutCount(buckets[s].orEmpty()),
+                durationMinutes = cardioMinutes(buckets[s].orEmpty()),
+            )
         },
         monthLabels = monthLabels(slotStarts),
     )
@@ -85,6 +93,7 @@ fun buildWorkoutListFeed(
             },
             workoutCount = distinctWorkoutCount(weekRecords),
             tonnage = tonnageOf(s),
+            durationMinutes = cardioMinutes(weekRecords),
             delta = delta(s),
             muscleSplit = WorkloadCalculator.calculate(weekRecords, showOther = true),
             titleShowsYear = endInclusive.year != today.year,
@@ -98,7 +107,7 @@ fun buildWorkoutListFeed(
 private fun journalRow(journals: List<Journal>, selectedJournalId: String): WorkoutListContract.JournalRow? {
     if (journals.size <= 1) return null
     val journal = journals.firstOrNull { it.id == selectedJournalId } ?: journals.first()
-    return WorkoutListContract.JournalRow(journal.name)
+    return WorkoutListContract.JournalRow(name = journal.name, isPersonal = journal.isPersonal)
 }
 
 /** A "workout" is a distinct (date, workoutNumber) pair. */
@@ -139,5 +148,19 @@ private fun dayRows(weekRecords: List<WorkoutRecord>): List<WorkoutListContract.
                 workoutCount = dayRecords.map { it.workoutNumber }.distinct().size,
                 exerciseCount = exercises.size,
                 setCount = exercises.sumOf { ex -> ex.sets.count { it.weight != null || it.distance != null } },
+                durationMinutes = cardioMinutes(dayRecords),
+                distance = cardioDistance(dayRecords),
             )
         }
+
+/** Sum of cardio (DISTANCE_DURATION) set durations, in minutes. */
+private fun cardioMinutes(records: List<WorkoutRecord>): Int =
+    records.flatMap { it.exercises }.flatMap { it.sets }
+        .filter { it.resultType == ResultType.DISTANCE_DURATION }
+        .sumOf { it.duration ?: 0 }
+
+/** Sum of cardio (DISTANCE_DURATION) set distances, raw stored unit. */
+private fun cardioDistance(records: List<WorkoutRecord>): Double =
+    records.flatMap { it.exercises }.flatMap { it.sets }
+        .filter { it.resultType == ResultType.DISTANCE_DURATION }
+        .sumOf { it.distance ?: 0.0 }

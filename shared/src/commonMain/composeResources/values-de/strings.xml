@@ -147,6 +147,9 @@
     <!-- History screen -->
     <string name="history_empty_message">Deine Workouts erscheinen hier</string>
     <string name="history_this_week">Diese Woche</string>
+    <string name="journal_my_journal">Mein Journal</string>
+    <string name="journal_onboarding_hint">Du kannst mehrere individuelle Journale erstellen. Die Daten in jedem Journal sind getrennt. Dies ist besonders praktisch, wenn du ein Personal Trainer bist</string>
+    <string name="history_cardio">Cardio</string>
     <string name="history_last_week">Letzte Woche</string>
     <plurals name="history_workout_count">
         <item quantity="one">%1$d Workout</item>

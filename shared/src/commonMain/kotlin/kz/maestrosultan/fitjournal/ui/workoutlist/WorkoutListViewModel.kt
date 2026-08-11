@@ -30,6 +30,7 @@ import kz.maestrosultan.fitjournal.domain.user.UserSession
 import kz.maestrosultan.fitjournal.domain.user.UserSessionState
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
 import kz.maestrosultan.fitjournal.kmp.time.firstDayOfWeekFromLocale
+import kz.maestrosultan.fitjournal.ui.workoutlist.components.buildWorkoutListFeed
 
 /**
  * Shared presentation for the Workout WorkoutList screen — the ONE ViewModel both
@@ -42,7 +43,7 @@ import kz.maestrosultan.fitjournal.kmp.time.firstDayOfWeekFromLocale
  * no network, no refreshing state — pull-to-refresh is a host concern injected
  * into the screen, never seen here.
  *
- * All aggregation runs in [kz.maestrosultan.fitjournal.ui.workoutlist.buildWorkoutListFeed],
+ * All aggregation runs in [kz.maestrosultan.fitjournal.ui.workoutlist.components.buildWorkoutListFeed],
  * hopped onto [Dispatchers.Default] so 3 years of record trees never fold on the
  * main thread (record-load perf contract). NAVIGATION (details, journal picker)
  * leaves as [WorkoutListContract.ViewEffect]s the native host performs.

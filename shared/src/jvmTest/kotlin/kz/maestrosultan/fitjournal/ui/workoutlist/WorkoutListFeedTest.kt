@@ -17,6 +17,7 @@ import kz.maestrosultan.fitjournal.domain.workout.ResultType
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSet
+import kz.maestrosultan.fitjournal.ui.workoutlist.components.buildWorkoutListFeed
 
 /**
  * `buildWorkoutListFeed` — the pure aggregation the WorkoutList screen renders. Clock is

@@ -25,7 +25,7 @@ internal object WorkoutListPreviewData {
 
     val today: LocalDate = LocalDate(2026, 8, 10)
 
-    val journalRow = WorkoutListContract.JournalRow(name = "Main Journal")
+    val journalRow = WorkoutListContract.JournalRow(name = "Main Journal", isPersonal = false)
 
     /** Exactly 11 slots (oldest -> current); only the last one is the current week. */
     val hero = WorkoutListContract.Hero(
@@ -34,17 +34,17 @@ internal object WorkoutListPreviewData {
         workoutCount = 3,
         daysLeft = 3,
         slots = listOf(
-            WorkoutListContract.WeekSlot(tonnage = 4200.0, isCurrentWeek = false),
-            WorkoutListContract.WeekSlot(tonnage = 5100.0, isCurrentWeek = false),
-            WorkoutListContract.WeekSlot(tonnage = 0.0, isCurrentWeek = false),
-            WorkoutListContract.WeekSlot(tonnage = 6300.0, isCurrentWeek = false),
-            WorkoutListContract.WeekSlot(tonnage = 7100.0, isCurrentWeek = false),
-            WorkoutListContract.WeekSlot(tonnage = 5800.0, isCurrentWeek = false),
-            WorkoutListContract.WeekSlot(tonnage = 8200.0, isCurrentWeek = false),
-            WorkoutListContract.WeekSlot(tonnage = 6900.0, isCurrentWeek = false),
-            WorkoutListContract.WeekSlot(tonnage = 9400.0, isCurrentWeek = false),
-            WorkoutListContract.WeekSlot(tonnage = 7600.0, isCurrentWeek = false),
-            WorkoutListContract.WeekSlot(tonnage = 8600.0, isCurrentWeek = true),
+            WorkoutListContract.WeekSlot(tonnage = 4200.0, isCurrentWeek = false, weekStart = LocalDate(2026, 6, 1), workoutCount = 2, durationMinutes = 0),
+            WorkoutListContract.WeekSlot(tonnage = 5100.0, isCurrentWeek = false, weekStart = LocalDate(2026, 6, 8), workoutCount = 3, durationMinutes = 30),
+            WorkoutListContract.WeekSlot(tonnage = 0.0, isCurrentWeek = false, weekStart = LocalDate(2026, 6, 15), workoutCount = 0, durationMinutes = 0),
+            WorkoutListContract.WeekSlot(tonnage = 6300.0, isCurrentWeek = false, weekStart = LocalDate(2026, 6, 22), workoutCount = 3, durationMinutes = 0),
+            WorkoutListContract.WeekSlot(tonnage = 7100.0, isCurrentWeek = false, weekStart = LocalDate(2026, 6, 29), workoutCount = 4, durationMinutes = 45),
+            WorkoutListContract.WeekSlot(tonnage = 5800.0, isCurrentWeek = false, weekStart = LocalDate(2026, 7, 6), workoutCount = 3, durationMinutes = 0),
+            WorkoutListContract.WeekSlot(tonnage = 8200.0, isCurrentWeek = false, weekStart = LocalDate(2026, 7, 13), workoutCount = 4, durationMinutes = 0),
+            WorkoutListContract.WeekSlot(tonnage = 6900.0, isCurrentWeek = false, weekStart = LocalDate(2026, 7, 20), workoutCount = 3, durationMinutes = 0),
+            WorkoutListContract.WeekSlot(tonnage = 9400.0, isCurrentWeek = false, weekStart = LocalDate(2026, 7, 27), workoutCount = 4, durationMinutes = 0),
+            WorkoutListContract.WeekSlot(tonnage = 7600.0, isCurrentWeek = false, weekStart = LocalDate(2026, 8, 3), workoutCount = 4, durationMinutes = 0),
+            WorkoutListContract.WeekSlot(tonnage = 8600.0, isCurrentWeek = true, weekStart = LocalDate(2026, 8, 10), workoutCount = 3, durationMinutes = 65),
         ),
         monthLabels = listOf(
             WorkoutListContract.MonthLabel(month1to12 = 6, slotCount = 4),
@@ -59,6 +59,7 @@ internal object WorkoutListPreviewData {
         kind = WorkoutListContract.WeekKind.ThisWeek,
         workoutCount = 3,
         tonnage = 8600.0,
+        durationMinutes = 65,
         delta = 1000.0,
         muscleSplit = listOf(
             WorkloadMuscleEntry(category = CategoryType.CHEST, setCount = 18, percentage = 42.0),
@@ -74,6 +75,8 @@ internal object WorkoutListPreviewData {
                 workoutCount = 1,
                 exerciseCount = 5,
                 setCount = 15,
+                durationMinutes = 0,
+                distance = 0.0,
             ),
             WorkoutListContract.DayRow(
                 date = LocalDate(2026, 8, 8),
@@ -82,6 +85,8 @@ internal object WorkoutListPreviewData {
                 workoutCount = 1,
                 exerciseCount = 4,
                 setCount = 13,
+                durationMinutes = 27,
+                distance = 5.1,
             ),
             WorkoutListContract.DayRow(
                 date = LocalDate(2026, 8, 6),
@@ -91,6 +96,8 @@ internal object WorkoutListPreviewData {
                 workoutCount = 2,
                 exerciseCount = 6,
                 setCount = 17,
+                durationMinutes = 0,
+                distance = 0.0,
             ),
         ),
     )
@@ -101,6 +108,7 @@ internal object WorkoutListPreviewData {
         kind = WorkoutListContract.WeekKind.LastWeek,
         workoutCount = 4,
         tonnage = 7600.0,
+        durationMinutes = 0,
         // Negative -> exercises the "negative" delta-pill tone.
         delta = -1800.0,
         muscleSplit = listOf(
@@ -117,6 +125,8 @@ internal object WorkoutListPreviewData {
                 workoutCount = 1,
                 exerciseCount = 6,
                 setCount = 20,
+                durationMinutes = 0,
+                distance = 0.0,
             ),
             WorkoutListContract.DayRow(
                 date = LocalDate(2026, 8, 4),
@@ -125,6 +135,8 @@ internal object WorkoutListPreviewData {
                 workoutCount = 1,
                 exerciseCount = 5,
                 setCount = 16,
+                durationMinutes = 0,
+                distance = 0.0,
             ),
         ),
     )
@@ -135,6 +147,7 @@ internal object WorkoutListPreviewData {
         kind = WorkoutListContract.WeekKind.Older,
         workoutCount = 2,
         tonnage = 5400.0,
+        durationMinutes = 30,
         delta = 900.0,
         muscleSplit = listOf(
             WorkloadMuscleEntry(category = CategoryType.BICEPS, setCount = 12, percentage = 55.0),
@@ -149,6 +162,8 @@ internal object WorkoutListPreviewData {
                 workoutCount = 1,
                 exerciseCount = 5,
                 setCount = 12,
+                durationMinutes = 0,
+                distance = 0.0,
             ),
             WorkoutListContract.DayRow(
                 date = LocalDate(2026, 7, 21),
@@ -157,6 +172,8 @@ internal object WorkoutListPreviewData {
                 workoutCount = 1,
                 exerciseCount = 4,
                 setCount = 10,
+                durationMinutes = 0,
+                distance = 0.0,
             ),
         ),
     )

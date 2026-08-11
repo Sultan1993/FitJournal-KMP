@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -36,7 +37,7 @@ import androidx.compose.ui.unit.dp
 import kz.maestrosultan.fitjournal.ui.workoutlist.components.WorkoutListDayRow
 import kz.maestrosultan.fitjournal.ui.workoutlist.components.WorkoutListEmptyState
 import kz.maestrosultan.fitjournal.ui.workoutlist.components.WorkoutListHero
-import kz.maestrosultan.fitjournal.ui.workoutlist.components.WorkoutListJournalRow
+import kz.maestrosultan.fitjournal.ui.journal.JournalPickerRow
 import kz.maestrosultan.fitjournal.ui.workoutlist.components.WorkoutListWeekHeader
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
@@ -129,8 +130,9 @@ private fun WorkoutListContentArea(
                 LazyColumn(modifier = m.fillMaxSize()) {
                     content.journalRow?.let { row ->
                         item(key = "journal") {
-                            WorkoutListJournalRow(
+                            JournalPickerRow(
                                 name = row.name,
+                                isPersonal = row.isPersonal,
                                 onClick = { dispatch(WorkoutListContract.ViewAction.OpenJournalPicker) },
                                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
                             )
@@ -173,17 +175,23 @@ private fun WorkoutListList(
     modifier: Modifier = Modifier,
 ) {
     val bottomInset = WindowInsets.safeDrawing.asPaddingValues().calculateBottomPadding()
+    val listState = rememberLazyListState()
     val list: @Composable (Modifier) -> Unit = { listModifier ->
         LazyColumn(
+            state = listState,
+            // No horizontal contentPadding: day rows span the full width so their
+            // click ripple runs edge-to-edge. Non-row items carry their own 20dp
+            // side inset; day rows pad their content internally (see WorkoutListDayRow).
             modifier = listModifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = bottomInset + 30.dp),
+            contentPadding = PaddingValues(bottom = bottomInset + 30.dp),
         ) {
             loaded.journalRow?.let { row ->
                 item(key = "journal") {
-                    WorkoutListJournalRow(
+                    JournalPickerRow(
                         name = row.name,
+                        isPersonal = row.isPersonal,
                         onClick = { dispatch(WorkoutListContract.ViewAction.OpenJournalPicker) },
-                        modifier = Modifier.padding(top = 12.dp, bottom = 8.dp),
+                        modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 8.dp),
                     )
                 }
             }
@@ -191,7 +199,7 @@ private fun WorkoutListList(
                 WorkoutListHero(
                     hero = loaded.hero,
                     measurementSystem = measurementSystem,
-                    modifier = Modifier.padding(top = 12.dp),
+                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp),
                 )
             }
             loaded.weeks.forEach { week ->
@@ -199,7 +207,7 @@ private fun WorkoutListList(
                     WorkoutListWeekHeader(
                         section = week,
                         measurementSystem = measurementSystem,
-                        modifier = Modifier.padding(top = 22.dp, bottom = 8.dp),
+                        modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 8.dp),
                     )
                 }
                 itemsIndexed(week.days, key = { _, day -> "day-${day.date}" }) { index, day ->
@@ -210,7 +218,7 @@ private fun WorkoutListList(
                     )
                     if (index < week.days.lastIndex) {
                         HorizontalDivider(
-                            modifier = Modifier.padding(start = 50.dp),
+                            modifier = Modifier.padding(start = 70.dp, end = 20.dp),
                             color = FjTheme.colors.divider,
                         )
                     }
@@ -219,13 +227,27 @@ private fun WorkoutListList(
         }
     }
 
-    // Bottom scroll fade (design WH4/WH5): a 40dp transparent -> background
-    // gradient over the list's bottom edge. Drawn via drawWithContent so it never
-    // intercepts touches (the last row and PTR stay fully interactive).
+    // Matching 40dp scroll fades top and bottom: content dissolves into the
+    // background at both edges. Drawn via drawWithContent so they never intercept
+    // touches (rows and PTR stay fully interactive).
     val background = FjTheme.colors.background
     val faded = modifier.drawWithContent {
         drawContent()
         val fade = 40.dp.toPx()
+        // Top: only once content is scrolled above the viewport (not at rest at the
+        // very top). background at the top edge -> transparent by `fade`.
+        if (listState.canScrollBackward) {
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colors = listOf(background, Color.Transparent),
+                    startY = 0f,
+                    endY = fade,
+                ),
+                topLeft = Offset.Zero,
+                size = Size(size.width, fade),
+            )
+        }
+        // Bottom: mirror of the top (design WH4/WH5).
         drawRect(
             brush = Brush.verticalGradient(
                 colors = listOf(Color.Transparent, background),

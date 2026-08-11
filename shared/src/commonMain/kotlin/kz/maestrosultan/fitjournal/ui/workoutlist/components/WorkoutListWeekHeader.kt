@@ -8,13 +8,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -27,12 +27,11 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.history_workout_co
 import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
 import kz.maestrosultan.fitjournal.ui.workoutlist.WorkoutListContract
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
+import kz.maestrosultan.fitjournal.ui.theme.composeColor
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
-
-/** Ranked muscle-split swatches (design WH3–WH5): purple, orange, blue; 4th+ muted. */
-private val SplitColors = listOf(Color(0xFF7C72F2), Color(0xFFF0A05A), Color(0xFF5AA9F0))
+import kotlin.math.abs
 
 /**
  * A week section's header (design WH4/WH5): title ("This week" / "Last week" /
@@ -54,7 +53,11 @@ fun WorkoutListWeekHeader(
                 LocaleFormatters.formatDayShortMonth(section.endInclusive, withYear = section.titleShowsYear)
     }
     val workouts = pluralStringResource(Res.plurals.history_workout_count, section.workoutCount, section.workoutCount)
-    val summary = "$workouts · ${WorkoutValueFormatter.groupedTonnage(section.tonnage, measurementSystem)}"
+    val summary = buildList {
+        add(workouts)
+        if (section.tonnage > 0.0) add(WorkoutValueFormatter.groupedTonnage(section.tonnage, measurementSystem))
+        if (section.durationMinutes > 0) add(WorkoutValueFormatter.duration(section.durationMinutes))
+    }.joinToString(" · ")
 
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
@@ -93,14 +96,36 @@ private fun MuscleSplitBar(
         modifier = modifier.fillMaxWidth().height(5.dp),
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        visible.forEachIndexed { index, entry ->
+        visible.forEach { entry ->
             Spacer(
                 modifier = Modifier
                     .weight(entry.percentage.toFloat())
                     .fillMaxHeight()
                     .clip(RoundedCornerShape(3.dp))
-                    .background(SplitColors.getOrElse(index) { FjTheme.colors.textTertiary }),
+                    .background(entry.category.composeColor()),
             )
         }
     }
+}
+
+@Composable
+internal fun WorkoutListDeltaPill(
+    delta: Double,
+    measurementSystem: MeasurementSystem,
+    modifier: Modifier = Modifier,
+) {
+    val positive = delta >= 0
+    // One green / one red, theme-agnostic: the shared positive/negative tokens as
+    // the text, on a 16%-alpha wash of the same tone. Identical in light and dark.
+    val tone = if (positive) FjTheme.colors.positive else FjTheme.colors.negative
+    val sign = if (positive) "+" else "−"
+    Text(
+        text = "$sign${WorkoutValueFormatter.groupedTonnage(abs(delta), measurementSystem)}",
+        style = FjTheme.typography.label.copy(fontSize = 11.5.sp, fontWeight = FontWeight.Bold),
+        color = tone,
+        modifier = modifier
+            .clip(RoundedCornerShape(99.dp))
+            .background(tone.copy(alpha = 0.16f))
+            .padding(horizontal = 8.dp, vertical = 3.dp),
+    )
 }

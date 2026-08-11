@@ -90,6 +90,19 @@ object WorkoutValueFormatter {
         ResultType.DISTANCE_DURATION -> "min"
     }
 
+    /** A cardio duration: "1h 05m" from 60 min up, "27 min" below the hour. */
+    fun duration(minutes: Int): String {
+        if (minutes <= 0) return EMPTY
+        if (minutes < 60) return "$minutes min"
+        val h = minutes / 60
+        val m = minutes % 60
+        return "${h}h ${m.toString().padStart(2, '0')}m"
+    }
+
+    /** A cardio distance with its unit: "5.1 km" / "3.2 mi". */
+    fun distance(distance: Double, system: MeasurementSystem): String =
+        "${trimNumber(distance)} ${unit(ResultType.DISTANCE_DURATION, system)}"
+
     /** "70" not "70.0", "2.5" not "2.50" — no String.format in commonMain. */
     private fun trimNumber(d: Double): String {
         val asLong = d.toLong()

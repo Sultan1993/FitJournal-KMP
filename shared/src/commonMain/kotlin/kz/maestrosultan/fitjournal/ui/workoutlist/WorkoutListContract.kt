@@ -51,7 +51,7 @@ object WorkoutListContract {
         ) : Content
     }
 
-    data class JournalRow(val name: String)
+    data class JournalRow(val name: String, val isPersonal: Boolean)
 
     data class Hero(
         val currentWeekTonnage: Double,
@@ -65,7 +65,14 @@ object WorkoutListContract {
         /** One per run of consecutive same-month slots; slotCount is the Row weight. */
         val monthLabels: List<MonthLabel>,
     )
-    data class WeekSlot(val tonnage: Double, val isCurrentWeek: Boolean)
+    data class WeekSlot(
+        val tonnage: Double,
+        val isCurrentWeek: Boolean,
+        val weekStart: LocalDate,
+        val workoutCount: Int,
+        /** Total cardio minutes that week (0 when none). */
+        val durationMinutes: Int,
+    )
     data class MonthLabel(val month1to12: Int, val slotCount: Int)
 
     data class WeekSection(
@@ -74,6 +81,8 @@ object WorkoutListContract {
         val kind: WeekKind,
         val workoutCount: Int,
         val tonnage: Double,
+        /** Total cardio minutes that week (0 when none). */
+        val durationMinutes: Int,
         /** null iff no earlier week has any data. */
         val delta: Double?,
         /** WorkloadCalculator.calculate(weekRecords, showOther = true), ranked. */
@@ -95,6 +104,10 @@ object WorkoutListContract {
         val exerciseCount: Int,
         /** Filled sets only: weight != null || distance != null (workout-subtitle rule). */
         val setCount: Int,
+        /** Total cardio minutes that day (0 when none). */
+        val durationMinutes: Int,
+        /** Total cardio distance that day, raw stored unit (0.0 when none). */
+        val distance: Double,
     )
 
     sealed interface ViewAction {

@@ -59,19 +59,33 @@ fun WorkoutListDayRow(
     }
     val exercisesPart = pluralStringResource(Res.plurals.history_exercise_count, day.exerciseCount, day.exerciseCount)
     val setsPart = pluralStringResource(Res.plurals.history_set_count, day.setCount, day.setCount)
-    val metaLine = listOfNotNull(workoutsPart, exercisesPart, setsPart).joinToString(" · ")
+
+    val hasCardio = day.durationMinutes > 0
+    // A pure-cardio day (cardio, no weight tonnage) reads its distance; anything with
+    // weight work reads its exercises/sets, appending distance when cardio is mixed in.
+    val cardioOnly = hasCardio && day.tonnage <= 0.0
+    val metaLine = if (cardioOnly) {
+        WorkoutValueFormatter.distance(day.distance, measurementSystem)
+    } else {
+        listOfNotNull(
+            workoutsPart,
+            exercisesPart,
+            setsPart,
+            if (hasCardio) WorkoutValueFormatter.distance(day.distance, measurementSystem) else null,
+        ).joinToString(" · ")
+    }
 
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 13.dp),
-        verticalAlignment = Alignment.Top,
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Column(
             modifier = Modifier.width(34.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(1.dp),
         ) {
             Text(
                 text = day.date.dayOfMonth.toString(),
@@ -86,8 +100,13 @@ fun WorkoutListDayRow(
                 textAlign = TextAlign.Center,
             )
         }
-        Spacer(Modifier.width(16.dp))
-        Column(modifier = Modifier.weight(1f)) {
+
+        // Always three stacked rows: muscle groups, the value(s), then the meta.
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            // Row 1 — muscle groups.
             Text(
                 text = categoryTitle,
                 style = FjTheme.typography.caption.copy(fontWeight = FontWeight.Medium),
@@ -95,23 +114,23 @@ fun WorkoutListDayRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            Spacer(Modifier.height(5.dp))
-            Row(
-                verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Text(
-                    text = WorkoutValueFormatter.groupedTonnage(day.tonnage, measurementSystem),
-                    style = FjTheme.typography.bodyStrong.copy(fontSize = 22.sp, lineHeight = 22.sp),
-                    color = FjTheme.colors.textPrimary,
-                )
-                Text(
-                    text = metaLine,
-                    style = FjTheme.typography.caption.copy(fontSize = 12.5.sp),
-                    color = FjTheme.colors.textSecondary,
-                    modifier = Modifier.padding(bottom = 2.dp),
-                )
-            }
+
+            // Row 2 — volume and/or duration, "·"-separated when both are present.
+            Text(
+                text = listOfNotNull(
+                    if (!cardioOnly) WorkoutValueFormatter.groupedTonnage(day.tonnage, measurementSystem) else null,
+                    if (hasCardio) WorkoutValueFormatter.duration(day.durationMinutes) else null,
+                ).joinToString(" · "),
+                style = FjTheme.typography.bodyStrong.copy(fontSize = 22.sp, lineHeight = 22.sp),
+                color = FjTheme.colors.textPrimary,
+            )
+
+            // Row 3 — workouts · exercises · sets · distance (or distance for cardio-only).
+            Text(
+                text = metaLine,
+                style = FjTheme.typography.caption.copy(fontSize = 12.5.sp),
+                color = FjTheme.colors.textSecondary,
+            )
         }
     }
 }

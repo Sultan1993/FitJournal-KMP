@@ -153,6 +153,9 @@
     <!-- History screen -->
     <string name="history_empty_message">Здесь появятся ваши тренировки</string>
     <string name="history_this_week">Эта неделя</string>
+    <string name="journal_my_journal">Мой журнал</string>
+    <string name="journal_onboarding_hint">Вы можете создать несколько индивидуальных журналов. Данные в каждом журнале хранятся раздельно. Это особенно удобно, если вы персональный тренер</string>
+    <string name="history_cardio">кардио</string>
     <string name="history_last_week">Прошлая неделя</string>
     <plurals name="history_workout_count">
         <item quantity="one">%1$d тренировка</item>
