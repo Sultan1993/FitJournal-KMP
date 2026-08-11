@@ -47,6 +47,8 @@ object ColorTokens {
      */
     val sheet = ColorToken(0xFFFFFFFF, 0xFF18181F)
 
+    val card = ColorToken(0xFFF1F3F9, 0xFF18181F)
+
     /** Cards. Above both [background] and [sheet] in dark, so a card reads as raised on either. */
     val surface = ColorToken(0xFFF1F3F9, 0xFF26262E)
 
