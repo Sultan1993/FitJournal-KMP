@@ -150,7 +150,9 @@ private fun WorkoutDetailsScrollBody(
             .verticalScroll(rememberScrollState())
             .padding(bottom = 40.dp),
     ) {
-        Spacer(Modifier.height(18.dp))
+        // WD3 (multi-workout, stack present) tightens the vertical rhythm vs WD1/WD2.
+        val multiWorkout = loaded.stack.isNotEmpty()
+        Spacer(Modifier.height(if (multiWorkout) 14.dp else 18.dp))
         WorkoutDetailsHero(hero = loaded.hero, modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp))
 
         if (loaded.stack.isNotEmpty()) {
@@ -163,7 +165,8 @@ private fun WorkoutDetailsScrollBody(
             )
         }
 
-        Spacer(Modifier.height(18.dp))
+        // WD3: 16dp stack→tiles; WD1/WD2: 18dp hero→tiles.
+        Spacer(Modifier.height(if (multiWorkout) 16.dp else 18.dp))
         WorkoutStatTiles(
             durationText = focused.durationText,
             exerciseCount = focused.exerciseCount,
@@ -177,7 +180,8 @@ private fun WorkoutDetailsScrollBody(
         }
 
         focused.note?.let { note ->
-            Spacer(Modifier.height(11.dp))
+            // Empty "Add workout note" button sits 14dp below; the filled card 11dp.
+            Spacer(Modifier.height(if (note.text == null) 14.dp else 11.dp))
             SessionNoteCard(
                 text = note.text,
                 onClick = { dispatch(WorkoutDetailsContract.ViewAction.NoteTapped) },
@@ -191,7 +195,7 @@ private fun WorkoutDetailsScrollBody(
         }
 
         if (focused.exerciseGroups.isNotEmpty()) {
-            Spacer(Modifier.height(26.dp))
+            Spacer(Modifier.height(if (multiWorkout) 22.dp else 26.dp))
             // Start inset only: rows bleed to the right edge (set strips run to the edge).
             ExerciseRowList(groups = focused.exerciseGroups, modifier = Modifier.fillMaxWidth().padding(start = 20.dp))
         }

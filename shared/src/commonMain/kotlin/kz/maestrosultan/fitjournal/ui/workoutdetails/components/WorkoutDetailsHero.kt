@@ -29,7 +29,7 @@ fun WorkoutDetailsHero(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
-        Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
                 text = hero.valueText,
                 style = FjTheme.typography.numberLarge.copy(

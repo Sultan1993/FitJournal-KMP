@@ -75,18 +75,18 @@ private fun FilledNoteCard(text: String, onClick: () -> Unit, modifier: Modifier
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = stringResource(Res.string.workout_details_note),
-                style = FjTheme.typography.eyebrow.copy(fontSize = 10.sp),
+                style = FjTheme.typography.eyebrow.copy(fontSize = 10.sp, letterSpacing = 1.0.sp),
                 color = FjTheme.colors.textTertiary,
             )
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(5.dp))
             Text(
                 text = text,
                 style = FjTheme.typography.body.copy(fontSize = 14.5.sp, lineHeight = 21.75.sp),
                 color = FjTheme.colors.textSecondary,
             )
         }
-        Spacer(Modifier.width(12.dp))
-        PencilGlyph(size = 14.dp, color = FjTheme.colors.textTertiary)
+        Spacer(Modifier.width(10.dp))
+        PencilGlyph(size = 14.dp, color = FjTheme.colors.textTertiary, modifier = Modifier.padding(top = 3.dp))
     }
 }
 

@@ -83,7 +83,9 @@ fun ExerciseRowList(
         groups.forEachIndexed { index, group ->
             if (index > 0) {
                 HorizontalDivider(
-                    modifier = Modifier.padding(start = AvatarSize + AvatarGap, end = 20.dp),
+                    // Design: full-bleed from the list's left content edge to 20dp-from-right
+                    // (dc.html:820 — margin-right:20px, no left inset), NOT inset under the text.
+                    modifier = Modifier.padding(end = 20.dp),
                     color = FjTheme.colors.divider,
                 )
             }
@@ -101,7 +103,9 @@ private fun SupersetGroup(
     members: List<WorkoutDetailsContract.ExerciseRow>,
     modifier: Modifier = Modifier,
 ) {
-    val brand = FjTheme.colors.brand
+    // The design superset rail + layers glyph are a lighter violet than `brand`
+    // (dc.html:865 — #A79EFF in both dark frames), kept in both themes (Assumption 1).
+    val rail = Color(0xFFA79EFF)
     val background = FjTheme.colors.background
     Box(modifier = modifier.fillMaxWidth()) {
         // Rail behind the rows — opaque avatars cover it, leaving it visible in the gap.
@@ -112,7 +116,7 @@ private fun SupersetGroup(
                     .padding(start = AvatarSize / 2 - 1.dp, top = RailInset, bottom = RailInset)
                     .width(2.dp)
                     .fillMaxHeight()
-                    .background(brand),
+                    .background(rail),
             )
         }
         Column {
@@ -129,7 +133,7 @@ private fun SupersetGroup(
                     .background(background),
                 contentAlignment = Alignment.Center,
             ) {
-                LayersGlyph(color = brand)
+                LayersGlyph(color = rail)
             }
         }
     }
@@ -140,7 +144,9 @@ private fun ExerciseRowContent(
     row: WorkoutDetailsContract.ExerciseRow,
     modifier: Modifier = Modifier,
 ) {
-    Row(modifier = modifier.padding(vertical = 14.dp)) {
+    // Design rows are "14px 0 0" — top inset only; the divider (and next row's top)
+    // provide the separation, so no bottom padding beneath superset members or the last row.
+    Row(modifier = modifier.padding(top = 14.dp)) {
         ExerciseAvatar(exercise = row.exercise, size = AvatarSize)
         Spacer(Modifier.width(AvatarGap))
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
@@ -170,7 +176,7 @@ private fun ExerciseRowContent(
             row.comment?.let { comment ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.padding(end = 20.dp),
                 ) {
                     PencilGlyph(size = 13.dp, color = FjTheme.colors.textSecondary)
@@ -198,7 +204,7 @@ private fun SetStrip(
             .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
             .drawWithContent {
                 drawContent()
-                val fade = 24.dp.toPx()
+                val fade = 44.dp.toPx()
                 drawRect(
                     brush = Brush.horizontalGradient(
                         colors = listOf(Color.Black, Color.Transparent),
@@ -227,8 +233,8 @@ private fun SetStrip(
                 }
             }
         }
-        // Trailing spacer so the last chip can clear the fade when scrolled to the end.
-        Spacer(Modifier.width(4.dp))
+        // Trailing spacer so the last chip can clear the 44dp fade when scrolled to the end.
+        Spacer(Modifier.width(48.dp))
     }
 }
 

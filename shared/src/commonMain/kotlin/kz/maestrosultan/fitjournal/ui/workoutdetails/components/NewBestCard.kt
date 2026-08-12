@@ -16,11 +16,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
@@ -65,10 +69,11 @@ fun NewBestCard(text: String, modifier: Modifier = Modifier) {
         Column {
             Text(
                 text = stringResource(Res.string.workout_details_new_best),
-                style = FjTheme.typography.eyebrow.copy(fontSize = 10.sp),
+                // 10px label with 0.1em tracking (= 1.0sp), not the eyebrow's default 1.05sp.
+                style = FjTheme.typography.eyebrow.copy(fontSize = 10.sp, letterSpacing = 1.0.sp),
                 color = NewBestLabelInk,
             )
-            Spacer(Modifier.height(3.dp))
+            Spacer(Modifier.height(2.dp))
             Text(
                 text = text,
                 style = FjTheme.typography.bodyStrong.copy(fontSize = 14.5.sp),
@@ -80,32 +85,21 @@ fun NewBestCard(text: String, modifier: Modifier = Modifier) {
 
 @Composable
 private fun TrophyGlyph() {
+    // Exact port of the design's outlined award/trophy (dc.html:766, 24-viewBox,
+    // stroke-width 2): cup + stem + base + the two side handles.
+    val trophy = remember {
+        PathParser().parsePathString(
+            "M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3",
+        ).toPath()
+    }
     Canvas(Modifier.size(16.dp)) {
-        val w = size.width
-        val h = size.height
-        // Cup bowl.
-        drawArc(
-            color = NewBestTextInk,
-            startAngle = 0f,
-            sweepAngle = 180f,
-            useCenter = true,
-            topLeft = Offset(w * 0.2f, h * 0.06f),
-            size = Size(w * 0.6f, h * 0.62f),
-        )
-        // Stem.
-        drawLine(
-            color = NewBestTextInk,
-            start = Offset(w * 0.5f, h * 0.62f),
-            end = Offset(w * 0.5f, h * 0.82f),
-            strokeWidth = w * 0.1f,
-        )
-        // Base.
-        drawLine(
-            color = NewBestTextInk,
-            start = Offset(w * 0.28f, h * 0.88f),
-            end = Offset(w * 0.72f, h * 0.88f),
-            strokeWidth = w * 0.12f,
-            cap = StrokeCap.Round,
-        )
+        val s = size.width / 24f
+        scale(s, s, pivot = Offset.Zero) {
+            drawPath(
+                path = trophy,
+                color = NewBestTextInk,
+                style = Stroke(width = 2f, cap = StrokeCap.Round, join = StrokeJoin.Round),
+            )
+        }
     }
 }
