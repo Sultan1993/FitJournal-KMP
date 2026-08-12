@@ -76,6 +76,11 @@ fun ExerciseRowList(
     skipped: Boolean = false,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
+        if (skipped) {
+            // A separator line introduces the SKIPPED section, below the performed list.
+            HorizontalDivider(modifier = Modifier.padding(end = 20.dp), color = FjTheme.colors.divider)
+            Spacer(Modifier.height(18.dp))
+        }
         Text(
             text = stringResource(
                 if (skipped) Res.string.workout_details_skipped else Res.string.workout_details_tile_exercises,
@@ -165,7 +170,8 @@ private fun ExerciseRowContent(
             Text(
                 text = row.name,
                 style = FjTheme.typography.cardTitle.copy(fontSize = 16.sp),
-                color = FjTheme.colors.textPrimary,
+                // Skipped exercises read as de-emphasized: name in the secondary ink.
+                color = if (skipped) FjTheme.colors.textSecondary else FjTheme.colors.textPrimary,
                 modifier = Modifier.padding(end = 20.dp),
             )
             // A skipped exercise shows name + avatar only — no volume/delta/sets, and
