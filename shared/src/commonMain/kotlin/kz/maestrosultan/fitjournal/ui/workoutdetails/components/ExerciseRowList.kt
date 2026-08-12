@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
+import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_skipped
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_tile_exercises
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.components.ExerciseAvatar
@@ -72,16 +73,21 @@ private val RailInset = 36.dp
 fun ExerciseRowList(
     groups: List<WorkoutDetailsContract.ExerciseGroup>,
     modifier: Modifier = Modifier,
+    skipped: Boolean = false,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
-            text = stringResource(Res.string.workout_details_tile_exercises),
+            text = stringResource(
+                if (skipped) Res.string.workout_details_skipped else Res.string.workout_details_tile_exercises,
+            ),
             style = FjTheme.typography.eyebrow,
             color = FjTheme.colors.textTertiary,
         )
         Spacer(Modifier.height(6.dp))
         groups.forEachIndexed { index, group ->
-            if (index > 0) {
+            // The performed list separates records with a divider; the skipped list is
+            // name+avatar only and relies on each row's own top spacing (no dividers).
+            if (index > 0 && !skipped) {
                 HorizontalDivider(
                     // Design: full-bleed from the list's left content edge to 20dp-from-right
                     // (dc.html:820 — margin-right:20px, no left inset), NOT inset under the text.
@@ -90,9 +96,9 @@ fun ExerciseRowList(
                 )
             }
             if (group.members.size > 1) {
-                SupersetGroup(members = group.members)
+                SupersetGroup(members = group.members, skipped = skipped)
             } else {
-                ExerciseRowContent(row = group.members.first(), modifier = Modifier.fillMaxWidth())
+                ExerciseRowContent(row = group.members.first(), modifier = Modifier.fillMaxWidth(), skipped = skipped)
             }
         }
     }
@@ -102,6 +108,7 @@ fun ExerciseRowList(
 private fun SupersetGroup(
     members: List<WorkoutDetailsContract.ExerciseRow>,
     modifier: Modifier = Modifier,
+    skipped: Boolean = false,
 ) {
     // The design superset rail + layers glyph are a lighter violet than `brand`
     // (dc.html:865 — #A79EFF in both dark frames), kept in both themes (Assumption 1).
@@ -120,7 +127,7 @@ private fun SupersetGroup(
             )
         }
         Column {
-            members.forEach { row -> ExerciseRowContent(row = row, modifier = Modifier.fillMaxWidth()) }
+            members.forEach { row -> ExerciseRowContent(row = row, modifier = Modifier.fillMaxWidth(), skipped = skipped) }
         }
         // The layers node knocks out the rail at its midpoint, on top of everything.
         Box(Modifier.matchParentSize()) {
@@ -143,10 +150,15 @@ private fun SupersetGroup(
 private fun ExerciseRowContent(
     row: WorkoutDetailsContract.ExerciseRow,
     modifier: Modifier = Modifier,
+    skipped: Boolean = false,
 ) {
     // Design rows are "14px 0 0" — top inset only; the divider (and next row's top)
     // provide the separation, so no bottom padding beneath superset members or the last row.
-    Row(modifier = modifier.padding(top = 14.dp)) {
+    Row(
+        modifier = modifier.padding(top = 14.dp),
+        // Skipped rows are name-only, so center the name against the avatar.
+        verticalAlignment = if (skipped) Alignment.CenterVertically else Alignment.Top,
+    ) {
         ExerciseAvatar(exercise = row.exercise, size = AvatarSize)
         Spacer(Modifier.width(AvatarGap))
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
@@ -156,6 +168,9 @@ private fun ExerciseRowContent(
                 color = FjTheme.colors.textPrimary,
                 modifier = Modifier.padding(end = 20.dp),
             )
+            // A skipped exercise shows name + avatar only — no volume/delta/sets, and
+            // (for now) no comment, neither the skip reason nor the exercise note.
+            if (!skipped) {
             row.volumeText?.let { volume ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -186,6 +201,7 @@ private fun ExerciseRowContent(
                         color = FjTheme.colors.textSecondary,
                     )
                 }
+            }
             }
         }
     }

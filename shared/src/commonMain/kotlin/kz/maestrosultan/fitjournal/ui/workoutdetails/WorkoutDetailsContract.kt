@@ -74,7 +74,14 @@ object WorkoutDetailsContract {
         val newBest: NewBestUi?, // null hides the card
         val note: NoteUi?, // null = sessionless -> no NOTE card at all
         val workload: List<WorkloadRow>, // empty hides the section
+        /** Performed exercises: every group with at least one logged set. */
         val exerciseGroups: List<ExerciseGroup>,
+        /**
+         * Skipped exercises: groups where EVERY member has no logged sets, shown in
+         * their own SKIPPED section (name + avatar only). A partial superset — some
+         * members logged — stays whole in [exerciseGroups]. Empty hides the section.
+         */
+        val skippedGroups: List<ExerciseGroup>,
         /** Share button visibility: a session exists so a composer summary can be built. */
         val canShare: Boolean,
     )

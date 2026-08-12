@@ -161,6 +161,32 @@ class WorkoutDetailsScreenTest {
         assertTrue(WorkoutDetailsContract.ViewAction.DeleteConfirmed in vm.actions)
     }
 
+    // ------------------------------------------------------------------- skipped
+
+    @Test
+    fun skipped_section_rendersNamesOnly_hidesComment() = runComposeUiTest {
+        val skipped = WorkoutDetailsContract.ExerciseGroup(
+            recordId = "s1",
+            members = listOf(
+                WorkoutDetailsContract.ExerciseRow(
+                    workoutExerciseId = "s1",
+                    exercise = exercise("Lateral Raises", CategoryType.CHEST),
+                    name = "Lateral Raises",
+                    volumeText = null,
+                    delta = null,
+                    sets = emptyList(),
+                    comment = "Shoulder still sore.",
+                ),
+            ),
+        )
+        setScreen(FakeViewModel(loadedWd1(workout = workoutUi(skippedGroups = listOf(skipped)))))
+
+        onNodeWithText("SKIPPED").assertExists()
+        onNodeWithText("Lateral Raises").assertExists()
+        // The comment (skip reason / exercise note) is deferred — not shown in SKIPPED.
+        onNodeWithText("Shoulder still sore.").assertDoesNotExist()
+    }
+
     // -------------------------------------------------------------------- fixtures
 
     private fun ComposeUiTest.setScreen(viewModel: WorkoutDetailsContract.ViewModel) {
@@ -265,6 +291,7 @@ class WorkoutDetailsScreenTest {
                 ),
             ),
         ),
+        skippedGroups: List<WorkoutDetailsContract.ExerciseGroup> = emptyList(),
         canShare: Boolean = true,
     ) = WorkoutDetailsContract.WorkoutUi(
         workoutNumber = workoutNumber,
@@ -275,6 +302,7 @@ class WorkoutDetailsScreenTest {
         note = note,
         workload = workload,
         exerciseGroups = exerciseGroups,
+        skippedGroups = skippedGroups,
         canShare = canShare,
     )
 

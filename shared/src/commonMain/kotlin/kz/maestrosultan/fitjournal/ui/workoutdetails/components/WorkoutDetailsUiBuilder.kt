@@ -319,6 +319,16 @@ private fun buildWorkoutUi(
     now: Instant,
 ): WorkoutDetailsContract.WorkoutUi {
     val workoutExercises = workoutRecords.flatMap { it.exercises }
+    // A record whose EVERY member logged no sets is "skipped" and shown separately;
+    // a partial superset (at least one member logged) stays whole in exerciseGroups.
+    val (skipped, performed) = workoutRecords
+        .map { record ->
+            WorkoutDetailsContract.ExerciseGroup(
+                recordId = record.id,
+                members = record.exercises.map { we -> exerciseRow(we, measurementSystem) },
+            )
+        }
+        .partition { group -> group.members.all { it.sets.isEmpty() } }
     return WorkoutDetailsContract.WorkoutUi(
         workoutNumber = workoutNumber,
         durationText = session?.let { formatDuration(it.durationSec(now)) },
@@ -327,12 +337,8 @@ private fun buildWorkoutUi(
         newBest = best?.let { newBestUi(it, measurementSystem) },
         note = session?.let { WorkoutDetailsContract.NoteUi(sessionUuid = it.id, text = it.comment) },
         workload = workloadRows(workoutRecords, measurementSystem),
-        exerciseGroups = workoutRecords.map { record ->
-            WorkoutDetailsContract.ExerciseGroup(
-                recordId = record.id,
-                members = record.exercises.map { we -> exerciseRow(we, measurementSystem) },
-            )
-        },
+        exerciseGroups = performed,
+        skippedGroups = skipped,
         canShare = session != null,
     )
 }

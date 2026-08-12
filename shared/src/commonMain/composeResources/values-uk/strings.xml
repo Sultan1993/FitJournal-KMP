@@ -187,6 +187,7 @@
     <string name="workout_details_day_volume">Обсяг за день</string>
     <string name="workout_details_tile_duration">ТРИВАЛІСТЬ</string>
     <string name="workout_details_tile_exercises">ВПРАВИ</string>
+    <string name="workout_details_skipped">ПРОПУЩЕНО</string>
     <string name="workout_details_tile_sets">ПІДХОДИ</string>
     <string name="workout_details_new_best">НОВИЙ РЕКОРД</string>
     <string name="workout_details_note">НОТАТКА</string>

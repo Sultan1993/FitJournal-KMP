@@ -200,6 +200,16 @@ private fun WorkoutDetailsScrollBody(
             ExerciseRowList(groups = focused.exerciseGroups, modifier = Modifier.fillMaxWidth().padding(start = 20.dp))
         }
 
+        if (focused.skippedGroups.isNotEmpty()) {
+            Spacer(Modifier.height(26.dp))
+            // Exercises with no logged sets — name + avatar only, no dividers.
+            ExerciseRowList(
+                groups = focused.skippedGroups,
+                skipped = true,
+                modifier = Modifier.fillMaxWidth().padding(start = 20.dp),
+            )
+        }
+
         Spacer(Modifier.height(26.dp))
         WorkoutActionButtons(
             onEdit = { dispatch(WorkoutDetailsContract.ViewAction.EditTapped) },

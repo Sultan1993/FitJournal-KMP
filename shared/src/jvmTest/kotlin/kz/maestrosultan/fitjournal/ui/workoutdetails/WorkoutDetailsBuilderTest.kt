@@ -483,6 +483,43 @@ class WorkoutDetailsBuilderTest {
 
     // ── helpers ────────────────────────────────────────────────────────────
 
+    // ── skipped exercises (no logged sets) ─────────────────────────────────
+
+    @Test
+    fun skipped_noSetExercise_movesToSkipped_loggedStaysInExercises() = runTest {
+        val logged = record(exercises = listOf(workoutExercise(name = "Bench", sets = listOf(set(60.0, 8)))))
+        val skipped = record(exercises = listOf(workoutExercise(name = "Lateral Raises", sets = emptyList())))
+        val workout = build(listOf(logged, skipped)).workouts.single()
+        assertEquals(listOf("Bench"), workout.exerciseGroups.flatMap { g -> g.members.map { it.name } })
+        assertEquals(listOf("Lateral Raises"), workout.skippedGroups.flatMap { g -> g.members.map { it.name } })
+    }
+
+    @Test
+    fun partialSuperset_oneMemberSkipped_staysWholeInExercises() = runTest {
+        val superset = record(
+            exercises = listOf(
+                workoutExercise(name = "Curl", sets = listOf(set(20.0, 10))),
+                workoutExercise(name = "Hammer", sets = emptyList()),
+            ),
+        )
+        val workout = build(listOf(superset)).workouts.single()
+        assertEquals(2, workout.exerciseGroups.single().members.size)
+        assertEquals(0, workout.skippedGroups.size)
+    }
+
+    @Test
+    fun fullySkippedSuperset_movesToSkippedAsOneGroup() = runTest {
+        val superset = record(
+            exercises = listOf(
+                workoutExercise(name = "Hammer", sets = emptyList()),
+                workoutExercise(name = "Rope", sets = emptyList()),
+            ),
+        )
+        val workout = build(listOf(superset)).workouts.single()
+        assertEquals(0, workout.exerciseGroups.size)
+        assertEquals(2, workout.skippedGroups.single().members.size)
+    }
+
     private fun WorkoutDetailsContract.Content.Loaded.singleExerciseRow() =
         workouts.single().exerciseGroups.single().members.single()
 
