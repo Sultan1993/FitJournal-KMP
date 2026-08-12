@@ -72,10 +72,8 @@ private fun WorkoutDetailsBody(
     Box(modifier = modifier.fillMaxSize().background(FjTheme.colors.background)) {
         Column(modifier = Modifier.fillMaxSize()) {
             WorkoutDetailsHeader(
-                nav = state.headerNav,
                 title = loaded?.header?.title,
                 subtitle = loaded?.header?.subtitle,
-                onNavClick = { dispatch(WorkoutDetailsContract.ViewAction.NavTapped) },
                 modifier = Modifier.fillMaxWidth(),
             )
             when (content) {
