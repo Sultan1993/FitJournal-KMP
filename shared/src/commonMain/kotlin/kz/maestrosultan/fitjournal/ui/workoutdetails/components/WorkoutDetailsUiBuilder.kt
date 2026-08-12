@@ -224,39 +224,48 @@ private fun buildHero(
     val tonnage = TonnageCalculator.forRecords(scopeRecords)
     val cardioMinutes = scopeRecords.sumOf { TonnageCalculator.cardioDurationSeconds(it) } / SECONDS_PER_MINUTE
     val cardioDistanceTotal = cardioDistance(scopeRecords)
-    val hasCardio = cardioMinutes > 0
+    // Cardio is present when EITHER a duration OR a distance was logged — a
+    // distance-only cardio set (duration 0) is still cardio and must not fall
+    // through to the "0 kg" tonnage hero.
+    val hasCardio = cardioMinutes > 0 || cardioDistanceTotal > 0.0
     val hasTonnage = tonnage > 0.0
     val cardioOnly = hasCardio && !hasTonnage
 
+    // Compact "27 min · 5 km" string from whichever cardio figures exist (null if none).
+    val cardioSummary = buildList {
+        if (cardioMinutes > 0) add(WorkoutValueFormatter.duration(cardioMinutes))
+        if (cardioDistanceTotal > 0.0) add(WorkoutValueFormatter.distance(cardioDistanceTotal, measurementSystem))
+    }.joinToString(" · ").ifBlank { null }
+
     if (cardioOnly) {
-        val caption = if (cardioDistanceTotal > 0.0) {
-            "$baseCaption · ${WorkoutValueFormatter.distance(cardioDistanceTotal, measurementSystem)}"
+        // Headline the duration when present, else the distance (distance-only run).
+        return if (cardioMinutes > 0) {
+            WorkoutDetailsContract.Hero(
+                valueText = WorkoutValueFormatter.duration(cardioMinutes),
+                unitText = null,
+                caption = if (cardioDistanceTotal > 0.0) {
+                    "$baseCaption · ${WorkoutValueFormatter.distance(cardioDistanceTotal, measurementSystem)}"
+                } else {
+                    baseCaption
+                },
+                cardioText = null,
+            )
         } else {
-            baseCaption
+            WorkoutDetailsContract.Hero(
+                valueText = WorkoutValueFormatter.distance(cardioDistanceTotal, measurementSystem),
+                unitText = null,
+                caption = baseCaption,
+                cardioText = null,
+            )
         }
-        return WorkoutDetailsContract.Hero(
-            valueText = WorkoutValueFormatter.duration(cardioMinutes),
-            unitText = null,
-            caption = caption,
-            cardioText = null,
-        )
     }
 
-    val cardioText = if (hasCardio && hasTonnage) {
-        val durationText = WorkoutValueFormatter.duration(cardioMinutes)
-        if (cardioDistanceTotal > 0.0) {
-            "$durationText · ${WorkoutValueFormatter.distance(cardioDistanceTotal, measurementSystem)}"
-        } else {
-            durationText
-        }
-    } else {
-        null
-    }
     return WorkoutDetailsContract.Hero(
         valueText = WorkoutValueFormatter.groupedTonnageNumber(tonnage),
         unitText = WorkoutValueFormatter.unit(ResultType.WEIGHT_REPS, measurementSystem),
         caption = baseCaption,
-        cardioText = cardioText,
+        // Mixed hero only; a pure-tonnage workout has no cardio, so cardioSummary is null.
+        cardioText = cardioSummary,
     )
 }
 

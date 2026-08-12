@@ -324,6 +324,35 @@ class WorkoutDetailsBuilderTest {
         assertNull(hero.cardioText)
     }
 
+    @Test
+    fun cardioOnly_distanceOnly_heroHeadlinesDistance_notZeroKg() = runTest {
+        // Distance logged, NO duration: still cardio — headline the distance rather
+        // than falling through to a "0 kg" tonnage hero.
+        val cardio = workoutExercise(
+            category = CategoryType.CARDIO,
+            resultType = ResultType.DISTANCE_DURATION,
+            sets = listOf(cardioSet(distance = 5.0, duration = 0)),
+        )
+        val hero = build(listOf(record(exercises = listOf(cardio)))).hero
+        assertEquals("5 km", hero.valueText)
+        assertNull(hero.unitText)
+        assertEquals("Total volume", hero.caption)
+        assertNull(hero.cardioText)
+    }
+
+    @Test
+    fun mixedWorkout_distanceOnlyCardio_cardioTextIsDistanceNotZeroMin() = runTest {
+        val weight = workoutExercise(sets = listOf(set(60.0, 8))) // 480
+        val cardio = workoutExercise(
+            category = CategoryType.CARDIO,
+            resultType = ResultType.DISTANCE_DURATION,
+            sets = listOf(cardioSet(distance = 5.0, duration = 0)),
+        )
+        val hero = build(listOf(record(exercises = listOf(weight, cardio)))).hero
+        assertEquals("480", hero.valueText)
+        assertEquals("5 km", hero.cardioText)
+    }
+
     // ── mixed workout AND mixed day: tonnage hero + cardioText ───────────
 
     @Test

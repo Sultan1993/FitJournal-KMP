@@ -9,12 +9,14 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -218,6 +220,26 @@ class WorkoutDetailsViewModelTest {
 
         vm.dispatch(WorkoutDetailsContract.ViewAction.ShareTapped)
         assertEquals(WorkoutDetailsContract.ViewEffect.OpenShareComposer(DATE, 2), vm.viewEffect.first())
+    }
+
+    @Test
+    fun navTapped_dismissesOnce_ignoresRapidDoubleTap() = runTest(dispatcher) {
+        // A rapid double Close (or Close then system back) during the exit
+        // animation must emit ONE Dismiss — a second would over-pop the back stack.
+        val records = FakeRecordRepository(listOf(squatRecord(1)))
+        val sessions = FakeWorkoutSessionRepository(listOf(session("session-1", 1)))
+        val vm = viewModel(records, sessions)
+        awaitLoaded(vm)
+
+        val effects = mutableListOf<WorkoutDetailsContract.ViewEffect>()
+        val job = launch { vm.viewEffect.collect { effects.add(it) } }
+
+        vm.dispatch(WorkoutDetailsContract.ViewAction.NavTapped)
+        vm.dispatch(WorkoutDetailsContract.ViewAction.NavTapped)
+        advanceUntilIdle()
+        job.cancel()
+
+        assertEquals(listOf<WorkoutDetailsContract.ViewEffect>(WorkoutDetailsContract.ViewEffect.Dismiss), effects)
     }
 
     // ─── Empty day ──────────────────────────────────────────────────────

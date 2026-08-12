@@ -165,7 +165,7 @@ class WorkoutDetailsViewModel internal constructor(
 
     override fun dispatch(action: WorkoutDetailsContract.ViewAction) {
         when (action) {
-            WorkoutDetailsContract.ViewAction.NavTapped -> emit(WorkoutDetailsContract.ViewEffect.Dismiss)
+            WorkoutDetailsContract.ViewAction.NavTapped -> requestDismissOnce()
             is WorkoutDetailsContract.ViewAction.SelectWorkout -> onSelectWorkout(action.workoutNumber)
             WorkoutDetailsContract.ViewAction.EditTapped -> onEditTapped()
             WorkoutDetailsContract.ViewAction.DeleteTapped -> confirmingDelete.value = true
