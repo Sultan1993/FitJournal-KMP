@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
@@ -146,7 +147,11 @@ private fun ExerciseRowContent(
         modifier = modifier.padding(top = 14.dp),
         verticalAlignment = if (skipped) Alignment.CenterVertically else Alignment.Top,
     ) {
-        ExerciseAvatar(exercise = row.exercise, size = AvatarSize)
+        ExerciseAvatar(
+            exercise = row.exercise,
+            size = AvatarSize,
+            modifier = if (skipped) Modifier.alpha(0.5f) else Modifier,
+        )
         Spacer(Modifier.width(AvatarGap))
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
             Text(
