@@ -181,6 +181,7 @@
     <string name="workout_details_add_note">Add workout note</string>
     <string name="workout_details_workload">WORKLOAD</string>
     <string name="workout_details_edit">Edit workout</string>
+    <string name="workout_details_repeat">Repeat workout</string>
     <string name="workout_details_delete">Delete workout</string>
     <string name="workout_details_share">Share workout</string>
     <string name="workout_details_delete_confirm_title">Delete workout?</string>

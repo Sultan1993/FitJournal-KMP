@@ -37,6 +37,7 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutSet
 import kz.maestrosultan.fitjournal.domain.workout.summary.DetectSessionBestUseCase
 import kz.maestrosultan.fitjournal.domain.workout.summary.WeightedSetOccurrence
 import kz.maestrosultan.fitjournal.domain.workout.usecase.DeleteWorkoutUseCase
+import kz.maestrosultan.fitjournal.domain.workout.usecase.RepeatWorkoutUseCase
 import kz.maestrosultan.fitjournal.ui.postworkout.format.MuscleTitleFormatter
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutUserContext
 import kz.maestrosultan.fitjournal.ui.workoutdetails.components.WorkoutDetailsStrings
@@ -94,6 +95,7 @@ class WorkoutDetailsViewModelTest {
         sessionRepository = sessions,
         detectSessionBest = DetectSessionBestUseCase(records),
         deleteWorkout = DeleteWorkoutUseCase(records, syncTrigger),
+        repeatWorkout = RepeatWorkoutUseCase(records, syncTrigger),
         userContext = FakeUserContext(USER_ID, JOURNAL_ID, MeasurementSystem.KG_KM),
         date = DATE,
         initialWorkoutNumber = initialWorkoutNumber,
@@ -220,6 +222,20 @@ class WorkoutDetailsViewModelTest {
 
         vm.dispatch(WorkoutDetailsContract.ViewAction.ShareTapped)
         assertEquals(WorkoutDetailsContract.ViewEffect.OpenShareComposer(DATE, 2), vm.viewEffect.first())
+    }
+
+    @Test
+    fun repeatTapped_copiesThisDayToToday_thenOpensAWorkout() = runTest(dispatcher) {
+        val records = FakeRecordRepository(listOf(squatRecord(1)))
+        val sessions = FakeWorkoutSessionRepository(listOf(session("session-1", 1)))
+        val vm = viewModel(records, sessions)
+        awaitLoaded(vm)
+
+        vm.dispatch(WorkoutDetailsContract.ViewAction.RepeatTapped)
+        advanceUntilIdle()
+
+        assertEquals(DATE, records.repeatedFrom)
+        assertTrue(vm.viewEffect.first() is WorkoutDetailsContract.ViewEffect.OpenEditWorkout)
     }
 
     @Test
@@ -417,6 +433,9 @@ class WorkoutDetailsViewModelTest {
         /** How many times [getWeightedSetHistoryForExercise] has been entered — proves an attempt actually ran. */
         val historyLookupAttempts = MutableStateFlow(0)
 
+        /** Source date of the last [addRecordsFromDateToToday] (repeat) call. */
+        var repeatedFrom: LocalDate? = null
+
         /** Forces a fresh [observeRecordsChanged] emission without mutating [records]. */
         fun bump() {
             changeSignal.update { it + 1 }
@@ -464,7 +483,9 @@ class WorkoutDetailsViewModelTest {
         ): Unit = unsupported()
 
         override suspend fun addRecordsToDate(userId: String, journalId: String, date: LocalDate, records: List<WorkoutRecord>): Unit = unsupported()
-        override suspend fun addRecordsFromDateToToday(userId: String, journalId: String, date: LocalDate): Unit = unsupported()
+        override suspend fun addRecordsFromDateToToday(userId: String, journalId: String, date: LocalDate) {
+            repeatedFrom = date
+        }
 
         override suspend fun replaceExerciseInRecord(
             userId: String,

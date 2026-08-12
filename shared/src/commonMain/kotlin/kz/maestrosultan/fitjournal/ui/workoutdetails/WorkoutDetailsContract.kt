@@ -114,6 +114,7 @@ object WorkoutDetailsContract {
         data object NavTapped : ViewAction
         data class SelectWorkout(val workoutNumber: Int) : ViewAction
         data object EditTapped : ViewAction
+        data object RepeatTapped : ViewAction
         data object DeleteTapped : ViewAction
         data object DeleteConfirmed : ViewAction
         data object DeleteDismissed : ViewAction

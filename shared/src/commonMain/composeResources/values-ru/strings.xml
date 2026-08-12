@@ -194,6 +194,7 @@
     <string name="workout_details_add_note">Добавить заметку к тренировке</string>
     <string name="workout_details_workload">НАГРУЗКА</string>
     <string name="workout_details_edit">Изменить тренировку</string>
+    <string name="workout_details_repeat">Повторить тренировку</string>
     <string name="workout_details_delete">Удалить тренировку</string>
     <string name="workout_details_share">Поделиться тренировкой</string>
     <string name="workout_details_delete_confirm_title">Удалить тренировку?</string>

@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
@@ -28,6 +29,7 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutSessionRepository
 import kz.maestrosultan.fitjournal.domain.workout.summary.DetectSessionBestUseCase
 import kz.maestrosultan.fitjournal.domain.workout.summary.SessionBest
 import kz.maestrosultan.fitjournal.domain.workout.usecase.DeleteWorkoutUseCase
+import kz.maestrosultan.fitjournal.domain.workout.usecase.RepeatWorkoutUseCase
 import kz.maestrosultan.fitjournal.ui.postworkout.format.MuscleTitleFormatter
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutUserContext
 import kz.maestrosultan.fitjournal.ui.workoutdetails.components.WorkoutDetailsStrings
@@ -61,6 +63,7 @@ class WorkoutDetailsViewModel internal constructor(
     private val sessionRepository: WorkoutSessionRepository,
     private val detectSessionBest: DetectSessionBestUseCase,
     private val deleteWorkout: DeleteWorkoutUseCase,
+    private val repeatWorkout: RepeatWorkoutUseCase,
     private val userContext: WorkoutUserContext,
     private val date: LocalDate,
     initialWorkoutNumber: Int?,
@@ -83,6 +86,7 @@ class WorkoutDetailsViewModel internal constructor(
         sessionRepository: WorkoutSessionRepository,
         detectSessionBest: DetectSessionBestUseCase,
         deleteWorkout: DeleteWorkoutUseCase,
+        repeatWorkout: RepeatWorkoutUseCase,
         userContext: WorkoutUserContext,
         date: LocalDate,
         initialWorkoutNumber: Int?,
@@ -92,6 +96,7 @@ class WorkoutDetailsViewModel internal constructor(
         sessionRepository = sessionRepository,
         detectSessionBest = detectSessionBest,
         deleteWorkout = deleteWorkout,
+        repeatWorkout = repeatWorkout,
         userContext = userContext,
         date = date,
         initialWorkoutNumber = initialWorkoutNumber,
@@ -151,6 +156,7 @@ class WorkoutDetailsViewModel internal constructor(
             WorkoutDetailsContract.ViewAction.NavTapped -> requestDismissOnce()
             is WorkoutDetailsContract.ViewAction.SelectWorkout -> onSelectWorkout(action.workoutNumber)
             WorkoutDetailsContract.ViewAction.EditTapped -> onEditTapped()
+            WorkoutDetailsContract.ViewAction.RepeatTapped -> onRepeatTapped()
             WorkoutDetailsContract.ViewAction.DeleteTapped -> confirmingDelete.value = true
             WorkoutDetailsContract.ViewAction.DeleteConfirmed -> onDeleteConfirmed()
             WorkoutDetailsContract.ViewAction.DeleteDismissed -> confirmingDelete.value = false
@@ -261,6 +267,26 @@ class WorkoutDetailsViewModel internal constructor(
     private fun onShareTapped() {
         val loaded = loadedContent() ?: return
         emit(WorkoutDetailsContract.ViewEffect.OpenShareComposer(date, loaded.focusedWorkoutNumber))
+    }
+
+    /**
+     * Copies this workout onto today (as a template), then opens today's workout —
+     * reusing OpenEditWorkout, which the hosts already map to "open the workout for
+     * this date". A copy failure stays on the details screen (nothing to open).
+     */
+    private fun onRepeatTapped() {
+        val id = identity ?: return
+        viewModelScope.launch {
+            val copied = runCatching { repeatWorkout(id.userId, id.journalId, date) }
+                .onFailure { e ->
+                    if (e is CancellationException) throw e
+                    log("repeat workout failed", e)
+                }.isSuccess
+            if (copied) {
+                val today = clock.now().toLocalDateTime(timeZone).date
+                emit(WorkoutDetailsContract.ViewEffect.OpenEditWorkout(today, focusedWorkoutNumber.value))
+            }
+        }
     }
 
     /**

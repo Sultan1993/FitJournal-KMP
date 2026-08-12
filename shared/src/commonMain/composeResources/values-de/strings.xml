@@ -180,6 +180,7 @@
     <string name="workout_details_add_note">Trainingsnotiz hinzufügen</string>
     <string name="workout_details_workload">BELASTUNG</string>
     <string name="workout_details_edit">Training bearbeiten</string>
+    <string name="workout_details_repeat">Training wiederholen</string>
     <string name="workout_details_delete">Training löschen</string>
     <string name="workout_details_share">Training teilen</string>
     <string name="workout_details_delete_confirm_title">Training löschen?</string>

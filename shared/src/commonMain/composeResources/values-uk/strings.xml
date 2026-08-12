@@ -194,6 +194,7 @@
     <string name="workout_details_add_note">Додати нотатку до тренування</string>
     <string name="workout_details_workload">НАВАНТАЖЕННЯ</string>
     <string name="workout_details_edit">Редагувати тренування</string>
+    <string name="workout_details_repeat">Повторити тренування</string>
     <string name="workout_details_delete">Видалити тренування</string>
     <string name="workout_details_share">Поділитися тренуванням</string>
     <string name="workout_details_delete_confirm_title">Видалити тренування?</string>

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,6 +22,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -28,17 +31,25 @@ import androidx.compose.ui.unit.sp
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_delete
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_edit
+import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_repeat
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import org.jetbrains.compose.resources.stringResource
 
 /** [onDelete] opens a confirm sheet upstream — it does not delete immediately. */
 @Composable
 fun WorkoutActionButtons(
+    onRepeat: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        ActionRow(
+            label = stringResource(Res.string.workout_details_repeat),
+            tint = FjTheme.colors.textPrimary,
+            onClick = onRepeat,
+            glyph = { RepeatGlyph(size = 16.dp, color = FjTheme.colors.textPrimary) },
+        )
         ActionRow(
             label = stringResource(Res.string.workout_details_edit),
             tint = FjTheme.colors.textPrimary,
@@ -86,6 +97,22 @@ private fun ActionRow(
 }
 
 // PencilGlyph extracted to Glyphs.kt.
+
+@Composable
+private fun RepeatGlyph(size: Dp, color: Color) {
+    // Lucide "repeat" (24 viewBox, stroke 2): two arrows looping the corners.
+    val path = remember {
+        PathParser().parsePathString(
+            "M17 2l4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3",
+        ).toPath()
+    }
+    Canvas(Modifier.size(size)) {
+        val s = this.size.width / 24f
+        scale(s, s, pivot = Offset.Zero) {
+            drawPath(path, color, style = Stroke(width = 2f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+        }
+    }
+}
 
 @Composable
 private fun TrashGlyph(size: Dp, color: Color, modifier: Modifier = Modifier) {

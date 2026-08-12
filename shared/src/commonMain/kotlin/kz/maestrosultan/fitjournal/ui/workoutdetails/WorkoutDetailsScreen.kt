@@ -96,18 +96,11 @@ private fun WorkoutDetailsBody(
                             dispatch = dispatch,
                             modifier = Modifier.fillMaxSize(),
                         )
+                        TopFadeScrim(modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth())
                         BottomFadeScrim(modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth())
                     }
-                    if (focused.canShare) {
-                        FjPrimaryButton(
-                            text = stringResource(Res.string.workout_details_share),
-                            onClick = { dispatch(WorkoutDetailsContract.ViewAction.ShareTapped) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 26.dp),
-                            leadingIcon = { ShareGlyph() },
-                        )
-                    }
+                    // Share footer deferred — sharing feature is postponed. ShareTapped/
+                    // OpenShareComposer plumbing stays wired for when it returns.
                 }
             }
         }
@@ -206,6 +199,7 @@ private fun WorkoutDetailsScrollBody(
 
         Spacer(Modifier.height(26.dp))
         WorkoutActionButtons(
+            onRepeat = { dispatch(WorkoutDetailsContract.ViewAction.RepeatTapped) },
             onEdit = { dispatch(WorkoutDetailsContract.ViewAction.EditTapped) },
             onDelete = { dispatch(WorkoutDetailsContract.ViewAction.DeleteTapped) },
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
@@ -216,6 +210,16 @@ private fun WorkoutDetailsScrollBody(
 /** Resolve the focused workout, falling back to the first when the number is stale. */
 private fun WorkoutDetailsContract.Content.Loaded.focusedWorkout(): WorkoutDetailsContract.WorkoutUi =
     workouts.firstOrNull { it.workoutNumber == focusedWorkoutNumber } ?: workouts.first()
+
+@Composable
+private fun TopFadeScrim(modifier: Modifier = Modifier) {
+    val background = FjTheme.colors.background
+    Box(
+        modifier = modifier
+            .height(28.dp)
+            .background(Brush.verticalGradient(listOf(background, background.copy(alpha = 0f)))),
+    )
+}
 
 @Composable
 private fun BottomFadeScrim(modifier: Modifier = Modifier) {

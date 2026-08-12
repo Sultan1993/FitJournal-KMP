@@ -56,7 +56,7 @@ class WorkoutDetailsScreenTest {
         onNodeWithText("NOTE").assertExists()
         onNodeWithText("Felt strong today").assertExists()
         onNodeWithText("WORKLOAD").assertExists()
-        onNodeWithText("Share workout").assertExists()
+        onNodeWithText("Repeat workout").assertExists()
         onNodeWithText("Edit workout").assertExists()
     }
 
@@ -159,6 +159,14 @@ class WorkoutDetailsScreenTest {
         onAllNodesWithText("Delete workout").onLast().performClick()
 
         assertTrue(WorkoutDetailsContract.ViewAction.DeleteConfirmed in vm.actions)
+    }
+
+    @Test
+    fun repeat_dispatchesRepeatTapped() = runComposeUiTest {
+        val vm = FakeViewModel(loadedWd1())
+        setScreen(vm)
+        onNodeWithText("Repeat workout").performScrollTo().performClick()
+        assertTrue(WorkoutDetailsContract.ViewAction.RepeatTapped in vm.actions)
     }
 
     // ------------------------------------------------------------------- skipped
