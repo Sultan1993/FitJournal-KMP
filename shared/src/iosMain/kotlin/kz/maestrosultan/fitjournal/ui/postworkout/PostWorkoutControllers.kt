@@ -31,9 +31,6 @@ import kz.maestrosultan.fitjournal.ui.postworkout.seams.IosSharePresenter
 import kz.maestrosultan.fitjournal.ui.postworkout.seams.IosSharePresenterBridge
 import kz.maestrosultan.fitjournal.ui.postworkout.seams.PostWorkoutHaptics
 import kz.maestrosultan.fitjournal.ui.postworkout.seams.SerializedComposerDefaultsStore
-import kz.maestrosultan.fitjournal.ui.postworkout.success.WorkoutSuccessContract
-import kz.maestrosultan.fitjournal.ui.postworkout.success.WorkoutSuccessScreen
-import kz.maestrosultan.fitjournal.ui.postworkout.success.WorkoutSuccessViewModel
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutUserContext
@@ -46,15 +43,13 @@ import platform.UIKit.UIViewController
  * ComposeUIViewController in its own presentation chrome, and calls
  * `viewModel.dispose()` when that chrome is torn down.
  *
- * Both screens are content-only on purpose — the confirm sheet's surface is the
- * native `UISheetPresentationController`, the success screen's close affordance
- * is a native Liquid Glass bar item — so the theme + background + safe-area
- * insets are applied here rather than inside the shared composables.
+ * [FinishConfirmController] is content-only on purpose — its surface is the
+ * native `UISheetPresentationController` — so the theme + background + safe-area
+ * insets are applied here rather than inside the shared composable.
  *
  * [ShareComposerController] is the exception to "content-only": the composer
- * paints its own full-bleed chrome (close chip, tool rail, bottom bar) and is
- * presented over the success screen, so it takes the whole screen including the
- * safe areas.
+ * paints its own full-bleed chrome (close chip, tool rail, bottom bar), so it
+ * takes the whole screen including the safe areas.
  */
 
 // ─── Controllers ────────────────────────────────────────────────────────
@@ -64,9 +59,9 @@ import platform.UIKit.UIViewController
  * it (the Focus screen, or the workout screen's session bar).
  *
  * [onFinished] fires exactly once with the typed [FinishResult] the shared VM
- * emits after it has ended the session; the host retains that result and feeds
- * it to [WorkoutSuccessController]. [onKeepTraining] only dismisses — no
- * session state changes on that path.
+ * emits after it has ended the session; the host retains that result for the
+ * rest of the flow. [onKeepTraining] only dismisses — no session state changes
+ * on that path.
  *
  * Swift call site: `FinishConfirmController(viewModel:onFinished:onKeepTraining:)`.
  */
@@ -101,51 +96,7 @@ fun FinishConfirmController(
 }
 
 /**
- * Post-workout SUCCESS screen (design frame W4b), presented full-screen.
- *
- * [result] is passed alongside the ViewModel because the screen's "Open record"
- * affordance is parameterless while the flow-level
- * [PostWorkoutCallbacks.onOpenRecord] is id-carrying, and the VM keeps its
- * [FinishResult] private — so the ids come from the same result the host built
- * the VM with. [PostWorkoutCallbacks.onFinished] is unused here (the confirm
- * sheet already consumed it) and dismissal is native chrome, so
- * [PostWorkoutCallbacks.onDismissFlow] is the host's business, not the screen's.
- *
- * [haptics] plays the one-shot success haptic the state asks for; the flag is
- * then cleared on the VM so it never re-fires on recomposition.
- *
- * Swift call site: `WorkoutSuccessController(viewModel:result:callbacks:haptics:)`.
- */
-fun WorkoutSuccessController(
-    viewModel: WorkoutSuccessViewModel,
-    result: FinishResult,
-    callbacks: PostWorkoutCallbacks,
-    haptics: PostWorkoutHaptics,
-): UIViewController = ComposeUIViewController {
-    FitJournalTheme {
-        val state by viewModel.viewState.collectAsState()
-        // Background edge-to-edge (under the status bar / home indicator), the
-        // content itself inset — the native close item floats in the same inset.
-        Box(Modifier.fillMaxSize().background(FjTheme.colors.background)) {
-            WorkoutSuccessScreen(
-                state = state,
-                onShare = callbacks.onOpenComposer,
-                onOpenRecord = {
-                    callbacks.onOpenRecord(result.context.journalId, result.context.date)
-                },
-                onHapticConsumed = {
-                    haptics.success()
-                    viewModel.dispatch(WorkoutSuccessContract.ViewAction.SuccessHapticPlayed)
-                },
-                modifier = Modifier.safeDrawingPadding(),
-            )
-        }
-    }
-}
-
-/**
- * Share composer (design frames W5–W7), presented full-screen over the success
- * screen.
+ * Share composer (design frames W5–W7), presented full-screen.
  *
  * [onClosed] fires when the shared ViewModel emits its close event — the chip,
  * an interactive dismiss routed through `onCloseRequested`, or a finished
@@ -206,35 +157,17 @@ fun createFinishConfirmViewModel(
 )
 
 /**
- * Builds the success screen's ViewModel around the [FinishResult] the confirm
- * sheet produced. Same rationale as [createFinishConfirmViewModel]; units ride
- * along inside `result.context`.
- *
- * Swift: `createWorkoutSuccessViewModel(result:recordRepository:sessionRepository:)`.
- */
-fun createWorkoutSuccessViewModel(
-    result: FinishResult,
-    recordRepository: RecordRepository,
-    sessionRepository: WorkoutSessionRepository,
-): WorkoutSuccessViewModel = WorkoutSuccessViewModel(
-    result = result,
-    buildSummary = buildSessionSummaryUseCase(recordRepository, sessionRepository),
-    sessionRepository = sessionRepository,
-)
-
-/**
  * Builds the composer's ViewModel from the three Swift-implemented bridges.
  *
  * The bridges are callback-shaped protocols rather than suspend closures
  * because Swift cannot satisfy a Kotlin suspend function type — see
  * `IosComposerSeams.kt`. Everything past this boundary is suspend again.
  *
- * [summary] is separate from [result] on purpose: pass
- * [WorkoutSuccessViewModel.finalSummary] when it has landed, NOT
- * `result.summary`. The finish-time snapshot is built with `includeBest = false`
- * so the finish tap doesn't block on a per-exercise history scan, so its `best`
- * is always null — and a composer built from it can never offer the "New best"
- * layout.
+ * [summary] is separate from [result] on purpose: pass the finish-time summary
+ * once it has landed, NOT `result.summary`. The finish-time snapshot is built
+ * with `includeBest = false` so the finish tap doesn't block on a per-exercise
+ * history scan, so its `best` is always null — and a composer built from it can
+ * never offer the "New best" layout.
  *
  * Swift: `createShareComposerViewModel(result:summary:photoPicker:sharePresenter:defaults:haptics:)`.
  */
