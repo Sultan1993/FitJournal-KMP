@@ -159,20 +159,10 @@ class BuildSessionSummaryUseCase(
                 // conversion a 32-minute run printed "0:00".
                 totalDurationSec = logged.sumOf { it.duration ?: 0 } * SECONDS_PER_MINUTE,
             )
-            // BOTH aggregates, always — they are independent measures of the
-            // same sets, not alternatives:
-            //   tonnage    = sum of weight_i * reps_i
-            //   total reps = sum of every rep performed
-            //
-            // They used to be mutually exclusive, gated on `tonnage > 0`. That
-            // made "Total reps" ignore all weighted work — its whole point —
-            // and it swallowed a set carrying weight but no reps: zero tonnage
-            // sent it down the reps branch, where it summed to zero reps too,
-            // so a logged set reported nothing in either family.
-            //
-            // Presentation still chooses which to SHOW (a row with zero tonnage
-            // shows reps, because "0 kg" says nothing); that is a display rule
-            // and belongs there, not here.
+            // BOTH aggregates, always — independent measures of the same sets, not
+            // alternatives. Used to be mutually exclusive (gated on tonnage > 0),
+            // which zeroed "Total reps" for weighted work. Presentation, not this
+            // code, decides which one to show.
             ResultType.WEIGHT_REPS -> LineAggregates(
                 tonnageKg = TonnageCalculator.forSets(logged),
                 totalReps = logged.sumOf { it.reps ?: 0 },

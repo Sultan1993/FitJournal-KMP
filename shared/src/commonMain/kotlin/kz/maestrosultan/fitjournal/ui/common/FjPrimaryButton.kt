@@ -18,16 +18,14 @@ import androidx.compose.ui.unit.dp
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 
 /**
- * The product's filled primary CTA: 54dp-tall brand rectangle (radius 14) with
- * a white Rubik Medium 16 label. Height, shape, and fill are the button's
+ * The product's filled primary CTA. Height, shape, and fill are the button's
  * identity; width and placement belong to the caller (pass `fillMaxWidth()`
  * for edge-to-edge sheet CTAs).
  *
- * Label type is the `button` role (Rubik 16), weight-overridden to Medium —
- * the design's CTA is lighter than the role's SemiBold default.
+ * Label uses the `button` role weight-overridden to Medium — the design's
+ * CTA is lighter than the role's SemiBold default.
  *
- * [leadingIcon] is an optional glyph placed before the label with a 9dp gap
- * (the share CTA on the success screen); omit it for a plain label CTA.
+ * [leadingIcon] is optional (e.g. the share CTA on the success screen).
  */
 @Composable
 fun FjPrimaryButton(

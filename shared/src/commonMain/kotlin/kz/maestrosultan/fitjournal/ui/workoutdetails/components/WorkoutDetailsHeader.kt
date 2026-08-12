@@ -26,10 +26,8 @@ import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workoutdetails.WorkoutDetailsContract
 
 /**
- * The fixed inline header (design §4.2/§4.3): a 40dp `surface` nav circle drawing
- * a back chevron or a close cross by [nav], then the title/date column. [title]
- * and [subtitle] are `null` while the content is still loading, so the bar shows
- * just the nav affordance until the ViewModel resolves the day.
+ * [title]/[subtitle] are `null` while content is still loading, so the bar
+ * shows just the nav affordance until the ViewModel resolves the day.
  */
 @Composable
 fun WorkoutDetailsHeader(

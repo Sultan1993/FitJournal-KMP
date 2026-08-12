@@ -78,7 +78,7 @@ class ImportWorkoutViewModelTest {
     fun opensWithEverySourceRecordPreselected(): Unit = runBlocking {
         val exId = seedExercise()
         val src = LocalDate(2026, 5, 10)
-        repo.addExercisesToDate(user, journal, src, 1, listOf(exId, exId)) // two records on workout 1
+        repo.addExercisesToDate(user, journal, src, 1, listOf(exId, exId))
         val model = vm(src, 1)
 
         val state = withTimeout(5000) { model.viewState.first { it.content is ImportContent.Loaded } }
@@ -113,7 +113,6 @@ class ImportWorkoutViewModelTest {
         model.dispatch(ImportWorkoutContract.ViewAction.Import)
         model.dispatch(ImportWorkoutContract.ViewAction.Import)
 
-        // Exactly one Dismiss fires (from the single write).
         val effect = withTimeout(5000) { model.viewEffect.first() }
         assertEquals(ImportWorkoutContract.ViewEffect.Dismiss, effect)
 

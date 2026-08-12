@@ -8,11 +8,9 @@ import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 
 /**
- * MVI contract for the Workout WorkoutList screen (per-screen, not a shared generic
- * model — same shape as [kz.maestrosultan.fitjournal.ui.workout.WorkoutContract]).
- * Public rather than internal because the native iOS/Android hosts read
- * [ViewModel.viewState], collect [ViewModel.viewEffect] and call
- * [ViewModel.dispatch] across the SKIE bridge.
+ * MVI contract for the WorkoutList screen. Public rather than internal because
+ * native iOS/Android hosts read [ViewModel.viewState], collect
+ * [ViewModel.viewEffect], and call [ViewModel.dispatch] across the SKIE bridge.
  */
 object WorkoutListContract {
 

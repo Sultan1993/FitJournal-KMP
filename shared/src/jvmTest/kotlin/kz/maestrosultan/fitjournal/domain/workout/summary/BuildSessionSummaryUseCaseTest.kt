@@ -212,9 +212,8 @@ class BuildSessionSummaryUseCaseTest {
         assertEquals(3, summary.exerciseCount)
         assertEquals(listOf("Squat", "Push-up", "Run"), summary.exercises.map { it.name }, "day order")
 
-        // Weighted work carries BOTH: tonnage is sum(weight * reps), totalReps
-        // is every rep performed. Two measures of the same sets, so a weighted
-        // exercise must not go missing from a session-wide rep total.
+        // Weighted work carries BOTH: tonnage is sum(weight * reps), totalReps is
+        // every rep performed — must not go missing from a session-wide rep total.
         val squat = summary.exercises[0]
         assertEquals(1000.0, squat.tonnageKg, "2 sets x 100kg x 5 reps")
         assertEquals(10, squat.totalReps, "weighted work still counts its reps")

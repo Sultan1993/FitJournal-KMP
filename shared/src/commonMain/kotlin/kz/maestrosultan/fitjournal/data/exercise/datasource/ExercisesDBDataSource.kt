@@ -48,18 +48,13 @@ class ExercisesDBDataSource(
     }
 
     /**
-     * UI-facing single-row read. Returns null if the row doesn't exist
-     * OR has been soft-deleted — workouts that reference a tombstoned
-     * custom exercise drop the reference cleanly rather than surfacing
-     * a ghost. Sync code paths that need to see tombstones use
-     * [getExerciseByUuidIncludingDeleted].
+     * UI-facing single-row read; null if missing or soft-deleted (a tombstoned
+     * custom drops cleanly instead of surfacing a ghost). Sync paths needing
+     * tombstones use [getExerciseByUuidIncludingDeleted].
      *
-     * Categories are pre-fetched OUTSIDE the row mapper. Doing the
-     * category lookup inside the mapper triggers a nested SQL call
-     * while the outer prepared statement is still mid-iteration — fine
-     * when sqliter has multiple reader connections (WAL mode default),
-     * a hard deadlock when there's only one connection (DELETE mode).
-     * Pre-fetching matches the pattern used by the batch reader.
+     * Categories are pre-fetched outside the row mapper — a nested SQL call
+     * mid-iteration deadlocks when sqliter has only one connection (DELETE
+     * mode); fine under WAL's multiple readers.
      */
     suspend fun getExerciseByUuid(uuid: String): DBExerciseObject? = withContext(Dispatchers.IO) {
         val categoryByUuid = mapper.allCategoriesByUuid()
@@ -95,15 +90,13 @@ class ExercisesDBDataSource(
     }
 
     /**
-     * Sync-only: sees soft-deleted rows so the orchestrator can compare
-     * local vs remote `deletedAt` on pull and propagate tombstones to
-     * AWS on push. Without this, a tombstoned-and-pending local row
-     * looks "missing" to the live read, the local-wins guard misses,
-     * and the remote upsert stomps the tombstone (data-loss bug).
-     * UI/repo paths must use [getExerciseByUuid].
+     * Sync-only: sees soft-deleted rows so the orchestrator can diff local vs
+     * remote `deletedAt` on pull and propagate tombstones on push. Without
+     * this a tombstoned-and-pending row looks "missing", the local-wins guard
+     * misses, and the remote upsert stomps the tombstone (data loss). UI/repo
+     * paths use [getExerciseByUuid].
      *
-     * Lean mapper — no category resolution (sync only needs uuid /
-     * remoteId / pendingUpload for the guard).
+     * Lean mapper — no category resolution (sync only needs uuid/remoteId/pendingUpload).
      */
     suspend fun getExerciseByUuidIncludingDeleted(uuid: String): DBExerciseObject? = withContext(Dispatchers.IO) {
         dao
@@ -228,15 +221,13 @@ class ExercisesDBDataSource(
     }
 
     /**
-     * Insert if uuid not already present. Returns true on insert, false on
-     * skip. Was used by the Parse `DefaultExercisesMigrator` so re-running after a
-     * partial crash doesn't duplicate AND doesn't overwrite a user's
-     * already-edited custom (which would have `pendingUpload=1`).
+     * Insert if uuid not already present (true=inserted, false=skipped). Lets
+     * a migrator re-run after a partial crash without duplicating rows or
+     * overwriting an already-edited custom (`pendingUpload=1`).
      *
-     * Defaults `pendingUpload = false`: globals are already in AWS via the
-     * manual seed; customs imported from Parse haven't been edited yet so
-     * SyncWorker doesn't need to re-push them. The repo write path bumps
-     * `pendingUpload=1` on actual edits.
+     * Defaults `pendingUpload=false`: globals are already in AWS via the
+     * manual seed, imported customs haven't been edited yet. The repo write
+     * path bumps it on actual edits.
      */
     suspend fun createExerciseIfMissing(
         uuid: String,
@@ -255,8 +246,7 @@ class ExercisesDBDataSource(
         pendingUpload: Boolean = false,
     ): Boolean = withContext(Dispatchers.IO) {
         dao.transactionWithResult {
-            // Sees tombstones — a row the user deliberately deleted
-            // shouldn't be re-imported by a migrator re-run.
+            // Sees tombstones so a deliberately-deleted row isn't re-imported on re-run.
             if (dao.getExerciseByUuidIncludingDeleted(
                     uuid = uuid,
                     mapper = { u, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ -> u }
@@ -318,21 +308,14 @@ class ExercisesDBDataSource(
     }
 
     /**
-     * Hot-read-path: every live exercise the user can see (global catalog
-     * + this user's customs) with primary + secondary categories already
-     * resolved, in 2 SQL calls — categories pre-loaded into one map, then
-     * exercises read once and joined in code. User-scoped to prevent
-     * customs from a previous logged-in account from leaking after an
-     * account switch.
+     * Hot-read-path: every live exercise the user can see (catalog + this
+     * user's customs) with categories resolved, in 2 SQL calls — categories
+     * loaded into one map, exercises read once and joined in code. User-scoped
+     * so customs don't leak across account switches.
      *
-     * The default per-row mapper in [ExerciseDBMapper] re-resolves
-     * categories with one SELECT per row (≈600 SQL calls for a 200-row
-     * catalog) and freezes hot paths like the workout-list screen — use
-     * this batch instead from any read that needs full domain Exercises.
-     *
-     * Tolerant on missing primary category: substitutes an "Unknown"
-     * placeholder rather than throwing, so dirty data (a primary category
-     * uuid that doesn't resolve) doesn't crash the whole read.
+     * [ExerciseDBMapper]'s per-row mapper does one SELECT per category
+     * (~600 calls for a 200-row catalog) and freezes hot paths like the
+     * workout-list screen — use this batch for any full-Exercise read instead.
      */
     suspend fun getAllExercisesWithCategoriesBatch(userId: String): List<DBExerciseObject> =
         withContext(Dispatchers.IO) {
@@ -341,16 +324,14 @@ class ExercisesDBDataSource(
         }
 
     /**
-     * Reactive variant of [getAllExercisesWithCategoriesBatch]. SQLDelight
-     * emits a fresh snapshot on any mutation of the `exercises` table —
-     * powers Android's live exercise-list UI updates after create / delete
-     * without re-querying from the use case.
+     * Reactive variant of [getAllExercisesWithCategoriesBatch]; SQLDelight
+     * emits a fresh snapshot on any `exercises` table mutation.
      *
-     * Categories are captured once at flow construction. The catalog is
-     * admin-managed (seeded via `scripts/seed_aws_global_catalog.py`) so
-     * one snapshot is good for the flow's lifetime. If you ever need
-     * categories to participate in reactive updates, combine with
-     * `CategoriesDBDataSource.getAllCategoriesFlow`.
+     * Categories are captured once at flow construction — the catalog is
+     * admin-managed (seeded via `scripts/seed_aws_global_catalog.py`), so one
+     * snapshot suffices for the flow's lifetime. Combine with
+     * `CategoriesDBDataSource.getAllCategoriesFlow` if categories ever need
+     * to participate in reactive updates.
      */
     fun getAllExercisesForUserFlow(userId: String): Flow<List<DBExerciseObject>> {
         val categoryByUuid = mapper.allCategoriesByUuid()
@@ -408,19 +389,12 @@ class ExercisesDBDataSource(
         }
 
     /**
-     * Lean lookup table for the workouts migrator: returns a map of
-     * `remoteId → uuid` (Parse objectId → local SQLite uuid) for every
-     * live exercise (`deletedAt IS NULL`).
+     * Lean `remoteId → uuid` lookup (Parse objectId → local uuid) for every
+     * live exercise, for the workouts migrator.
      *
-     * Built without going through [ExerciseDBMapper] — that mapper does
-     * one `getCategoryByUuid` SELECT per primary category and another
-     * batch transaction per secondary category list, which on real iOS
-     * hardware via NativeSqliteDriver collapses to seconds-of-blocking
-     * for a 200-exercise catalog. The migrator only consumes
-     * `localExercise.uuid` to stamp `DBWorkoutExerciseObject.exerciseUuid`,
-     * so the categories are wasted work.
-     *
-     * One SQL query, no mapper traversal of categories.
+     * Skips [ExerciseDBMapper] — its per-row category SELECTs collapse to
+     * seconds of blocking on real iOS hardware for a 200-exercise catalog,
+     * and the migrator only needs `uuid`. One SQL query, no category traversal.
      */
     suspend fun getRemoteIdToUuidMap(): Map<String, String> = withContext(Dispatchers.IO) {
         dao

@@ -70,14 +70,12 @@ fun WorkoutExerciseItem(
             unit = WorkoutValueFormatter.unit(resultType, measurementSystem),
             repsNumber = WorkoutValueFormatter.repsNumber(values.reps),
             repsUnit = WorkoutValueFormatter.repsUnit(resultType),
-            // Style actual vs target off the set's OWN logged state, not the
-            // displayed value (which may be a ghost) — matches native WorkoutSetView.
+            // Styled off the set's OWN logged state, not the displayed (possibly ghost) value.
             isLogged = set.isLogged,
         )
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
-        // Header: image + (name / N SETS) + options — vertically centered on the image.
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -108,10 +106,8 @@ fun WorkoutExerciseItem(
                 SelectionCircle(isSelected = isSelected)
             } else {
                 Box(
-                    // Clickable first so the padding is part of the tap target; a
-                    // smaller end inset nudges the glyph toward the card edge. An
-                    // unbounded ripple gives the radiating circular icon-button feel
-                    // now that the trigger is a bare Box, not an IconButton.
+                    // Clickable first so padding is part of the tap target; unbounded
+                    // ripple gives the circular icon-button feel on a bare Box.
                     modifier = Modifier
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
@@ -158,9 +154,8 @@ fun WorkoutExerciseItem(
             showAddSet = !isImporting,
             onSetClick = if (isImporting) null else onSetClick,
             onAddSet = onAddSet,
-            // No note → the header gap lives here; with a note the note block
-            // owns the top gap. Rail content sits at 18 (16 card + 2) so the dot
-            // column lines up with the NOTE text.
+            // No note → top gap lives here; with a note, the note block owns it.
+            // Rail content sits at 18 (16 card + 2) so the dot column lines up with NOTE.
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = if (note == null) 8.dp else 0.dp, start = 18.dp, end = 18.dp),
@@ -170,8 +165,7 @@ fun WorkoutExerciseItem(
 
 /**
  * 36dp circular selection indicator shown in import mode in place of the
- * options trigger. Display-only — the card itself is the tap target (wired
- * in a later task), so no clickable here.
+ * options trigger. Display-only — the card itself is the tap target.
  */
 @Composable
 private fun SelectionCircle(isSelected: Boolean) {

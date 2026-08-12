@@ -16,10 +16,8 @@ import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workoutlist.WorkoutListContract
 
 /**
- * Fixed, deterministic sample data for the WorkoutList `@Preview` functions —
- * no `Clock.System`, no random, so every render is reproducible across runs.
- * Built with the real [WorkoutListContract] / domain constructors, never a
- * preview-only shadow type.
+ * Deterministic sample data for the WorkoutList `@Preview` functions — no `Clock.System`,
+ * no random. Built with real [WorkoutListContract] constructors, never a shadow type.
  */
 internal object WorkoutListPreviewData {
 
@@ -195,9 +193,9 @@ internal object WorkoutListPreviewData {
 }
 
 /**
- * Shared preview chrome: the real [FitJournalTheme] forced light/dark, over a
- * [FjTheme.colors.background] surface — matches how every component actually
- * renders inside [kz.maestrosultan.fitjournal.ui.workoutlist.WorkoutListScreen].
+ * Shared preview chrome: real [FitJournalTheme] forced light/dark over a
+ * [FjTheme.colors.background] surface, matching how components actually render
+ * inside [kz.maestrosultan.fitjournal.ui.workoutlist.WorkoutListScreen].
  */
 @Composable
 internal fun WorkoutListPreviewSurface(

@@ -66,8 +66,7 @@ fun WorkoutSessionBar(
     onEnd: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Pure cross-fade: sizeTransform = null keeps the 56dp bar height, so states
-    // fade in/out without shrinking or sliding.
+    // sizeTransform = null keeps the 56dp bar height fixed — pure cross-fade, no resize.
     AnimatedContent(
         targetState = state,
         modifier = modifier,
@@ -118,8 +117,7 @@ private fun RunningBar(runningSince: Instant?, onEnd: () -> Unit, modifier: Modi
         modifier = modifier
             .fillMaxWidth()
             .height(56.dp)
-            // The bar floats over list content that shares its surface color — a
-            // soft shadow + hairline border give it an edge in both themes.
+            // Bar floats over content sharing its surface color; shadow + border give it an edge.
             .shadow(elevation = 8.dp, shape = BarShape)
             .clip(BarShape)
             .background(FjTheme.colors.surface)
@@ -155,11 +153,9 @@ private fun RunningBar(runningSince: Instant?, onEnd: () -> Unit, modifier: Modi
             )
         }
 
-        // At least a 12dp gap between the timer and the stop button.
         Spacer(Modifier.defaultMinSize(minWidth = 12.dp).weight(1f))
 
-        // The square glyph is the universal stop/end affordance (brand fill,
-        // white square) — matching native, not a red "End workout" text button.
+        // Square glyph = universal stop/end affordance (native parity), not a text button.
         Box(
             modifier = Modifier
                 .padding(end = 8.dp)

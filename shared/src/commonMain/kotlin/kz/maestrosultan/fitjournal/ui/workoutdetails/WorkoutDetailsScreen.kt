@@ -45,16 +45,12 @@ import kz.maestrosultan.fitjournal.ui.workoutdetails.components.WorkoutStatTiles
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * The shared WorkoutDetails body (design §4.2/§4.3): a fixed inline header, a
- * scrollable body under a bottom fade scrim, and a pinned Share footer gated by
- * the focused workout's `canShare`. WD3 additionally shows the workout stack
- * above the (focused-workout) body; on a single-workout day the stack is empty
- * and nothing renders.
+ * Fixed inline header, scrollable body under a bottom fade scrim, pinned Share
+ * footer gated by the focused workout's `canShare`. WD3 additionally shows the
+ * stack above the body; a single-workout day leaves the stack empty.
  *
- * Content only — the native host wraps this in `FitJournalTheme` and applies the
- * safe-area insets. Every displayed value comes pre-formatted from the
- * [WorkoutDetailsContract.ViewModel]; this screen renders and dispatches, and
- * never re-derives a number.
+ * Content only — the native host wraps this in `FitJournalTheme` and applies
+ * the safe-area insets.
  */
 @Composable
 fun WorkoutDetailsScreen(
@@ -165,7 +161,6 @@ private fun WorkoutDetailsScrollBody(
             )
         }
 
-        // WD3: 16dp stack→tiles; WD1/WD2: 18dp hero→tiles.
         Spacer(Modifier.height(if (multiWorkout) 16.dp else 18.dp))
         WorkoutStatTiles(
             durationText = focused.durationText,
@@ -180,7 +175,6 @@ private fun WorkoutDetailsScrollBody(
         }
 
         focused.note?.let { note ->
-            // Empty "Add workout note" button sits 14dp below; the filled card 11dp.
             Spacer(Modifier.height(if (note.text == null) 14.dp else 11.dp))
             SessionNoteCard(
                 text = note.text,
@@ -202,7 +196,7 @@ private fun WorkoutDetailsScrollBody(
 
         if (focused.skippedGroups.isNotEmpty()) {
             Spacer(Modifier.height(26.dp))
-            // Exercises with no logged sets — name + avatar only, no dividers.
+            // Name + avatar only, no dividers.
             ExerciseRowList(
                 groups = focused.skippedGroups,
                 skipped = true,

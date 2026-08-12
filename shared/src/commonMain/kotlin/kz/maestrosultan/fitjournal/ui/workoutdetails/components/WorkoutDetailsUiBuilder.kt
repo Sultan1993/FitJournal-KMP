@@ -29,13 +29,8 @@ import org.jetbrains.compose.resources.getPluralString
 import org.jetbrains.compose.resources.getString
 
 /**
- * The compose-resource-dependent lookups [buildWorkoutDetailsUi] needs beyond
- * [MuscleTitleFormatter] (muscle-title joining is that class's own job).
- * Injectable the same way [MuscleTitleFormatter] is: production resolves
- * through the real shared `Res` bundle — the exact plural resources
- * [kz.maestrosultan.fitjournal.ui.workoutlist.components.WorkoutListDayRow]
- * uses for its own meta rows — while jvmTest injects fixed strings so
- * assertions don't depend on the test JVM's locale or resource loading.
+ * Compose-resource lookups injected (like [MuscleTitleFormatter]) so jvmTest
+ * can supply fixed strings instead of depending on the test JVM's locale/resources.
  */
 internal class WorkoutDetailsStrings(
     val totalVolumeLabel: suspend () -> String = { getString(Res.string.workout_details_total_volume) },
@@ -46,32 +41,21 @@ internal class WorkoutDetailsStrings(
 )
 
 /**
- * Pure builder for the WorkoutDetails screen (WD1/WD2/WD3, design spec
- * §4.2-§4.3): folds one day's already-loaded [records] (each carrying
- * [WorkoutExercise.lastOccurrence]) + that day's [sessions] + the per-workout
- * NEW BEST detections into [WorkoutDetailsContract.Content.Loaded]. Every
- * figure comes from an existing calculator/formatter (§6.1 of the design
- * spec) — this function never re-derives a number with raw arithmetic or
- * formats a date/number with a literal pattern.
+ * Pure builder for the WorkoutDetails screen (WD1/WD2/WD3). Folds one day's
+ * loaded [records] + [sessions] + already-detected [sessionBests] into
+ * [WorkoutDetailsContract.Content.Loaded]; never runs history detection or
+ * re-derives a figure itself, only renders what it's handed.
  *
  * [records] must be non-empty — the VM dismisses the screen on an empty day
  * instead of calling this. Grouped by [WorkoutRecord.workoutNumber]: a single
- * group renders WD1/WD2 (day == the one workout, no stack); more than one
- * renders WD3 (a day-scoped hero + [WorkoutDetailsContract.Content.Loaded.stack],
+ * group renders WD1/WD2; more than one renders WD3 (day-scoped hero + stack,
  * with every other section scoped to [focusedWorkoutNumber]).
  *
- * [sessions] are joined to their record group by [WorkoutSession.workoutNumber];
- * a session with no matching record group is ignored — defensive, since no
- * production path should produce that orphan (§6.1's join rule).
+ * [sessions] join by workoutNumber; an orphan with no matching record group
+ * is silently dropped (defensive — no production path should produce one).
  *
- * [sessionBests] carries the already-detected [SessionBest] per workout number
- * (or null when that workout set no record) — [buildWorkoutDetailsUi] never
- * runs history detection itself, it only renders what it is handed.
- *
- * [focusedWorkoutNumber] selects the WD3 stack's lifted row; when it does not
- * match any of [records]' workout numbers (a stale focus after a delete) this
- * falls back to the lowest present workout number, mirroring the VM's own
- * refocus rule (§6 `DeleteConfirmed`).
+ * [focusedWorkoutNumber] falls back to the lowest present workout number when
+ * stale (e.g. after a delete), mirroring the VM's own refocus rule.
  */
 internal suspend fun buildWorkoutDetailsUi(
     date: LocalDate,
@@ -92,8 +76,7 @@ internal suspend fun buildWorkoutDetailsUi(
         .mapValues { (_, group) -> group.sortedBy { it.position } }
     val workoutNumbers = recordsByWorkout.keys.sorted()
     val sessionsByWorkout: Map<Int, WorkoutSession> = sessions.associateBy { it.workoutNumber }
-    // Defensive join (§6.1): only sessions whose workoutNumber matches a loaded
-    // record group ever feed a day-wide aggregate; an orphan is silently dropped.
+    // Defensive: orphan sessions (no matching record group) drop silently.
     val matchedSessions = workoutNumbers.mapNotNull { sessionsByWorkout[it] }
 
     val workouts = workoutNumbers.map { number ->
@@ -211,10 +194,8 @@ private suspend fun buildDayHero(
 }
 
 /**
- * Shared value/caption/cardioText rules for both hero scopes (§6.1 "Mixed
- * hero"): [scopeRecords] is either the whole day (WD3) or the one focused
- * workout (WD1/WD2) — the rule is identical either way, only the caption text
- * (and which records it sums over) differs, which the two callers supply.
+ * Shared value/caption/cardioText rules for both hero scopes — only the caption
+ * text (and which records it sums over) differs between the two callers.
  */
 private fun buildHero(
     scopeRecords: List<WorkoutRecord>,
@@ -224,9 +205,8 @@ private fun buildHero(
     val tonnage = TonnageCalculator.forRecords(scopeRecords)
     val cardioMinutes = scopeRecords.sumOf { TonnageCalculator.cardioDurationSeconds(it) } / SECONDS_PER_MINUTE
     val cardioDistanceTotal = cardioDistance(scopeRecords)
-    // Cardio is present when EITHER a duration OR a distance was logged — a
-    // distance-only cardio set (duration 0) is still cardio and must not fall
-    // through to the "0 kg" tonnage hero.
+    // Distance-only cardio (duration 0) still counts as cardio — must not
+    // fall through to the "0 kg" tonnage hero.
     val hasCardio = cardioMinutes > 0 || cardioDistanceTotal > 0.0
     val hasTonnage = tonnage > 0.0
     val cardioOnly = hasCardio && !hasTonnage
@@ -295,8 +275,8 @@ private suspend fun buildStackRow(
     )
 }
 
-/** WD3 stack row volume (§6.1): cardio-only shows duration, everything else — including
- *  mixed — shows tonnage (the day hero already carries the mixed scope's cardio aggregate). */
+/** Stack row: cardio-only shows duration; everything else (incl. mixed) shows tonnage —
+ *  the day hero already carries the cardio aggregate. */
 private fun workoutVolumeText(workoutRecords: List<WorkoutRecord>, measurementSystem: MeasurementSystem): String {
     val tonnage = TonnageCalculator.forRecords(workoutRecords)
     val cardioMinutes = workoutRecords.sumOf { TonnageCalculator.cardioDurationSeconds(it) } / SECONDS_PER_MINUTE
@@ -319,8 +299,8 @@ private fun buildWorkoutUi(
     now: Instant,
 ): WorkoutDetailsContract.WorkoutUi {
     val workoutExercises = workoutRecords.flatMap { it.exercises }
-    // A record whose EVERY member logged no sets is "skipped" and shown separately;
-    // a partial superset (at least one member logged) stays whole in exerciseGroups.
+    // Skipped = every member logged no sets. A partial superset (>=1 member
+    // logged) stays whole in exerciseGroups.
     val (skipped, performed) = workoutRecords
         .map { record ->
             WorkoutDetailsContract.ExerciseGroup(
@@ -343,7 +323,7 @@ private fun buildWorkoutUi(
     )
 }
 
-/** "Machine Bench Press · 100 kg × 10" — value(weightKg) with an optional [× reps] (§6.1). */
+/** "Machine Bench Press · 100 kg × 10" — value(weightKg) with an optional reps. */
 private fun newBestUi(best: SessionBest, measurementSystem: MeasurementSystem): WorkoutDetailsContract.NewBestUi {
     val valueText = WorkoutValueFormatter.value(best.weightKg, ResultType.WEIGHT_REPS, measurementSystem)
     val repsText = best.reps?.let { WorkoutValueFormatter.reps(it, ResultType.WEIGHT_REPS) }
@@ -352,12 +332,9 @@ private fun newBestUi(best: SessionBest, measurementSystem: MeasurementSystem): 
 }
 
 /**
- * WORKLOAD kg per bucket (§6.1): [WorkloadCalculator] decides the buckets
- * (order + percentage, sets-based, OTHER collapses everything under its
- * threshold); this only attaches a kg amount per returned bucket —
- * [TonnageCalculator.forExercise] summed over that category's members, with
- * OTHER taking whatever tonnage isn't accounted for by an explicit
- * non-OTHER bucket (the collapsed remainder).
+ * [WorkloadCalculator] decides the buckets (order/percentage); this only
+ * attaches a kg amount per bucket. OTHER's tonnage is whatever remains after
+ * summing the explicit non-OTHER buckets (the collapsed remainder).
  */
 private fun workloadRows(
     workoutRecords: List<WorkoutRecord>,
@@ -401,8 +378,8 @@ private fun exerciseRow(we: WorkoutExercise, measurementSystem: MeasurementSyste
     comment = we.comment,
 )
 
-/** Per-exercise total (§6.1): tonnage for WEIGHT_REPS, else logged distance (falling
- *  back to logged duration when nothing was covered) — null when nothing was logged. */
+/** Tonnage for WEIGHT_REPS, else logged distance (falling back to logged duration
+ *  when nothing was covered) — null when nothing was logged. */
 private fun exerciseVolumeText(we: WorkoutExercise, measurementSystem: MeasurementSystem): String? {
     if (!we.hasLoggedSets) return null
     return when (we.exercise.resultType) {
@@ -417,10 +394,8 @@ private fun exerciseVolumeText(we: WorkoutExercise, measurementSystem: Measureme
 }
 
 /**
- * Delta pill vs [WorkoutExercise.lastOccurrence] (§6.1, Assumption 2): tonnage
- * delta for WEIGHT_REPS; a distance delta for cardio, but ONLY when both sides
- * logged a distance (a duration-only cardio exercise carries no pill). No
- * prior occurrence at all -> no pill, for either kind.
+ * Distance delta for cardio only when BOTH sides logged a distance — a
+ * duration-only cardio exercise carries no pill. No prior occurrence -> no pill.
  */
 private fun exerciseDelta(we: WorkoutExercise, measurementSystem: MeasurementSystem): WorkoutDetailsContract.DeltaUi? {
     val prior = we.lastOccurrence ?: return null
@@ -473,11 +448,9 @@ private fun cardioDistance(records: List<WorkoutRecord>): Double =
         .sumOf { it.distance ?: 0.0 }
 
 /**
- * Exercises actually PERFORMED (matches `SessionSummary.exerciseCount`,
- * §6.1): catalog occurrences merged by [kz.maestrosultan.fitjournal.domain.exercise.Exercise.uuid]
- * first, then counted only where the merged group logged at least one set —
- * so the same catalog exercise split across two records in one workout still
- * counts once.
+ * Matches `SessionSummary.exerciseCount`: merges occurrences by exercise uuid
+ * first, then counts groups with at least one logged set — so the same
+ * exercise split across two records in one workout still counts once.
  */
 private fun performedExerciseCount(workoutExercises: List<WorkoutExercise>): Int {
     val byExercise = LinkedHashMap<String, MutableList<WorkoutExercise>>()

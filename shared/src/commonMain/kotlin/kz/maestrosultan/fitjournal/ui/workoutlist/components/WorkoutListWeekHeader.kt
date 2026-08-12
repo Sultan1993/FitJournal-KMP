@@ -33,12 +33,7 @@ import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.abs
 
-/**
- * A week section's header (design WH4/WH5): title ("This week" / "Last week" /
- * "20 – 26 Jul"), the "{workouts} · {tonnage}" summary, and the optional delta
- * pill — all on ONE baseline row — then the hand-rolled muscle-split bar (one
- * weighted segment per [WorkoutListContract.WeekSection.muscleSplit] entry).
- */
+/** Title/summary/delta pill on ONE baseline row, then the muscle-split bar. */
 @Composable
 fun WorkoutListWeekHeader(
     section: WorkoutListContract.WeekSection,
@@ -115,8 +110,7 @@ internal fun WorkoutListDeltaPill(
     modifier: Modifier = Modifier,
 ) {
     val positive = delta >= 0
-    // One green / one red, theme-agnostic: the shared positive/negative tokens as
-    // the text, on a 16%-alpha wash of the same tone. Identical in light and dark.
+    // Theme-agnostic tokens: same tone for text and its 16%-alpha wash, in both themes.
     val tone = if (positive) FjTheme.colors.positive else FjTheme.colors.negative
     val sign = if (positive) "+" else "−"
     Text(

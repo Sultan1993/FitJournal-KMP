@@ -69,7 +69,6 @@ fun WorkoutExerciseMenu(
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    // Always open fully expanded — no half-height stop.
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
@@ -109,16 +108,14 @@ fun WorkoutExerciseMenu(
                 onClick = onNote,
             )
             MenuRow(Res.drawable.ic_swap, stringResource(Res.string.workout_menu_replace), onClick = onReplace)
-            // A superset member offers "Remove from superset"; a standalone record
-            // offers "Add to superset" (when a next record exists to pair with).
+            // canAddToSuperset requires a next record to pair with.
             if (isSuperset) {
                 MenuRow(Res.drawable.ic_workout_superset, stringResource(Res.string.workout_menu_superset_remove), onClick = onRemoveFromSuperset)
             } else if (canAddToSuperset) {
                 MenuRow(Res.drawable.ic_workout_superset, stringResource(Res.string.workout_menu_superset_add), onClick = onAddToSuperset)
             }
 
-            // Group 3 — destructive. Mirrors the apps: a superset member has no
-            // standalone delete (it splits out via "Remove from superset").
+            // A superset member has no standalone delete — it splits out via "Remove from superset".
             if (!isSuperset) {
                 MenuDivider()
                 MenuRow(
@@ -137,8 +134,7 @@ private fun MenuDivider() {
     HorizontalDivider(
         modifier = Modifier.padding(horizontal = 16.dp),
         thickness = 1.dp,
-        // The same faint hairline used on the cards / session bar — subtler than
-        // the solid border token, matching the design.
+        // Same faint hairline as the cards / session bar — subtler than the solid border token.
         color = FjTheme.colors.textPrimary.copy(alpha = 0.08f),
     )
 }

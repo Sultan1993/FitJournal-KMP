@@ -44,13 +44,12 @@ import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutCalendar
 
 /**
- * The shared Workout WorkoutList body — the calendar overlay (in the layout flow,
- * same animation as WorkoutScreen), then the content: a Vico weekly-volume hero
- * that scrolls with the list, week-grouped day rows, or the empty state. Hosted
- * inside each app's native nav shell (which owns the top bar and the calendar
- * bar-button). Pull-to-refresh is host-injected and fully opaque: [onRefresh]
- * and [isRefreshing] are passed straight through — shared code never learns they
- * are bound to sync, and never interprets [isRefreshing].
+ * Calendar overlay (in the layout flow, same animation as WorkoutScreen), then
+ * a weekly-volume hero that scrolls with the list, week-grouped day rows, or
+ * the empty state. Hosted inside each app's native nav shell (owns the top bar
+ * / calendar button). Pull-to-refresh is host-injected and fully opaque:
+ * [onRefresh]/[isRefreshing] pass straight through — shared code never learns
+ * they're bound to sync.
  */
 @Composable
 fun WorkoutListScreen(
@@ -78,8 +77,7 @@ private fun WorkoutListBody(
 ) {
     Box(modifier = Modifier.fillMaxSize().background(FjTheme.colors.background)) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // In the layout flow (not an overlay): expanding it pushes the content
-            // down. Identical animation spec to WorkoutScreen.
+            // In the layout flow (not an overlay) — expanding it pushes content down.
             AnimatedVisibility(
                 visible = state.calendarVisible,
                 enter = expandVertically(tween(240), expandFrom = Alignment.Top) + fadeIn(tween(200)),
@@ -123,9 +121,8 @@ private fun WorkoutListContentArea(
             }
 
         is WorkoutListContract.Content.Empty -> {
-            // Native parity: the empty state stays pull-to-refreshable. A scrollable
-            // LazyColumn (empty item fills the viewport) gives PTR its overscroll
-            // gesture even with no rows; without an onRefresh, no PTR machinery.
+            // LazyColumn (even though empty) gives PTR its overscroll gesture;
+            // no onRefresh -> no PTR at all.
             val empty: @Composable (Modifier) -> Unit = { m ->
                 LazyColumn(modifier = m.fillMaxSize()) {
                     content.journalRow?.let { row ->
@@ -179,9 +176,8 @@ private fun WorkoutListList(
     val list: @Composable (Modifier) -> Unit = { listModifier ->
         LazyColumn(
             state = listState,
-            // No horizontal contentPadding: day rows span the full width so their
-            // click ripple runs edge-to-edge. Non-row items carry their own 20dp
-            // side inset; day rows pad their content internally (see WorkoutListDayRow).
+            // No horizontal contentPadding — day rows span full width so their
+            // ripple runs edge-to-edge; other items self-inset.
             modifier = listModifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = bottomInset + 30.dp),
         ) {
@@ -227,15 +223,12 @@ private fun WorkoutListList(
         }
     }
 
-    // Matching 40dp scroll fades top and bottom: content dissolves into the
-    // background at both edges. Drawn via drawWithContent so they never intercept
-    // touches (rows and PTR stay fully interactive).
+    // drawWithContent (not an overlay) so the fade never intercepts touches.
     val background = FjTheme.colors.background
     val faded = modifier.drawWithContent {
         drawContent()
         val fade = 40.dp.toPx()
-        // Top: only once content is scrolled above the viewport (not at rest at the
-        // very top). background at the top edge -> transparent by `fade`.
+        // Only when scrolled past top — avoids fading content flush with the top.
         if (listState.canScrollBackward) {
             drawRect(
                 brush = Brush.verticalGradient(
@@ -247,7 +240,7 @@ private fun WorkoutListList(
                 size = Size(size.width, fade),
             )
         }
-        // Bottom: mirror of the top (design WH4/WH5).
+        // Bottom: mirrors the top gradient.
         drawRect(
             brush = Brush.verticalGradient(
                 colors = listOf(Color.Transparent, background),
@@ -259,8 +252,7 @@ private fun WorkoutListList(
         )
     }
 
-    // PTR machinery composes ONLY when a refresh lambda was injected; otherwise
-    // no PullToRefreshBox at all. isRefreshing is passed through, never read here.
+    // PullToRefreshBox composes only when onRefresh was injected.
     Box(modifier = faded) {
         if (onRefresh != null) {
             PullToRefreshBox(isRefreshing = isRefreshing, onRefresh = onRefresh, modifier = Modifier.fillMaxSize()) {

@@ -55,9 +55,8 @@ fun WorkoutPageContent(
     onRequestAdd: (workoutNumber: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // The ephemeral N+1 page invites ANOTHER workout; an empty real page (the
-    // day's first workout, or one started but not yet logged) is the primary
-    // "add exercises to start" empty state — the native illustration + hint.
+    // The ephemeral N+1 page invites ANOTHER workout; an empty real page (first
+    // workout, or one started but not yet logged) gets the "add exercises" empty state.
     if (page.isPlaceholder) {
         AnotherWorkoutPlaceholder(
             title = stringResource(Res.string.workout_another_workout_title),
@@ -75,9 +74,8 @@ fun WorkoutPageContent(
         return
     }
 
-    // Optimistic order — re-seeded when the persisted records change (including
-    // after our own drop round-trips back through SQLite), otherwise retained
-    // across recompositions so the drag isn't undone mid-gesture.
+    // Optimistic order, re-seeded when persisted records change (incl. our own drop
+    // round-tripping through SQLite); otherwise retained so a drag isn't undone mid-gesture.
     var orderedRecords by remember(page.records) { mutableStateOf(page.records) }
     val lazyListState = rememberLazyListState()
     val reorderState = rememberReorderableLazyListState(lazyListState) { from, to ->
@@ -100,8 +98,7 @@ fun WorkoutPageContent(
         contentPadding = PaddingValues(top = 24.dp, bottom = 140.dp),
     ) {
         item {
-            // Finished + timed workout → the 4b card (times, duration, Share);
-            // otherwise the plain centered muscle title.
+            // Finished + timed workout gets the 4b card (times, duration, Share); else the plain title.
             val session = page.session
             if (session?.endedAt != null) {
                 WorkoutSessionCard(
@@ -126,8 +123,7 @@ fun WorkoutPageContent(
                         dispatch(WorkoutContract.ViewAction.OpenExerciseFocus(exerciseId, null, true))
                     },
                     onExerciseMenu = { exercise -> menuTarget = MenuTarget(record, exercise) },
-                    // Tap anywhere else on the card → open focus for the record's
-                    // exercise (set rows / add-set / 3-dot consume their own taps first).
+                    // Set rows / add-set / 3-dot consume their own taps first.
                     onOpen = {
                         record.exercises.firstOrNull()?.let {
                             dispatch(WorkoutContract.ViewAction.OpenExerciseFocus(it.id, null, false))
@@ -139,8 +135,7 @@ fun WorkoutPageContent(
                         .longPressDraggableHandle(
                             onDragStopped = {
                                 // Only persist a real move — an accidental long-press
-                                // (drag activated, finger never moved) must not rewrite
-                                // positions and fire a sync tick.
+                                // (finger never moved) must not fire a sync tick.
                                 val newOrder = orderedRecords.map { it.id }
                                 if (newOrder != page.records.map { it.id }) {
                                     dispatch(WorkoutContract.ViewAction.Reorder(newOrder))

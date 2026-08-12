@@ -59,9 +59,8 @@ internal fun TitleEditor(
     modifier: Modifier = Modifier,
     maxLength: Int = ShareComposerContract.ViewState.MAX_TITLE_LENGTH,
 ) {
-    // The panel exists only to type in, so claim focus (and the keyboard) once
-    // on enter. requestFocus is imperative work that must not run in the
-    // composable body, hence the start-once effect.
+    // requestFocus is imperative work, so it needs the start-once effect rather
+    // than running directly in the composable body.
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
@@ -95,9 +94,8 @@ internal fun TitleEditor(
                 keyboardActions = KeyboardActions(onDone = { onSubmit() }),
                 decorationBox = { innerTextField ->
                     Box(contentAlignment = Alignment.CenterStart) {
-                        // isBlank, not isEmpty: a single space has length 1, so
-                        // the placeholder would vanish while the card headline
-                        // rendered invisible whitespace.
+                        // isBlank not isEmpty: a single space has length 1 and would
+                        // hide the placeholder while rendering invisible whitespace.
                         if (title.isBlank()) {
                             Text(
                                 text = stringResource(Res.string.postworkout_title_fallback),

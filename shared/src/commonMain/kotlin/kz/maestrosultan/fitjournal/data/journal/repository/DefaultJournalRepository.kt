@@ -78,8 +78,7 @@ class DefaultJournalRepository(
     }
 
     override suspend fun deleteJournal(uuid: String) {
-        // Live-only read: a missing or already-tombstoned journal has nothing to
-        // cascade, and re-running would only re-stamp `deletedAt`.
+        // Live-only read: a missing/tombstoned journal has nothing to cascade.
         val journal = localDataSource.getJournalById(uuid) ?: return
         val now = Clock.System.now()
         localDataSource.softDeleteJournalCascade(
@@ -92,10 +91,8 @@ class DefaultJournalRepository(
 
     override suspend fun deleteUserJournals(userId: String) {
         val now = Clock.System.now()
-        // Soft-delete every live journal owned by [userId]. The DS-level
-        // method does this as a single bulk UPDATE under the partial
-        // `idx_diaries_user_live` index — O(rows-touched), no per-row
-        // round-trip.
+        // Single bulk UPDATE under the partial `idx_diaries_user_live` index —
+        // O(rows-touched), no per-row round-trip.
         localDataSource.softDeleteJournalsByUserId(userId, deletedAt = now, updatedDate = now)
     }
 }

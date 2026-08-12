@@ -18,15 +18,14 @@ import kz.maestrosultan.fitjournal.ui.workoutlist.WorkoutListContract
 private const val HERO_WEEK_COUNT = 11
 
 /**
- * Folds the selected journal's recent records into the [kz.maestrosultan.fitjournal.ui.workoutlist.WorkoutListContract.Content]
- * the WorkoutList screen renders. Pure — no coroutines, no repositories, no unit
- * conversion: tonnage stays in the raw stored number ([TonnageCalculator]), the
- * host relabels it at render time from the current measurement system.
+ * Folds the selected journal's recent records into
+ * [kz.maestrosultan.fitjournal.ui.workoutlist.WorkoutListContract.Content]. Pure
+ * — no coroutines, no repositories, no unit conversion: tonnage stays raw
+ * ([TonnageCalculator]), the host relabels it at render time.
  *
- * `records` are already scoped to `selectedJournalId` by the caller; `journals`
- * is the full list (only its size and the selected name are used, for the
- * journal-switch row). `firstDayOfWeek` is passed explicitly so week bucketing
- * is deterministic and matches the calendar's locale week start.
+ * `records` are already scoped to `selectedJournalId`; `journals` is the full
+ * list (only size + selected name used). `firstDayOfWeek` is explicit so week
+ * bucketing matches the calendar's locale week start.
  */
 fun buildWorkoutListFeed(
     records: List<WorkoutRecord>,
@@ -47,9 +46,8 @@ fun buildWorkoutListFeed(
     fun tonnageOf(weekStartDate: LocalDate): Double =
         TonnageCalculator.forRecords(buckets[weekStartDate].orEmpty())
 
-    // Delta: null while no earlier week holds data; else this week − the previous
-    // calendar week (an empty previous week contributes 0, so the week after a
-    // rest week reads its full tonnage; equal weeks read 0.0, not null).
+    // null until an earlier week has data; else this week − previous week
+    // (empty prior week contributes 0, so a rest-week recovery reads full tonnage).
     val earliestDataWeek = buckets.keys.min()
     fun delta(weekStartDate: LocalDate): Double? =
         if (weekStartDate <= earliestDataWeek) null

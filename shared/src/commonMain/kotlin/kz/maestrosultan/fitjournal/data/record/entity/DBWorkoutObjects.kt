@@ -17,16 +17,12 @@ data class DBLastOccurrence(
 )
 
 /**
- * The SQL row of `workoutRecords`. Internal: just the parent row, no
- * children. Most callers want [DBWorkoutRecord] (the full domain
- * record). Use this only on internal hydration paths and for sync push
- * (which iterates pending uploads then expands per-uuid).
+ * The SQL row of `workoutRecords` — parent only, no children. Most callers
+ * want [DBWorkoutRecord]; use this on internal hydration paths and sync push.
  *
- * `date` stays a `String` here because it's stored as a calendar day
- * (`yyyy-MM-dd`) — no zone, lex-sortable, and SQL filters compare it
- * lexicographically. Surfacing it as `Instant` would require choosing
- * a timezone, which is the wrong abstraction for "the day the user
- * worked out".
+ * `date` stays a `String` because it's a calendar day (`yyyy-MM-dd`) — no
+ * zone, lex-sortable, matches how SQL filters compare it. `Instant` would
+ * force a timezone choice, the wrong abstraction for "the day worked out".
  */
 data class DBWorkoutRecordRow(
     val uuid: String,
@@ -74,10 +70,8 @@ data class DBWorkoutExerciseWithSets(
 
 
 /**
- * A workout record — domain shape: an entry in the user's logbook. Has
- * its parent SQL row plus the child exercises (each with their child
- * sets). Hydrated from 3 SQL tables but presented as one domain object,
- * because that's what a "record" means in this app.
+ * A workout record: parent SQL row plus child exercises (each with their
+ * child sets). Hydrated from 3 SQL tables but presented as one object.
  */
 data class DBWorkoutRecord(
     val row: DBWorkoutRecordRow,

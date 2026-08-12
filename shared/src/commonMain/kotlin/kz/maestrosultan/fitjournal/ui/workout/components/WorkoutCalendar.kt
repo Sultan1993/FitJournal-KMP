@@ -70,8 +70,7 @@ fun WorkoutCalendar(
     onMonthChanged: (year: Int, month: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Locale-aware week ordering; the header labels and the grid share one source
-    // so a Monday-first (or Sunday-first) locale stays consistent across both.
+    // Locale-aware week start, shared by header labels and grid so they can't disagree.
     val weekDays = remember { daysOfWeek() }
     val firstDayOfWeek = weekDays.first()
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
@@ -88,8 +87,7 @@ fun WorkoutCalendar(
         outDateStyle = OutDateStyle.EndOfGrid,
     )
 
-    // Report the settled visible month. snapshotFlow emits the current value on
-    // first collection, so the initial month fires too (dots load on open).
+    // snapshotFlow emits on first collection too, so the initial month fires (dots load on open).
     val latestOnMonthChanged by rememberUpdatedState(onMonthChanged)
     LaunchedEffect(state) {
         snapshotFlow { state.firstVisibleMonth.yearMonth }
@@ -105,7 +103,7 @@ fun WorkoutCalendar(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        // Month + year — swipe the calendar to change months (no arrows).
+        // Swipe changes the month; no arrow buttons.
         Text(
             text = "${LocaleFormatters.monthName(visibleMonth.month.ordinal + 1, NameStyle.Full)} ${visibleMonth.year}",
             style = FjTheme.typography.cardTitle,
@@ -114,7 +112,6 @@ fun WorkoutCalendar(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        // Weekday header, aligned to the calendar's firstDayOfWeek.
         Row(modifier = Modifier.fillMaxWidth()) {
             for (day in weekDays) {
                 Text(
@@ -154,13 +151,11 @@ private fun DayCell(
 ) {
     val isMonthDate = day.position == DayPosition.MonthDate
 
-    // Fade the selection circle and number color rather than hard-flipping them.
     val circleColor by animateColorAsState(
         targetValue = if (isSelected) FjTheme.colors.brand else Color.Transparent,
         label = "daySelectionCircle",
     )
-    // Today's number is tinted, no fill (accent in dark, brand in light) — native
-    // parity. A selected day still wins (white on the brand circle).
+    // Today is tinted with no fill (accent in dark, brand in light); selected still wins.
     val todayTint = if (FjTheme.colors.isDark) FjTheme.colors.accent else FjTheme.colors.brand
     val numberColor by animateColorAsState(
         targetValue = when {
@@ -177,9 +172,8 @@ private fun DayCell(
     Box(
         modifier = modifier
             .aspectRatio(1f)
-            // The whole cell stays tappable but carries no indication itself — the
-            // ripple is drawn on the circle below (same interaction source), so it
-            // matches the round highlight instead of filling the square.
+            // No indication here — the ripple is drawn on the circle below (same
+            // interaction source) so it's round, not a square fill.
             .then(
                 if (isMonthDate) {
                     Modifier.clickable(

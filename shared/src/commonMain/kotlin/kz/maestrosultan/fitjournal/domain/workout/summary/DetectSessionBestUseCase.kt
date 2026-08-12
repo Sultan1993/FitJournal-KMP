@@ -46,9 +46,8 @@ class DetectSessionBestUseCase(
             val sessionMaxWeight = sessionBestSet.weight ?: continue
             val priorBest = records
                 .getWeightedSetHistoryForExercise(userId, journalId, exerciseUuid, upToDate = date)
-                // History is strictly BEFORE this workout: not its own records, and
-                // not a later same-day workout (time-stability when rebuilding after
-                // workout N+1 was logged).
+                // Strictly before this workout: excludes own records and any later
+                // same-day workout (time-stability when rebuilding after workout N+1).
                 .filter {
                     it.recordUuid !in sessionRecordUuids &&
                         (it.date != date || it.workoutNumber <= workoutNumber)

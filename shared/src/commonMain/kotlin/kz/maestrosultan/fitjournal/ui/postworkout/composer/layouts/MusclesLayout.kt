@@ -65,9 +65,8 @@ internal fun ShareCardScope.MusclesLayout(
                 maxLines = 1,
                 modifier = Modifier.alignByBaseline(),
             )
-            // Blank while the "N muscle groups" plural is still missing from
-            // strings.xml — the headline degrades to the set count alone
-            // rather than shipping an untranslated string.
+            // Blank while the "N muscle groups" plural is missing from strings.xml —
+            // degrades to the set count alone rather than an untranslated string.
             if (data.musclesSubline.isNotBlank()) {
                 Spacer(Modifier.width(dp(8f)))
                 Text(

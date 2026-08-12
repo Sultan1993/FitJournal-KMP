@@ -80,9 +80,8 @@ class ImportWorkoutViewModel(
     }
 
     private fun onSelectSourceDate(date: LocalDate) {
-        // Clear rows + selection and show loading SYNCHRONOUSLY, so the new date's
-        // header can never sit over the old day's (still-importable) rows while the
-        // read is in flight. loadSource republishes when it lands.
+        // Show loading SYNCHRONOUSLY so the new date's header never sits over the
+        // old day's still-importable rows while the read is in flight.
         _uiState.update {
             it.copy(
                 sourceDate = date,

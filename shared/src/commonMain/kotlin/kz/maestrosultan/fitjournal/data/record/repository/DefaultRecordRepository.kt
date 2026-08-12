@@ -35,39 +35,34 @@ import kz.maestrosultan.fitjournal.data.record.entity.DBWorkoutSetObject
 import kz.maestrosultan.fitjournal.data.time.toStoredString
 
 /**
- * Local-first RecordRepository (KMP shared). KMP SQLite is the only
- * source of truth.
+ * Local-first RecordRepository (KMP shared). KMP SQLite is the only source
+ * of truth; no network calls.
  *
  * Reads come from `WorkoutsDBDataSource` — the joined tree (record +
- * exercises + sets), filtered by `deletedAt IS NULL` at the SQL level.
- * Each read pre-fetches the user's exercise catalog ([exerciseLookupForRead])
+ * exercises + sets), filtered by `deletedAt IS NULL` at the SQL level. Each
+ * read pre-fetches the user's exercise catalog ([exerciseLookupForRead])
  * once and resolves `WorkoutExercise.exercise` via an in-memory map,
  * avoiding per-row catalog SELECTs.
  *
- * `WorkoutExercise.lastOccurrence` is derived per read, never stored: for each
- * catalog exercise in the tree, the most recent prior occurrence is resolved
- * in-memory from the already-loaded trees, with the "oldest in window" cases
- * falling through to one batched query per distinct record date. It carries the
- * prior occurrence's date and full set list; aligning a current set against it
- * is `LastOccurrence.setAt(position)`, shared by both platforms.
- * `getRecentRecords` skips the whole computation (`includeLastOccurrence =
- * false`) because the history feed doesn't render hints.
+ * `WorkoutExercise.lastOccurrence` is derived per read, never stored: for
+ * each catalog exercise, the most recent prior occurrence resolves in-memory
+ * from the already-loaded trees, with "oldest in window" cases falling
+ * through to one batched query per distinct record date. It carries the
+ * prior occurrence's date and full set list; aligning a current set against
+ * it is `LastOccurrence.setAt(position)`, shared by both platforms.
+ * `getRecentRecords` skips the computation entirely (`includeLastOccurrence
+ * = false`) since the history feed doesn't render hints.
  *
  * Writes update SQLite atomically via `replaceWorkoutRecord` and bump
- * `pendingUpload=1` on the parent. Children of a workoutRecord don't
- * carry their own `pendingUpload` — child mutations bubble up via the
- * parent so the SyncWorker re-encodes the full JSON tree on push.
+ * `pendingUpload=1` on the parent — children don't carry their own flag;
+ * mutations bubble up so the SyncWorker re-encodes the full JSON tree.
  *
- * No network calls. The legacy `WorkoutRecordsRemoteDataSource` is only
- * (was consumed by the one-shot Parse `WorkoutsMigrator` import, now deleted).
- *
- * [database] backs ONLY [deleteWorkoutAtomic] — every other method goes
- * through [workoutsDB] / [exercisesDB] as before. It is nullable so the
- * legacy 3-arg constructor below (which has no database reference to give)
- * can pass `null`; [deleteWorkoutAtomic] requires it and throws if a caller
- * built this repository without one. [afterRecordTombstones] is an
- * `internal` mid-transaction test seam for jvmTest to force a rollback (see
- * [deleteWorkoutAtomic]) — always `null` outside tests.
+ * [database] backs ONLY [deleteWorkoutAtomic]; every other method goes
+ * through [workoutsDB]/[exercisesDB]. It's nullable so the legacy 3-arg
+ * constructor below can pass `null` — [deleteWorkoutAtomic] throws without
+ * it. [afterRecordTombstones] is an `internal` mid-transaction test seam for
+ * jvmTest to force a rollback (see [deleteWorkoutAtomic]) — always `null`
+ * outside tests.
  */
 class DefaultRecordRepository(
     private val workoutsDB: WorkoutsDBDataSource,
@@ -78,16 +73,13 @@ class DefaultRecordRepository(
 ) : RecordRepository {
 
     /**
-     * Swift-facing entry point, mirroring `DefaultWorkoutSessionRepository`'s
-     * secondary-constructor pattern: Kotlin/Native does not reliably bridge
-     * default parameter values to Swift call sites, so iOS (and every
-     * pre-existing caller) keeps this narrower 3-arg shape. [database] has no
-     * default on the primary constructor above deliberately — that keeps this
-     * overload's arity (3) from ever overlapping with the primary's (4-5), so
-     * there is no resolution ambiguity for existing 3-arg call sites.
-     * [deleteWorkoutAtomic] is unavailable through this constructor (throws)
-     * until the caller is migrated to the primary constructor with a real
-     * [database].
+     * Swift-facing entry point (Kotlin/Native doesn't reliably bridge default
+     * parameter values to Swift), mirroring
+     * `DefaultWorkoutSessionRepository`'s secondary-constructor pattern.
+     * [database] has no default on the primary constructor deliberately, so
+     * this 3-arg overload's arity never overlaps the primary's (4-5).
+     * [deleteWorkoutAtomic] throws through this constructor until the caller
+     * migrates to the primary one with a real [database].
      */
     constructor(
         workoutsDB: WorkoutsDBDataSource,
@@ -106,9 +98,8 @@ class DefaultRecordRepository(
     ): List<WorkoutRecord> {
         val exerciseLookup = exerciseLookupForRead(userId)
         val trees = workoutsDB.getWorkoutRecordsByJournal(userId, journalId)
-        // The only unbounded read in the app. Consumers are the workload
-        // aggregate and the workoutExercise-comment editor — neither renders
-        // hints, so skip the compute AND the boundary SQL fallback.
+        // Only unbounded read in the app; consumers (workload aggregate,
+        // comment editor) don't render hints, so skip the whole computation.
         return toDomainList(trees, exerciseLookup, includeLastOccurrence = false)
     }
 
@@ -158,20 +149,16 @@ class DefaultRecordRepository(
         journalId: String,
     ): List<WorkoutRecord> {
         val exerciseLookup = exerciseLookupForRead(userId)
-        // Caps at the last 3 years. Data older than that has little value in
-        // the linear feed; older sessions stay reachable via the (uncapped)
-        // calendar reads. The partial index on
-        // (userId, journalId, date DESC) WHERE deletedAt IS NULL plus the
-        // JOIN-based bulk read load the whole window in one shot, and
-        // toDomainList maps it off the UI thread — so even a multi-year
-        // window never blocks the UI regardless of row count.
+        // Caps at 3 years — older sessions stay reachable via the uncapped
+        // calendar reads. The partial index on (userId, journalId, date DESC)
+        // WHERE deletedAt IS NULL loads the window in one shot, and
+        // toDomainList maps it off the UI thread, so this never blocks the UI.
         val today = todayInSystemTz()
         val windowStart = today.minusYearsSafe(3).toString()
         val to = "9999-12-31"
         val trees = workoutsDB.getWorkoutRecordsByJournal(userId, journalId, windowStart, to)
-        // Workout-history list cells don't render hints — skip the bulk
-        // compute + boundary SQL fallback entirely. Saves ~5ms on a 3-year
-        // window for a heavy user.
+        // History list cells don't render hints — skip the computation
+        // entirely. Saves ~5ms on a 3-year window for a heavy user.
         return toDomainList(trees, exerciseLookup, includeLastOccurrence = false)
     }
 
@@ -180,16 +167,13 @@ class DefaultRecordRepository(
         journalId: String,
         exerciseId: String,
     ): List<WorkoutExercise> {
-        // 1 SQL: catalog row (with categories). uuid PK lookup. Returns
-        // null if the catalog row was soft-deleted; in that case the
-        // screen has nothing legitimate to render, so bail.
+        // Null if the catalog row was soft-deleted — nothing legitimate to render.
         val dbExercise = exercisesDB.getExerciseByUuid(exerciseId)
             ?: return emptyList()
         val domainExercise = mapper(dbExercise)
-        // 1 SQL: every set for this exercise in the 3-year window, with
-        // recordDate + workoutExercise.comment surfaced via the mapper.
-        // Group by workoutExerciseUuid in Kotlin to rebuild the
-        // per-occurrence shape History/Stats expect.
+        // Every set for this exercise in the 3-year window, recordDate +
+        // comment surfaced via the mapper; group by workoutExerciseUuid to
+        // rebuild the per-occurrence shape History/Stats expect.
         val rows = exerciseDetailsWindow().let { (from, to) ->
             workoutsDB.getSetsForExerciseInJournal(
                 exerciseUuid = exerciseId,
@@ -204,9 +188,8 @@ class DefaultRecordRepository(
             .groupBy { it.set.workoutExerciseUuid }
             .mapNotNull { (weUuid, group) ->
                 val first = group.first()
-                // Defensive: a malformed stored date (e.g. a legacy "…Z" value
-                // written before the pull-side normalization) must not throw and
-                // sink the whole occurrence list — skip just that occurrence.
+                // A malformed stored date (e.g. a legacy "…Z" value) must not
+                // throw and sink the whole list — skip just that occurrence.
                 val recordDate = runCatching { LocalDate.parse(first.recordDate) }.getOrNull()
                     ?: return@mapNotNull null
                 WorkoutExercise(
@@ -236,10 +219,8 @@ class DefaultRecordRepository(
     ): List<WorkoutSet> {
         val today = todayInSystemTz()
         val (from, to) = exerciseDetailsWindow()
-        // Same SQL as `getExerciseOccurrences`. Info-tab "best weight /
-        // best cardio" just wants a flat list of sets in the window;
-        // date is per-row and surfaces on the returned `WorkoutSet`.
-        // workoutExercise.comment is irrelevant here, so we drop it.
+        // Same SQL as `getExerciseOccurrences`; Info-tab wants a flat list of
+        // sets in the window, so workoutExercise.comment is dropped.
         return workoutsDB.getSetsForExerciseInJournal(
             exerciseUuid = exerciseId,
             userId = userId,
@@ -276,11 +257,9 @@ class DefaultRecordRepository(
             WeightedHistoryRow(recordUuid, workoutNumber, recordDate, weight, reps)
         }
         .mapNotNull { row ->
-            // SQL already filters `weight IS NOT NULL` — this null-check is the
-            // type-level seam into the non-null domain field, not a second
-            // filter. And a malformed stored date must not throw and sink the
-            // whole history — skip just that row (mirrors
-            // getExerciseOccurrences).
+            // SQL already filters `weight IS NOT NULL` — this is the type-level
+            // seam into the non-null domain field, not a second filter. A
+            // malformed stored date skips just that row (mirrors getExerciseOccurrences).
             val weight = row.weight ?: return@mapNotNull null
             val date = runCatching { LocalDate.parse(row.recordDate) }.getOrNull()
                 ?: return@mapNotNull null
@@ -294,10 +273,8 @@ class DefaultRecordRepository(
         }
 
     /**
-     * 3-year window (`[threeYearsAgo, far-future)`). Matches the app-wide
-     * windowing rule applied by `getRecentRecords` so the exercise
-     * details page never surfaces history older than the rest of the
-     * app shows.
+     * 3-year window (`[threeYearsAgo, far-future)`), matching `getRecentRecords`
+     * so the exercise details page never surfaces older history than the rest of the app.
      */
     private fun exerciseDetailsWindow(): Pair<String, String> {
         val from = todayInSystemTz().minusYearsSafe(3).toString()
@@ -306,12 +283,10 @@ class DefaultRecordRepository(
     }
 
     /**
-     * One SQL call to the exercise catalog (with categories pre-joined),
-     * shaped into a `[uuid: Exercise]` lookup so toDomain can resolve
-     * `WorkoutExercise.exercise` without per-row SELECTs. Pure read; no
-     * state retained between calls — SQLite is the source of truth.
-     * User-scoped so customs from a previous logged-in account don't
-     * leak in after an account switch.
+     * One SQL call to the exercise catalog (categories pre-joined), shaped
+     * into a `[uuid: Exercise]` lookup so toDomain resolves
+     * `WorkoutExercise.exercise` without per-row SELECTs. User-scoped so
+     * customs from a previous account don't leak in after a switch.
      */
     private suspend fun exerciseLookupForRead(userId: String): Map<String, Exercise> {
         val dbExercises = exercisesDB.getAllExercisesWithCategoriesBatch(userId)
@@ -381,7 +356,7 @@ class DefaultRecordRepository(
         date: LocalDate,
     ) {
         val source = getRecordsByDate(userId, journalId, date)
-        // Repeat-workout copies the whole day "as is" — keep each source's page.
+        // Repeat-workout copies the whole day "as is": keep each source's page.
         insertCopiedRecords(userId, journalId, todayInSystemTz(), source, targetWorkoutNumber = null)
     }
 
@@ -420,12 +395,11 @@ class DefaultRecordRepository(
      * Recreates [sources] as fresh records on [date], preserving the exercise
      * list, their comments and each exercise's SET COUNT — but no values.
      *
-     * Reps/duration are cleared along with weight/distance, deliberately. They
-     * used to be carried over, which made a copied row a hybrid: its reps came
-     * from the copied date while its ghost weight came from `lastOccurrence`
-     * (the most recent session, often a different day). Importing 24 July after
-     * training on 27 July rendered "22 kg × 12" — 22 kg from the 27th, 12 reps
-     * from the 24th, a set that never happened. An empty row instead shows the
+     * Reps/duration are cleared along with weight/distance, deliberately: they
+     * used to carry over, which made a copied row a hybrid — reps from the
+     * copied date, ghost weight from `lastOccurrence` (a different, more
+     * recent day). Importing 24 July after training on 27 July rendered
+     * "22 kg × 12", a set that never happened. An empty row instead shows the
      * last real session's pair, whole.
      */
     private suspend fun insertCopiedRecords(
@@ -438,11 +412,9 @@ class DefaultRecordRepository(
         if (sources.isEmpty()) return
         val now = Clock.System.now()
         val dateStr = date.toString()
-        // [targetWorkoutNumber] set (import-into-a-page) → every copy lands on that
-        // page; null (Repeat-workout) → each keeps its source's workoutNumber ("copy
-        // as is": a 2-workout day copies back as 2 workouts). Position is page-
-        // relative, so append per workout — seed each workout's counter from the
-        // target date's existing records for that number, then increment in order.
+        // [targetWorkoutNumber] set → every copy lands on that page; null
+        // (Repeat-workout) → each keeps its source's workoutNumber. Position is
+        // page-relative: seed each workout's counter from existing records, then increment.
         val from = dateStr
         val to = date.plusDaysSafe(1).toString()
         val nextPosition = mutableMapOf<Int, Int>()
@@ -487,10 +459,8 @@ class DefaultRecordRepository(
     }
 
     /**
-     * Highest `position` among the live records on [date] that belong to
-     * [workoutNumber] — position is page-relative, so this scopes to the one
-     * workout. -1 when that workout has no records yet, so the first new record
-     * lands at position 0.
+     * Highest `position` among live records on [date] for [workoutNumber]
+     * (position is page-relative). -1 when empty, so the first record lands at 0.
      */
     private suspend fun lastRecordPositionForDate(
         userId: String,
@@ -585,13 +555,10 @@ class DefaultRecordRepository(
 
         val basePosition = firstTree.exercises.size
         val mergedTail = secondTree.exercises.mapIndexed { idx, exWithSets ->
-            // Re-parent each merged exercise: new uuid (so AWS doesn't
-            // confuse it with the source record's child) + updated
-            // workoutRecordUuid + bumped position. Sets need fresh uuids too:
-            // softDeleteWorkoutRecord only tombstones the source record row,
-            // so the source's workoutSets rows physically remain — reusing
-            // their uuids collides on the PK (UNIQUE constraint failed:
-            // workoutSets.uuid) when replaceWorkoutRecord reinserts them.
+            // Re-parent: new uuid + updated workoutRecordUuid + bumped position.
+            // Sets need fresh uuids too — softDeleteWorkoutRecord only
+            // tombstones the source record row, so its workoutSets rows
+            // physically remain; reusing their uuids collides on the PK.
             val newExUuid = randomUuid()
             val newSets = exWithSets.sets.map {
                 it.copy(uuid = randomUuid(), workoutExerciseUuid = newExUuid)
@@ -606,8 +573,8 @@ class DefaultRecordRepository(
             )
         }
         val mergedExercises = firstTree.exercises + mergedTail
-        // One transaction: absorbing + tombstoning must not be separable
-        // (a crash between them would leave duplicate live copies).
+        // One transaction: a crash between absorbing and tombstoning would
+        // leave duplicate live copies.
         workoutsDB.mergeWorkoutRecords(
             merged = firstTree.copy(
                 row = firstTree.row.copy(updatedDate = Clock.System.now()),
@@ -632,19 +599,17 @@ class DefaultRecordRepository(
         val tree = workoutsDB.getWorkoutRecordById(record.id) ?: return emptyList()
         val removed = tree.exercises.firstOrNull { it.exercise.uuid == exercise.id }
         val remaining = tree.exercises.filterNot { it.exercise.uuid == exercise.id }
-        // "Remove from superset" is a SPLIT (mergeRecords' inverse), not a delete:
-        // the exercise leaves the shared record into its own record right after it.
-        // A record with a single exercise isn't a superset — nothing to split.
+        // "Remove from superset" is a SPLIT (mergeRecords' inverse), not a
+        // delete. A record with a single exercise isn't a superset — nothing to split.
         if (removed != null && remaining.isNotEmpty()) {
             val now = Clock.System.now()
             val repositioned = remaining.mapIndexed { idx, exWithSets ->
                 exWithSets.copy(exercise = exWithSets.exercise.copy(position = idx))
             }
             // The split-off exercise keeps its uuid and sets in a new record.
-            // splitWorkoutRecord runs reposition + same-day sibling shift +
-            // insert in ONE transaction (siblings are read inside it) — the
-            // removed exercise must never be observable as missing from both
-            // records (crash / concurrent sync push).
+            // splitWorkoutRecord runs reposition + sibling shift + insert in
+            // ONE transaction — the exercise must never be observable as
+            // missing from both records (crash / concurrent sync push).
             val newRecordUuid = randomUuid()
             workoutsDB.splitWorkoutRecord(
                 source = tree.copy(
@@ -705,21 +670,17 @@ class DefaultRecordRepository(
 
     /**
      * ONE `database.transaction {}` covering both tables: every live record on
-     * (date, workoutNumber) gets the exact tombstone [deleteRecord] applies
-     * (raw `softDeleteWorkoutRecord`, same as [WorkoutsDBDataSource]'s), then
-     * the page's session row (if any) is hard-deleted. Any throw inside the
-     * block rolls back BOTH — this method is the only place cross-table
-     * atomicity for record+session lives, deliberately: SQLDelight
-     * transactions don't compose across suspend repository-method calls (each
-     * of [workoutsDB] / a `WorkoutSessionRepository`'s methods already opens
-     * and closes its own), so true atomicity needs raw same-transaction
-     * `Queries` calls, which only a method holding [database] directly can
-     * make.
+     * (date, workoutNumber) gets the same tombstone [deleteRecord] applies,
+     * then the page's session row (if any) is hard-deleted. Any throw rolls
+     * back BOTH. This is the only place cross-table atomicity for
+     * record+session lives, because SQLDelight transactions don't compose
+     * across suspend repository-method calls — true atomicity needs raw
+     * same-transaction `Queries` calls, which only a method holding
+     * [database] directly can make.
      *
      * [afterRecordTombstones] fires between the record loop and the session
-     * lookup — the `internal` jvmTest seam that forces a mid-transaction
-     * throw to prove the rollback (see `RecordRepositoryTest`). It is always
-     * `null` in production.
+     * lookup — the `internal` jvmTest seam forcing a mid-transaction throw to
+     * prove the rollback (see `RecordRepositoryTest`). Always `null` in production.
      */
     override suspend fun deleteWorkoutAtomic(
         userId: String,
@@ -820,9 +781,8 @@ class DefaultRecordRepository(
             }
             exWithSets.copy(sets = updatedSets)
         }
-        // The set was already gone (e.g. deleted by a concurrent sync pull):
-        // don't write — a no-op replaceWorkoutRecord would still bump
-        // updatedDate/pendingUpload and push a spurious, stale record.
+        // Set already gone (e.g. concurrent sync pull): don't write — a no-op
+        // replaceWorkoutRecord would still push a spurious, stale record.
         if (!matched) return false
         workoutsDB.replaceWorkoutRecord(
             tree.copy(
@@ -862,33 +822,26 @@ class DefaultRecordRepository(
     // ─── Mapping ───────────────────────────────────────────────────────
 
     /**
-     * Maps every tree → domain `WorkoutRecord`, dropping any whose
-     * children fail to resolve (e.g. catalog row hard-deleted).
-     */
-    /**
+     * Maps every tree → domain `WorkoutRecord`, dropping any whose children
+     * fail to resolve (e.g. catalog row hard-deleted).
+     *
      * @param includeLastOccurrence When true, computes the "you did 100kg×10
-     * last time" hint on every set. Uses an in-memory pass over the
-     * loaded trees + a bounded SQL fallback (one call per unique catalog
-     * exercise whose oldest occurrence lies at the window boundary).
-     * Set to false on list / aggregate paths (workout history, workload
-     * muscle data) where the hint is never rendered — those callers save
-     * the entire lastOccurrence computation including the boundary SQL
-     * calls. Only the logging paths (`getRecordsByDate` + its Flow) leave it
-     * true — everything else (workload, calendar, history feed) opts out.
+     * last time" hint on every set (in-memory pass + a bounded SQL fallback
+     * for exercises whose oldest occurrence sits at the window boundary).
+     * List/aggregate paths (history, workload) set it false and skip the
+     * whole computation; only `getRecordsByDate` (+ its Flow) leaves it true.
      */
     private suspend fun toDomainList(
         trees: List<DBWorkoutRecord>,
         exerciseLookup: Map<String, Exercise>,
         includeLastOccurrence: Boolean = true,
     ): List<WorkoutRecord> = withContext(Dispatchers.Default) {
-        // The CPU mapping (O(records×exercises×sets)) and buildLastOccurrenceMap's
-        // in-memory sort/group are the dominant cost of every tree read. Force
-        // them onto Default so they never run on the caller's dispatcher —
-        // several Android callers reach this via a dispatcher-less
-        // viewModelScope.launch (Main) or an eager flowOf(useCase()) that a
-        // downstream .flowOn() can't rescue. Nested datasource SQL still hops
-        // to IO. This is the single guard that keeps any record read — at any
-        // row count — off the UI thread on both platforms.
+        // The O(records×exercises×sets) mapping + buildLastOccurrenceMap's
+        // sort/group are the dominant cost here. Forced onto Default so they
+        // never run on the caller's dispatcher — several Android callers
+        // reach this via a dispatcher-less viewModelScope.launch (Main) that
+        // a downstream .flowOn() can't rescue. Keeps every record read off
+        // the UI thread regardless of row count.
         if (trees.isEmpty()) return@withContext emptyList()
         val lastOccurrenceMap = if (includeLastOccurrence) {
             buildLastOccurrenceMap(trees)
@@ -905,20 +858,18 @@ class DefaultRecordRepository(
 
     /**
      * Builds `weUuid -> DBLastOccurrence` for every workoutExercise inside
-     * [trees]. For each catalog exercise, the last occurrence is the most recent
-     * prior one in chronological order
+     * [trees]. For each catalog exercise, the last occurrence is the most
+     * recent prior one in chronological order
      * `(record.date DESC, record.position DESC, we.position DESC)`; its full
      * set list is carried so `LastOccurrence.setAt` can align per position
-     * (set N ← prior occurrence's set N) instead of stamping the last set
-     * onto every set. Most lookups resolve in-memory from the already-loaded
-     * trees. The remaining "oldest in window per exercise" cases fall through
-     * to [WorkoutsDBDataSource.getLastOccurrenceForExercisesBeforeDate].
+     * instead of stamping the last set everywhere. Most lookups resolve
+     * in-memory; "oldest in window per exercise" cases fall through to
+     * [WorkoutsDBDataSource.getLastOccurrenceForExercisesBeforeDate].
      */
     private suspend fun buildLastOccurrenceMap(
         trees: List<DBWorkoutRecord>,
     ): Map<String, DBLastOccurrence> {
-        // Flatten and group by catalog exerciseUuid so each group is a
-        // chronological chain of occurrences for one exercise.
+        // Group by catalog exerciseUuid: each group is a chronological chain.
         data class WeContext(
             val tree: DBWorkoutRecord,
             val exWithSets: DBWorkoutExerciseWithSets,
@@ -933,9 +884,8 @@ class DefaultRecordRepository(
         val boundary = ArrayList<WeContext>()
 
         for ((_, contexts) in byExerciseUuid) {
-            // Sort newest → oldest so each entry's "previous" is the
-            // NEXT one in the sorted list. Ordering matches
-            // `getLastWorkoutExercisesForExercisesBeforeDate`'s tiebreaker chain.
+            // Sort newest → oldest so each entry's "previous" is the next one;
+            // matches `getLastWorkoutExercisesForExercisesBeforeDate`'s tiebreaker chain.
             val sorted = contexts.sortedWith(
                 compareByDescending<WeContext> { it.tree.row.date }
                     .thenByDescending { it.tree.row.position }
@@ -950,16 +900,15 @@ class DefaultRecordRepository(
                         sets = prior.exWithSets.sets.sortedBy { it.position },
                     )
                 } else {
-                    // Oldest occurrence in this window — the real prior occurrence
-                    // (if any) is outside the loaded trees. Defer to SQL.
+                    // Oldest in this window — the real prior occurrence, if any,
+                    // is outside the loaded trees. Defer to SQL.
                     boundary.add(current)
                 }
             }
         }
 
-        // Batch the boundary lookups by date: one round-trip per distinct
-        // record date (a single-day read → one query) instead of one query
-        // per exercise. userId/journalId are constant across a single read.
+        // Batch boundary lookups by date: one round-trip per distinct record
+        // date instead of one query per exercise.
         for ((date, contexts) in boundary.groupBy { it.tree.row.date }) {
             val sample = contexts.first()
             val lastByExerciseUuid = workoutsDB.getLastOccurrenceForExercisesBeforeDate(
@@ -985,8 +934,8 @@ class DefaultRecordRepository(
     ): WorkoutRecord {
         val recordDate = LocalDate.parse(tree.row.date)
         val mappedExercises = tree.exercises.mapNotNull { exWithSets ->
-            // A soft-deleted catalog entry is a legitimate state, not a
-            // crash — drop just that one exercise from the rendered tree.
+            // A soft-deleted catalog entry is legitimate, not a crash —
+            // drop just that one exercise from the rendered tree.
             runCatching {
                 mapExercise(
                     exWithSets = exWithSets,
@@ -1019,8 +968,7 @@ class DefaultRecordRepository(
         exerciseLookup: Map<String, Exercise>,
         lastOccurrenceMap: Map<String, DBLastOccurrence>,
     ): WorkoutExercise {
-        // O(1) lookup against the per-call exercise dict (one SELECT off
-        // the catalog table, shaped for resolution).
+        // O(1) lookup against the per-call exercise dict.
         val domainExercise = exerciseLookup[exWithSets.exercise.exerciseUuid]
             ?: error("Catalog exercise not found: ${exWithSets.exercise.exerciseUuid}")
         val sets = exWithSets.sets.map { set ->
@@ -1032,14 +980,13 @@ class DefaultRecordRepository(
                 resultType = domainExercise.resultType,
             )
         }
-        // Pre-computed by `buildLastOccurrenceMap` — no per-we SQL call. Attached
-        // as ONE fact on the exercise; per-position alignment (including the
-        // overflow rule) is `LastOccurrence.setAt`, shared by both platforms.
+        // Pre-computed by `buildLastOccurrenceMap` — no per-we SQL call.
+        // Per-position alignment (incl. overflow rule) is
+        // `LastOccurrence.setAt`, shared by both platforms.
         val lastOccurrence = lastOccurrenceMap[exWithSets.exercise.uuid]?.let { db ->
-            // Parse once, and defensively: mapExercise runs inside
-            // `runCatching{}.getOrNull()` in toDomain, so throwing on a malformed
-            // stored date would silently drop the CURRENT exercise from the
-            // rendered tree. Losing the hint is the correct degradation.
+            // mapExercise runs inside runCatching{}.getOrNull() in toDomain, so
+            // throwing on a malformed date would drop the CURRENT exercise too.
+            // Losing just the hint is the correct degradation.
             val occurrenceDate = runCatching { LocalDate.parse(db.recordDate) }.getOrNull()
                 ?: return@let null
             LastOccurrence(

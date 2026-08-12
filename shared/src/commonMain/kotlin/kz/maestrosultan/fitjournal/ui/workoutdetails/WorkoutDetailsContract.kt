@@ -7,11 +7,9 @@ import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.exercise.Exercise
 
 /**
- * MVI contract for the shared WorkoutDetails screen (per-screen, not a shared generic
- * model — same shape as [kz.maestrosultan.fitjournal.ui.workoutlist.WorkoutListContract]).
- * Public rather than internal because the native iOS/Android hosts read
- * [ViewModel.viewState], collect [ViewModel.viewEffect] and call
- * [ViewModel.dispatch] across the SKIE bridge.
+ * MVI contract for the shared WorkoutDetails screen. Public rather than internal
+ * because native iOS/Android hosts read [ViewModel.viewState], collect
+ * [ViewModel.viewEffect], and call [ViewModel.dispatch] across the SKIE bridge.
  */
 object WorkoutDetailsContract {
 
@@ -52,9 +50,9 @@ object WorkoutDetailsContract {
     data class Header(val title: String, val subtitle: String)
 
     /**
-     * valueText/unitText split for the baseline-aligned hero ("10 480" + "kg"); unitText null for duration heroes.
-     * cardioText: aggregate cardio for MIXED scopes ("32 min · 5.1 km"), appended to the caption line;
-     * null when the scope is not mixed (cardio-only uses the duration-hero rule instead).
+     * valueText/unitText split for the baseline-aligned hero ("10 480" + "kg"); unitText
+     * null for duration heroes. cardioText: mixed-scope aggregate ("32 min · 5.1 km"),
+     * appended to the caption; null when not mixed.
      */
     data class Hero(val valueText: String, val unitText: String?, val caption: String, val cardioText: String?)
 
@@ -77,9 +75,9 @@ object WorkoutDetailsContract {
         /** Performed exercises: every group with at least one logged set. */
         val exerciseGroups: List<ExerciseGroup>,
         /**
-         * Skipped exercises: groups where EVERY member has no logged sets, shown in
-         * their own SKIPPED section (name + avatar only). A partial superset — some
-         * members logged — stays whole in [exerciseGroups]. Empty hides the section.
+         * Groups where EVERY member has no logged sets, shown in their own SKIPPED
+         * section. A partial superset (some members logged) stays whole in
+         * [exerciseGroups]. Empty hides the section.
          */
         val skippedGroups: List<ExerciseGroup>,
         /** Share button visibility: a session exists so a composer summary can be built. */
@@ -128,8 +126,8 @@ object WorkoutDetailsContract {
     sealed interface ViewEffect {
         data object Dismiss : ViewEffect
         /**
-         * workoutNumber = the focused workout at tap time. Hosts currently open the DAY pager and
-         * intentionally do not consume it (§4.3, non-goal §3) — carried for future deepening.
+         * workoutNumber = the focused workout at tap time. Hosts currently open the
+         * DAY pager and intentionally do not consume it — carried for future deepening.
          */
         data class OpenEditWorkout(val date: LocalDate, val workoutNumber: Int) : ViewEffect
         data class OpenShareComposer(val date: LocalDate, val workoutNumber: Int) : ViewEffect

@@ -92,9 +92,8 @@ private fun StatChip(
                 color = if (selected) brand else Color.Transparent,
                 shape = ChipShape,
             )
-            // selectable, not clickable: a chip's on/off state is the whole
-            // point, and it is otherwise carried only by color + weight — which
-            // screen readers (and tests) cannot see.
+            // selectable, not clickable: on/off state is otherwise carried only by
+            // color + weight, invisible to screen readers (and tests).
             .selectable(selected = selected, onClick = onClick)
             .padding(horizontal = 8.dp),
         contentAlignment = Alignment.Center,

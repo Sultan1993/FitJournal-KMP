@@ -66,7 +66,6 @@ class WorkoutSessionRepositoryTest {
         assertTrue(running.isRunning)
 
         testClock.instant += 3600.seconds
-        // Try to start a SECOND workout the same day while the first is running.
         val blocked = repo.startSession(userId, journalId, date, 2)
 
         assertEquals(running.id, blocked.id, "blocked start returns the already-running session, not a new one")
@@ -103,7 +102,6 @@ class WorkoutSessionRepositoryTest {
         assertTrue(second.isRunning)
         assertEquals(second, repo.getRunningSession(userId))
 
-        // The first workout is untouched: still finished, its own duration intact.
         val firstAfter = repo.getSessionByWorkoutNumber(userId, journalId, date, 1)
         assertEquals(firstFinished, firstAfter)
         assertEquals(first.id, firstAfter?.id)
@@ -126,9 +124,8 @@ class WorkoutSessionRepositoryTest {
 
     @Test
     fun deleteSession_discardsRow_andIsUserScoped(): Unit = runBlocking {
-        // The empty-workout discard: a running session that logged nothing is
-        // deleted outright, and the userId guard keeps a stray uuid off another
-        // user's identical page.
+        // Empty-workout discard: a running session that logged nothing is deleted
+        // outright; the userId guard keeps a stray uuid off another user's page.
         val running = repo.startSession(userId, journalId, date, 1)
         val otherUser = "user-2"
         val other = repo.startSession(otherUser, journalId, date, 1)

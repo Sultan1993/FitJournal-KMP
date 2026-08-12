@@ -83,9 +83,8 @@ private fun ImportWorkoutBody(
 ) {
     Box(modifier = modifier.fillMaxSize().background(FjTheme.colors.background)) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // In the layout flow (not an overlay), so expanding it pushes the pager
-            // down — same push-down as the workout list. The host's nav-bar calendar
-            // icon toggles calendarExpanded.
+            // In-flow (not overlay), so expanding it pushes the pager down — same
+            // as the workout list. Host's nav-bar calendar icon toggles this.
             AnimatedVisibility(
                 visible = state.calendarExpanded,
                 enter = expandVertically(tween(240), expandFrom = Alignment.Top) + fadeIn(tween(200)),
@@ -100,9 +99,7 @@ private fun ImportWorkoutBody(
                 )
             }
 
-            // The source day's records — always present; the calendar (above) just
-            // pushes them down when it expands. Same Box(weight) + top-fade layout
-            // as the workout list's page content.
+            // Always present; the calendar (above) just pushes it down when expanded.
             ImportContentArea(
                 content = state.content,
                 measurementSystem = state.measurementSystem,
@@ -111,7 +108,6 @@ private fun ImportWorkoutBody(
             )
         }
 
-        // Fades out while the calendar is open, back in when it closes.
         AnimatedVisibility(
             visible = !state.calendarExpanded,
             enter = fadeIn(tween(200)),
@@ -124,7 +120,7 @@ private fun ImportWorkoutBody(
                 onClick = { dispatch(ImportWorkoutContract.ViewAction.Import) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    // Above the bottom system inset — the host scaffold pads only the top.
+                    // Host scaffold only pads the top, so add the bottom inset here.
                     .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))
                     .padding(16.dp),
             )
@@ -189,8 +185,7 @@ private fun ImportPager(
             val bottomInset = WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom).asPaddingValues().calculateBottomPadding()
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                // Clear the pinned page dots + top fade so the header starts just
-                // below them (mirrors the workout list). Bottom clears the floating
+                // Top clears the pinned page dots + fade; bottom clears the floating
                 // Add button + its inset.
                 contentPadding = PaddingValues(top = 24.dp, bottom = bottomInset + 86.dp),
             ) {
@@ -210,8 +205,7 @@ private fun ImportPager(
             }
         }
 
-        // Top fade — list content scrolls out under the page dots, then the dots
-        // sit on top of it (native parity, matches WorkoutScreen).
+        // List scrolls out under the page dots (native parity, matches WorkoutScreen).
         TopFadeScrim(
             color = FjTheme.colors.background,
             height = 24.dp,

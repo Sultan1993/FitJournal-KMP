@@ -34,10 +34,8 @@ fun relativeDayLabel(date: LocalDate): String? {
             val now = Clock.System.now()
             val day = now.toLocalDateTime(zone).date
             value = day
-            // Sleep until the next local midnight, then recompute (relabels the
-            // screen on rollover). ponytail: capped at 1h so a wall-clock/time-zone
-            // jump is reflected within the hour, not up to a full day; a platform
-            // TZ-change observer would be exact but is overkill for a date label.
+            // Sleep until next local midnight (relabels on rollover); ponytail:
+            // capped at 1h so a wall-clock/TZ jump also relabels within the hour.
             val untilMidnight = day.plus(1, DateTimeUnit.DAY).atStartOfDayIn(zone) - now
             delay(minOf(untilMidnight, 1.hours))
         }

@@ -11,13 +11,11 @@ import kz.maestrosultan.fitjournal.domain.workout.usecase.EndWorkoutUseCase
 import kz.maestrosultan.fitjournal.domain.workout.usecase.StartWorkoutUseCase
 
 /**
- * Swift-friendly factory. Identity is no longer threaded in — the VM resolves it
- * from the shared [UserSession] (populated by the native layer at sign-in /
- * bootstrap), so Swift neither conforms to a suspend KMP interface nor reads the
- * user store here. The `first()` on the non-null session suspends only until
- * bootstrap has run, then returns immediately (iOS populates it synchronously at
- * launch). The constructor's Clock/TimeZone still default to `Clock.System` /
- * current zone, which is the other reason Swift wants this factory.
+ * Swift-friendly factory. Identity resolves from the shared [UserSession]
+ * (populated by the native layer at sign-in/bootstrap) rather than being
+ * threaded in, so Swift neither conforms to a suspend KMP interface nor reads
+ * the user store here. `first()` on the non-null session suspends only until
+ * bootstrap has run (iOS populates it synchronously at launch).
  *
  * Swift: `WorkoutViewModelFactoryKt.createWorkoutViewModel(...)`.
  */

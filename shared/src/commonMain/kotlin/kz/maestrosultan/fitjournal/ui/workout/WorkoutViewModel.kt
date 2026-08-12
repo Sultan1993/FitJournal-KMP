@@ -35,19 +35,17 @@ import kz.maestrosultan.fitjournal.domain.workout.usecase.StartWorkoutUseCase
 
 /**
  * Shared presentation for the Workout body — the ONE ViewModel both apps use, in
- * the per-screen MVI [WorkoutContract] shape: one entry point ([dispatch]) and two outputs ([viewState]
- * + one-shot [viewEffect]). The shared Compose body and the native nav shell both
- * interact only through [dispatch]; nothing calls this any other way.
+ * the per-screen MVI [WorkoutContract] shape: one entry point ([dispatch]), two
+ * outputs ([viewState] + one-shot [viewEffect]).
  *
  * Renders the day's workouts as a pager (records grouped by workoutNumber + a
- * trailing placeholder), the Start/End session bar, and per-record edits. It is
- * pure rendering + local reads/writes against the KMP repositories; NAVIGATION
- * (set editor, exercise details, import) and the end-confirm sheet leave as
- * [WorkoutContract.ViewEffect]s the native host performs, so this stays free of platform nav.
+ * trailing placeholder), the Start/End session bar, and per-record edits. Pure
+ * rendering + local reads/writes against the KMP repositories; NAVIGATION (set
+ * editor, exercise details, import) and the end-confirm sheet leave as
+ * [WorkoutContract.ViewEffect]s the native host performs, keeping this free of platform nav.
  *
- * Session-lifecycle side effects that ARE platform-specific (rest timer, live
- * tile) are NOT here — the host observes [viewState].runningSession and
- * reconciles its own tile/timer.
+ * Platform-specific session side effects (rest timer, live tile) are NOT here —
+ * the host observes [viewState].runningSession and reconciles its own tile/timer.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class WorkoutViewModel(
@@ -73,9 +71,7 @@ class WorkoutViewModel(
     )
     override val viewState: StateFlow<WorkoutContract.ViewState> = _uiState.asStateFlow()
 
-    // One-shot navigation / end-confirm outputs. Buffered single-consumer channel
-    // (the host) via receiveAsFlow, so an effect emitted before the host starts
-    // collecting isn't dropped — see kotlin-flow-state-event-modeling.
+    // Buffered so an effect emitted before the host starts collecting isn't dropped.
     private val _effects = Channel<WorkoutContract.ViewEffect>(Channel.BUFFERED)
     override val viewEffect: Flow<WorkoutContract.ViewEffect> = _effects.receiveAsFlow()
 
@@ -129,11 +125,10 @@ class WorkoutViewModel(
     private fun today(): LocalDate = clock.todayIn(timeZone)
 
     private suspend fun observe(uid: String, jid: String) {
-        // Both day-scoped reads live inside ONE selectedDate.flatMapLatest so
-        // records and sessions can never be published for different days. Two
-        // separate date pipelines fed into a plain combine would, on a date
-        // switch, briefly pair the NEW day's records with the OLD day's sessions
-        // (combine caches each upstream's latest).
+        // Both reads live inside ONE selectedDate.flatMapLatest so records and sessions
+        // can't be published for different days — separate pipelines fed into a plain
+        // combine would briefly pair the NEW day's records with the OLD day's sessions
+        // on a date switch (combine caches each upstream's latest).
         val dayData: Flow<DayData> = selectedDate.flatMapLatest { date ->
             combine(
                 recordRepository.observeRecordsChanged(uid, jid)
@@ -143,8 +138,7 @@ class WorkoutViewModel(
         }
         val running: Flow<WorkoutSession?> = sessionRepository.getRunningSessionFlow(uid)
 
-        // Merge the two pager facts into one flow so the main combine stays at
-        // its 5-arg typed form.
+        // Merged so the main combine below stays at its 5-arg typed form.
         val pageInfo = combine(currentPageIndex, pagerScrolling) { index, scrolling ->
             PageInfo(index, scrolling)
         }
@@ -183,11 +177,9 @@ class WorkoutViewModel(
         val isToday = date == today()
         val bar = when {
             running != null -> SessionBarState.Running
-            // Start only where the viewed page has NO session yet — the
-            // placeholder, or a page whose records were logged without a session.
-            // A page with a FINISHED session is done: swipe to the placeholder to
-            // start another. Offering Start on a finished page would be a no-op
-            // (startSession returns the finished session unchanged).
+            // Start only where the viewed page has no session yet. A page with a
+            // FINISHED session offers no Start (would be a no-op) — swipe to the
+            // placeholder to start another.
             isToday && currentPage?.session == null -> SessionBarState.Start
             else -> SessionBarState.Hidden
         }
@@ -206,15 +198,8 @@ class WorkoutViewModel(
         )
     }
 
-    /**
-     * Group the day into pages: one per workout that has records (iterating the
-     * numbers that actually exist, so a middle-page gap can't spawn phantom empty
-     * pages), then the ephemeral placeholder at max+1. Always ≥ page 1 +
-     * placeholder, so N+1 is always slideable.
-     */
-    // Page assembly + the placeholder rule live in buildWorkoutPages (WorkoutPages.kt):
-    // a pure function of (records, sessions), so the rule is tested directly
-    // instead of through the whole ViewModel.
+    // Page assembly + the placeholder rule live in buildWorkoutPages (WorkoutPages.kt),
+    // a pure function of (records, sessions), so the rule is tested directly.
 
     // ─── Actions (private — every interaction arrives via [dispatch]) ────
 
@@ -246,8 +231,7 @@ class WorkoutViewModel(
         val jid = journalId ?: return
         viewModelScope.launch {
             val records = recordRepository.getRecordsByMonth(uid, jid, month.toString(), year.toString())
-            // date -> the distinct muscle groups trained that day (first-seen
-            // order), for the calendar's category-coloured dots.
+            // date -> distinct muscle groups trained that day, for the calendar's dots.
             workoutDays.value = records
                 .groupBy { it.date }
                 .mapValues { (_, dayRecords) ->
@@ -270,10 +254,9 @@ class WorkoutViewModel(
     }
 
     /**
-     * End tapped. A workout that logged NOTHING (zero records) is not worth
-     * saving: discard the running session silently and let the bar fall back to
-     * Start — no finished-but-empty session, no confirm sheet, nothing persisted.
-     * Only a workout with at least one record raises the confirm sheet.
+     * A workout that logged NOTHING is not worth saving: discard the running
+     * session silently and fall back to Start. Only a workout with at least one
+     * record raises the confirm sheet.
      */
     private fun onRequestEndSession() {
         val uid = userId ?: return
@@ -309,11 +292,9 @@ class WorkoutViewModel(
 
     /**
      * After deleting a record, drop a now-empty workout's FINISHED session so no
-     * "finished but nothing logged" zombie lingers — it would inflate the weekly
-     * ordinal and strand the page with neither a summary card nor a Start bar (the
-     * bar hides while a session exists). A RUNNING session is left alone: the user
-     * may still be mid-workout, and End's own discard-empty ([onRequestEndSession])
-     * handles it if they finish with nothing logged.
+     * "finished but nothing logged" zombie strands the page (no summary card, no
+     * Start bar — it hides while a session exists). A RUNNING session is left
+     * alone: [onRequestEndSession]'s own discard-empty handles it on End.
      */
     private suspend fun discardSessionIfEmptied(uid: String, jid: String, date: LocalDate, workoutNumber: Int) {
         val session = sessionRepository.getSessionByWorkoutNumber(uid, jid, date, workoutNumber) ?: return
@@ -360,10 +341,9 @@ class WorkoutViewModel(
     }
 
     /**
-     * Cancel the observation scope. This VM is host-owned (the native nav bar +
-     * calendar drive/observe it), so it is NOT in a ViewModelStore that would call
-     * `clear()` — the host calls this on teardown (Android: host VM `onCleared`;
-     * iOS: coordinator on VC dismissal) to stop the flows and release the VM.
+     * This VM is host-owned, not in a ViewModelStore that would call `clear()` —
+     * the host calls this on teardown (Android: host VM `onCleared`; iOS:
+     * coordinator on VC dismissal) to stop the flows and release the VM.
      */
     fun dispose() {
         viewModelScope.cancel()

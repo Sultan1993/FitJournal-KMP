@@ -32,14 +32,8 @@ import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 
 /**
- * The WORKLOAD section (design §4.2): a segmented per-muscle bar over a list of
- * rows (colour dot, muscle name, optional tonnage, percentage). The bar segments
- * and the "%" are two reads of the same pre-computed [WorkloadRow.percentage]
- * (the contract hands a `Double` precisely so the bar weight and the label agree);
- * tonnage text is pre-formatted by the ViewModel and omitted when `null`.
- *
- * Rendered only when [rows] is non-empty — the caller hoists that conditional, so
- * this composable always has content.
+ * Bar segments and the "%" label both read the same [WorkloadRow.percentage] so
+ * they can't disagree. Rendered only when [rows] is non-empty (caller hoists that check).
  */
 @Composable
 fun WorkloadSection(

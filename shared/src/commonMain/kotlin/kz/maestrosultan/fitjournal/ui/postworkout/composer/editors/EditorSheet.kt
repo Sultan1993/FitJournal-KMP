@@ -91,8 +91,7 @@ internal fun EditorSheet(
                     .fillMaxWidth()
                     .clip(EditorSheetDefaults.Shape)
                     .background(EditorSheetDefaults.SurfaceColor)
-                    // Makes the panel itself a hit target so taps on it never
-                    // reach the dismiss catcher drawn beneath.
+                    // Own hit target so taps here don't fall through to the dismiss catcher beneath.
                     .pointerInput(Unit) { detectTapGestures { } }
                     .padding(top = 10.dp, bottom = 22.dp),
             ) {

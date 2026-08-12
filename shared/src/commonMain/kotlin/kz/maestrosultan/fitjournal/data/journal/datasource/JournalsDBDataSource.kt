@@ -121,12 +121,11 @@ class JournalsDBDataSource(
     }
 
     /**
-     * Atomic "select-or-insert" for the user's personal journal. Two concurrent
-     * callers (e.g. a double first-boot `ensureDefaultJournal`) can't each insert
-     * a personal journal with a *different* uuid: the transaction serialises
-     * against other writers, so the second caller observes the first's row and
-     * returns it instead of inserting. Guarantees at most one live personal
-     * journal per user without a schema-level unique constraint.
+     * Atomic select-or-insert for the user's personal journal. Two concurrent
+     * callers (e.g. a double first-boot `ensureDefaultJournal`) can't each
+     * insert a different uuid — the transaction serialises, so the second
+     * observes the first's row instead of inserting. Guarantees at most one
+     * live personal journal without a schema-level unique constraint.
      */
     suspend fun getOrCreatePersonalJournal(
         uuid: String,
@@ -190,19 +189,15 @@ class JournalsDBDataSource(
     /**
      * Soft-delete a journal AND everything scoped to it, atomically.
      *
-     * Deleting the journal row alone is not enough: `workoutRecords` and
-     * `bodyMeasurements` carry `journalId` with no FK, so the children outlive
-     * the parent. That is not merely untidy — the sync pull treats a tombstoned
-     * parent as invalid and reparents surviving workout records into the
-     * personal journal, so a deleted journal's workouts reappear there on the
-     * next device to sync. Measurements have no reparent path and just become
+     * `workoutRecords`/`bodyMeasurements` carry `journalId` with no FK, so
+     * children outlive a deleted parent — worse, sync pull reparents surviving
+     * records of a tombstoned journal into the personal journal (they
+     * reappear there on other devices), and measurements just become
      * unreachable.
      *
-     * One transaction because a partial cascade has no retry: the journal row
-     * would already be tombstoned, so [softDeleteJournal]'s `deletedAt IS NULL`
-     * predicate makes a second attempt a no-op and the live children are
-     * stranded permanently. Every statement stamps `pendingUpload = 1` so the
-     * tombstones reach AWS on the next tick.
+     * One transaction: a partial cascade can't retry, since [softDeleteJournal]'s
+     * `deletedAt IS NULL` predicate makes a second attempt a no-op and strands
+     * the live children. Every statement stamps `pendingUpload=1`.
      */
     suspend fun softDeleteJournalCascade(
         uuid: String,
@@ -212,8 +207,8 @@ class JournalsDBDataSource(
     ) = withContext(Dispatchers.IO) {
         val deletedAtText = deletedAt.toStoredString()
         val updatedDateText = updatedDate.toStoredString()
-        // Transactions are per-connection in SQLDelight, so opening on one
-        // Queries object covers statements issued through the others.
+        // SQLDelight transactions are per-connection; opening on one Queries
+        // object covers statements issued through the others.
         dao.transaction {
             recordsDao.softDeleteWorkoutRecordsByJournal(
                 deletedAt = deletedAtText,

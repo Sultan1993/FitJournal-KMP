@@ -31,12 +31,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_ed
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * The Edit / Delete action pair (design §4.2): two full-width 52dp `card`-token
- * rows. Edit is `textPrimary`; Delete is `negative` (label and trash glyph).
- * [onEdit]/[onDelete] dispatch the corresponding actions — Delete opens the
- * confirm sheet upstream rather than deleting immediately.
- */
+/** [onDelete] opens a confirm sheet upstream — it does not delete immediately. */
 @Composable
 fun WorkoutActionButtons(
     onEdit: () -> Unit,

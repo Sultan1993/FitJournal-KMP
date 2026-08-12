@@ -35,11 +35,8 @@ import kz.maestrosultan.fitjournal.ui.workoutdetails.WorkoutDetailsContract
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * The shared session-note editor (design §7): a `surfaceElevated` bottom sheet
- * (the [ConfirmActionSheet][kz.maestrosultan.fitjournal.ui.common.ConfirmActionSheet]
- * precedent) holding a multiline field seeded with [NoteEditor.initialText] and a
- * Save CTA. Save emits the current text through [onSave]; every dismissal route
- * calls [onDismiss]. The caller renders this only while the editor should show.
+ * Save emits the current text via [onSave]; every dismissal route calls [onDismiss].
+ * Caller renders this only while the editor should show.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

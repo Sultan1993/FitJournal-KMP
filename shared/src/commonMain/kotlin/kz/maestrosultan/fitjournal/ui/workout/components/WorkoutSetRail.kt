@@ -44,9 +44,7 @@ data class SetDisplay(
     val unit: String,       // "kg" (skipped when [number] is the em-dash)
     val repsNumber: String, // "8" / "—"
     val repsUnit: String,   // "" (weight×reps) or "min" (distance/duration)
-    // Actual (logged) vs target (planned) value styling: a logged set renders
-    // full-strength, a not-logged one dims to 0.3 — the set's OWN value decides,
-    // not the displayed number (which may be a ghost). Mirrors native WorkoutSetView.
+    // Styling decided by the set's OWN logged state, not the displayed (possibly ghost) number.
     val isLogged: Boolean,
 )
 
@@ -66,9 +64,8 @@ fun WorkoutSetRail(
     val hasSetRows = sets.isNotEmpty()
     Column(
         modifier = modifier.drawBehind {
-            // From the first set row's dot center (44dp row → 22) to the last
-            // row's dot center (23 for the 46dp add-set row, else 22). A lone
-            // add-set has nothing to connect.
+            // Dot-center to dot-center: first row's (44dp row → 22) to last row's
+            // (23 for the 46dp add-set row, else 22). A lone add-set has nothing to connect.
             if (!hasSetRows) return@drawBehind
             val x = 6.dp.toPx()
             val top = 22.dp.toPx()
@@ -115,7 +112,6 @@ private fun WorkoutSetItem(position: Int, set: SetDisplay, onClick: (() -> Unit)
         )
         Row(
             horizontalArrangement = Arrangement.spacedBy(5.dp),
-            // Actual (logged) = full strength; target/planned = dimmed to 0.3 (native parity).
             modifier = Modifier.alpha(if (set.isLogged) 1f else 0.3f),
         ) {
             Text(set.number, style = bigStyle, color = FjTheme.colors.textPrimary, modifier = Modifier.alignByBaseline())

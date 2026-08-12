@@ -88,21 +88,18 @@ class WorkoutSessionsDBDataSource(
      *
      * All steps run in ONE synchronous
      * [app.cash.sqldelight.TransacterImpl.transactionWithResult] block — no
-     * `suspend` call inside, because `NativeSqliteDriver` transactions are bound
+     * `suspend` call inside, since `NativeSqliteDriver` transactions are bound
      * to the calling thread. Ordering matters:
      *
-     * 1. this page (userId, journalId, date, workoutNumber) already has a session
-     *    -> return it UNCHANGED, running or finished (a double-start must not
-     *    shift `startedAt`, and a finished workout stays finished);
+     * 1. this page already has a session -> return it UNCHANGED (a double-start
+     *    must not shift `startedAt`, a finished workout stays finished);
      * 2. else a DIFFERENT workout is running app-wide -> BLOCKED: return that
-     *    running row without inserting. Unlike the old single-session rule this
-     *    does NOT auto-finish it — one running workout at a time, ended
-     *    explicitly by the user;
+     *    running row without inserting or auto-finishing it — one running
+     *    workout at a time, ended explicitly by the user;
      * 3. else insert the new running row and read it back.
      *
-     * One transaction so a crash can't leave two running rows. The UNIQUE
-     * (userId, journalId, date, workoutNumber) index is the backstop: step 1
-     * already returned any existing row, so the insert can never collide.
+     * One transaction so a crash can't leave two running rows; the UNIQUE
+     * (userId, journalId, date, workoutNumber) index is the backstop.
      */
     suspend fun startSession(
         uuid: String,

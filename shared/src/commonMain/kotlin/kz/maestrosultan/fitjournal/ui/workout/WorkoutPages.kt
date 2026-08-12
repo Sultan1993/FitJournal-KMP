@@ -63,9 +63,8 @@ internal fun buildWorkoutPages(
     return real + WorkoutPage(
         workoutNumber = placeholderNumber,
         records = emptyList(),
-        // Always null in practice: a session at this number would have put it in
-        // realPageNumbers, making it a real page and pushing the placeholder past
-        // it. Kept as a lookup so the invariant holds by construction, not by luck.
+        // Always null in practice — a session at this number would make it a real
+        // page. Kept as a lookup so the invariant holds by construction, not by luck.
         session = daySessions.firstOrNull { it.workoutNumber == placeholderNumber },
         isPlaceholder = true,
     )

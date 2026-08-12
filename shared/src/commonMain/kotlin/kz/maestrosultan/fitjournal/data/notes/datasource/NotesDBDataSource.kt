@@ -46,10 +46,9 @@ class NotesDBDataSource(private val dao: NotesQueries) {
     }
 
     /**
-     * UI-facing single-row read. Returns null when the row doesn't
-     * exist OR is soft-deleted — a note tombstoned by sync from another
-     * device looks like "not found" to the UI, which is the right
-     * semantic. Sync paths needing to see tombstones use
+     * UI-facing single-row read; null if missing or soft-deleted — a note
+     * tombstoned by sync from another device looks like "not found" to the
+     * UI, the right semantic. Sync paths needing tombstones use
      * [getNoteByIdIncludingDeleted].
      */
     suspend fun getNoteById(uuid: String): DBNoteObject? = withContext(Dispatchers.IO) {

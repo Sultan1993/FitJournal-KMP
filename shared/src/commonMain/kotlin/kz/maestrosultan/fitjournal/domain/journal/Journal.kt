@@ -5,7 +5,6 @@ data class Journal(
     val name: String,
     val comments: String?,
     val isPersonal: Boolean,
-    // Overrides AWSUser.workoutGoal when non-null. Per-journal weekly workout
-    // target; nullable so the per-journal override is opt-in.
+    // Per-journal weekly workout target; overrides AWSUser.workoutGoal when set.
     val workoutGoal: Int? = null,
 )

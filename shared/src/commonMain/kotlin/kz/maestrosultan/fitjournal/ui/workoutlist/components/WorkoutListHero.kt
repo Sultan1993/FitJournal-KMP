@@ -46,14 +46,13 @@ import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
-/** Chart block (design WH4): 76dp container, tallest bar 72dp, rest-week a 3dp flat track. */
+/** Rest week (no tonnage) renders as a flat 3dp track, not a bar. */
 private const val CHART_HEIGHT_DP = 76f
 private const val MAX_BAR_DP = 72f
 
 /**
- * The weekly-volume headline (design WH4/WH5): the current week's grouped tonnage,
- * unit, and delta pill on one baseline row, a one-line subtitle, the 11-week bar
- * chart, and the month-label row. Pure presentation of a pre-computed
+ * Weekly-volume headline: current week's tonnage/unit/delta pill, subtitle,
+ * 11-week bar chart, month-label row. Pure presentation of a pre-computed
  * [WorkoutListContract.Hero] — no aggregation here.
  */
 @Composable
@@ -62,18 +61,15 @@ fun WorkoutListHero(
     measurementSystem: MeasurementSystem,
     modifier: Modifier = Modifier,
 ) {
-    // The rail is selectable: the number + subtitle describe the SELECTED week
-    // (default = current), and tapping a bar re-points them and highlights it.
-    // Pure UI state — reset to the current week whenever the feed rebuilds.
+    // Selectable rail: number + subtitle describe the SELECTED week (default =
+    // current); tapping a bar re-points them. Resets to current week on feed rebuild.
     val defaultWeek = hero.slots.firstOrNull { it.isCurrentWeek }?.weekStart
     var selectedWeekStart by remember(hero) { mutableStateOf(defaultWeek) }
     val selected = hero.slots.firstOrNull { it.weekStart == selectedWeekStart } ?: hero.slots.lastOrNull()
 
     Column(modifier = modifier.fillMaxWidth()) {
-        // Headline (baseline-aligned): the selected week's tonnage (+ "kg") and, when
-        // it has cardio, its duration (+ "cardio"). No comparison pill — the volume is
-        // a fact about the week. Tonnage is primary; a cardio-only week promotes the
-        // duration to the headline size instead.
+        // No comparison pill — the volume is a fact about the week, not a delta.
+        // Tonnage is primary; a cardio-only week promotes duration to headline size.
         val hasWeight = (selected?.tonnage ?: 0.0) > 0.0
         val cardioMinutes = selected?.durationMinutes ?: 0
         val hasCardio = cardioMinutes > 0
@@ -139,9 +135,8 @@ fun WorkoutListHero(
 }
 
 /**
- * Subtitle for the selected week: "This week · N workouts[, M days left]" when the
- * current week is selected (days-left only applies to it), otherwise that week's
- * date range + workout count, e.g. "20 – 26 Jul · 3 workouts".
+ * "This week · N workouts[, M days left]" when the current week is selected
+ * (days-left only applies to it); otherwise "20 – 26 Jul · 3 workouts".
  */
 @Composable
 private fun heroSubtitle(selected: WorkoutListContract.WeekSlot?, daysLeft: Int): String {
@@ -177,11 +172,9 @@ private fun MonthLabelRow(labels: List<WorkoutListContract.MonthLabel>, modifier
 }
 
 /**
- * Eleven weekly-volume bars (design WH4/WH5): a hand-rolled weighted [Row] of
- * [Box]es rather than a chart library — the design bars are flat rectangles that
- * fill the width evenly with 5dp gaps, and an empty/rest week is a full-width 3dp
- * track, not a gap. Heights are proportional to the window max (72dp tallest);
- * the current week is solid brand, older weeks muted, empty weeks the track tone.
+ * Hand-rolled weighted [Row] of [Box]es, not a chart library — bars are flat
+ * rectangles filling the width evenly with 5dp gaps; an empty/rest week is a
+ * full-width 3dp track, not a gap. Heights are proportional to the window max.
  */
 @Composable
 private fun WorkoutListHeroChart(
@@ -206,15 +199,13 @@ private fun WorkoutListHeroChart(
             } else {
                 (MAX_BAR_DP * (slot.tonnage / maxTonnage).toFloat()).dp.coerceAtLeast(4.dp)
             }
-            // Selected week is brand-highlighted; other data weeks muted; empty a track.
             val color = when {
                 empty -> trackColor
                 slot.weekStart == selectedWeekStart -> brand
                 else -> pastColor
             }
-            // Full-height tappable column (empty weeks aren't selectable — no data);
-            // the bar itself is drawn at the bottom of the cell. No ripple — the
-            // highlight + value change is the feedback, not an indication on the column.
+            // No ripple — the highlight + value change is the feedback, not indication.
+            // Empty weeks aren't selectable (no data); bar drawn at the bottom of the cell.
             Box(
                 modifier = Modifier
                     .weight(1f)

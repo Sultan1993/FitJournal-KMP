@@ -397,18 +397,12 @@ internal fun ShareCardScope.ShareCardBody(
     var canvas by remember { mutableStateOf(IntSize.Zero) }
     var block by remember { mutableStateOf(IntSize.Zero) }
 
-    // The in-flight transform, re-seeded whenever the committed one changes.
-    //
-    // `remember(key)` compares keys by EQUALITY, not identity, so a commit of
-    // our own settled value is a no-op key and the drag is never clobbered
-    // mid-gesture, while an external "Reset layout" (a null) lands at once.
-    //
-    // The equality comparison is also why every exit path has to leave `live`
-    // agreeing with `transform`: a trash drop that parked a stale value here
-    // would survive a later reset-to-null (null == null, no reseed) and
-    // restore the block at the trash position — while the export composition,
-    // seeded from `transform`, drew it anchored. Preview and PNG disagreeing
-    // is the one failure this whole file is built to prevent.
+    // In-flight transform, re-seeded when the committed one changes. remember(key)
+    // compares by EQUALITY: committing our own settled value is a no-op key so a
+    // drag isn't clobbered mid-gesture, while an external reset (null) reseeds at
+    // once. Every exit path must leave `live` agreeing with `transform` — a stale
+    // value here (e.g. a trash drop) would survive a later reset and desync the
+    // preview from the export PNG.
     val live = remember(transform) { mutableStateOf(transform) }
     var gesturing by remember { mutableStateOf(false) }
     var overTrash by remember { mutableStateOf(false) }
@@ -416,10 +410,8 @@ internal fun ShareCardScope.ShareCardBody(
     var guideY by remember { mutableStateOf(false) }
     var guideRotation by remember { mutableStateOf(false) }
 
-    // Reported by the drawn circle rather than recomputed from the insets: the
-    // target is the BOTTOM item of a column that also holds a caption, so a
-    // centre derived from the bottom inset alone sits a caption-height too low
-    // and the whole drop zone drifts off the icon the user is aiming at.
+    // From the drawn circle, not the insets: the target is the bottom item of a
+    // column that also holds a caption, so an inset-only centre sits too low.
     var trashCenterInRoot by remember { mutableStateOf(Offset.Unspecified) }
     var canvasOriginInRoot by remember { mutableStateOf(Offset.Zero) }
 
@@ -457,9 +449,7 @@ internal fun ShareCardScope.ShareCardBody(
                         scaleX = t?.scale ?: 1f
                         scaleY = t?.scale ?: 1f
                         rotationZ = t?.rotationDeg ?: 0f
-                        // Until the first measurement lands, a translation of
-                        // "centre minus half of zero" would flash the block in
-                        // the top-left corner for one frame.
+                        // Avoids a one-frame flash in the top-left before the first measurement.
                         alpha = when {
                             block == IntSize.Zero || canvas == IntSize.Zero -> 0f
                             overTrash -> OverTrashAlpha
@@ -486,22 +476,16 @@ internal fun ShareCardScope.ShareCardBody(
                         if (exportMode) {
                             Modifier
                         } else {
-                            // Keyed on the live-state instance, not Unit. A
-                            // reseed (an external "Reset layout") replaces that
-                            // instance, and a handler still capturing the OLD
-                            // one would keep folding gestures into a state
-                            // nothing draws, then commit it on release.
+                            // Keyed on the live-state instance, not Unit: an external
+                            // reset replaces the instance, so a stale handler can't keep
+                            // folding gestures into a state nothing draws.
                             Modifier.pointerInput(live) {
                                 awaitEachGesture {
                                     awaitFirstDown(requireUnconsumed = false)
                                     gesturing = true
-                                    // The UNSNAPPED accumulator. Feeding the
-                                    // snapped value back as the next event's
-                                    // base discards every sub-threshold delta,
-                                    // so once engaged the block could never
-                                    // accumulate enough movement to pull free —
-                                    // it stuck to the guide until the finger
-                                    // lifted. Gestures fold into `raw`; `live`
+                                    // UNSNAPPED accumulator: feeding the snapped value back as
+                                    // the next base would discard sub-threshold deltas, sticking
+                                    // the block to the guide. Gestures fold into `raw`; `live`
                                     // only ever receives what is rendered.
                                     var raw = live.value
                                     var event: PointerEvent
@@ -542,19 +526,11 @@ internal fun ShareCardScope.ShareCardBody(
                                         val position = snapPosition(moved, w, h, densityPxPerDp)
                                         val angle = snapRotation(position.transform.rotationDeg)
 
-                                        // One tick per ENGAGE, not per event: a
-                                        // buzz on every frame the block sits on
-                                        // the centre line is a stuck motor.
-                                        //
-                                        // All three axes track engagement with a
-                                        // persisted flag. Rotation used to compare
-                                        // the snapped angle against the previous
-                                        // one for inequality, which looks
-                                        // equivalent and is not: a held two-finger
-                                        // rotate re-snaps to a minutely different
-                                        // float every frame, so sub-degree touch
-                                        // jitter re-fired the tick continuously
-                                        // while the block sat visibly still.
+                                        // One tick per ENGAGE (persisted flag per axis), not per
+                                        // event — comparing rotation by inequality instead looked
+                                        // equivalent but wasn't: a held two-finger rotate re-snaps
+                                        // to a minutely different float every frame, so jitter kept
+                                        // re-firing the tick while the block sat visibly still.
                                         if ((position.snappedX && !guideX) ||
                                             (position.snappedY && !guideY) ||
                                             (angle.snapped && !guideRotation)
@@ -579,15 +555,10 @@ internal fun ShareCardScope.ShareCardBody(
                                         } while (event.changes.any { it.pressed })
 
                                         val settled = live.value
-                                        // Recomputed HERE rather than trusting
-                                        // the flag the loop left behind: the
-                                        // target centre arrives asynchronously
-                                        // from onGloballyPositioned, and a
-                                        // release with no movement takes the
-                                        // `continue` path above without ever
-                                        // updating it. Deleting the user's card
-                                        // on a stale boolean is not a mistake
-                                        // worth risking.
+                                        // Recomputed HERE, not trusted from the loop's flag: the
+                                        // trash centre arrives asynchronously via
+                                        // onGloballyPositioned, and a no-movement release takes the
+                                        // `continue` path above without ever updating it.
                                         val target = trashCenterInRoot - canvasOriginInRoot
                                         val droppedOnTrash = !canceled &&
                                             settled != null &&
@@ -603,10 +574,7 @@ internal fun ShareCardScope.ShareCardBody(
                                             canceled -> live.value = transform
                                             droppedOnTrash -> {
                                                 haptics.tick()
-                                                // Drop the drag position first:
-                                                // it is never committed, and
-                                                // leaving it here would outlive
-                                                // a later reset (see `live`).
+                                                // Never committed; left here it would outlive a later reset (see `live`).
                                                 live.value = transform
                                                 onRemoveBlock()
                                             }
@@ -614,14 +582,10 @@ internal fun ShareCardScope.ShareCardBody(
                                                 onTransformChanged(settled)
                                         }
                                     } finally {
-                                        // finally, because awaitEachGesture
-                                        // rethrows cancellation when its pointer
-                                        // context goes away — a density change,
-                                        // node detach or handler restart would
-                                        // otherwise leave `gesturing` true
-                                        // forever, freezing the guides and the
-                                        // trash target on screen with no gesture
-                                        // running.
+                                        // awaitEachGesture rethrows cancellation when its pointer
+                                        // context goes away (density change, node detach, handler
+                                        // restart) — without `finally` these flags would stick true,
+                                        // freezing guides/trash target with no gesture running.
                                         gesturing = false
                                         guideX = false
                                         guideY = false
@@ -635,9 +599,8 @@ internal fun ShareCardScope.ShareCardBody(
             )
         }
 
-        // Never moves with the block (spec §7.5: the wordmark survives both a
-        // drag and a delete). Anchored, it rides directly above the block; once
-        // the block is freeform or gone, it takes the corner itself.
+        // Never moves with the block (spec §7.5): rides above it while anchored,
+        // takes the corner itself once the block is freeform or gone.
         ShareWordmark(
             modifier = Modifier
                 .align(Alignment.BottomStart)
@@ -725,10 +688,9 @@ private fun TrashTarget(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .size(TrashDiameter)
-                    // Root coordinates, not parent: AnimatedVisibility and the
-                    // column sit between this and the canvas, so walking the
-                    // parent chain would break the moment that nesting changes.
-                    // The caller subtracts the canvas origin.
+                    // Root coordinates, not parent: AnimatedVisibility/Column sit between this
+                    // and the canvas, so a parent-chain walk would break if nesting changes.
+                    // Caller subtracts the canvas origin.
                     .onGloballyPositioned { coordinates ->
                         onCircleCenter(coordinates.positionInRoot() + coordinates.size.center.toOffset())
                     }
@@ -1003,26 +965,19 @@ internal fun shareCardData(
             ShareExerciseRow(
                 name = line.name,
                 setsText = pluralStringResource(Res.plurals.postworkout_sets, line.loggedSets, line.loggedSets),
-                // Zero tonnage means no weight was entered, and "0 kg" tells the
-                // reader nothing — the reps do. Rows carry both, so the row
-                // picks.
+                // "0 kg" tells the reader nothing when no weight was entered — the reps do.
                 tonnageText = line.tonnageKg
                     ?.takeIf { it > 0.0 }
                     ?.let { "${groupedTonnage(it)} $weightUnit" },
                 repsText = line.totalReps?.let { stringResource(Res.string.postworkout_reps_format, it) },
-                // `takeIf` for the same reason tonnage has one: DISTANCE_DURATION
-                // lines always carry a summed (non-null) distance, so a
-                // duration-only exercise arrives as 0.0. Without this the
-                // receipt's `tonnageText ?: repsText ?: distanceText ?:
-                // durationText` chain picks "0 km" over the real duration.
+                // Same reason as tonnage: DISTANCE_DURATION lines always sum a non-null
+                // distance, so a duration-only exercise arrives as 0.0 — without `takeIf`
+                // the fallback chain would pick "0 km" over the real duration.
                 distanceText = line.totalDistance
                     ?.takeIf { it > 0.0 }
                     ?.let { WorkoutValueFormatter.value(it, ResultType.DISTANCE_DURATION, units) },
-                // Guarded like distance above, and for the same reason: the
-                // duration is summed to a non-null 0 for a row that logged
-                // neither, and the receipt's fallback chain ends here — so
-                // without this the card prints "0:00" where the success rail
-                // correctly shows nothing at all.
+                // Guarded like distance above: without this, a row that logged neither
+                // prints "0:00" where the success rail correctly shows nothing.
                 durationText = line.totalDurationSec
                     ?.takeIf { it > 0 }
                     ?.let { formatDuration(it.toLong()) },
@@ -1065,9 +1020,8 @@ internal fun shareCardData(
 }
 
 /** Thousands-grouped tonnage ("14,850") — the card never shows fractional kilos. */
-// One implementation for every surface: the card, the success screen and the
-// confirm sheet all round and group through WorkoutValueFormatter, so they
-// cannot disagree about the same session's number.
+// Routed through WorkoutValueFormatter so the card, success screen and confirm
+// sheet can't disagree about the same session's number.
 private fun groupedTonnage(kg: Double): String = WorkoutValueFormatter.groupedTonnageNumber(kg)
 
 /**

@@ -48,9 +48,7 @@ enum class BodyMeasurementType(val id: String) {
     companion object {
         fun create(id: String?): BodyMeasurementType? {
             if (id == null) return null
-            // Pre-FJ-2.0 Android rows stored the singular `"photo"`; map
-            // them to the unified plural so legacy data round-trips
-            // without a separate SQL migration.
+            // Legacy Android singular "photo" -> canonical plural.
             val canonical = if (id == "photo") PHOTOS.id else id
             return entries.firstOrNull { it.id == canonical }
         }

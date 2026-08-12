@@ -48,16 +48,14 @@ fun WorkoutRecordCard(
     onAddSet: (workoutExerciseId: String) -> Unit,
     onExerciseMenu: (WorkoutExercise) -> Unit,
     modifier: Modifier = Modifier,
-    // Tap anywhere on the card (outside a set row / the 3-dot / add-set) opens
-    // the exercise focus. Null in import mode, where the card is a selection
-    // target and the wrapper owns the tap.
+    // Tap anywhere else opens exercise focus; null in import mode, where the
+    // card is a selection target and the wrapper owns the tap.
     onOpen: (() -> Unit)? = null,
     isImporting: Boolean = false,
     isSelected: Boolean = false,
 ) {
     Column(
-        // 14 above the first block, 8 below the last; the exercise items and
-        // dividers carry no external top/bottom, so nothing double-stacks.
+        // 14 above / 8 below; children carry no external top/bottom so nothing double-stacks.
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))

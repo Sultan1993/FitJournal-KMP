@@ -32,13 +32,7 @@ import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * One day in a week section (design WH4/WH5): a 34dp day-of-month + weekday
- * leading column, then a content column with the muted top muscle-groups line and,
- * below it, the day's large tonnage beside a "{workouts ·] exercises · sets" meta
- * line (workouts segment only when more than one). Tapping the row opens that
- * day's details ([onClick] -> OpenDay).
- */
+/** Tapping the row opens that day's details ([onClick] -> OpenDay). */
 @Composable
 fun WorkoutListDayRow(
     day: WorkoutListContract.DayRow,
@@ -46,8 +40,7 @@ fun WorkoutListDayRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Resolve every string in the composable body (not inside a lambda), then
-    // join the plain values — keeps all @Composable reads unambiguously in scope.
+    // Resolve strings in the composable body, not inside a lambda — keeps reads in scope.
     val categoryNames = ArrayList<String>(day.topCategories.size)
     for (category in day.topCategories) categoryNames.add(stringResource(category.nameRes))
     val categoryTitle = categoryNames.joinToString(" · ")
@@ -61,8 +54,8 @@ fun WorkoutListDayRow(
     val setsPart = pluralStringResource(Res.plurals.history_set_count, day.setCount, day.setCount)
 
     val hasCardio = day.durationMinutes > 0
-    // A pure-cardio day (cardio, no weight tonnage) reads its distance; anything with
-    // weight work reads its exercises/sets, appending distance when cardio is mixed in.
+    // Cardio-only day shows distance; weight work shows exercises/sets, plus
+    // distance when cardio is mixed in.
     val cardioOnly = hasCardio && day.tonnage <= 0.0
     val metaLine = if (cardioOnly) {
         WorkoutValueFormatter.distance(day.distance, measurementSystem)
@@ -101,12 +94,10 @@ fun WorkoutListDayRow(
             )
         }
 
-        // Always three stacked rows: muscle groups, the value(s), then the meta.
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            // Row 1 — muscle groups.
             Text(
                 text = categoryTitle,
                 style = FjTheme.typography.caption.copy(fontWeight = FontWeight.Medium),
@@ -115,7 +106,7 @@ fun WorkoutListDayRow(
                 overflow = TextOverflow.Ellipsis,
             )
 
-            // Row 2 — volume and/or duration, "·"-separated when both are present.
+            // "·"-separated only when both tonnage and duration are present.
             Text(
                 text = listOfNotNull(
                     if (!cardioOnly) WorkoutValueFormatter.groupedTonnage(day.tonnage, measurementSystem) else null,
@@ -125,7 +116,6 @@ fun WorkoutListDayRow(
                 color = FjTheme.colors.textPrimary,
             )
 
-            // Row 3 — workouts · exercises · sets · distance (or distance for cardio-only).
             Text(
                 text = metaLine,
                 style = FjTheme.typography.caption.copy(fontSize = 12.5.sp),

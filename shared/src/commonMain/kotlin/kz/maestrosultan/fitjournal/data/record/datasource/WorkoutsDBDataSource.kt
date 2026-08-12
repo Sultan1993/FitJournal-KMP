@@ -34,9 +34,8 @@ class WorkoutsDBDataSource(
 
     // ─── Reads ────────────────────────────────────────────────────────────
 
-    // Emits the current MAX(updatedDate) for the journal and re-emits on
-    // every workoutRecords write. Used by the home screen as a reactive
-    // "workouts changed" trigger.
+    // MAX(updatedDate) for the journal, re-emitted on every write — home
+    // screen's reactive "workouts changed" trigger.
     fun observeJournalRecordsSignal(userId: String, journalId: String): Flow<String> =
         recordsDao.observeJournalRecordsSignal(userId, journalId)
             .asFlow()
@@ -101,11 +100,9 @@ class WorkoutsDBDataSource(
 
     /**
      * One row per set, with the parent record's `date` and the parent
-     * workoutExercise's `comment` projected from the JOIN. Caller picks
-     * the row shape via [mapper] so the data layer doesn't have to
-     * invent a one-off projection type — the repository can map
-     * straight into whatever it needs (a `WorkoutSet` for best-result
-     * reads, a private grouping struct for occurrences, etc.).
+     * workoutExercise's `comment` projected from the JOIN. Caller picks the
+     * row shape via [mapper] so the data layer doesn't invent a one-off
+     * projection type.
      */
     suspend fun <T : Any> getSetsForExerciseInJournal(
         exerciseUuid: String,
@@ -147,12 +144,10 @@ class WorkoutsDBDataSource(
 
     /**
      * One row per WEIGHTED set of [exerciseUuid] in (user, journal) on live
-     * records dated up to and including [upToDate] (stored TEXT form), with
-     * the parent record's identity (uuid, workoutNumber, date) projected from
-     * the JOIN. Weight-less rows are excluded at the SQL level. Caller picks
-     * the row shape via [mapper] — same convention as
-     * [getSetsForExerciseInJournal], so the data layer doesn't grow a one-off
-     * projection type.
+     * records up to and including [upToDate] (stored TEXT form), with the
+     * parent record's identity (uuid, workoutNumber, date) projected from the
+     * JOIN. Weight-less rows excluded at the SQL level. Same [mapper]
+     * convention as [getSetsForExerciseInJournal].
      */
     suspend fun <T : Any> getWeightedSetHistoryForExercise(
         userId: String,
@@ -181,9 +176,8 @@ class WorkoutsDBDataSource(
 
     // For catalog exercises sharing one cutoff date, returns ALL sets
     // (position-ordered) of the most recent prior workoutExercise per exercise
-    // uuid — two queries total, not one per exercise. The full set list lets the
-    // caller align the hint per position (set N ← prior occurrence's set N)
-    // rather than stamping the last set everywhere.
+    // uuid — two queries total, not one per exercise. Full set list lets the
+    // caller align the hint per position instead of stamping the last set everywhere.
     suspend fun getLastOccurrenceForExercisesBeforeDate(
         exerciseUuids: Collection<String>,
         userId: String,
@@ -196,8 +190,7 @@ class WorkoutsDBDataSource(
             .executeAsList()
         if (weRows.isEmpty()) return@withContext emptyMap()
         val weUuidToExerciseUuid = weRows.associate { it.weUuid to it.exerciseUuid }
-        // The occurrence's own record date — needed so the domain LastOccurrence
-        // can say WHEN, not just what.
+        // The occurrence's own record date, so domain LastOccurrence can say WHEN.
         val exerciseUuidToDate = weRows.associate { it.exerciseUuid to it.recordDate }
         val setsByExerciseUuid = setsDao
             .getSetsForWorkoutExercises(weUuidToExerciseUuid.keys)
@@ -210,12 +203,10 @@ class WorkoutsDBDataSource(
     }
 
     private fun childrenOf(workoutRecordUuid: String): List<DBWorkoutExerciseWithSets> {
-        // Two SQL calls total instead of 1 + N: load all exercises for
-        // the record, then a single bulk-join load of every set under
-        // those exercises. Groups by `workoutExerciseUuid` in Kotlin
-        // (rows are already in position order from
-        // `idx_workoutSets_exercise`). Materially cheaper on the sync
-        // push loop where this fires per pending record.
+        // Two SQL calls instead of 1 + N: all exercises for the record, then
+        // one bulk-join load of every set, grouped by `workoutExerciseUuid`
+        // (already position-ordered via `idx_workoutSets_exercise`). Cheaper
+        // on the sync push loop, which fires this per pending record.
         val exercises = exercisesDao
             .getWorkoutExercisesByRecord(workoutRecordUuid)
             .executeAsList()
@@ -237,10 +228,8 @@ class WorkoutsDBDataSource(
     // ─── Writes ───────────────────────────────────────────────────────────
 
     suspend fun createWorkoutRecordIfMissing(record: DBWorkoutRecord): Boolean = withContext(Dispatchers.IO) {
-        // Atomic check-and-insert. Prior version had the existence check
-        // OUTSIDE the transaction → TOCTOU: two concurrent migrator runs
-        // could both pass the check and both insert. Matches the pattern
-        // already used by `createWorkoutRecordsIfMissing` plural.
+        // Atomic check-and-insert — an existence check outside the transaction
+        // would TOCTOU-race two concurrent migrator runs into a double insert.
         recordsDao.transactionWithResult {
             if (recordsDao.getWorkoutRecordByIdIncludingDeleted(record.row.uuid).executeAsOneOrNull() != null) {
                 return@transactionWithResult false
@@ -275,13 +264,11 @@ class WorkoutsDBDataSource(
     }
 
     // Atomic "remove from superset" split. The removed exercise's rows are
-    // deleted (by replacing the source record's children) and reinserted
-    // under the new record with their original uuids — if those steps ran as
-    // separate transactions, a crash or a concurrently ticking sync push
-    // could observe (and upload) the state where the exercise exists in
-    // NEITHER record, i.e. permanent data loss. One transaction closes that
-    // window. Sibling shifts only touch the record row (updateWorkoutRecord
-    // marks pendingUpload=1), never their children.
+    // deleted (replacing the source record's children) and reinserted under
+    // the new record with their original uuids — as separate transactions, a
+    // crash or concurrent sync push could observe (and upload) the exercise
+    // existing in NEITHER record, i.e. permanent data loss. Sibling shifts
+    // only touch the record row (pendingUpload=1), never their children.
     suspend fun splitWorkoutRecord(
         source: DBWorkoutRecord,
         newRecord: DBWorkoutRecord,
@@ -291,12 +278,10 @@ class WorkoutsDBDataSource(
             updateRecordRow(source.row)
             exercisesDao.deleteWorkoutExercisesByRecord(source.row.uuid)
             insertChildren(source)
-            // Records in the SAME workout after the source shift +1 to make room
-            // for the split-off record. Scoped to source.workoutNumber because
-            // position is page-relative — a record in another workout of the same
-            // day shares the position range and must not shift. Read INSIDE the
-            // transaction — a sync pull landing between an outside read and the
-            // commit would make the shift write stale positions.
+            // Records in the SAME workout after the source shift +1 for the
+            // split-off record. Scoped to source.workoutNumber since position is
+            // page-relative. Read INSIDE the transaction — a sync pull landing
+            // between an outside read and the commit would write stale positions.
             recordsDao
                 .getWorkoutRecordsByJournal(source.row.userId, source.row.journalId, EPOCH, FAR_FUTURE)
                 .executeAsList()
@@ -315,9 +300,9 @@ class WorkoutsDBDataSource(
     }
 
     // Atomic superset merge — replaces the target record's children AND
-    // tombstones the absorbed record in one transaction. As two separate
-    // transactions, a crash between them left both records live with the
-    // absorbed exercises duplicated (and both queued for push).
+    // tombstones the absorbed record in one transaction; as two separate
+    // transactions, a crash between them left both live with the absorbed
+    // exercises duplicated (and both queued for push).
     suspend fun mergeWorkoutRecords(
         merged: DBWorkoutRecord,
         tombstoneUuid: String,
@@ -374,8 +359,8 @@ class WorkoutsDBDataSource(
     }
 
     // Orphan-reparent path: same upsert shape, but pendingUpload=1 so the
-    // corrected journalId reaches AWS on the next push tick. Caller has
-    // already swapped `record.row.journalId` to the personal journal.
+    // corrected journalId reaches AWS next tick. Caller already swapped
+    // `record.row.journalId` to the personal journal.
     suspend fun replaceWorkoutRecordFromRemoteAsPending(record: DBWorkoutRecord) = withContext(Dispatchers.IO) {
         recordsDao.transaction {
             recordsDao.upsertWorkoutRecordFromRemoteAsPending(

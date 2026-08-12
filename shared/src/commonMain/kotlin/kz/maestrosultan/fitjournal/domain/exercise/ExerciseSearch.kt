@@ -52,7 +52,6 @@ object ExerciseSearch {
 
         val nameTokens = name.tokenize()
 
-        // Every query token prefixes some word in the name (order-independent).
         val allTokensAreWordPrefixes = queryTokens.all { token ->
             nameTokens.any { it.startsWith(token) }
         }
@@ -61,10 +60,8 @@ object ExerciseSearch {
             return if (firstWordMatches) TOKEN_PREFIX_LEADING else TOKEN_PREFIX
         }
 
-        // Contiguous substring anywhere — preserves the previous search recall.
         if (name.contains(query)) return SUBSTRING
 
-        // Looser fallback: every query token appears somewhere in the name.
         if (queryTokens.all { name.contains(it) }) return SCATTERED
 
         return 0

@@ -33,20 +33,17 @@ import kz.maestrosultan.fitjournal.kmp.time.firstDayOfWeekFromLocale
 import kz.maestrosultan.fitjournal.ui.workoutlist.components.buildWorkoutListFeed
 
 /**
- * Shared presentation for the Workout WorkoutList screen — the ONE ViewModel both
- * apps use, in the per-screen MVI [WorkoutListContract] shape: one entry point
- * ([dispatch]) and two outputs ([viewState] + one-shot [viewEffect]). A sibling
- * of [kz.maestrosultan.fitjournal.ui.workout.WorkoutViewModel], built in its image.
+ * Shared presentation for the WorkoutList screen — the ONE ViewModel both apps
+ * use, in the per-screen MVI [WorkoutListContract] shape. A sibling of
+ * [kz.maestrosultan.fitjournal.ui.workout.WorkoutViewModel], built in its image.
  *
- * Strictly offline-first: it reads only the local KMP repositories
- * ([RecordRepository], [JournalRepository]) and the shared [UserSession]. No sync,
- * no network, no refreshing state — pull-to-refresh is a host concern injected
+ * Strictly offline-first: reads only local KMP repositories
+ * ([RecordRepository], [JournalRepository]) and [UserSession]. No sync, no
+ * network, no refreshing state — pull-to-refresh is a host concern injected
  * into the screen, never seen here.
  *
- * All aggregation runs in [kz.maestrosultan.fitjournal.ui.workoutlist.components.buildWorkoutListFeed],
- * hopped onto [Dispatchers.Default] so 3 years of record trees never fold on the
- * main thread (record-load perf contract). NAVIGATION (details, journal picker)
- * leaves as [WorkoutListContract.ViewEffect]s the native host performs.
+ * All aggregation runs in [buildWorkoutListFeed], hopped onto
+ * [Dispatchers.Default] so years of record trees never fold on the main thread.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class WorkoutListViewModel(
@@ -67,29 +64,26 @@ class WorkoutListViewModel(
     private val _uiState = MutableStateFlow(WorkoutListContract.ViewState.initial(today()))
     override val viewState: StateFlow<WorkoutListContract.ViewState> = _uiState.asStateFlow()
 
-    // One-shot navigation outputs. Buffered single-consumer channel (the host)
-    // via receiveAsFlow, so an effect emitted before the host starts collecting
-    // isn't dropped — see kotlin-flow-state-event-modeling.
+    // One-shot outputs. Buffered so an effect emitted before the host starts
+    // collecting isn't dropped.
     private val _effects = Channel<WorkoutListContract.ViewEffect>(Channel.BUFFERED)
     override val viewEffect: Flow<WorkoutListContract.ViewEffect> = _effects.receiveAsFlow()
 
-    // Latest identity, cached for the calendar-dot loaders (which run outside
-    // the feed pipeline). Mirrors WorkoutViewModel's userId/journalId fields.
+    // Cached for calendar-dot loaders, which run outside the feed pipeline.
     private var latestSession: UserSessionState? = null
     private var lastIdentity: Pair<String, String>? = null
 
-    // The month whose dots are currently shown (year, month) — set on calendar
-    // open (current month) and by CalendarMonthChanged; used by the dot loader's
-    // identity guard so a late load for a scrolled-away month is dropped.
+    // Month whose dots are currently shown; set on calendar open and by
+    // CalendarMonthChanged. Guards the dot loader against a late load for a
+    // scrolled-away month.
     private var visibleMonth: Pair<Int, Int>? = null
     private var workoutDaysJob: Job? = null
 
     init {
-        // Feed pipeline. The whole read restarts on every session emission
-        // (journal switch / unit toggle) via flatMapLatest — no
-        // distinctUntilChanged, because UserSession.state is a StateFlow that
-        // conflates equal re-sets for free. `today` is computed ONCE per rebuild
-        // and used for both the fold and ViewState.today so they can't disagree.
+        // Feed pipeline: restarts on every session emission via flatMapLatest —
+        // no distinctUntilChanged needed, since UserSession.state conflates
+        // equal re-sets for free. `today` is computed ONCE per rebuild and
+        // shared by the fold and ViewState.today so they can't disagree.
         val feed: Flow<FeedResult> = session.flatMapLatest { s ->
             combine(
                 recordRepository.observeRecordsChanged(s.userId, s.journalId)
@@ -116,10 +110,9 @@ class WorkoutListViewModel(
             }.collect { _uiState.value = it }
         }
 
-        // Session-change guard for the calendar dots. Dots are a lazily-loaded
-        // side surface, so unlike the feed they don't rebuild themselves on a
-        // switch — we clear them and cancel any in-flight load here, then reload
-        // the visible month under the new identity if the calendar is open.
+        // Dots are a lazily-loaded side surface that doesn't rebuild itself on
+        // a session switch — clear + cancel any in-flight load here, then
+        // reload the visible month under the new identity if the calendar is open.
         viewModelScope.launch {
             session.collect { s ->
                 latestSession = s
@@ -175,11 +168,7 @@ class WorkoutListViewModel(
         loadWorkoutDays(s.userId, s.journalId, year, month)
     }
 
-    /**
-     * Calendar day tap. A data-bearing day closes the calendar and opens that
-     * date's details; an empty day is a no-op (history is read-only — nothing to
-     * open on a day with no workouts).
-     */
+    /** Data-bearing day closes the calendar and opens details; empty day is a no-op (history is read-only). */
     private fun onSelectDate(date: LocalDate) {
         if (workoutDays.value[date]?.isNotEmpty() == true) {
             calendarVisible.value = false
@@ -188,20 +177,18 @@ class WorkoutListViewModel(
     }
 
     /**
-     * The ONE dot loader — a single cancellable job plus an identity guard.
-     * Cancelling the previous job kills the common case; the post-read identity
-     * check ([latestSession] + [visibleMonth]) covers a read that was already
-     * past its suspension point when a switch/scroll landed, so a stale result
-     * can never overwrite the current month's dots. (Deliberately NOT the
-     * untracked `viewModelScope.launch` of `WorkoutViewModel.loadWorkoutDays`,
-     * which has exactly this latent race.)
+     * Single cancellable job + identity guard: cancelling the previous job
+     * kills the common case; the post-read check ([latestSession] +
+     * [visibleMonth]) catches a read already past its suspension point when a
+     * switch/scroll landed, so a stale result can never overwrite the current
+     * month's dots. (Deliberately not `WorkoutViewModel.loadWorkoutDays`'s
+     * untracked launch, which has exactly this latent race.)
      */
     private fun loadWorkoutDays(userId: String, journalId: String, year: Int, month: Int) {
         workoutDaysJob?.cancel()
         workoutDaysJob = viewModelScope.launch {
             val records = recordRepository.getRecordsByMonth(userId, journalId, month.toString(), year.toString())
-            // date -> distinct muscle groups trained that day (first-seen order),
-            // for the calendar's category-coloured dots (same map as WorkoutViewModel).
+            // date -> distinct muscle groups trained that day, for the calendar's dots.
             val map = records
                 .groupBy { it.date }
                 .mapValues { (_, dayRecords) ->
@@ -215,9 +202,9 @@ class WorkoutListViewModel(
     }
 
     /**
-     * Cancel the observation scope. Host-owned VM (the native nav bar + calendar
-     * drive/observe it), so it is NOT in a ViewModelStore that would call
-     * `clear()` — the host calls this on teardown, same contract as WorkoutViewModel.
+     * Host-owned VM (native nav bar + calendar drive/observe it) — not in a
+     * ViewModelStore that calls `clear()`, so the host calls this on
+     * teardown. Same contract as WorkoutViewModel.
      */
     fun dispose() {
         viewModelScope.cancel()

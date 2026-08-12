@@ -23,11 +23,8 @@ import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * The DURATION / EXERCISES / SETS stat row (design §4.2): up to three equal
- * `card`-token tiles, 9dp gaps. DURATION is dropped when the workout has no
- * session (`durationText == null`), so a sessionless day shows only the two
- * counts. Every value is presentational — the counts are rendered verbatim from
- * the [ViewState][kz.maestrosultan.fitjournal.ui.workoutdetails.WorkoutDetailsContract],
+ * DURATION is dropped when the workout has no session (`durationText == null`),
+ * so a sessionless day shows only the two counts. Values are rendered verbatim,
  * never re-derived here.
  */
 @Composable
@@ -37,8 +34,7 @@ fun WorkoutStatTiles(
     setCount: Int,
     modifier: Modifier = Modifier,
 ) {
-    // Resolve every label unconditionally (fixed @Composable call sites), then
-    // assemble the plain pairs — DURATION drops out when there is no session.
+    // stringResource must be called unconditionally (fixed composable call sites).
     val durationLabel = stringResource(Res.string.workout_details_tile_duration)
     val exercisesLabel = stringResource(Res.string.workout_details_tile_exercises)
     val setsLabel = stringResource(Res.string.workout_details_tile_sets)

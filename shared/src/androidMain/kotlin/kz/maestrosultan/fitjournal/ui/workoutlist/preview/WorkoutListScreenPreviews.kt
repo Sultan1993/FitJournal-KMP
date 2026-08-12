@@ -9,11 +9,9 @@ import kotlinx.coroutines.flow.emptyFlow
 import kz.maestrosultan.fitjournal.ui.workoutlist.WorkoutListContract
 import kz.maestrosultan.fitjournal.ui.workoutlist.WorkoutListScreen
 
-// android.content.res.Configuration.UI_MODE_NIGHT_{NO,YES} bit values, hardcoded
-// so this commonMain file needs no Android-only import. WorkoutListScreen wraps
-// its own FitJournalTheme(darkTheme = isSystemInDarkTheme()) internally (it takes
-// no darkTheme param), so forcing light/dark here has to go through the preview
-// renderer's uiMode, not through re-wrapping the theme.
+// android.content.res.Configuration.UI_MODE_NIGHT_{NO,YES} bit values. WorkoutListScreen owns
+// its own FitJournalTheme(darkTheme = isSystemInDarkTheme()) with no darkTheme param, so forcing
+// light/dark here must go through the preview renderer's uiMode, not by re-wrapping the theme.
 private const val UI_MODE_NIGHT_NO = 0x10
 private const val UI_MODE_NIGHT_YES = 0x20
 

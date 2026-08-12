@@ -34,36 +34,25 @@ import kz.maestrosultan.fitjournal.ui.workoutdetails.components.WorkoutDetailsSt
 import kz.maestrosultan.fitjournal.ui.workoutdetails.components.buildWorkoutDetailsUi
 
 /**
- * Shared presentation for the WorkoutDetails screen (design spec §6) — the ONE
- * ViewModel both apps use, in the per-screen MVI [WorkoutDetailsContract] shape:
- * one entry point ([dispatch]) and two outputs ([viewState] + one-shot
- * [viewEffect]). Scoped to a single ([date], user, journal) — unlike
+ * Shared presentation for the WorkoutDetails screen — the ONE ViewModel both
+ * apps use, in the per-screen MVI [WorkoutDetailsContract] shape. Scoped to a
+ * single ([date], user, journal): unlike
  * [kz.maestrosultan.fitjournal.ui.workoutlist.WorkoutListViewModel] this screen
  * never switches day or journal underneath itself, so identity is resolved
  * ONCE from [userContext] rather than observed reactively.
  *
- * **Pipeline**: `combine(recordRepository.observeRecordsChanged(u,j).mapLatest {
- * getRecordsByDate(u, j, date, includeLastOccurrence = true) },
- * sessionRepository.getSessionsForDayFlow(u, j, date))` feeds a second
- * `mapLatest` that computes the per-workout [SessionBest]s ([detectSessionBest])
- * and calls [buildWorkoutDetailsUi] hopped onto [Dispatchers.Default]
- * (record-load perf contract). That result is combined with the
- * [focusedWorkoutNumber] / [noteEditor] / [confirmingDelete] `MutableStateFlow`s
- * into [WorkoutDetailsContract.ViewState] — reactive by construction: an edit
- * made on the workout screen re-renders this screen on return.
+ * **Pipeline**: records + sessions combine into a second `mapLatest` that
+ * computes per-workout [SessionBest]s and calls [buildWorkoutDetailsUi] on
+ * [Dispatchers.Default] (record-load perf contract), then combines with the
+ * [focusedWorkoutNumber]/[noteEditor]/[confirmingDelete] state into
+ * [WorkoutDetailsContract.ViewState] — reactive by construction.
  *
- * **Strand-proofing (§13)**: the [buildContentOrNull] `mapLatest` step wraps its
- * whole body in `runCatching` — a throw (including [buildWorkoutDetailsUi]'s own
- * `records.isEmpty()` require, which the explicit empty check below makes
- * unreachable in practice) drops ONLY that emission; [WorkoutDetailsContract.ViewState.content]
- * keeps whatever it already showed ([WorkoutDetailsContract.Content.Loading]
- * before the first success, or the last good
- * [WorkoutDetailsContract.Content.Loaded]), and the next repository signal gets
- * a fresh attempt. `CancellationException` is always rethrown, never logged —
- * see `kotlin-coroutines-structured-concurrency`.
+ * **Strand-proofing**: [buildContentOrNull] wraps its body in `runCatching` —
+ * a throw drops only that emission; content keeps its last good value and the
+ * next repository signal retries. `CancellationException` is always rethrown,
+ * never logged.
  *
- * **Empty day**: a rebuild that yields zero records — the first load was a stale
- * row, or the focused delete removed the day's last workout — fires
+ * **Empty day**: a rebuild yielding zero records fires
  * [WorkoutDetailsContract.ViewEffect.Dismiss] exactly once ([requestDismissOnce]).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -83,13 +72,11 @@ class WorkoutDetailsViewModel internal constructor(
 ) : ViewModel(), WorkoutDetailsContract.ViewModel {
 
     /**
-     * Public construction path — the Android app module (a separate compilation
-     * unit consuming :shared via Hilt) builds this VM itself, so class +
-     * constructor must be public while [MuscleTitleFormatter] / [WorkoutDetailsStrings]
-     * stay internal (their defaults touch generated compose resources).
-     * Production always uses the Res-backed defaults; jvmTest injects
-     * deterministic ones via the internal primary constructor. Mirrors
-     * `WorkoutSuccessViewModel`'s public/internal split.
+     * Public construction path — Android builds this VM directly via Hilt, so
+     * the class + constructor must be public while [MuscleTitleFormatter] /
+     * [WorkoutDetailsStrings] stay internal (their defaults touch generated
+     * compose resources). jvmTest injects deterministic ones via the internal
+     * primary constructor. Mirrors `WorkoutSuccessViewModel`'s public/internal split.
      */
     constructor(
         recordRepository: RecordRepository,
@@ -113,10 +100,9 @@ class WorkoutDetailsViewModel internal constructor(
         strings = WorkoutDetailsStrings(),
     )
 
-    // Which workout of the day is currently shown/lifted (WD3 stack); seeded
-    // from the finish flow's number, or 1 when null ("lowest number" — any
-    // value absent from the loaded day falls back to the builder's own lowest-
-    // present resolution, see applySnapshot).
+    // Which workout of the day is shown/lifted (WD3 stack). Seeded from the
+    // finish flow's number, or 1 when null; an absent value falls back to the
+    // builder's own lowest-present resolution (see applySnapshot).
     private val focusedWorkoutNumber = MutableStateFlow(initialWorkoutNumber ?: DEFAULT_FOCUS)
     private val noteEditor = MutableStateFlow<WorkoutDetailsContract.NoteEditor?>(null)
     private val confirmingDelete = MutableStateFlow(false)
@@ -124,15 +110,12 @@ class WorkoutDetailsViewModel internal constructor(
     private val _uiState = MutableStateFlow(WorkoutDetailsContract.ViewState.initial(headerNav))
     override val viewState: StateFlow<WorkoutDetailsContract.ViewState> = _uiState.asStateFlow()
 
-    // One-shot navigation outputs. Buffered single-consumer channel (the host)
-    // via receiveAsFlow, so an effect emitted before the host starts collecting
-    // isn't dropped — see kotlin-flow-state-event-modeling.
+    // One-shot outputs. Buffered so an effect emitted before the host starts
+    // collecting isn't dropped.
     private val _effects = Channel<WorkoutDetailsContract.ViewEffect>(Channel.BUFFERED)
     override val viewEffect: Flow<WorkoutDetailsContract.ViewEffect> = _effects.receiveAsFlow()
 
-    // Resolved once from userContext; cached for the action handlers, which run
-    // outside the pipeline's own coroutine. Mirrors WorkoutViewModel's
-    // userId/journalId fields.
+    // Resolved once; cached for action handlers that run outside the pipeline's coroutine.
     private var identity: Identity? = null
 
     // Guards ViewEffect.Dismiss to fire at most once per VM instance.
@@ -185,12 +168,10 @@ class WorkoutDetailsViewModel internal constructor(
     // ─── Pipeline assembly ────────────────────────────────────────────────
 
     /**
-     * One (records, sessions) emission → [WorkoutDetailsContract.Content.Loaded],
-     * or null when this emission must NOT replace the current
-     * [WorkoutDetailsContract.ViewState.content] — see the class doc's
-     * strand-proofing note. [records] empty fires [requestDismissOnce] instead
-     * of attempting a build (an empty day is a deliberate dismissal, not a
-     * failure).
+     * Returns null when this emission must NOT replace the current content
+     * (see class doc's strand-proofing note). Empty [records] fires
+     * [requestDismissOnce] instead of attempting a build — a deliberate
+     * dismissal, not a failure.
      */
     private suspend fun buildContentOrNull(
         userId: String,
@@ -237,12 +218,11 @@ class WorkoutDetailsViewModel internal constructor(
     }
 
     /**
-     * Folds one pipeline [Snapshot] into [_uiState]. A null [Snapshot.loaded]
-     * (failure, or the empty-day dismiss path) leaves [WorkoutDetailsContract.ViewState.content]
-     * untouched. Otherwise the LIVE [focusedWorkoutNumber] overrides whatever
-     * value the builder baked in (it may have run against a stale focus) —
-     * valid only when it names one of the day's loaded workouts, else the
-     * builder's own lowest-present fallback wins.
+     * A null [Snapshot.loaded] (failure, or empty-day dismiss) leaves
+     * [WorkoutDetailsContract.ViewState.content] untouched. Otherwise the LIVE
+     * [focusedWorkoutNumber] overrides the builder's baked-in value — valid
+     * only when it names one of the day's loaded workouts, else the builder's
+     * own lowest-present fallback wins.
      */
     private fun applySnapshot(snapshot: Snapshot) {
         _uiState.update { current ->
@@ -284,13 +264,11 @@ class WorkoutDetailsViewModel internal constructor(
     }
 
     /**
-     * Deletes the focused workout via [deleteWorkout] (one atomic transaction —
-     * §14); the pipeline re-emits (or dismisses via the empty-day rule) once the
-     * write lands. On success, focus falls back to the lowest of the OTHER
-     * workouts this day held before the delete — computed from the pre-delete
-     * [WorkoutDetailsContract.Content.Loaded] rather than waiting on the
-     * pipeline's own rebuild, so the stack doesn't flash a stale focus. A
-     * failure leaves focus untouched (nothing changed locally).
+     * Deletes the focused workout (one atomic transaction); the pipeline
+     * re-emits (or dismisses via the empty-day rule) once the write lands. On
+     * success, focus falls back to the lowest of the OTHER workouts this day
+     * held pre-delete — computed locally, not from the pipeline's rebuild, so
+     * the stack doesn't flash a stale focus. Failure leaves focus untouched.
      */
     private fun onDeleteConfirmed() {
         val id = identity ?: return
@@ -340,9 +318,9 @@ class WorkoutDetailsViewModel internal constructor(
         _uiState.value.content as? WorkoutDetailsContract.Content.Loaded
 
     /**
-     * Cancel the observation scope. Host-owned VM (native nav bar / sheet host
-     * drives it), so it is NOT in a ViewModelStore that would call `clear()` —
-     * the host calls this on teardown, same contract as WorkoutListViewModel.
+     * Host-owned VM (native nav bar / sheet host drives it) — not in a
+     * ViewModelStore that calls `clear()`, so the host calls this on
+     * teardown. Same contract as WorkoutListViewModel.
      */
     fun dispose() {
         viewModelScope.cancel()

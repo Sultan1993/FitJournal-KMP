@@ -62,9 +62,8 @@ class DefaultExerciseRepository(
         categoryUuid: String,
         resultType: ResultType,
     ) {
-        // uuid IS the AWS id (deterministic across platforms); remoteId is
-        // seeded equal to uuid as a placeholder until the SyncWorker rewrites
-        // it after a confirmed push (see ExercisesDBDataSource.markUploaded).
+        // uuid IS the AWS id; remoteId seeded = uuid until SyncWorker rewrites
+        // it post-push (see ExercisesDBDataSource.markUploaded).
         localDataSource.createExercise(
             uuid = uuid,
             remoteId = uuid,
@@ -97,9 +96,8 @@ class DefaultExerciseRepository(
     }
 
     override suspend fun deleteUserExercises(userId: String) {
-        // Hard-purge custom rows for the delete-account flow. Server-side
-        // account cleanup handles the bulk remote delete; tombstoning
-        // each row would only burden the SyncWorker.
+        // Hard-purge for delete-account; server handles the bulk remote
+        // delete, so tombstoning would just burden the SyncWorker.
         localDataSource.getUserCustomExercises(userId).forEach { row ->
             localDataSource.deleteExercise(row.uuid)
         }

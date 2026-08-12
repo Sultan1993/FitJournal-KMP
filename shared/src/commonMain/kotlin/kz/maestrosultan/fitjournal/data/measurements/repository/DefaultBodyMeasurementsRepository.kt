@@ -75,8 +75,7 @@ class DefaultBodyMeasurementsRepository(
     }
 
     override suspend fun deleteBodyMeasurement(uuid: String) {
-        // Soft delete: tombstone + pendingUpload=1 so SyncOrchestrator
-        // propagates the deletion to AWS on its next tick.
+        // Soft delete: tombstone + pendingUpload=1 so SyncOrchestrator propagates it.
         localDataSource.softDeleteBodyMeasurement(uuid)
     }
 

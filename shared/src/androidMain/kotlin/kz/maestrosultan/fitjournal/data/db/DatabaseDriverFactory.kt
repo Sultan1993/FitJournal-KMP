@@ -8,8 +8,7 @@ import kz.maestrosultan.fitjournal.data.db.FitJournalDatabase
 
 actual class DatabaseDriverFactory(private val context: Context) {
     actual fun createDriver(): SqlDriver {
-        // foreign_keys must be enabled per-connection. Required for the
-        // ON DELETE CASCADE rules on workoutExercises/workoutSets to fire.
+        // foreign_keys must be enabled per-connection for ON DELETE CASCADE (workoutExercises/workoutSets) to fire.
         return AndroidSqliteDriver(
             schema = FitJournalDatabase.Schema,
             context = context,

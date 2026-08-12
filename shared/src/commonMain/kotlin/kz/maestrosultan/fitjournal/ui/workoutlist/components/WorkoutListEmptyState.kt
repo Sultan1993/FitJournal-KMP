@@ -24,9 +24,8 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * The zero-records state (design WH1/WH2): the plates illustration + one muted
- * line. Illustration and line only — the journal row, when present, is composed
- * ABOVE this by [kz.maestrosultan.fitjournal.ui.workoutlist.WorkoutListScreen], not here.
+ * Plates illustration + one muted line only — the journal row, when present,
+ * is composed ABOVE this by [kz.maestrosultan.fitjournal.ui.workoutlist.WorkoutListScreen], not here.
  */
 @Composable
 fun WorkoutListEmptyState(modifier: Modifier = Modifier) {

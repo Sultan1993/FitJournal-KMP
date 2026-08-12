@@ -101,11 +101,8 @@ private fun LayoutThumb(
         Box(
             modifier = Modifier
                 .testTag(ComposerTestTags.layoutThumb(kind))
-                // The caption below is a SIBLING of this clickable, not a
-                // descendant, so Compose's semantics merge never picks it up —
-                // every thumbnail announced as an unnamed button and layout
-                // choice was unusable without sight. Selected state is exposed
-                // too, since colour alone carries it visually.
+                // Semantics live here, not on the sibling caption below (merge misses it) —
+                // otherwise thumbnails read as unnamed buttons; selected is exposed too.
                 .semantics {
                     contentDescription = label
                     this.selected = selected
@@ -114,8 +111,7 @@ private fun LayoutThumb(
                 .aspectRatio(ThumbAspect)
                 .clip(ThumbShape)
                 .background(EditorSheetDefaults.TileColor)
-                // Border is always applied so selection never re-lays-out the row;
-                // an unselected tile just draws it transparent.
+                // Always applied (transparent when unselected) so selection never shifts layout.
                 .border(
                     width = SelectedBorderWidth,
                     color = if (selected) brand else Color.Transparent,

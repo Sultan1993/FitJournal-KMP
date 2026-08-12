@@ -16,12 +16,9 @@ import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workoutdetails.WorkoutDetailsContract
 
 /**
- * The volume hero (design §4.2/§4.3): a baseline-aligned value + unit, then the
- * caption. On a weight day the value is the tonnage ("10 480") with its unit
- * ("kg"); a duration hero passes `unitText == null` and shows the value alone.
- * [Hero.cardioText] — the aggregate cardio for a mixed scope — is appended to the
- * caption after ` · `, so a mixed day's cardio is never dropped. All strings are
- * pre-formatted by the ViewModel.
+ * A duration-day hero passes `unitText == null` and shows the value alone.
+ * [Hero.cardioText] (mixed-day aggregate) is appended after the caption via
+ * " · " so it's never dropped. All strings are pre-formatted by the ViewModel.
  */
 @Composable
 fun WorkoutDetailsHero(

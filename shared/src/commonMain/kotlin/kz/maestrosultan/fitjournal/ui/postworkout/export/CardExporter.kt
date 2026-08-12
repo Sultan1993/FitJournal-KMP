@@ -115,10 +115,8 @@ internal fun CardExportHost(
             )
             drawError != null -> Result.failure(drawError)
             else -> runCatching {
-                // Rasterize on the UI thread (GraphicsLayer is UI-owned), then
-                // encode the immutable snapshot off-main: PNG encoding of a
-                // 1080x1920 bitmap is ~100ms we must not spend on the main
-                // thread at the share tap.
+                // Rasterize on the UI thread (GraphicsLayer is UI-owned); encode off-main —
+                // PNG-encoding a 1080x1920 bitmap is ~100ms we must not spend at the share tap.
                 val bitmap = layer.toImageBitmap()
                 withContext(Dispatchers.Default) { bitmap.encodeToPng() }
             }

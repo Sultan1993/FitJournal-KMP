@@ -18,15 +18,13 @@ import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.toInstant
 
 /**
- * Android actuals. Dates go through [AndroidDateFormat.getBestDateTimePattern]
- * so the field order follows the device region. Names come from `java.time`
- * (via [JavaDayOfWeek.of]/[Month.of]) for standalone/nominative forms. NOTE:
- * kotlinx-datetime's [DayOfWeek]/[Month] are NOT java.time typealiases in this
- * project, so the explicit `.isoDayNumber` / `month1to12` conversions below are
- * load-bearing — `day.getDisplayName(...)` would not compile.
+ * Dates go through [AndroidDateFormat.getBestDateTimePattern] for region-correct field order;
+ * names come from `java.time`. kotlinx-datetime's [DayOfWeek]/[Month] are NOT java.time
+ * typealiases here, so the `.isoDayNumber`/`month1to12` conversions below are load-bearing —
+ * `day.getDisplayName(...)` wouldn't compile otherwise.
  *
- * Formatters are created per call: java.text formatters are not thread-safe and
- * these calls are rare, so caching would buy nothing and cost safety.
+ * Formatters are created per call (java.text formatters aren't thread-safe); caching isn't
+ * worth it since these calls are rare.
  */
 actual object LocaleFormatters {
 

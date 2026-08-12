@@ -56,11 +56,9 @@ class RecordRepositoryTest {
 
     @Test
     fun syncPull_preservesWorkoutNumber_notResetToOne(): Unit = runBlocking {
-        // Regression: the pull upsert (INSERT OR REPLACE) used to omit the
-        // workoutNumber column, so every pull reset it to the table DEFAULT (1),
-        // collapsing multi-workout days onto workout 1.
+        // Regression: pull upsert used to omit workoutNumber, resetting it to the
+        // table DEFAULT (1) and collapsing multi-workout days onto workout 1.
         val exId = seedCatalogExercise()
-        // A record logged as the day's SECOND workout.
         repo.addExercisesToDate(userId, journalId, date, 2, listOf(exId))
         val tree = workoutsDB.getWorkoutRecordById(
             repo.getRecordsByDate(userId, journalId, date).single().id,
@@ -82,7 +80,6 @@ class RecordRepositoryTest {
             "the orphan-reparent pull path must also preserve workoutNumber",
         )
 
-        // The domain read still groups it on page 2.
         assertEquals(2, repo.getRecordsByDate(userId, journalId, date).single().workoutNumber)
     }
 
@@ -112,8 +109,7 @@ class RecordRepositoryTest {
         repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId))
         val rec = repo.getRecordsByDate(userId, journalId, date).single()
         val weId = rec.exercises.single().id
-        // Drain the record's initial pendingUpload so we can assert the no-op
-        // doesn't re-queue it.
+        // Drain the initial pendingUpload so we can assert the no-op doesn't re-queue it.
         workoutsDB.markUploaded(rec.id, "remote-1")
         assertTrue(workoutsDB.getPendingUploads(userId).none { it.uuid == rec.id })
 
@@ -130,10 +126,9 @@ class RecordRepositoryTest {
 
     @Test
     fun addingTwoSets_requiresFkCascade_andKeepsBoth(): Unit = runBlocking {
-        // Each addSet round-trips through replaceWorkoutRecord (delete children
-        // → reinsert, reusing the workoutExercise uuid). Without ON DELETE
-        // CASCADE the prior set is orphaned and the reinsert hits a PK
-        // conflict — so two sets surviving proves the cascade is active.
+        // addSet round-trips via replaceWorkoutRecord (delete children → reinsert).
+        // Without ON DELETE CASCADE the reinsert hits a PK conflict — two
+        // surviving sets proves the cascade is active.
         val exId = seedCatalogExercise()
         repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId))
         val weId = repo.getRecordsByDate(userId, journalId, date).single().exercises.single().id
@@ -148,10 +143,9 @@ class RecordRepositoryTest {
 
     @Test
     fun lastOccurrence_alignsPerPosition_notLastSetOnEverySet(): Unit = runBlocking {
-        // Regression: copying / repeating a workout (and the previous-set hint
-        // in general) used to take the prior occurrence's LAST set and stamp
-        // its weight onto every set. Each set must instead show the weight from
-        // the matching position last time.
+        // Regression: the previous-set hint used to take the prior occurrence's
+        // LAST set and stamp its weight onto every set, instead of aligning by
+        // position.
         val exId = seedCatalogExercise()
         val prevDate = LocalDate(2026, 1, 10)
         val curDate = LocalDate(2026, 1, 17)
@@ -176,11 +170,10 @@ class RecordRepositoryTest {
             listOf(100.0, 110.0, 120.0, 120.0),
             exercise.sets.indices.map { last.setAt(it)?.weight },
         )
-        // The overflow rule is the bit that regressed before — assert it explicitly
-        // rather than only via the 4th element above.
+        // Overflow is the bit that regressed before — assert it explicitly too.
         assertEquals(120.0, last.setAt(99)?.weight)
-        // A negative position clamps to the FIRST set. Without the clamp it falls
-        // through to the overflow branch and returns the heaviest set instead.
+        // Negative position clamps to FIRST; without the clamp it falls into the
+        // overflow branch (heaviest set) instead.
         assertEquals(100.0, last.setAt(-1)?.weight)
     }
 
@@ -222,9 +215,9 @@ class RecordRepositoryTest {
 
     @Test
     fun addRecordsToWorkout_forcesEveryCopyOntoTheTargetPage_appendingPositions(): Unit = runBlocking {
-        // The "copy from a workout onto the tapped page" path: sources spanning
-        // several source workouts all collapse onto ONE target page, appended
-        // after that page's existing rows (no position collision).
+        // Copy-onto-tapped-page path: sources spanning several source workouts
+        // all collapse onto ONE target page, appended after that page's existing
+        // rows (no position collision).
         val exId = seedCatalogExercise()
         val src = LocalDate(2026, 3, 10)
         val target = LocalDate(2026, 3, 20)
@@ -247,8 +240,8 @@ class RecordRepositoryTest {
 
     @Test
     fun addRecordsToDate_stillCopiesAsIs_preservingSourceWorkoutNumbers(): Unit = runBlocking {
-        // The Repeat-workout path (targetWorkoutNumber = null) must be unaffected by
-        // the forced-target variant: a 2-workout source day copies back as 2 workouts.
+        // Repeat-workout path (targetWorkoutNumber = null) is unaffected by the
+        // forced-target variant: source pages carry over as-is.
         val exId = seedCatalogExercise()
         val src = LocalDate(2026, 4, 10)
         val target = LocalDate(2026, 4, 20)
@@ -264,11 +257,9 @@ class RecordRepositoryTest {
 
     @Test
     fun mergeRecords_intoSuperset_doesNotCollideOnSetUuids(): Unit = runBlocking {
-        // Regression: creating a superset crashed with `UNIQUE constraint
-        // failed: workoutSets.uuid`. mergeRecords re-parented the second
-        // record's sets onto a new exercise uuid but reused the set uuids;
-        // softDeleteWorkoutRecord only tombstones the record row, so those
-        // set rows physically remained and the reinsert hit the PK.
+        // Regression: `UNIQUE constraint failed: workoutSets.uuid`. mergeRecords
+        // reused set uuids while softDeleteWorkoutRecord only tombstones the
+        // record row, so the old set rows physically remained and reinsert hit the PK.
         val exId = seedCatalogExercise()
         repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId, exId))
         val records = repo.getRecordsByDate(userId, journalId, date).sortedBy { it.position }
@@ -282,7 +273,6 @@ class RecordRepositoryTest {
 
         val merged = repo.mergeRecords(userId, journalId, first, second)
 
-        // Second record tombstoned → one live superset record with both exercises.
         assertEquals(1, merged.size)
         val superset = merged.single()
         assertEquals(2, superset.exercises.size)
@@ -294,7 +284,7 @@ class RecordRepositoryTest {
     @Test
     fun replaceExerciseInRecord_swapsOnlyTargetMember_keepsSuperset(): Unit = runBlocking {
         // Data-loss regression: replacing a superset member used to always
-        // rebuild the FIRST exercise, destroying the wrong member and its sets.
+        // rebuild the FIRST exercise, destroying the wrong one.
         val exA = seedCatalogExercise()
         val exB = seedCatalogExercise()
         val exC = seedCatalogExercise()
@@ -323,9 +313,8 @@ class RecordRepositoryTest {
 
     @Test
     fun removeExerciseFromSuperset_splitsIntoOwnRecord(): Unit = runBlocking {
-        // Regression: "Remove from superset" used to DELETE the exercise (and
-        // tombstone the record when it was the last one) instead of splitting
-        // it into its own record — user-visible data loss.
+        // Regression: "Remove from superset" used to DELETE the exercise (tombstoning
+        // the record) instead of splitting it into its own record — data loss.
         val exId = seedCatalogExercise()
         repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId, exId))
         val records = repo.getRecordsByDate(userId, journalId, date).sortedBy { it.position }
@@ -336,8 +325,6 @@ class RecordRepositoryTest {
         val removedExercise = superset.exercises.last()
         val removedSetValues = removedExercise.sets.map { it.weight to it.reps }
 
-        // Remove one exercise → the superset SPLITS: two live records,
-        // the split-off one right after the source, sets intact.
         val afterRemoval = repo.removeExerciseFromRecord(userId, journalId, superset, removedExercise)
         assertEquals(2, afterRemoval.size, "split must leave two live records")
         val sorted = afterRemoval.sortedBy { it.position }
@@ -357,17 +344,16 @@ class RecordRepositoryTest {
         assertTrue(split.id in pending, "split-off record must be queued for push")
         assertNull(workoutsDB.getWorkoutRecordById(split.id)?.row?.remoteId, "split-off record is a new row, no remoteId yet")
 
-        // Removing the only exercise of a non-superset record is a no-op
-        // (a 1-exercise record isn't a superset; deletion is deleteRecord's job).
+        // A 1-exercise record isn't a superset, so removing its only exercise is a
+        // no-op — deletion is deleteRecord's job.
         val afterNoOp = repo.removeExerciseFromRecord(userId, journalId, split, split.exercises.single())
         assertEquals(2, afterNoOp.size, "no-op: nothing deleted")
     }
 
     @Test
     fun removeExerciseFromSuperset_shiftsLaterSameDayRecords(): Unit = runBlocking {
-        // The split inserts a new record at source.position + 1 — any later
-        // same-day record must shift +1 (and be re-queued for push) so the
-        // day's ordering stays: source, split-off, everything after.
+        // Split inserts at source.position + 1, so later same-day records must
+        // shift +1 (and re-queue) to keep ordering: source, split-off, rest.
         val exId = seedCatalogExercise()
         repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId, exId, exId))
         val records = repo.getRecordsByDate(userId, journalId, date).sortedBy { it.position }
@@ -430,8 +416,8 @@ class RecordRepositoryTest {
         val sets = repo.getRecordsByDate(userId, journalId, date).single().exercises.single().sets
         assertEquals(listOf(100.0, 120.0), sets.map { it.weight }, "middle removed, survivors keep order")
 
-        // A new set lands after the survivors — proves positions renumbered to
-        // 0,1 (otherwise it would collide with a survivor still at position 2).
+        // New set lands after the survivors — proves positions renumbered to 0,1
+        // (else it'd collide with a survivor still at position 2).
         repo.addSet(userId, journalId, weId, 130.0, 5, null, null)
         val after = repo.getRecordsByDate(userId, journalId, date).single().exercises.single().sets
         assertEquals(listOf(100.0, 120.0, 130.0), after.map { it.weight })
@@ -453,8 +439,8 @@ class RecordRepositoryTest {
 
     @Test
     fun removingOnlyExercise_isNoOp_recordSurvives(): Unit = runBlocking {
-        // Under split semantics, removeExerciseFromRecord on a 1-exercise
-        // record does nothing — record deletion is deleteRecord's job.
+        // Under split semantics, removeExerciseFromRecord on a 1-exercise record
+        // does nothing — deletion is deleteRecord's job.
         val exId = seedCatalogExercise()
         repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId))
         val rec = repo.getRecordsByDate(userId, journalId, date).single()
@@ -480,7 +466,6 @@ class RecordRepositoryTest {
     @Test
     fun secondWorkout_isPageRelative_andOrdersAfterWorkout1(): Unit = runBlocking {
         val exId = seedCatalogExercise()
-        // Two exercises in workout 1, then two in workout 2 the same day.
         repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId, exId))
         repo.addExercisesToDate(userId, journalId, date, 2, listOf(exId, exId))
 
@@ -495,8 +480,8 @@ class RecordRepositoryTest {
         val exId = seedCatalogExercise()
         repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId))
         repo.addExercisesToDate(userId, journalId, date, 2, listOf(exId))
-        // Go back and add to workout 1 — page-relative, so it appends at pos 1
-        // within workout 1, NOT at a day-global next position.
+        // Page-relative: adding back to workout 1 appends at pos 1 within workout 1,
+        // NOT at a day-global next position.
         repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId))
 
         val w1 = repo.getRecordsByDate(userId, journalId, date).filter { it.workoutNumber == 1 }
@@ -508,7 +493,6 @@ class RecordRepositoryTest {
         val exId = seedCatalogExercise()
         val src = LocalDate(2026, 1, 10)
         val target = LocalDate(2026, 2, 20)
-        // A 2-workout source day.
         repo.addExercisesToDate(userId, journalId, src, 1, listOf(exId))
         repo.addExercisesToDate(userId, journalId, src, 2, listOf(exId))
 
@@ -521,10 +505,9 @@ class RecordRepositoryTest {
 
     @Test
     fun deleteWorkoutAtomic_rollsBackBothTables_onMidTransactionFailure_thenRerunSucceeds(): Unit = runBlocking {
-        // End to end through real SQLite (§14/§15 of the workout-details design
-        // doc): the `afterRecordTombstones` seam forces a throw between the
-        // record tombstones and the session hard-delete, so a genuine
-        // rollback must leave BOTH tables exactly as they were.
+        // §14/§15 of the workout-details design doc: the `afterRecordTombstones`
+        // seam forces a throw mid-transaction, so a genuine rollback must leave
+        // both tables exactly as they were.
         val exId = seedCatalogExercise()
         repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId, exId))
         val recordIds = repo.getRecordsByDate(userId, journalId, date).map { it.id }
@@ -546,7 +529,6 @@ class RecordRepositoryTest {
             failingRepo.deleteWorkoutAtomic(userId, journalId, date, workoutNumber = 1)
         }
 
-        // Nothing observable changed: every record is still live, untombstoned...
         assertEquals(2, repo.getRecordsByDate(userId, journalId, date).size, "rollback must leave records live")
         recordIds.forEach { id ->
             assertNull(
@@ -554,13 +536,12 @@ class RecordRepositoryTest {
                 "rollback must leave no partial tombstone",
             )
         }
-        // ...and the session row still exists.
         assertNotNull(
             sessionRepo.getSessionByWorkoutNumber(userId, journalId, date, 1),
             "rollback must leave the session row intact",
         )
 
-        // A subsequent re-run (no seam) completes both deletes.
+        // Retry without the seam completes both deletes.
         repo.deleteWorkoutAtomic(userId, journalId, date, workoutNumber = 1)
 
         assertTrue(repo.getRecordsByDate(userId, journalId, date).isEmpty(), "retry must remove the records")

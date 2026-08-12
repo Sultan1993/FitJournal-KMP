@@ -491,11 +491,8 @@ private fun TopChrome(onCloseRequested: () -> Unit, modifier: Modifier = Modifie
             modifier = Modifier
                 .align(Alignment.CenterStart)
                 .testTag(ComposerTestTags.Close)
-                // The glyph is a Canvas and contributes no semantics, so
-                // without this the ONLY way out of the composer announces as an
-                // unnamed button. minimumInteractiveComponentSize because a
-                // bare clickable — unlike IconButton — does not expand a 38dp
-                // visual to the 48dp touch minimum.
+                // The glyph is a Canvas with no semantics of its own; minimumInteractiveComponentSize
+                // because a bare clickable, unlike IconButton, won't expand 38dp to the 48dp touch minimum.
                 .semantics { contentDescription = closeLabel }
                 .minimumInteractiveComponentSize()
                 .size(CloseChipSize)

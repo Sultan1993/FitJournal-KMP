@@ -72,12 +72,10 @@ private fun WorkoutBody(
 ) {
     val pageCount = state.pages.size
     val pagerState = rememberPagerState(pageCount = { pageCount })
-    // The + / placeholder open a shared chooser (from-list vs from-workout); this
-    // holds the tapped page's workoutNumber while it's open, null when closed.
+    // Holds the tapped page's workoutNumber while the add chooser is open, null when closed.
     var addMenuWorkoutNumber by remember { mutableStateOf<Int?>(null) }
 
-    // VM / dot-tap → pager. No-op when already there, so a swipe (which updates
-    // the VM) can't ping-pong back.
+    // No-op when already there, so a swipe (which updates the VM) can't ping-pong back.
     LaunchedEffect(state.currentPageIndex, pageCount) {
         if (pageCount > 0 &&
             state.currentPageIndex in 0 until pageCount &&
@@ -90,9 +88,8 @@ private fun WorkoutBody(
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.settledPage }.collect { dispatch(WorkoutContract.ViewAction.SelectPage(it)) }
     }
-    // Pager motion → VM so the native host can suppress its edge-back until the
-    // pager settles (a back-swipe begun mid-fling must page, not pop). snapshotFlow
-    // only emits on change, so this is start/stop, not per-frame.
+    // Lets the host suppress its edge-back until the pager settles (a back-swipe
+    // begun mid-fling must page, not pop). snapshotFlow only emits on change.
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.isScrollInProgress }
             .collect { dispatch(WorkoutContract.ViewAction.SetPagerScrolling(it)) }
@@ -100,8 +97,7 @@ private fun WorkoutBody(
 
     Box(modifier = modifier.fillMaxSize().background(FjTheme.colors.background)) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // In the layout flow (not an overlay), so expanding it pushes the pager
-            // down. The nav-bar icon toggles calendarVisible.
+            // In the layout flow (not an overlay), so expanding it pushes the pager down.
             AnimatedVisibility(
                 visible = state.calendarVisible,
                 enter = expandVertically(tween(240), expandFrom = Alignment.Top) + fadeIn(tween(200)),
@@ -133,8 +129,7 @@ private fun WorkoutBody(
                     }
                 }
 
-                // Top fade — list content scrolls out under the page dots, then
-                // the dots sit on top of it (native parity).
+                // List content scrolls out under the page dots (native parity).
                 TopFadeScrim(
                     color = FjTheme.colors.background,
                     height = 24.dp,
@@ -150,7 +145,6 @@ private fun WorkoutBody(
             }
         }
 
-        // Fades out while the calendar is open, back in when it closes.
         AnimatedVisibility(
             visible = !state.calendarVisible,
             enter = fadeIn(tween(200)),

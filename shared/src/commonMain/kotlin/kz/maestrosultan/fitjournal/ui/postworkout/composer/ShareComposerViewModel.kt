@@ -295,10 +295,8 @@ class ShareComposerViewModel internal constructor(
         _state.update { it.copy(exportRequest = null) }
         when (result) {
             is ExportResult.Failure -> showChip(ComposerChip.ExportFailed)
-            // Tracked so onCloseRequested can cancel it. An untracked launch
-            // outlives the close latch and can present a share sheet, write
-            // Photos, or re-save defaults against a tearing-down host — racing
-            // the close path's own save.
+            // Tracked so onCloseRequested can cancel it — an untracked launch would
+            // outlive the close latch and race its save against a tearing-down host.
             is ExportResult.Success -> deliverJob = viewModelScope.launch {
                 deliver(result.request.reason, result.png)
             }
@@ -350,10 +348,8 @@ class ShareComposerViewModel internal constructor(
         pickJob?.cancel()
         chipJob?.cancel()
         exportTimeoutJob?.cancel()
-        // An ALREADY-ACCEPTED export is mid-delivery here: the request guard
-        // only stops future results. Without this it would go on to present a
-        // share sheet or write Photos against a tearing-down host, and re-save
-        // defaults in a race with the save just below.
+        // An ALREADY-ACCEPTED export is mid-delivery here — the request guard only
+        // stops future results, so without this it'd race the save just below.
         deliverJob?.cancel()
         _state.update { it.copy(exportRequest = null, chip = null) }
         viewModelScope.launch {

@@ -25,17 +25,12 @@ import androidx.compose.ui.unit.sp
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workoutdetails.WorkoutDetailsContract
 
-/** WD3 focused-row lift — `rgba(0,0,0,0.35)`, the §4.1-sanctioned shadow literal. */
+/** Fixed shadow color, not a theme token (design-sanctioned literal). */
 private val FocusedRowShadow = Color.Black.copy(alpha = 0.35f)
 
 /**
- * The multi-workout stack (design §4.3.3), rendered only on a WD3 day. An outer
- * `card`-token container holds one row per workout in ascending order. The
- * focused row lifts onto `surface` with a soft shadow; the others are flat and
- * transparent. Tapping any row dispatches [onSelect] with its `workoutNumber`,
- * which re-points the whole body below the stack.
- *
- * All strings ([StackRow.title]/`subtitle`/`volumeText`) come pre-formatted from
+ * Rendered only on a WD3 day. Tapping a row dispatches [onSelect], which
+ * re-points the whole body below the stack. Strings come pre-formatted from
  * the ViewModel; this composable only styles focus.
  */
 @Composable

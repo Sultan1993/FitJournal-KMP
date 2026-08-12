@@ -30,12 +30,10 @@ class DefaultWorkoutSessionRepository(
 ) : WorkoutSessionRepository {
 
     /**
-     * Swift-facing entry point. Kotlin default arguments are not a reliable
-     * contract across the Objective-C bridge — Kotlin/Native does not emit
-     * per-default-value initializers, so a `clock: Clock = Clock.System` default
-     * would force every Swift call site to construct a Kotlin clock. iOS
-     * therefore gets an explicit one-arg constructor that pins the system clock
-     * here, in common code.
+     * Swift-facing entry point. Kotlin/Native doesn't emit per-default-value
+     * initializers, so a `clock: Clock = Clock.System` default would force
+     * every Swift call site to construct a Kotlin clock — this one-arg
+     * constructor pins the system clock here instead.
      */
     constructor(sessionsDB: WorkoutSessionsDBDataSource) : this(sessionsDB, Clock.System)
 

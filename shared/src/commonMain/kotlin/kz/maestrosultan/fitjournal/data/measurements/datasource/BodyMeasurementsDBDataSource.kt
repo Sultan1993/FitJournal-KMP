@@ -74,10 +74,9 @@ class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
     }
 
     /**
-     * Insert if uuid not already present. Returns true on insert, false on
-     * skip. Was used by the Parse body-measurements migrator so re-running after a
-     * partial crash doesn't duplicate. New rows ship with
-     * `pendingUpload=true` so SyncOrchestrator pushes them on its next tick.
+     * Insert if uuid not already present (true=inserted, false=skipped), so a
+     * migrator re-run after a partial crash doesn't duplicate. New rows ship
+     * `pendingUpload=true` so SyncOrchestrator pushes them next tick.
      */
     suspend fun createBodyMeasurementIfMissing(
         uuid: String,
@@ -93,8 +92,7 @@ class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
         pendingUpload: Boolean = true,
     ): Boolean = withContext(Dispatchers.IO) {
         dao.transactionWithResult {
-            // IncludingDeleted: don't re-insert a row the user has
-            // already soft-deleted on this device.
+            // IncludingDeleted: don't re-insert a row already soft-deleted on this device.
             if (dao.getBodyMeasurementByIdIncludingDeleted(uuid).executeAsOneOrNull() != null) {
                 return@transactionWithResult false
             }

@@ -132,8 +132,7 @@ object WorkoutContract {
         data class AddToSuperset(val record: WorkoutRecord) : ViewAction
         data class RemoveFromSuperset(val record: WorkoutRecord, val exercise: WorkoutExercise) : ViewAction
 
-        // Navigation-origin interactions — the VM re-emits these as [ViewEffect]s
-        // the native host performs (it resolves the ids to its own platform objects).
+        // The VM re-emits these as [ViewEffect]s; the host resolves ids to its own platform objects.
         data class OpenExerciseFocus(
             val workoutExerciseId: String,
             val workoutSetId: String?,

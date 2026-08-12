@@ -50,28 +50,17 @@ object WorkoutValueFormatter {
 
     /**
      * A session-total tonnage for a headline: locale-grouped, with the unit —
-     * "14,850 kg" (and "14 850 kg" where the locale groups with a space).
-     *
-     * Deliberately separate from [value], which never groups: separators earn
-     * their keep on a five-digit session total and only clutter a "70 kg" set
-     * row. Design frames W4a and W4b and the share card all show the grouped
-     * form, and this is the one implementation all three call so they cannot
-     * disagree about the same session's number.
-     *
-     * Rounds to whole units, matching the frames — a session total is never
-     * shown with decimals. Like [value] this relabels rather than converts:
-     * stored values are already in the user's preferred unit.
+     * "14,850 kg". Separate from [value] (which never groups — grouping only
+     * clutters a "70 kg" set row) so the two headline frames and the share card
+     * all format the same total the same way. Rounds to whole units; relabels
+     * rather than converts (values are already in the user's preferred unit).
      */
     fun groupedTonnage(kg: Double, system: MeasurementSystem): String =
         "${groupedTonnageNumber(kg)} ${unit(ResultType.WEIGHT_REPS, system)}"
 
     /**
-     * The grouped tonnage number alone: "14,850".
-     *
-     * The share card composes the number and its unit at different sizes, so it
-     * needs this half on its own. Both halves round and group HERE — that is
-     * the point of the split: the card and the screens cannot disagree about
-     * the same session's number by rounding it differently.
+     * The grouped number alone: "14,850" — the share card sizes number and unit
+     * separately. Rounding/grouping happens only here so callers can't disagree.
      */
     fun groupedTonnageNumber(kg: Double): String = LocaleFormatters.formatGrouped(kg.roundToLong())
 

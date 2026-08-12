@@ -12,13 +12,11 @@ import kz.maestrosultan.fitjournal.ui.workout.WorkoutUserContext
 /**
  * Swift-friendly factory, mirroring `createFinishConfirmViewModel`: Swift hands
  * over plain values so it never has to conform to the suspend [WorkoutUserContext]
- * interface. Composes [DetectSessionBestUseCase] and [DeleteWorkoutUseCase]
- * internally — callers never wire either use case by hand.
+ * interface. Composes [DetectSessionBestUseCase]/[DeleteWorkoutUseCase] internally.
  *
  * Android builds [WorkoutDetailsViewModel] directly through its public
- * constructor instead, passing its existing `UserManager`-backed
- * [WorkoutUserContext] implementation (the one `WorkoutCmpHostViewModel`
- * already uses) — this factory exists for the Swift call site.
+ * constructor instead, passing its existing `UserManager`-backed context —
+ * this factory exists for the Swift call site.
  *
  * Swift: `createWorkoutDetailsViewModel(recordRepository:sessionRepository:syncTrigger:userId:journalId:measurementSystem:date:initialWorkoutNumber:headerNav:)`.
  */
@@ -44,10 +42,10 @@ fun createWorkoutDetailsViewModel(
 )
 
 /**
- * [WorkoutUserContext] over values already known at construction time — the
- * ids and unit preference are read synchronously by the caller (Swift's
- * `UserStore`) and simply handed back. Mirrors iOS's own `IosWorkoutUserContext`
- * (`PostWorkoutControllers.kt`), moved to commonMain because this factory is.
+ * [WorkoutUserContext] over values already known at construction — ids and
+ * unit preference are read synchronously by the caller (Swift's `UserStore`)
+ * and simply handed back. Mirrors iOS's `IosWorkoutUserContext`, moved to
+ * commonMain because this factory is.
  */
 private class PlainWorkoutUserContext(
     private val userId: String,

@@ -46,28 +46,16 @@ import kz.maestrosultan.fitjournal.ui.workout.components.ExerciseAvatar
 import kz.maestrosultan.fitjournal.ui.workoutdetails.WorkoutDetailsContract
 import org.jetbrains.compose.resources.stringResource
 
-/** Avatar column geometry: a 44dp avatar leads each row with a 14dp gap to the text. */
 private val AvatarSize = 44.dp
 private val AvatarGap = 14.dp
 
-/**
- * The superset rail's fixed end insets — the row's 14dp vertical padding plus the
- * 22dp avatar half-height lands the line at the first and last avatar centres.
- * Fixed (not computed) in the spirit of the success screen's hand-tuned connector,
- * since a row's height varies with its set strip and comment.
- */
+/** Fixed (not computed): row padding + avatar half-height centers the rail on avatars; row height varies with content. */
 private val RailInset = 36.dp
 
 /**
- * The EXERCISES section (design §4.2): the eyebrow, then one row per performed
- * exercise in day order. A `divider` separates adjacent records, but never the
- * members of a superset — those are joined by a 2dp `brand` rail with a layers
- * node, kept in both themes (Assumption 1). Rows bleed to the right screen edge:
- * the caller supplies only a 20dp start inset, and each row's set strip runs to
- * the edge under a right-hand fade while its name/volume keep a 20dp end inset.
- *
- * Every figure ([ExerciseRow.volumeText], set chips, [DeltaUi.text]) is
- * pre-formatted by the ViewModel; nothing is recomputed here.
+ * One row per performed exercise; a divider separates records but never superset
+ * members, which are joined by a rail instead (kept in both themes, Assumption 1).
+ * Every figure is pre-formatted by the ViewModel — nothing is recomputed here.
  */
 @Composable
 fun ExerciseRowList(
@@ -77,7 +65,6 @@ fun ExerciseRowList(
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         if (skipped) {
-            // A separator line introduces the SKIPPED section, below the performed list.
             HorizontalDivider(modifier = Modifier.padding(end = 20.dp), color = FjTheme.colors.divider)
             Spacer(Modifier.height(18.dp))
         }
@@ -90,12 +77,10 @@ fun ExerciseRowList(
         )
         Spacer(Modifier.height(6.dp))
         groups.forEachIndexed { index, group ->
-            // The performed list separates records with a divider; the skipped list is
-            // name+avatar only and relies on each row's own top spacing (no dividers).
+            // Skipped list has no dividers; relies on each row's own top spacing.
             if (index > 0 && !skipped) {
                 HorizontalDivider(
-                    // Design: full-bleed from the list's left content edge to 20dp-from-right
-                    // (dc.html:820 — margin-right:20px, no left inset), NOT inset under the text.
+                    // Full-bleed left, not inset under the text.
                     modifier = Modifier.padding(end = 20.dp),
                     color = FjTheme.colors.divider,
                 )
@@ -115,8 +100,7 @@ private fun SupersetGroup(
     modifier: Modifier = Modifier,
     skipped: Boolean = false,
 ) {
-    // The design superset rail + layers glyph are a lighter violet than `brand`
-    // (dc.html:865 — #A79EFF in both dark frames), kept in both themes (Assumption 1).
+    // Fixed color, not a theme token — same violet in both themes (Assumption 1).
     val rail = Color(0xFFA79EFF)
     val background = FjTheme.colors.background
     Box(modifier = modifier.fillMaxWidth()) {
@@ -157,11 +141,9 @@ private fun ExerciseRowContent(
     modifier: Modifier = Modifier,
     skipped: Boolean = false,
 ) {
-    // Design rows are "14px 0 0" — top inset only; the divider (and next row's top)
-    // provide the separation, so no bottom padding beneath superset members or the last row.
+    // Top inset only — divider/next row's top padding provides separation, not bottom padding.
     Row(
         modifier = modifier.padding(top = 14.dp),
-        // Skipped rows are name-only, so center the name against the avatar.
         verticalAlignment = if (skipped) Alignment.CenterVertically else Alignment.Top,
     ) {
         ExerciseAvatar(exercise = row.exercise, size = AvatarSize)
@@ -170,12 +152,10 @@ private fun ExerciseRowContent(
             Text(
                 text = row.name,
                 style = FjTheme.typography.cardTitle.copy(fontSize = 16.sp),
-                // Skipped exercises read as de-emphasized: name in the secondary ink.
                 color = if (skipped) FjTheme.colors.textSecondary else FjTheme.colors.textPrimary,
                 modifier = Modifier.padding(end = 20.dp),
             )
-            // A skipped exercise shows name + avatar only — no volume/delta/sets, and
-            // (for now) no comment, neither the skip reason nor the exercise note.
+            // Skipped shows name + avatar only — no volume/delta/sets/comment (for now).
             if (!skipped) {
             row.volumeText?.let { volume ->
                 Row(
@@ -218,8 +198,7 @@ private fun SetStrip(
     sets: List<WorkoutDetailsContract.SetChip>,
     modifier: Modifier = Modifier,
 ) {
-    // Offscreen layer + a DstIn gradient fades the scrolled content to transparent
-    // at the right edge (a true mask, so it works over any surface).
+    // Offscreen layer + DstIn gradient = a true mask, so it fades over any surface.
     val scrollState = rememberScrollState()
     Row(
         modifier = modifier
@@ -261,12 +240,9 @@ private fun SetStrip(
 }
 
 /**
- * The exercise-row delta pill: the shipped [WorkoutListDeltaPill]'s
- * theme-agnostic `positive`/`negative` token treatment (16% wash, radius 99),
- * kept per §4.1/§17. It renders the ViewModel-formatted [DeltaUi.text] (sign
- * included) rather than re-deriving a magnitude — the list pill takes a raw
- * `Double` it can only format as tonnage, which cannot express a cardio
- * distance delta ("−0.4 km"), so this consumes the pre-formatted string.
+ * Mirrors [WorkoutListDeltaPill]'s token treatment but renders the ViewModel's
+ * pre-formatted [DeltaUi.text] directly — the list pill's raw-Double API can only
+ * format tonnage, which can't express a cardio distance delta ("−0.4 km").
  */
 @Composable
 private fun DeltaPill(

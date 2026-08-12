@@ -88,10 +88,9 @@ class DeleteWorkoutUseCaseTest {
 
     @Test
     fun invoke_repoFailure_skipsTheTick_andPropagates(): Unit = runBlocking {
-        // Forces deleteWorkoutAtomic's transaction to fail mid-way (the same
-        // seam RecordRepositoryTest uses to prove the rollback) so this test
-        // can assert the USE CASE's failure boundary: no tick, throw
-        // propagates to the caller.
+        // Forces deleteWorkoutAtomic to fail mid-transaction (same seam as
+        // RecordRepositoryTest) to assert the use case's failure boundary: no
+        // tick, throw propagates.
         val failingRepo = DefaultRecordRepository(
             workoutsDB,
             exDs,

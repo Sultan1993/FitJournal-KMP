@@ -44,9 +44,8 @@ class WorkoutPayloadCodecTest {
 
     @Test
     fun decodesALegacyPayloadContainingRemovedAndUnknownFields() {
-        // The pull path. If this throws, every historical workout becomes
-        // invisible locally — and on iOS an unhandled Kotlin throw crossing the
-        // ObjC boundary is a SIGABRT, not a catchable error.
+        // Pull path: if this throws, every historical workout vanishes locally —
+        // and on iOS an unhandled Kotlin throw crossing ObjC is a SIGABRT, not catchable.
         val exercises = WorkoutPayloadCodec.decode(legacyJson)
 
         assertEquals(1, exercises.size)
@@ -62,9 +61,8 @@ class WorkoutPayloadCodecTest {
 
     @Test
     fun encodeOmitsTheRemovedFieldRatherThanWritingItBlank() {
-        // Asserts the omission is real, not incidental — if difficultyType ever
-        // creeps back into the written shape we want to know here, not from a
-        // sync diff.
+        // Asserts the omission is real, not incidental — catch a regression here,
+        // not from a sync diff.
         val json = WorkoutPayloadCodec.encode(
             listOf(
                 WorkoutExercisePayload(
@@ -83,10 +81,9 @@ class WorkoutPayloadCodecTest {
 
     @Test
     fun aPayloadWrittenTodayStillDecodesWithEveryFieldOmittedButId() {
-        // Stand-in for the old-client-reads-new-payload direction: strip the
-        // payload to the bare minimum and every remaining field must fall back to
-        // its default rather than failing to parse. This is the property that
-        // makes removing a field safe, and that adding a non-defaulted one breaks.
+        // Old-client-reads-new-payload direction: stripped to the bare minimum,
+        // every remaining field must fall back to its default rather than fail to
+        // parse — the property that makes adding a non-defaulted field unsafe.
         val minimal = """[{"id":"we-1","exerciseId":"ex-1","sets":[{"id":"s1"}]}]"""
         val ex = WorkoutPayloadCodec.decode(minimal).single()
         val set = ex.sets.single()

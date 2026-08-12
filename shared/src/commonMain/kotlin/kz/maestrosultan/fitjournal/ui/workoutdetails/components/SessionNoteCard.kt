@@ -39,15 +39,9 @@ import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * The session-note card (design §4.2). Two states, both tappable, both opening
- * the shared note editor:
- * - Filled: a `card`-token slab with the NOTE eyebrow, the note body, and a
- *   trailing pencil affordance.
- * - Empty: a 48dp dashed-border "Add workout note" button.
- *
- * [text] `null` selects the empty state (the ViewModel passes `NoteUi.text ==
- * null` for a session with no note yet). Only rendered for a workout that has a
- * session, so there is no "sessionless" branch here.
+ * Two tappable states, both opening the shared note editor: filled card slab,
+ * or empty dashed "Add workout note" button. [text] `null` selects empty.
+ * Only rendered for a workout that has a session — no sessionless branch here.
  */
 @Composable
 fun SessionNoteCard(

@@ -32,21 +32,11 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_ne
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * Accent-ink label on the NEW BEST card — the one design token pair that stays
- * literal because the `accent` fill is theme-agnostic (both themes render the
- * same warm card, so the inks can't come from `textPrimary`, which flips). §4.1
- * sanctions these two literals: `#8A7326` (label) and `#040415` (ink).
- */
+/** Literal inks, not theme tokens — the `accent` card fill is the same warm color in both themes, so `textPrimary` (which flips) can't be used. */
 private val NewBestLabelInk = Color(0xFF8A7326)
 private val NewBestTextInk = Color(0xFF040415)
 
-/**
- * The NEW BEST card (design §4.2), the same treatment as the post-workout
- * success screen's PR card: an `accent` slab with a trophy medallion and the
- * pre-formatted "{exercise} · {value} × {reps}" line. [text] arrives fully
- * formatted from the ViewModel; this composable only lays it out.
- */
+/** [text] arrives fully formatted from the ViewModel; this composable only lays it out. */
 @Composable
 fun NewBestCard(text: String, modifier: Modifier = Modifier) {
     Row(
@@ -69,7 +59,7 @@ fun NewBestCard(text: String, modifier: Modifier = Modifier) {
         Column {
             Text(
                 text = stringResource(Res.string.workout_details_new_best),
-                // 10px label with 0.1em tracking (= 1.0sp), not the eyebrow's default 1.05sp.
+                // Overrides eyebrow's default 1.05sp letter-spacing to match design's 0.1em.
                 style = FjTheme.typography.eyebrow.copy(fontSize = 10.sp, letterSpacing = 1.0.sp),
                 color = NewBestLabelInk,
             )
@@ -85,8 +75,7 @@ fun NewBestCard(text: String, modifier: Modifier = Modifier) {
 
 @Composable
 private fun TrophyGlyph() {
-    // Exact port of the design's outlined award/trophy (dc.html:766, 24-viewBox,
-    // stroke-width 2): cup + stem + base + the two side handles.
+    // Path is authored against a 24-unit viewBox — scale() below relies on that.
     val trophy = remember {
         PathParser().parsePathString(
             "M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3",

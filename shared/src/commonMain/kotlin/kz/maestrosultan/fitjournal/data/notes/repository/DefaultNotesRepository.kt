@@ -52,9 +52,8 @@ class DefaultNotesRepository(
     }
 
     override suspend fun deleteNote(uuid: String) {
-        // Soft delete: tombstone + pendingUpload=1 so the SyncOrchestrator
-        // propagates the deletion to AWS on its next tick. Hard delete
-        // would strand the AWS row alive forever.
+        // Soft delete: tombstone + pendingUpload=1 so SyncOrchestrator propagates
+        // it; hard delete would strand the AWS row alive forever.
         localDataSource.softDeleteNote(uuid)
     }
 
