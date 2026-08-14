@@ -214,7 +214,9 @@ private fun WorkoutListList(
                     )
                     if (index < week.days.lastIndex) {
                         HorizontalDivider(
-                            modifier = Modifier.padding(start = 70.dp, end = 20.dp),
+                            // Same span as the week header and the WorkoutDetails row
+                            // divider — not inset past the date column.
+                            modifier = Modifier.padding(horizontal = 20.dp),
                             color = FjTheme.colors.divider,
                         )
                     }
