@@ -1,4 +1,4 @@
-package kz.maestrosultan.fitjournal.ui.workout.components
+package kz.maestrosultan.fitjournal.ui.workout.main.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable

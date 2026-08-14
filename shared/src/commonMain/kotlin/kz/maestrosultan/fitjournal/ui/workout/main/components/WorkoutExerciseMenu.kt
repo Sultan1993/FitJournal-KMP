@@ -1,4 +1,4 @@
-package kz.maestrosultan.fitjournal.ui.workout.components
+package kz.maestrosultan.fitjournal.ui.workout.main.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -39,6 +39,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.workout_menu_stats
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_menu_superset_add
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_menu_superset_remove
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
+import kz.maestrosultan.fitjournal.ui.workout.components.ExerciseAvatar
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource

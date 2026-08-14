@@ -41,9 +41,9 @@ import kz.maestrosultan.fitjournal.ui.common.PageDots
 import kz.maestrosultan.fitjournal.ui.common.TopFadeScrim
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
-import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutAddMenu
+import kz.maestrosultan.fitjournal.ui.workout.main.components.WorkoutAddMenu
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutCalendar
-import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutSessionBar
+import kz.maestrosultan.fitjournal.ui.workout.main.components.WorkoutSessionBar
 import org.jetbrains.compose.resources.painterResource
 
 /**

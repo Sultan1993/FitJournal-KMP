@@ -26,12 +26,12 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.workout_delete_mes
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_delete_title
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_menu_delete
 import kz.maestrosultan.fitjournal.ui.common.ConfirmActionSheet
-import kz.maestrosultan.fitjournal.ui.workout.components.AnotherWorkoutPlaceholder
-import kz.maestrosultan.fitjournal.ui.workout.components.FirstWorkoutPlaceholder
-import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutExerciseMenu
+import kz.maestrosultan.fitjournal.ui.workout.main.components.AnotherWorkoutPlaceholder
+import kz.maestrosultan.fitjournal.ui.workout.main.components.FirstWorkoutPlaceholder
+import kz.maestrosultan.fitjournal.ui.workout.main.components.WorkoutExerciseMenu
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutMuscleHeader
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutRecordCard
-import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutSessionCard
+import kz.maestrosultan.fitjournal.ui.workout.main.components.WorkoutSessionCard
 import org.jetbrains.compose.resources.stringResource
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
