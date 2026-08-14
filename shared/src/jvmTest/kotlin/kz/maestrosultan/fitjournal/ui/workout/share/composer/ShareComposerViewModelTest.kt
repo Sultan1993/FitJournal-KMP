@@ -1,0 +1,877 @@
+package kz.maestrosultan.fitjournal.ui.workout.share.composer
+
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.ImageBitmapConfig
+import androidx.compose.ui.graphics.colorspace.ColorSpace
+import androidx.compose.ui.graphics.colorspace.ColorSpaces
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertIs
+import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertSame
+import kotlin.test.assertTrue
+import kotlin.time.Instant
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import kotlinx.datetime.LocalDate
+import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
+import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
+import kz.maestrosultan.fitjournal.domain.workout.WorkoutSession
+import kz.maestrosultan.fitjournal.domain.workout.summary.MuscleLoad
+import kz.maestrosultan.fitjournal.domain.workout.summary.SessionBest
+import kz.maestrosultan.fitjournal.domain.workout.summary.SessionSummary
+import kz.maestrosultan.fitjournal.ui.workout.PostWorkoutContext
+import kz.maestrosultan.fitjournal.ui.workout.share.export.ExportReason
+import kz.maestrosultan.fitjournal.ui.workout.share.export.ExportResult
+import kz.maestrosultan.fitjournal.ui.workout.MuscleTitleFormatter
+import kz.maestrosultan.fitjournal.ui.workout.share.seams.ComposerDefaultsStore
+import kz.maestrosultan.fitjournal.ui.workout.share.seams.PhotoPicker
+import kz.maestrosultan.fitjournal.ui.workout.share.seams.PostWorkoutHaptics
+import kz.maestrosultan.fitjournal.ui.workout.share.seams.SaveResult
+import kz.maestrosultan.fitjournal.ui.workout.share.seams.SharePresenter
+
+/**
+ * Failure-contract suite for [ShareComposerViewModel]: defaults restore/save
+ * through the store seam, the exactly-3 stats-pick invariant, the pinned
+ * ExportRequest/ExportResult handshake (Share vs Save dispatch and every
+ * failure chip), the photo-pick seam, and the SINGLE close path
+ * (onCloseRequested → save defaults → one `closed` event).
+ *
+ * All seams are fakes; the [MuscleTitleFormatter] gets deterministic name
+ * lambdas so no compose resource loading happens on the JVM.
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
+class ShareComposerViewModelTest {
+
+    private val dispatcher = StandardTestDispatcher()
+
+    private val store = FakeDefaultsStore()
+    private val picker = FakePhotoPicker()
+    private val presenter = FakeSharePresenter()
+    private val haptics = FakeHaptics()
+
+    @BeforeTest
+    fun setUp() {
+        Dispatchers.setMain(dispatcher)
+    }
+
+    @AfterTest
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
+    private fun createVm(summary: SessionSummary = summary()): ShareComposerViewModel =
+        ShareComposerViewModel(
+            summary = summary,
+            context = PostWorkoutContext(
+                userId = "user-1",
+                journalId = "journal-1",
+                date = LocalDate(2026, 7, 31),
+                workoutNumber = 1,
+                units = MeasurementSystem.KG_KM,
+            ),
+            defaultsStore = store,
+            photoPicker = picker,
+            sharePresenter = presenter,
+            haptics = haptics,
+            muscleTitleFormatter = MuscleTitleFormatter(
+                categoryName = { it.identifier },
+                fallbackTitle = { "Workout" },
+            ),
+        )
+
+    // ─── Restore on init ────────────────────────────────────────────────
+
+    @Test
+    fun init_emptyStore_appliesFirstRunDefaults_andComposesTitle() = runTest {
+        val vm = createVm()
+        advanceUntilIdle()
+
+        val state = vm.viewState.value
+        assertEquals(ShareLayoutKind.Stats, state.layout)
+        assertEquals(ComposerBackdrop.Brand, state.backdrop)
+        assertEquals(1.0f, state.scrim)
+        assertEquals(listOf(StatKind.Duration, StatKind.Sets, StatKind.BestSet), state.statsPick)
+        assertNull(state.transform)
+        assertFalse(state.blockRemoved)
+        assertNull(state.exportRequest)
+        assertNull(state.chip)
+        assertEquals("shoulders · chest · triceps", state.title)
+    }
+
+    @Test
+    fun init_loadThrowing_fallsBackToFirstRunDefaults() = runTest {
+        store.loadError = IllegalStateException("corrupt store")
+
+        val vm = createVm()
+        advanceUntilIdle()
+
+        val state = vm.viewState.value
+        assertEquals(ShareLayoutKind.Stats, state.layout)
+        assertEquals(ComposerBackdrop.Brand, state.backdrop)
+        assertEquals(1.0f, state.scrim)
+        assertEquals(listOf(StatKind.Duration, StatKind.Sets, StatKind.BestSet), state.statsPick)
+        assertEquals("shoulders · chest · triceps", state.title)
+    }
+
+    @Test
+    fun init_savedDefaults_areApplied() = runTest {
+        val transform = BlockTransform(cx = 0.4f, cy = 0.3f, scale = 1.2f, rotationDeg = 15f)
+        store.stored = ComposerDefaults(
+            layout = ShareLayoutKind.Receipt,
+            backdropKind = BackdropKind.Transparent,
+            statsPick = listOf(StatKind.Exercises, StatKind.TotalReps, StatKind.Duration),
+            scrim = 0.45f,
+            transform = transform,
+            blockRemoved = true,
+        )
+
+        val vm = createVm()
+        advanceUntilIdle()
+
+        val state = vm.viewState.value
+        assertEquals(ShareLayoutKind.Receipt, state.layout)
+        assertEquals(ComposerBackdrop.Transparent, state.backdrop)
+        assertEquals(0.45f, state.scrim)
+        assertEquals(listOf(StatKind.Exercises, StatKind.TotalReps, StatKind.Duration), state.statsPick)
+        assertEquals(transform, state.transform)
+        assertTrue(state.blockRemoved)
+    }
+
+    @Test
+    fun init_photoBackdropKind_restoresAsBrand() = runTest {
+        store.stored = defaults(backdropKind = BackdropKind.Photo)
+
+        val vm = createVm()
+        advanceUntilIdle()
+
+        assertEquals(ComposerBackdrop.Brand, vm.viewState.value.backdrop)
+    }
+
+    @Test
+    fun init_newBestLayout_withoutPr_restoresAsStats() = runTest {
+        store.stored = defaults(layout = ShareLayoutKind.NewBest)
+
+        val vm = createVm(summary = summary(best = null))
+        advanceUntilIdle()
+
+        assertEquals(ShareLayoutKind.Stats, vm.viewState.value.layout)
+    }
+
+    @Test
+    fun init_newBestLayout_withPr_staysNewBest() = runTest {
+        store.stored = defaults(layout = ShareLayoutKind.NewBest)
+
+        val vm = createVm(summary = summary(best = sessionBest()))
+        advanceUntilIdle()
+
+        assertEquals(ShareLayoutKind.NewBest, vm.viewState.value.layout)
+    }
+
+    @Test
+    fun init_statsPick_notThreeDistinct_fallsBackToFirstRunPick() = runTest {
+        // Duplicated entry (3 raw, only 2 distinct) — hand-edited/legacy store.
+        store.stored = defaults().copy(
+            statsPick = listOf(StatKind.Sets, StatKind.Sets, StatKind.Duration),
+        )
+        val fromDuplicated = createVm()
+        advanceUntilIdle()
+        assertEquals(
+            listOf(StatKind.Duration, StatKind.Sets, StatKind.BestSet),
+            fromDuplicated.viewState.value.statsPick,
+        )
+
+        // Too-short list (2 entries).
+        store.stored = defaults().copy(
+            statsPick = listOf(StatKind.Duration, StatKind.TotalReps),
+        )
+        val fromShort = createVm()
+        advanceUntilIdle()
+        assertEquals(
+            listOf(StatKind.Duration, StatKind.Sets, StatKind.BestSet),
+            fromShort.viewState.value.statsPick,
+        )
+    }
+
+    // ─── Stats pick ─────────────────────────────────────────────────────
+
+    @Test
+    fun statsPick_selectingFourth_replacesOldestSelection() = runTest {
+        val vm = createVm()
+        advanceUntilIdle()
+
+        vm.dispatch(ShareComposerContract.ViewAction.StatToggled(StatKind.Exercises))
+
+        assertEquals(listOf(StatKind.Sets, StatKind.BestSet, StatKind.Exercises), vm.viewState.value.statsPick)
+        assertEquals(1, haptics.tickCount)
+    }
+
+    @Test
+    fun statsPick_tappingSelectedChip_atExactlyThree_isNoOp() = runTest {
+        val vm = createVm()
+        advanceUntilIdle()
+
+        vm.dispatch(ShareComposerContract.ViewAction.StatToggled(StatKind.Sets))
+
+        assertEquals(listOf(StatKind.Duration, StatKind.Sets, StatKind.BestSet), vm.viewState.value.statsPick)
+        assertEquals(0, haptics.tickCount)
+    }
+
+    @Test
+    fun statsPick_staysAtExactlyThree_acrossAnyToggleSequence() = runTest {
+        val vm = createVm()
+        advanceUntilIdle()
+
+        vm.dispatch(ShareComposerContract.ViewAction.StatToggled(StatKind.Exercises))
+        vm.dispatch(ShareComposerContract.ViewAction.StatToggled(StatKind.TotalReps))
+        vm.dispatch(ShareComposerContract.ViewAction.StatToggled(StatKind.Duration))
+        vm.dispatch(ShareComposerContract.ViewAction.StatToggled(StatKind.Duration)) // now selected again → no-op
+
+        val pick = vm.viewState.value.statsPick
+        assertEquals(3, pick.size)
+        assertEquals(pick.distinct(), pick)
+        assertEquals(listOf(StatKind.Exercises, StatKind.TotalReps, StatKind.Duration), pick)
+    }
+
+    // ─── Layout ─────────────────────────────────────────────────────────
+
+    @Test
+    fun layout_newBest_isNotSelectable_whenSummaryHasNoBest() = runTest {
+        val vm = createVm(summary = summary(best = null))
+        advanceUntilIdle()
+
+        vm.dispatch(ShareComposerContract.ViewAction.LayoutSelected(ShareLayoutKind.NewBest))
+
+        assertEquals(ShareLayoutKind.Stats, vm.viewState.value.layout)
+    }
+
+    @Test
+    fun layout_newBest_isSelectable_whenSummaryHasBest() = runTest {
+        val vm = createVm(summary = summary(best = sessionBest()))
+        advanceUntilIdle()
+
+        vm.dispatch(ShareComposerContract.ViewAction.LayoutSelected(ShareLayoutKind.NewBest))
+
+        assertEquals(ShareLayoutKind.NewBest, vm.viewState.value.layout)
+    }
+
+    // ─── Block transform / reset ────────────────────────────────────────
+
+    @Test
+    fun resetLayout_clearsTransform_andBlockRemoved() = runTest {
+        val vm = createVm()
+        advanceUntilIdle()
+
+        vm.dispatch(ShareComposerContract.ViewAction.TransformChanged(BlockTransform(cx = 0.7f, cy = 0.2f, scale = 0.8f, rotationDeg = -30f)))
+        vm.dispatch(ShareComposerContract.ViewAction.RemoveBlock)
+        assertNotNull(vm.viewState.value.transform)
+        assertTrue(vm.viewState.value.blockRemoved)
+
+        vm.dispatch(ShareComposerContract.ViewAction.ResetLayout)
+
+        assertNull(vm.viewState.value.transform)
+        assertFalse(vm.viewState.value.blockRemoved)
+    }
+
+    // ─── Title ──────────────────────────────────────────────────────────
+
+    @Test
+    fun titleEdit_clampsToSixtyChars() = runTest {
+        val vm = createVm()
+        advanceUntilIdle()
+
+        vm.dispatch(ShareComposerContract.ViewAction.TitleChanged("a".repeat(61)))
+        assertEquals("a".repeat(60), vm.viewState.value.title)
+
+        vm.dispatch(ShareComposerContract.ViewAction.TitleChanged("b".repeat(60)))
+        assertEquals("b".repeat(60), vm.viewState.value.title)
+    }
+
+    // ─── Export handshake ───────────────────────────────────────────────
+
+    @Test
+    fun onShare_setsExportRequest_withShareReason_andUniqueIds() = runTest {
+        val vm = createVm()
+        advanceUntilIdle()
+
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        val first = assertNotNull(vm.viewState.value.exportRequest)
+        assertEquals(ExportReason.Share, first.reason)
+
+        // Ids climb ACROSS exports, so a late result from an earlier request is
+        // still recognisable as stale.
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(ExportResult.Success(first, PNG)))
+        advanceUntilIdle()
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        val second = assertNotNull(vm.viewState.value.exportRequest)
+        assertNotEquals(first.id, second.id)
+        assertTrue(second.id > first.id)
+    }
+
+    /**
+     * The guard that ignores taps while an export is pending is only safe if a
+     * pending export always resolves — and the host answering is an external
+     * contract. If its composable is torn down mid-flight the result never
+     * comes, and without a watchdog Share and Save stay inert for the rest of
+     * the VM's life.
+     */
+    @Test
+    fun exportRequest_neverAnswered_timesOutToAFailureChip_andShareWorksAgain() = runTest {
+        val vm = createVm()
+        advanceUntilIdle()
+
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        assertNotNull(vm.viewState.value.exportRequest)
+
+        // The host never calls onExportResult.
+        advanceTimeBy(11_000)
+        runCurrent()
+
+        assertNull(vm.viewState.value.exportRequest, "a timed-out request must clear")
+        assertEquals(ComposerChip.ExportFailed, vm.viewState.value.chip)
+
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        assertNotNull(vm.viewState.value.exportRequest, "Share must work again after a timeout")
+    }
+
+    /**
+     * The request guard only stops FUTURE results; an already-accepted export
+     * is mid-delivery when close lands. Left running it presents a share sheet
+     * against a tearing-down host and re-saves defaults in a race with the
+     * close path's own save.
+     */
+    @Test
+    fun closeDuringDelivery_cancelsIt_soNoShareSheetAndOneSave() = runTest {
+        val vm = createVm()
+        advanceUntilIdle()
+        store.saved.clear()
+
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        val request = assertNotNull(vm.viewState.value.exportRequest)
+        presenter.shareGate = CompletableDeferred() // hold the presentation open
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(ExportResult.Success(request, PNG)))
+        runCurrent()
+
+        vm.dispatch(ShareComposerContract.ViewAction.CloseRequested)
+        advanceUntilIdle()
+
+        assertEquals(0, presenter.shareCalls.size, "a cancelled delivery must not present")
+        assertEquals(1, store.saved.size, "only the close path's save may run")
+    }
+
+    /**
+     * `CardExportHost` requires an idle (null) request between exports — that
+     * gap is what tears the export node down and forces a fresh draw.
+     * Replacing a pending request in-place skips it, and the host then reports
+     * Failure for an export that had nothing wrong with it. So a second tap
+     * while one is in flight must be ignored rather than supersede.
+     */
+    @Test
+    fun exportRequest_whilePending_isIgnored_ratherThanSuperseding() = runTest {
+        val vm = createVm()
+        advanceUntilIdle()
+
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        val pending = assertNotNull(vm.viewState.value.exportRequest)
+
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        vm.dispatch(ShareComposerContract.ViewAction.Save)
+
+        val still = assertNotNull(vm.viewState.value.exportRequest)
+        assertEquals(pending.id, still.id)
+        assertEquals(ExportReason.Share, still.reason)
+    }
+
+    @Test
+    fun onSave_setsExportRequest_withSaveReason() = runTest {
+        val vm = createVm()
+        advanceUntilIdle()
+
+        vm.dispatch(ShareComposerContract.ViewAction.Save)
+
+        assertEquals(ExportReason.Save, assertNotNull(vm.viewState.value.exportRequest).reason)
+    }
+
+    @Test
+    fun exportSuccess_share_presentsShareSheet_clearsRequest_savesDefaults() = runTest {
+        val vm = createVm()
+        advanceUntilIdle()
+
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        val request = assertNotNull(vm.viewState.value.exportRequest)
+        val result = ExportResult.Success(request, PNG)
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(result))
+        assertNull(vm.viewState.value.exportRequest)
+        advanceUntilIdle()
+
+        assertEquals(1, presenter.shareCalls.size)
+        assertTrue(presenter.shareCalls.single().contentEquals(PNG))
+        assertEquals(1, store.saved.size)
+        assertNull(vm.viewState.value.chip)
+
+        // Replaying the same (now unmatched) result is dropped.
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(result))
+        advanceUntilIdle()
+        assertEquals(1, presenter.shareCalls.size)
+    }
+
+    @Test
+    fun exportSuccess_save_savesToPhotos_firesSuccessHaptic_savesDefaults() = runTest {
+        presenter.saveResult = SaveResult.Saved
+        val vm = createVm()
+        advanceUntilIdle()
+
+        vm.dispatch(ShareComposerContract.ViewAction.Save)
+        val request = assertNotNull(vm.viewState.value.exportRequest)
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(ExportResult.Success(request, PNG)))
+        advanceUntilIdle()
+
+        assertEquals(1, presenter.saveCalls.size)
+        assertTrue(presenter.saveCalls.single().contentEquals(PNG))
+        assertEquals(0, presenter.shareCalls.size)
+        assertEquals(1, haptics.successCount)
+        assertEquals(1, store.saved.size)
+        assertNull(vm.viewState.value.exportRequest)
+        assertNull(vm.viewState.value.chip)
+    }
+
+    @Test
+    fun shareSheetThrowing_showsExportChip_clearsRequest_doesNotSaveDefaults() = runTest {
+        presenter.shareError = RuntimeException("no presenting VC")
+        val vm = createVm()
+        advanceUntilIdle()
+
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        val request = assertNotNull(vm.viewState.value.exportRequest)
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(ExportResult.Success(request, PNG)))
+        runCurrent()
+
+        assertEquals(ComposerChip.ExportFailed, vm.viewState.value.chip)
+        assertNull(vm.viewState.value.exportRequest)
+        assertTrue(store.saved.isEmpty())
+        assertEquals(0, haptics.successCount)
+    }
+
+    @Test
+    fun saveFailed_showsSaveFailedChip_andDoesNotSaveDefaults() = runTest {
+        presenter.saveResult = SaveResult.Failed
+        val vm = createVm()
+        advanceUntilIdle()
+
+        vm.dispatch(ShareComposerContract.ViewAction.Save)
+        val request = assertNotNull(vm.viewState.value.exportRequest)
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(ExportResult.Success(request, PNG)))
+        runCurrent()
+
+        assertEquals(ComposerChip.SaveFailed, vm.viewState.value.chip)
+        assertNull(vm.viewState.value.exportRequest)
+        assertTrue(store.saved.isEmpty())
+        assertEquals(0, haptics.successCount)
+    }
+
+    @Test
+    fun savePermissionDenied_showsPermissionChip() = runTest {
+        presenter.saveResult = SaveResult.PermissionDenied
+        val vm = createVm()
+        advanceUntilIdle()
+
+        vm.dispatch(ShareComposerContract.ViewAction.Save)
+        val request = assertNotNull(vm.viewState.value.exportRequest)
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(ExportResult.Success(request, PNG)))
+        runCurrent()
+
+        assertEquals(ComposerChip.SavePermission, vm.viewState.value.chip)
+        assertEquals(0, haptics.successCount)
+    }
+
+    @Test
+    fun exportFailure_showsExportChip_clearsRequest_neverTouchesPresenter() = runTest {
+        val vm = createVm()
+        advanceUntilIdle()
+
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        val request = assertNotNull(vm.viewState.value.exportRequest)
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(ExportResult.Failure(request)))
+        runCurrent()
+
+        assertEquals(ComposerChip.ExportFailed, vm.viewState.value.chip)
+        assertNull(vm.viewState.value.exportRequest)
+        assertEquals(0, presenter.shareCalls.size)
+        assertEquals(0, presenter.saveCalls.size)
+        assertTrue(store.saved.isEmpty())
+    }
+
+    @Test
+    fun staleExportResult_isDropped() = runTest {
+        val vm = createVm()
+        advanceUntilIdle()
+
+        // A pending request can no longer be superseded, so the stale case is a
+        // result arriving for a request that has ALREADY been resolved — a slow
+        // export whose host reports after the user started the next one.
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        val stale = assertNotNull(vm.viewState.value.exportRequest)
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(ExportResult.Failure(stale)))
+        runCurrent()
+
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        val newest = assertNotNull(vm.viewState.value.exportRequest)
+
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(ExportResult.Success(stale, PNG)))
+        // runCurrent, NOT advanceUntilIdle: idling would run out the export
+        // watchdog and fail `newest`, which is a different behaviour than the
+        // staleness this case is about.
+        runCurrent()
+
+        assertEquals(0, presenter.shareCalls.size)
+        assertEquals(newest, vm.viewState.value.exportRequest)
+    }
+
+    @Test
+    fun chip_autoClears_afterTwoSeconds() = runTest {
+        val vm = createVm()
+        advanceUntilIdle()
+
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(ExportResult.Failure(assertNotNull(vm.viewState.value.exportRequest))))
+        runCurrent()
+        assertEquals(ComposerChip.ExportFailed, vm.viewState.value.chip)
+
+        advanceTimeBy(2_001)
+
+        assertNull(vm.viewState.value.chip)
+    }
+
+    @Test
+    fun chip_secondFailure_reArmsFullWindow_andOldTimerCannotClearIt() = runTest {
+        presenter.saveResult = SaveResult.Failed
+        val vm = createVm()
+        advanceUntilIdle()
+
+        // Chip A (ExportFailed) at t0.
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(ExportResult.Failure(assertNotNull(vm.viewState.value.exportRequest))))
+        runCurrent()
+        assertEquals(ComposerChip.ExportFailed, vm.viewState.value.chip)
+
+        // Chip B (SaveFailed) at t0+1s — cancels A's timer, re-arms the window.
+        advanceTimeBy(1_000)
+        vm.dispatch(ShareComposerContract.ViewAction.Save)
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(ExportResult.Success(assertNotNull(vm.viewState.value.exportRequest), PNG)))
+        runCurrent()
+        assertEquals(ComposerChip.SaveFailed, vm.viewState.value.chip)
+
+        // t0+2.5s — 2.5s after A but only 1.5s after B: A's cancelled timer
+        // must NOT have wiped B.
+        advanceTimeBy(1_500)
+        assertEquals(ComposerChip.SaveFailed, vm.viewState.value.chip)
+
+        // t0+3.1s — B's own full 2s window has elapsed.
+        advanceTimeBy(600)
+        assertNull(vm.viewState.value.chip)
+    }
+
+    // ─── Photo pick ─────────────────────────────────────────────────────
+
+    @Test
+    fun pickPhoto_success_setsPhotoBackdrop() = runTest {
+        picker.result = FakeBitmap
+        val vm = createVm()
+        advanceUntilIdle()
+
+        vm.dispatch(ShareComposerContract.ViewAction.PickPhoto)
+        advanceUntilIdle()
+
+        val backdrop = assertIs<ComposerBackdrop.Photo>(vm.viewState.value.backdrop)
+        assertSame(FakeBitmap, backdrop.image)
+    }
+
+    @Test
+    fun pickPhoto_cancelled_leavesStateUnchanged() = runTest {
+        picker.result = null
+        val vm = createVm()
+        advanceUntilIdle()
+        val before = vm.viewState.value
+
+        vm.dispatch(ShareComposerContract.ViewAction.PickPhoto)
+        advanceUntilIdle()
+
+        assertEquals(before, vm.viewState.value)
+    }
+
+    @Test
+    fun pickPhoto_throwing_isTreatedAsCancelled() = runTest {
+        picker.error = IllegalStateException("picker exploded")
+        val vm = createVm()
+        advanceUntilIdle()
+        val before = vm.viewState.value
+
+        vm.dispatch(ShareComposerContract.ViewAction.PickPhoto)
+        advanceUntilIdle()
+
+        assertEquals(before, vm.viewState.value)
+    }
+
+    // ─── Defaults save / close contract ─────────────────────────────────
+
+    @Test
+    fun close_savesCurrentDefaults_thenEmitsClosedOnce() = runTest {
+        val vm = createVm()
+        advanceUntilIdle()
+
+        vm.dispatch(ShareComposerContract.ViewAction.LayoutSelected(ShareLayoutKind.Receipt))
+        vm.dispatch(ShareComposerContract.ViewAction.CloseRequested)
+        advanceUntilIdle()
+
+        assertEquals(1, drainClosedEvents(vm))
+        assertEquals(1, store.saved.size)
+        assertEquals(ShareLayoutKind.Receipt, store.saved.single().layout)
+    }
+
+    @Test
+    fun close_doubleInvoke_stillEmitsOneEvent_andSavesOnce() = runTest {
+        val vm = createVm()
+        advanceUntilIdle()
+
+        vm.dispatch(ShareComposerContract.ViewAction.CloseRequested)
+        vm.dispatch(ShareComposerContract.ViewAction.CloseRequested)
+        advanceUntilIdle()
+
+        assertEquals(1, drainClosedEvents(vm))
+        assertEquals(1, store.saved.size)
+    }
+
+    @Test
+    fun close_storeSaveThrowing_isSwallowed_closeStillEmits() = runTest {
+        store.saveError = IllegalStateException("disk full")
+        val vm = createVm()
+        advanceUntilIdle()
+
+        vm.dispatch(ShareComposerContract.ViewAction.CloseRequested)
+        advanceUntilIdle()
+
+        assertEquals(1, drainClosedEvents(vm))
+    }
+
+    @Test
+    fun close_persistsPhotoBackdrop_asPhotoKind() = runTest {
+        picker.result = FakeBitmap
+        val vm = createVm()
+        advanceUntilIdle()
+
+        vm.dispatch(ShareComposerContract.ViewAction.PickPhoto)
+        advanceUntilIdle()
+        vm.dispatch(ShareComposerContract.ViewAction.CloseRequested)
+        advanceUntilIdle()
+
+        assertEquals(BackdropKind.Photo, store.saved.single().backdropKind)
+    }
+
+    @Test
+    fun close_thenLateExportResult_isDropped() = runTest {
+        val vm = createVm()
+        advanceUntilIdle()
+
+        vm.dispatch(ShareComposerContract.ViewAction.Share)
+        val request = assertNotNull(vm.viewState.value.exportRequest)
+        vm.dispatch(ShareComposerContract.ViewAction.CloseRequested)
+        advanceUntilIdle()
+
+        // The render answers after the machine went inert: no share sheet, no
+        // Photos write, no chip — and only the close-path defaults save.
+        vm.dispatch(ShareComposerContract.ViewAction.ExportResult(ExportResult.Success(request, PNG)))
+        advanceUntilIdle()
+
+        assertEquals(0, presenter.shareCalls.size)
+        assertEquals(0, presenter.saveCalls.size)
+        assertNull(vm.viewState.value.chip)
+        assertNull(vm.viewState.value.exportRequest)
+        assertEquals(1, store.saved.size)
+        assertEquals(1, drainClosedEvents(vm))
+    }
+
+    // ─── Purity ─────────────────────────────────────────────────────────
+
+    @Test
+    fun constructor_injectsNoRepositoryOrSyncTypes() {
+        val parameterTypeNames = ShareComposerViewModel::class.java.constructors
+            .flatMap { it.parameterTypes.asList() }
+            .map { it.name }
+
+        assertTrue(parameterTypeNames.isNotEmpty())
+        parameterTypeNames.forEach { name ->
+            assertFalse(name.contains("Repository"), "composer must not write domain data: $name")
+            assertFalse(name.contains("SyncTrigger"), "composer must not trigger sync: $name")
+            assertFalse(name.contains("UseCase"), "composer must not invoke use cases: $name")
+        }
+    }
+
+    // ─── Fixtures ───────────────────────────────────────────────────────
+
+    /**
+     * Drains everything buffered in the `closed` channel and returns the count.
+     * Collected AFTER the fact via a foreground collector + explicit cancel —
+     * a backgroundScope collector is not reliably resumed by advanceUntilIdle
+     * once the foreground goes idle, and the channel buffers anyway.
+     */
+    private fun TestScope.drainClosedEvents(vm: ShareComposerViewModel): Int {
+        var count = 0
+        val collector = launch { vm.viewEffect.collect { count++ } }
+        advanceUntilIdle()
+        collector.cancel()
+        return count
+    }
+
+    private fun summary(best: SessionBest? = null): SessionSummary = SessionSummary(
+        session = WorkoutSession(
+            id = "session-1",
+            userId = "user-1",
+            journalId = "journal-1",
+            date = LocalDate(2026, 7, 31),
+            workoutNumber = 1,
+            startedAt = Instant.fromEpochMilliseconds(0),
+            endedAt = Instant.fromEpochMilliseconds(3_600_000),
+        ),
+        muscles = listOf(
+            MuscleLoad(category = CategoryType.SHOULDERS, loggedSets = 9),
+            MuscleLoad(category = CategoryType.CHEST, loggedSets = 5),
+            MuscleLoad(category = CategoryType.TRICEPS, loggedSets = 3),
+        ),
+        exercises = emptyList(),
+        tonnageKg = 1_000.0,
+        loggedSets = 17,
+        exerciseCount = 4,
+        weekOrdinal = 2,
+        best = best,
+        sessionRecordUuids = emptySet(),
+    )
+
+    private fun sessionBest(): SessionBest = SessionBest(
+        exerciseName = "Bench Press",
+        weightKg = 100.0,
+        reps = 8,
+        previousBestKg = 95.0,
+        previousBestDate = LocalDate(2026, 7, 1),
+    )
+
+    private fun defaults(
+        layout: ShareLayoutKind = ShareLayoutKind.Stats,
+        backdropKind: BackdropKind = BackdropKind.Brand,
+    ): ComposerDefaults = ComposerDefaults(
+        layout = layout,
+        backdropKind = backdropKind,
+        statsPick = listOf(StatKind.Duration, StatKind.Sets, StatKind.BestSet),
+        scrim = 1.0f,
+        transform = null,
+        blockRemoved = false,
+    )
+
+    private companion object {
+        val PNG = byteArrayOf(0x50, 0x4E, 0x47)
+    }
+}
+
+// ─── Fakes ──────────────────────────────────────────────────────────────
+
+private class FakeDefaultsStore : ComposerDefaultsStore {
+    var stored: ComposerDefaults? = null
+    var loadError: Throwable? = null
+    var saveError: Throwable? = null
+    val saved = mutableListOf<ComposerDefaults>()
+
+    override suspend fun load(): ComposerDefaults? {
+        loadError?.let { throw it }
+        return stored
+    }
+
+    override suspend fun save(defaults: ComposerDefaults) {
+        saveError?.let { throw it }
+        saved += defaults
+    }
+}
+
+private class FakePhotoPicker : PhotoPicker {
+    var result: ImageBitmap? = null
+    var error: Throwable? = null
+    var pickCount = 0
+
+    override suspend fun pickPhoto(): ImageBitmap? {
+        pickCount++
+        error?.let { throw it }
+        return result
+    }
+}
+
+private class FakeSharePresenter : SharePresenter {
+    var shareError: Throwable? = null
+    var saveResult: SaveResult = SaveResult.Saved
+    val shareCalls = mutableListOf<ByteArray>()
+    val saveCalls = mutableListOf<ByteArray>()
+
+    /**
+     * Holds a presentation open so a test can land a close mid-delivery. The
+     * real seam suspends until the platform sheet is on screen, which is
+     * exactly the window this models.
+     */
+    var shareGate: CompletableDeferred<Unit>? = null
+
+    override suspend fun presentShareSheet(png: ByteArray) {
+        shareError?.let { throw it }
+        shareGate?.await()
+        shareCalls += png
+    }
+
+    override suspend fun saveToPhotos(png: ByteArray): SaveResult {
+        saveCalls += png
+        return saveResult
+    }
+}
+
+private class FakeHaptics : PostWorkoutHaptics {
+    var tickCount = 0
+    var successCount = 0
+
+    override fun tick() {
+        tickCount++
+    }
+
+    override fun success() {
+        successCount++
+    }
+}
+
+/** Pure-JVM [ImageBitmap]; no Skia/Skiko needed just to carry a backdrop reference. */
+private object FakeBitmap : ImageBitmap {
+    override val width: Int = 1
+    override val height: Int = 1
+    override val config: ImageBitmapConfig = ImageBitmapConfig.Argb8888
+    override val hasAlpha: Boolean = true
+    override val colorSpace: ColorSpace = ColorSpaces.Srgb
+
+    override fun prepareToDraw() = Unit
+
+    override fun readPixels(
+        buffer: IntArray,
+        startX: Int,
+        startY: Int,
+        width: Int,
+        height: Int,
+        bufferOffset: Int,
+        stride: Int,
+    ) = Unit
+}

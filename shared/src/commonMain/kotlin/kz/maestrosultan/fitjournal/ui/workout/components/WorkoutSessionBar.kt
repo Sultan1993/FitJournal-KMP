@@ -46,7 +46,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.workout_end
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_session_label
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_start
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
-import kz.maestrosultan.fitjournal.ui.workout.SessionBarState
+import kz.maestrosultan.fitjournal.ui.workout.main.SessionBarState
 import org.jetbrains.compose.resources.stringResource
 
 private val BarShape = RoundedCornerShape(16.dp)
