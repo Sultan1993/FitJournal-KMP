@@ -51,10 +51,12 @@ object WorkoutDetailsContract {
 
     /**
      * valueText/unitText split for the baseline-aligned hero ("10 480" + "kg"); unitText
-     * null for duration heroes. cardioText: mixed-scope aggregate ("32 min · 5.1 km"),
-     * appended to the caption; null when not mixed.
+     * null when the headline is not a weight (a cardio-only day headlines its duration
+     * or distance). [cardioText] is the day's cardio duration shown after the weight,
+     * the way the workout-list hero does it; null when there is no cardio, or when the
+     * cardio figure is already the headline.
      */
-    data class Hero(val valueText: String, val unitText: String?, val caption: String, val cardioText: String?)
+    data class Hero(val valueText: String, val unitText: String?, val cardioText: String?)
 
     data class StackRow(
         val workoutNumber: Int,

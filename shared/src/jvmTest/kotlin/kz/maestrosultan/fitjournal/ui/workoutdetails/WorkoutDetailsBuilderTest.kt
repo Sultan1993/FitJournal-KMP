@@ -42,8 +42,6 @@ class WorkoutDetailsBuilderTest {
     // ── deterministic injected dependencies ─────────────────────────────
     private val titleFormatter = MuscleTitleFormatter(categoryName = { it.identifier }, fallbackTitle = { "Workout" })
     private val strings = WorkoutDetailsStrings(
-        totalVolumeLabel = { "Total volume" },
-        dayVolumeLabel = { "Day volume" },
         workoutCount = { "$it workouts" },
         exerciseCount = { "$it exercises" },
         setCount = { "$it sets" },
@@ -183,7 +181,6 @@ class WorkoutDetailsBuilderTest {
         val content = build(listOf(record(exercises = listOf(workoutExercise(sets = listOf(set(60.0, 8))))))) // 480
         assertEquals("480", content.hero.valueText)
         assertEquals("kg", content.hero.unitText)
-        assertEquals("Total volume", content.hero.caption)
         assertNull(content.hero.cardioText)
     }
 
@@ -199,7 +196,6 @@ class WorkoutDetailsBuilderTest {
             ),
         )
         assertEquals("880", content.hero.valueText)
-        assertEquals("Day volume · 2 exercises · 2 sets", content.hero.caption)
     }
 
     // ── muscle title ranking, ties keep day order ────────────────────────
@@ -352,7 +348,7 @@ class WorkoutDetailsBuilderTest {
     // ── cardio-only hero ──────────────────────────────────────────────────
 
     @Test
-    fun cardioOnlyWorkout_heroShowsDuration_captionGainsDistance() = runTest {
+    fun cardioOnlyWorkout_heroHeadlinesDuration() = runTest {
         val cardio = workoutExercise(
             category = CategoryType.CARDIO,
             resultType = ResultType.DISTANCE_DURATION,
@@ -361,7 +357,6 @@ class WorkoutDetailsBuilderTest {
         val hero = build(listOf(record(exercises = listOf(cardio)))).hero
         assertEquals("27 min", hero.valueText)
         assertNull(hero.unitText)
-        assertEquals("Total volume · 5 km", hero.caption)
         assertNull(hero.cardioText)
     }
 
@@ -377,7 +372,6 @@ class WorkoutDetailsBuilderTest {
         val hero = build(listOf(record(exercises = listOf(cardio)))).hero
         assertEquals("5 km", hero.valueText)
         assertNull(hero.unitText)
-        assertEquals("Total volume", hero.caption)
         assertNull(hero.cardioText)
     }
 
@@ -397,7 +391,7 @@ class WorkoutDetailsBuilderTest {
     // ── mixed workout AND mixed day: tonnage hero + cardioText ───────────
 
     @Test
-    fun mixedWorkout_heroKeepsTonnageValue_cardioTextCarriesAggregate() = runTest {
+    fun mixedWorkout_heroKeepsTonnageValue_cardioTextIsDuration() = runTest {
         val weight = workoutExercise(sets = listOf(set(60.0, 8))) // 480
         val cardio = workoutExercise(
             category = CategoryType.CARDIO,
@@ -407,12 +401,11 @@ class WorkoutDetailsBuilderTest {
         val hero = build(listOf(record(exercises = listOf(weight, cardio)))).hero
         assertEquals("480", hero.valueText)
         assertEquals("kg", hero.unitText)
-        assertEquals("Total volume", hero.caption)
-        assertEquals("27 min · 5 km", hero.cardioText)
+        assertEquals("27 min", hero.cardioText, "duration only — distance lives on the exercise row")
     }
 
     @Test
-    fun mixedDay_dayHeroKeepsTonnageValue_cardioTextCarriesAggregate() = runTest {
+    fun mixedDay_dayHeroKeepsTonnageValue_cardioTextIsDuration() = runTest {
         val weight = workoutExercise(sets = listOf(set(60.0, 8))) // 480
         val cardio = workoutExercise(
             category = CategoryType.CARDIO,
@@ -427,8 +420,7 @@ class WorkoutDetailsBuilderTest {
         ).hero
         assertEquals("480", hero.valueText)
         assertEquals("kg", hero.unitText)
-        assertEquals("27 min · 5 km", hero.cardioText)
-        assertEquals("Day volume · 2 exercises · 2 sets", hero.caption)
+        assertEquals("27 min", hero.cardioText, "duration only — distance lives on the exercise row")
     }
 
     // ── unmatched session ignored ─────────────────────────────────────────

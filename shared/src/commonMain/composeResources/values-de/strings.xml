@@ -169,8 +169,6 @@
     </plurals>
 
     <!-- Workout details screen -->
-    <string name="workout_details_total_volume">Gesamtvolumen</string>
-    <string name="workout_details_day_volume">Tagesvolumen</string>
     <string name="workout_details_tile_duration">DAUER</string>
     <string name="workout_details_tile_exercises">ÜBUNGEN</string>
     <string name="workout_details_skipped">ÜBERSPRUNGEN</string>

@@ -18,23 +18,18 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_exercise_count
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_set_count
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_workout_count
-import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_day_volume
-import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_total_volume
 import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
 import kz.maestrosultan.fitjournal.ui.format.formatDuration
 import kz.maestrosultan.fitjournal.ui.postworkout.format.MuscleTitleFormatter
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
 import kz.maestrosultan.fitjournal.ui.workoutdetails.WorkoutDetailsContract
 import org.jetbrains.compose.resources.getPluralString
-import org.jetbrains.compose.resources.getString
 
 /**
  * Compose-resource lookups injected (like [MuscleTitleFormatter]) so jvmTest
  * can supply fixed strings instead of depending on the test JVM's locale/resources.
  */
 internal class WorkoutDetailsStrings(
-    val totalVolumeLabel: suspend () -> String = { getString(Res.string.workout_details_total_volume) },
-    val dayVolumeLabel: suspend () -> String = { getString(Res.string.workout_details_day_volume) },
     val workoutCount: suspend (Int) -> String = { getPluralString(Res.plurals.history_workout_count, it, it) },
     val exerciseCount: suspend (Int) -> String = { getPluralString(Res.plurals.history_exercise_count, it, it) },
     val setCount: suspend (Int) -> String = { getPluralString(Res.plurals.history_set_count, it, it) },
@@ -121,11 +116,9 @@ internal suspend fun buildWorkoutDetailsUi(
         )
     }
 
-    val hero = if (isMultiWorkoutDay) {
-        buildDayHero(records = records, measurementSystem = measurementSystem, strings = strings)
-    } else {
-        buildWorkoutHero(workoutRecords = recordsByWorkout.getValue(workoutNumbers.single()), measurementSystem = measurementSystem, strings = strings)
-    }
+    // Multi-workout days headline the whole day; a single-workout day is the same sum.
+    val heroRecords = if (isMultiWorkoutDay) records else recordsByWorkout.getValue(workoutNumbers.single())
+    val hero = buildHero(scopeRecords = heroRecords, measurementSystem = measurementSystem)
 
     val effectiveFocusedWorkoutNumber = if (focusedWorkoutNumber in recordsByWorkout) focusedWorkoutNumber else workoutNumbers.first()
 
@@ -176,31 +169,14 @@ private suspend fun buildDayHeader(
 
 // ─── Hero ───────────────────────────────────────────────────────────────
 
-private suspend fun buildWorkoutHero(
-    workoutRecords: List<WorkoutRecord>,
-    measurementSystem: MeasurementSystem,
-    strings: WorkoutDetailsStrings,
-): WorkoutDetailsContract.Hero = buildHero(workoutRecords, strings.totalVolumeLabel(), measurementSystem)
-
-private suspend fun buildDayHero(
-    records: List<WorkoutRecord>,
-    measurementSystem: MeasurementSystem,
-    strings: WorkoutDetailsStrings,
-): WorkoutDetailsContract.Hero {
-    val dayExercises = records.flatMap { it.exercises }
-    val baseCaption = "${strings.dayVolumeLabel()} · " +
-        "${strings.exerciseCount(performedExerciseCount(dayExercises))} · " +
-        strings.setCount(loggedSetCount(dayExercises))
-    return buildHero(records, baseCaption, measurementSystem)
-}
-
 /**
- * Shared value/caption/cardioText rules for both hero scopes — only the caption
- * text (and which records it sums over) differs between the two callers.
+ * Tonnage headline with the cardio duration beside it, mirroring the workout-list
+ * hero. The two callers differ only in which records they sum (one workout vs the
+ * whole day). Cardio distance is not surfaced here — it lives on the cardio
+ * exercise row.
  */
 private fun buildHero(
     scopeRecords: List<WorkoutRecord>,
-    baseCaption: String,
     measurementSystem: MeasurementSystem,
 ): WorkoutDetailsContract.Hero {
     val tonnage = TonnageCalculator.forRecords(scopeRecords)
@@ -210,43 +186,31 @@ private fun buildHero(
     // fall through to the "0 kg" tonnage hero.
     val hasCardio = cardioMinutes > 0 || cardioDistanceTotal > 0.0
     val hasTonnage = tonnage > 0.0
-    val cardioOnly = hasCardio && !hasTonnage
 
-    // Compact "27 min · 5 km" string from whichever cardio figures exist (null if none).
-    val cardioSummary = buildList {
-        if (cardioMinutes > 0) add(WorkoutValueFormatter.duration(cardioMinutes))
-        if (cardioDistanceTotal > 0.0) add(WorkoutValueFormatter.distance(cardioDistanceTotal, measurementSystem))
-    }.joinToString(" · ").ifBlank { null }
-
-    if (cardioOnly) {
-        // Headline the duration when present, else the distance (distance-only run).
-        return if (cardioMinutes > 0) {
-            WorkoutDetailsContract.Hero(
-                valueText = WorkoutValueFormatter.duration(cardioMinutes),
-                unitText = null,
-                caption = if (cardioDistanceTotal > 0.0) {
-                    "$baseCaption · ${WorkoutValueFormatter.distance(cardioDistanceTotal, measurementSystem)}"
-                } else {
-                    baseCaption
-                },
-                cardioText = null,
-            )
-        } else {
-            WorkoutDetailsContract.Hero(
-                valueText = WorkoutValueFormatter.distance(cardioDistanceTotal, measurementSystem),
-                unitText = null,
-                caption = baseCaption,
-                cardioText = null,
-            )
-        }
+    if (hasCardio && !hasTonnage) {
+        // Nothing was lifted: the cardio figure becomes the headline itself —
+        // duration when present, else the distance (a distance-only run).
+        return WorkoutDetailsContract.Hero(
+            valueText = if (cardioMinutes > 0) {
+                WorkoutValueFormatter.duration(cardioMinutes)
+            } else {
+                WorkoutValueFormatter.distance(cardioDistanceTotal, measurementSystem)
+            },
+            unitText = null,
+            cardioText = null,
+        )
     }
 
     return WorkoutDetailsContract.Hero(
         valueText = WorkoutValueFormatter.groupedTonnageNumber(tonnage),
         unitText = WorkoutValueFormatter.unit(ResultType.WEIGHT_REPS, measurementSystem),
-        caption = baseCaption,
-        // Mixed hero only; a pure-tonnage workout has no cardio, so cardioSummary is null.
-        cardioText = cardioSummary,
+        // Duration is the cardio figure; a run logged as distance only falls back to
+        // it rather than dropping off the hero entirely.
+        cardioText = when {
+            cardioMinutes > 0 -> WorkoutValueFormatter.duration(cardioMinutes)
+            cardioDistanceTotal > 0.0 -> WorkoutValueFormatter.distance(cardioDistanceTotal, measurementSystem)
+            else -> null
+        },
     )
 }
 

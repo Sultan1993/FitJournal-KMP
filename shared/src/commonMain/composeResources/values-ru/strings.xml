@@ -183,8 +183,6 @@
     </plurals>
 
     <!-- Workout details screen -->
-    <string name="workout_details_total_volume">Общий объём</string>
-    <string name="workout_details_day_volume">Объём за день</string>
     <string name="workout_details_tile_duration">ВРЕМЯ</string>
     <string name="workout_details_tile_exercises">УПРАЖНЕНИЯ</string>
     <string name="workout_details_skipped">ПРОПУЩЕНО</string>

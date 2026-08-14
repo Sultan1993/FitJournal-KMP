@@ -77,8 +77,6 @@ class WorkoutDetailsViewModelTest {
         fallbackTitle = { "fallback" },
     )
     private val strings = WorkoutDetailsStrings(
-        totalVolumeLabel = { "Total volume" },
-        dayVolumeLabel = { "Day volume" },
         workoutCount = { "$it workouts" },
         exerciseCount = { "$it exercises" },
         setCount = { "$it sets" },

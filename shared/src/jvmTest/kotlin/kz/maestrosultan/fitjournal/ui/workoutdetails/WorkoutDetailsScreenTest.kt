@@ -48,7 +48,6 @@ class WorkoutDetailsScreenTest {
 
         onNodeWithText("10 480").assertExists()
         onNodeWithText("kg").assertExists()
-        onNodeWithText("Total volume").assertExists()
         onNodeWithText("DURATION").assertExists()
         onNodeWithText("SETS").assertExists()
         onNodeWithText("NEW BEST").assertExists()
@@ -218,7 +217,7 @@ class WorkoutDetailsScreenTest {
         content = WorkoutDetailsContract.Content.Loaded(
             date = LocalDate(2026, 7, 29),
             header = WorkoutDetailsContract.Header("Chest · Biceps", "Wed, 29 July · 09:38–10:42"),
-            hero = WorkoutDetailsContract.Hero("10 480", "kg", "Total volume", null),
+            hero = WorkoutDetailsContract.Hero("10 480", "kg", null),
             workouts = listOf(workout),
             focusedWorkoutNumber = workout.workoutNumber,
             stack = emptyList(),
@@ -232,7 +231,7 @@ class WorkoutDetailsScreenTest {
         content = WorkoutDetailsContract.Content.Loaded(
             date = LocalDate(2026, 8, 5),
             header = WorkoutDetailsContract.Header("Wednesday, 5 August", "2 workouts · 1:39"),
-            hero = WorkoutDetailsContract.Hero("17 440", "kg", "Day volume · 9 exercises · 32 sets", null),
+            hero = WorkoutDetailsContract.Hero("17 440", "kg", "30 min"),
             workouts = listOf(
                 workoutUi(workoutNumber = 1, newBest = null, note = null, workload = emptyList(), exerciseGroups = emptyList()),
                 workoutUi(workoutNumber = 2, newBest = null, note = null, workload = emptyList(), exerciseGroups = emptyList()),
