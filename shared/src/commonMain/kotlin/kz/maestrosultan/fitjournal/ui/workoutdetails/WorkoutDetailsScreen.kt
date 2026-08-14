@@ -205,12 +205,13 @@ private fun WorkoutDetailsScrollBody(
 private fun WorkoutDetailsContract.Content.Loaded.focusedWorkout(): WorkoutDetailsContract.WorkoutUi =
     workouts.firstOrNull { it.workoutNumber == focusedWorkoutNumber } ?: workouts.first()
 
+/** 40dp both ends, matching WorkoutListScreen's fade. */
 @Composable
 private fun TopFadeScrim(modifier: Modifier = Modifier) {
     val background = FjTheme.colors.background
     Box(
         modifier = modifier
-            .height(28.dp)
+            .height(40.dp)
             .background(Brush.verticalGradient(listOf(background, background.copy(alpha = 0f)))),
     )
 }

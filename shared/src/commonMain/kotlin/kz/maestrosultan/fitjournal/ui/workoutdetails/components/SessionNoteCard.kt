@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -60,6 +61,7 @@ fun SessionNoteCard(
 private fun FilledNoteCard(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
+            .defaultMinSize(minHeight = SummaryBlockHeight)
             .clip(RoundedCornerShape(16.dp))
             .background(FjTheme.colors.card)
             .clickable(onClick = onClick)
@@ -90,7 +92,7 @@ private fun EmptyNoteButton(onClick: () -> Unit, modifier: Modifier = Modifier) 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(48.dp)
+            .height(SummaryBlockHeight)
             .clip(RoundedCornerShape(14.dp))
             .drawBehind { drawDashedBorder(border, radius = 14.dp) }
             .clickable(onClick = onClick)

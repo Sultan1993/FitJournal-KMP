@@ -3,7 +3,6 @@ package kz.maestrosultan.fitjournal.ui.workoutdetails
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.ComposeUIViewController
@@ -79,8 +78,12 @@ fun WorkoutDetailsScreenController(
                 }
             }
         }
+        // No safeDrawingPadding — the native nav bar already insets this view, so
+        // applying it again pushed the content a full bar-height down (and reserved
+        // the home-indicator band, which made the bottom fade read as oversized).
+        // Matches WorkoutListScreenController.
         Box(Modifier.fillMaxSize().background(FjTheme.colors.background)) {
-            WorkoutDetailsScreen(viewModel = viewModel, modifier = Modifier.safeDrawingPadding())
+            WorkoutDetailsScreen(viewModel = viewModel)
         }
     }
 }

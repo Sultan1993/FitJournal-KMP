@@ -22,6 +22,7 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSession
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSet
 import kz.maestrosultan.fitjournal.domain.workout.summary.SessionBest
+import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
 import kz.maestrosultan.fitjournal.ui.postworkout.format.MuscleTitleFormatter
 import kz.maestrosultan.fitjournal.ui.workoutdetails.components.WorkoutDetailsStrings
 import kz.maestrosultan.fitjournal.ui.workoutdetails.components.buildWorkoutDetailsUi
@@ -209,7 +210,18 @@ class WorkoutDetailsBuilderTest {
         val shoulders = workoutExercise(category = CategoryType.SHOULDERS, sets = listOf(set(60.0, 8), set(60.0, 8))) // tie: 2 logged
         val biceps = workoutExercise(category = CategoryType.BICEPS, sets = listOf(set(60.0, 8))) // 1 logged
         val content = build(listOf(record(exercises = listOf(back, shoulders, biceps))))
-        assertEquals("back · shoulders · biceps", content.header.title, "tie keeps day (insertion) order: back before shoulders")
+        // Sessionless fixture, so the nav-bar subtitle is the muscle join alone.
+        assertEquals("back · shoulders · biceps", content.header.subtitle, "tie keeps day (insertion) order: back before shoulders")
+    }
+
+    @Test
+    fun singleWorkoutHeader_titleIsDate_subtitleIsTimeRangeThenMuscles() = runTest {
+        val content = build(
+            listOf(record(exercises = listOf(workoutExercise(category = CategoryType.BACK)))),
+            sessions = listOf(session()),
+        )
+        assertEquals(LocaleFormatters.formatShortWeekdayDate(DATE), content.header.title)
+        assertTrue(content.header.subtitle.endsWith(" · back"), "muscles follow the time range: ${content.header.subtitle}")
     }
 
     // ── delta pill ────────────────────────────────────────────────────────

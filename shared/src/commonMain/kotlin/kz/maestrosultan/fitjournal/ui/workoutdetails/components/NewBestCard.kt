@@ -3,6 +3,7 @@ package kz.maestrosultan.fitjournal.ui.workoutdetails.components
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -41,6 +42,7 @@ private val NewBestTextInk = Color(0xFF040415)
 fun NewBestCard(text: String, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
+            .defaultMinSize(minHeight = SummaryBlockHeight)
             .clip(RoundedCornerShape(18.dp))
             .background(FjTheme.colors.accent)
             .padding(horizontal = 18.dp, vertical = 13.dp),

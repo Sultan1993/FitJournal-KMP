@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,6 +22,13 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_ti
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_tile_sets
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import org.jetbrains.compose.resources.stringResource
+
+/**
+ * Shared floor for the summary blocks between the hero and WORKLOAD — stat tiles,
+ * NEW BEST, and the note card/placeholder all line up on it. A minimum, not a fixed
+ * height: a multi-line note still grows.
+ */
+internal val SummaryBlockHeight = 64.dp
 
 /**
  * DURATION is dropped when the workout has no session (`durationText == null`),
@@ -54,9 +62,11 @@ fun WorkoutStatTiles(
 private fun StatTile(eyebrow: String, value: String, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
+            .defaultMinSize(minHeight = SummaryBlockHeight)
             .clip(RoundedCornerShape(16.dp))
             .background(FjTheme.colors.card)
             .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.Center,
     ) {
         Text(
             text = eyebrow,
