@@ -150,9 +150,10 @@ private suspend fun buildWorkoutHeader(
     muscleTitleFormatter: MuscleTitleFormatter,
 ): WorkoutDetailsContract.Header {
     val muscles = muscleTitleFormatter.title(rankedMuscles(workoutRecords.flatMap { it.exercises }))
-    // Nav bar: date is the title; time range (when a session exists) + muscles is the subtitle.
+    // Nav bar: full-weekday date is the title; time range (when a session exists)
+    // + muscles is the subtitle. Matches the multi-workout day header's format.
     val subtitle = listOfNotNull(timeRangeText(session, timeZone, now), muscles).joinToString(" · ")
-    return WorkoutDetailsContract.Header(title = LocaleFormatters.formatShortWeekdayDate(date), subtitle = subtitle)
+    return WorkoutDetailsContract.Header(title = LocaleFormatters.formatFullDate(date), subtitle = subtitle)
 }
 
 private suspend fun buildDayHeader(
@@ -332,32 +333,24 @@ private fun newBestUi(best: SessionBest, measurementSystem: MeasurementSystem): 
 }
 
 /**
- * [WorkloadCalculator] decides the buckets (order/percentage); this only
- * attaches a kg amount per bucket. OTHER's tonnage is whatever remains after
- * summing the explicit non-OTHER buckets (the collapsed remainder).
+ * Every trained category gets its own row (`showOther = false`): this screen is a
+ * single workout, where the collapsed OTHER bucket hid whole exercises — a lone
+ * cardio slot read as "Other 10%". [WorkloadCalculator] still decides order and
+ * percentage; this only attaches the kg amount. OTHER appears only when it is a
+ * real category on an exercise, never as a remainder.
  */
 private fun workloadRows(
     workoutRecords: List<WorkoutRecord>,
     measurementSystem: MeasurementSystem,
 ): List<WorkoutDetailsContract.WorkloadRow> {
-    val entries = WorkloadCalculator.calculate(workoutRecords, showOther = true)
+    val entries = WorkloadCalculator.calculate(workoutRecords, showOther = false)
     if (entries.isEmpty()) return emptyList()
 
     val exercisesByCategory: Map<CategoryType, List<WorkoutExercise>> =
         workoutRecords.flatMap { it.exercises }.groupBy { it.exercise.primaryCategory.type }
-    val directTonnageByCategory: Map<CategoryType, Double> = entries
-        .filter { it.category != CategoryType.OTHER }
-        .associate { entry ->
-            entry.category to exercisesByCategory[entry.category].orEmpty().sumOf { we -> TonnageCalculator.forExercise(we) }
-        }
-    val totalTonnage = TonnageCalculator.forRecords(workoutRecords)
 
     return entries.map { entry ->
-        val tonnage = if (entry.category != CategoryType.OTHER) {
-            directTonnageByCategory.getValue(entry.category)
-        } else {
-            totalTonnage - directTonnageByCategory.values.sum()
-        }
+        val tonnage = exercisesByCategory[entry.category].orEmpty().sumOf { we -> TonnageCalculator.forExercise(we) }
         WorkoutDetailsContract.WorkloadRow(
             category = entry.category,
             percentage = entry.percentage,
@@ -396,28 +389,29 @@ private fun exerciseVolumeText(we: WorkoutExercise, measurementSystem: Measureme
 /**
  * Distance delta for cardio only when BOTH sides logged a distance — a
  * duration-only cardio exercise carries no pill. No prior occurrence -> no pill.
+ * A change too small to render ("+0 kg") gets no pill either: repeating a workout
+ * exactly is not progress, and the pill's whole job is to report change.
  */
 private fun exerciseDelta(we: WorkoutExercise, measurementSystem: MeasurementSystem): WorkoutDetailsContract.DeltaUi? {
     val prior = we.lastOccurrence ?: return null
     return when (we.exercise.resultType) {
         ResultType.WEIGHT_REPS -> {
             val delta = TonnageCalculator.forExercise(we) - TonnageCalculator.forSets(prior.sets)
+            val magnitude = WorkoutValueFormatter.groupedTonnage(abs(delta), measurementSystem)
+            // Compare formatted, not raw: the pill is suppressed exactly when it would read zero.
+            if (magnitude == WorkoutValueFormatter.groupedTonnage(0.0, measurementSystem)) return null
             val positive = delta >= 0
-            WorkoutDetailsContract.DeltaUi(
-                positive = positive,
-                text = "${deltaSign(positive)}${WorkoutValueFormatter.groupedTonnage(abs(delta), measurementSystem)}",
-            )
+            WorkoutDetailsContract.DeltaUi(positive = positive, text = "${deltaSign(positive)}$magnitude")
         }
         ResultType.DISTANCE_DURATION -> {
             val current = we.sets.filter { it.isLogged }.sumOf { it.distance ?: 0.0 }
             val previous = prior.sets.sumOf { it.distance ?: 0.0 }
             if (current <= 0.0 || previous <= 0.0) return null
             val delta = current - previous
+            val magnitude = WorkoutValueFormatter.distance(abs(delta), measurementSystem)
+            if (magnitude == WorkoutValueFormatter.distance(0.0, measurementSystem)) return null
             val positive = delta >= 0
-            WorkoutDetailsContract.DeltaUi(
-                positive = positive,
-                text = "${deltaSign(positive)}${WorkoutValueFormatter.distance(abs(delta), measurementSystem)}",
-            )
+            WorkoutDetailsContract.DeltaUi(positive = positive, text = "${deltaSign(positive)}$magnitude")
         }
     }
 }
@@ -430,7 +424,7 @@ private fun setChips(we: WorkoutExercise, measurementSystem: MeasurementSystem):
     we.sets.filter { it.hasOwnNumbers }.map { set ->
         WorkoutDetailsContract.SetChip(
             valueText = WorkoutValueFormatter.value(set.displayValue, we.exercise.resultType, measurementSystem),
-            repsText = WorkoutValueFormatter.reps(set.displayReps, we.exercise.resultType),
+            repsText = WorkoutValueFormatter.reps(set.displayReps, we.exercise.resultType, spaced = false),
         )
     }
 

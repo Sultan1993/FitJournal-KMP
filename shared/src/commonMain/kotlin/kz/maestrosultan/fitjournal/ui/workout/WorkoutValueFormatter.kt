@@ -26,10 +26,11 @@ object WorkoutValueFormatter {
     /** Its companion: "× 12" reps, or "12 min" duration, or "—". null OR 0 is the
      *  unset sentinel here (matching the native rows) — "× 0" / "0 min" is not a
      *  real logged companion value. */
-    fun reps(reps: Int?, resultType: ResultType): String {
+    /** [spaced] false gives the tight "×12" the details set strip uses; prose keeps "× 12". */
+    fun reps(reps: Int?, resultType: ResultType, spaced: Boolean = true): String {
         if (reps == null || reps == 0) return EMPTY
         return when (resultType) {
-            ResultType.WEIGHT_REPS -> "× $reps"
+            ResultType.WEIGHT_REPS -> if (spaced) "× $reps" else "×$reps"
             ResultType.DISTANCE_DURATION -> "$reps min"
         }
     }

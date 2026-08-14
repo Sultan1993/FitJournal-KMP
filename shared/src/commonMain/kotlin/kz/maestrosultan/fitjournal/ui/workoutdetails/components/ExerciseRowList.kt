@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
@@ -50,8 +52,11 @@ import org.jetbrains.compose.resources.stringResource
 private val AvatarSize = 44.dp
 private val AvatarGap = 14.dp
 
-/** Fixed (not computed): row padding + avatar half-height centers the rail on avatars; row height varies with content. */
-private val RailInset = 36.dp
+/** Symmetric, so a divider sits midway between two rows rather than hugging the one above. */
+private val RowPadding = 14.dp
+
+/** Row top padding + half the avatar — the avatar's vertical center, where the rail meets it. */
+private val RailInset = RowPadding + AvatarSize / 2
 
 /**
  * One row per performed exercise; a divider separates records but never superset
@@ -89,12 +94,25 @@ fun ExerciseRowList(
             if (group.members.size > 1) {
                 SupersetGroup(members = group.members, skipped = skipped)
             } else {
-                ExerciseRowContent(row = group.members.first(), modifier = Modifier.fillMaxWidth(), skipped = skipped)
+                ExerciseRowContent(
+                    row = group.members.first(),
+                    modifier = Modifier.fillMaxWidth(),
+                    skipped = skipped,
+                    // Skipped rows keep their old top-only rhythm (no dividers there).
+                    bottomPadding = if (skipped) 0.dp else RowPadding,
+                )
             }
         }
     }
 }
 
+/**
+ * Members stack with no divider between them; a rail joins their avatars instead.
+ * The rail is drawn per member rather than once behind the group, so it ends at the
+ * last avatar — spanning the group would leave it running down past that avatar,
+ * alongside the text. Each member paints the half-gap below its own avatar and the
+ * half-gap above it, which meet in the padding between rows.
+ */
 @Composable
 private fun SupersetGroup(
     members: List<WorkoutDetailsContract.ExerciseRow>,
@@ -104,33 +122,47 @@ private fun SupersetGroup(
     // Fixed color, not a theme token — same violet in both themes (Assumption 1).
     val rail = Color(0xFFA79EFF)
     val background = FjTheme.colors.background
-    Box(modifier = modifier.fillMaxWidth()) {
-        // Rail behind the rows — opaque avatars cover it, leaving it visible in the gap.
-        Box(Modifier.matchParentSize()) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(start = AvatarSize / 2 - 1.dp, top = RailInset, bottom = RailInset)
-                    .width(2.dp)
-                    .fillMaxHeight()
-                    .background(rail),
-            )
-        }
-        Column {
-            members.forEach { row -> ExerciseRowContent(row = row, modifier = Modifier.fillMaxWidth(), skipped = skipped) }
-        }
-        // The layers node knocks out the rail at its midpoint, on top of everything.
-        Box(Modifier.matchParentSize()) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .padding(start = AvatarSize / 2 - 13.dp)
-                    .size(26.dp)
-                    .clip(CircleShape)
-                    .background(background),
-                contentAlignment = Alignment.Center,
-            ) {
-                LayersGlyph(color = rail)
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            // The group carries the bottom padding its members give up.
+            .padding(bottom = if (skipped) 0.dp else RowPadding),
+    ) {
+        members.forEachIndexed { index, row ->
+            val isFirst = index == 0
+            val isLast = index == members.lastIndex
+            Box(Modifier.fillMaxWidth()) {
+                Box(
+                    Modifier.matchParentSize().drawBehind {
+                        val x = (AvatarSize / 2).toPx()
+                        val stroke = 2.dp.toPx()
+                        val avatarCenter = RailInset.toPx()
+                        if (!isFirst) drawLine(rail, Offset(x, 0f), Offset(x, avatarCenter), stroke)
+                        if (!isLast) drawLine(rail, Offset(x, avatarCenter), Offset(x, size.height), stroke)
+                    },
+                )
+                ExerciseRowContent(
+                    row = row,
+                    modifier = Modifier.fillMaxWidth(),
+                    skipped = skipped,
+                    bottomPadding = 0.dp,
+                )
+                if (!isLast) {
+                    // Knocks out the rail midway between this avatar and the next: the
+                    // offset turns this row's center into the avatar-gap center.
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            .offset(y = RailInset)
+                            .padding(start = AvatarSize / 2 - 13.dp)
+                            .size(26.dp)
+                            .clip(CircleShape)
+                            .background(background),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        LayersGlyph(color = rail)
+                    }
+                }
             }
         }
     }
@@ -141,10 +173,10 @@ private fun ExerciseRowContent(
     row: WorkoutDetailsContract.ExerciseRow,
     modifier: Modifier = Modifier,
     skipped: Boolean = false,
+    bottomPadding: Dp = RowPadding,
 ) {
-    // Top inset only — divider/next row's top padding provides separation, not bottom padding.
     Row(
-        modifier = modifier.padding(top = 14.dp),
+        modifier = modifier.padding(top = RowPadding, bottom = bottomPadding),
         verticalAlignment = if (skipped) Alignment.CenterVertically else Alignment.Top,
     ) {
         ExerciseAvatar(
@@ -163,8 +195,9 @@ private fun ExerciseRowContent(
             // Skipped shows name + avatar only — no volume/delta/sets/comment (for now).
             if (!skipped) {
             row.volumeText?.let { volume ->
+                // Baseline-aligned, so the pill sits on the number's baseline
+                // rather than centered against its much larger line box.
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(9.dp),
                     modifier = Modifier.padding(end = 20.dp),
                 ) {
@@ -172,8 +205,9 @@ private fun ExerciseRowContent(
                         text = volume,
                         style = FjTheme.typography.bodyStrong.copy(fontSize = 22.sp),
                         color = FjTheme.colors.textPrimary,
+                        modifier = Modifier.alignByBaseline(),
                     )
-                    row.delta?.let { DeltaPill(delta = it) }
+                    row.delta?.let { DeltaPill(delta = it, modifier = Modifier.alignByBaseline()) }
                 }
             }
             if (row.sets.isNotEmpty()) {
@@ -248,6 +282,7 @@ private fun SetStrip(
  * Mirrors [WorkoutListDeltaPill]'s token treatment but renders the ViewModel's
  * pre-formatted [DeltaUi.text] directly — the list pill's raw-Double API can only
  * format tonnage, which can't express a cardio distance delta ("−0.4 km").
+ * Sized per the details design (12sp / 9dp), a touch larger than the list's pill.
  */
 @Composable
 private fun DeltaPill(
@@ -257,12 +292,12 @@ private fun DeltaPill(
     val tone = if (delta.positive) FjTheme.colors.positive else FjTheme.colors.negative
     Text(
         text = delta.text,
-        style = FjTheme.typography.label.copy(fontSize = 11.5.sp, fontWeight = FontWeight.Bold),
+        style = FjTheme.typography.label.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold),
         color = tone,
         modifier = modifier
             .clip(RoundedCornerShape(99.dp))
             .background(tone.copy(alpha = 0.16f))
-            .padding(horizontal = 8.dp, vertical = 3.dp),
+            .padding(horizontal = 9.dp, vertical = 3.dp),
     )
 }
 

@@ -220,7 +220,7 @@ class WorkoutDetailsBuilderTest {
             listOf(record(exercises = listOf(workoutExercise(category = CategoryType.BACK)))),
             sessions = listOf(session()),
         )
-        assertEquals(LocaleFormatters.formatShortWeekdayDate(DATE), content.header.title)
+        assertEquals(LocaleFormatters.formatFullDate(DATE), content.header.title)
         assertTrue(content.header.subtitle.endsWith(" · back"), "muscles follow the time range: ${content.header.subtitle}")
     }
 
@@ -239,6 +239,15 @@ class WorkoutDetailsBuilderTest {
     @Test
     fun delta_absentWhenNoLastOccurrence() = runTest {
         val we = workoutExercise(sets = listOf(set(60.0, 8)), lastOccurrence = null)
+        val row = build(listOf(record(exercises = listOf(we)))).singleExerciseRow()
+        assertNull(row.delta)
+    }
+
+    @Test
+    fun delta_absentWhenUnchanged() = runTest {
+        // Identical to last time: a "+0 kg" pill would report progress that did not happen.
+        val prior = LastOccurrence(date = LocalDate(2026, 7, 29), sets = listOf(set(60.0, 8)))
+        val we = workoutExercise(sets = listOf(set(60.0, 8)), lastOccurrence = prior)
         val row = build(listOf(record(exercises = listOf(we)))).singleExerciseRow()
         assertNull(row.delta)
     }
@@ -271,11 +280,12 @@ class WorkoutDetailsBuilderTest {
         assertNull(row.delta, "only a duration on the prior occurrence is not a comparable distance")
     }
 
-    // ── workload: kg per bucket + OTHER ──────────────────────────────────
+    // ── workload: kg per bucket, every category explicit ─────────────────
 
     @Test
-    fun workload_tonnagePerBucket_smallCategoryCollapsesIntoOther() = runTest {
-        // 16 total sets: chest 15 (93.75%), back 1 (6.25%) -> back collapses into OTHER.
+    fun workload_tonnagePerBucket_smallCategoryStaysExplicit() = runTest {
+        // 16 total sets: chest 15 (93.75%), back 1 (6.25%). Back is under the
+        // calculator's 10% OTHER threshold but this screen never collapses.
         val chest = workoutExercise(category = CategoryType.CHEST, sets = List(15) { set(10.0, 5) }) // 750
         val back = workoutExercise(category = CategoryType.BACK, sets = listOf(set(20.0, 5))) // 100
         val workload = build(listOf(record(exercises = listOf(chest, back)))).workouts.single().workload
@@ -284,9 +294,10 @@ class WorkoutDetailsBuilderTest {
         val chestRow = workload.first { it.category == CategoryType.CHEST }
         assertEquals(93.75, chestRow.percentage)
         assertEquals("750 kg", chestRow.tonnageText)
-        val otherRow = workload.first { it.category == CategoryType.OTHER }
-        assertEquals(6.25, otherRow.percentage)
-        assertEquals("100 kg", otherRow.tonnageText)
+        val backRow = workload.first { it.category == CategoryType.BACK }
+        assertEquals(6.25, backRow.percentage)
+        assertEquals("100 kg", backRow.tonnageText)
+        assertTrue(workload.none { it.category == CategoryType.OTHER }, "no synthetic OTHER bucket")
     }
 
     @Test
@@ -452,7 +463,7 @@ class WorkoutDetailsBuilderTest {
 
         assertEquals(2, row.sets.size)
         assertEquals("60 kg", row.sets[0].valueText)
-        assertEquals("× 8", row.sets[0].repsText)
+        assertEquals("×8", row.sets[0].repsText, "set strip uses the design's tight form")
         assertEquals("70 kg", row.sets[1].valueText)
         assertEquals("—", row.sets[1].repsText)
     }
