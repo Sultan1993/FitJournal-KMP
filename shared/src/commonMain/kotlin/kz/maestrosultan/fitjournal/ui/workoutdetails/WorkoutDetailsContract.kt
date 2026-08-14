@@ -90,7 +90,9 @@ object WorkoutDetailsContract {
     data class WorkloadRow(
         val category: CategoryType, // color + localized name via existing CategoryType extensions
         val percentage: Double, // 0..100 (WorkloadCalculator), bar weight + "%"
-        val tonnageText: String?, // "9 330 kg"; null when the bucket carries no tonnage
+        // "9 330 kg", or total minutes for a cardio bucket ("30 min") since cardio
+        // carries no tonnage; null when the bucket has neither.
+        val amountText: String?,
     )
 
     /** One record: 1 member = plain row; n members = superset (brand rail joins consecutive members). */

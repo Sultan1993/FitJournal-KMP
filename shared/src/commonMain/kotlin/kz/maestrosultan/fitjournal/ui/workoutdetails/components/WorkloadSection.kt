@@ -98,9 +98,9 @@ private fun WorkloadRow(
             color = FjTheme.colors.textPrimary,
             modifier = Modifier.weight(1f),
         )
-        row.tonnageText?.let { tonnage ->
+        row.amountText?.let { amount ->
             Text(
-                text = tonnage,
+                text = amount,
                 style = FjTheme.typography.caption.copy(fontSize = 13.sp),
                 color = FjTheme.colors.textTertiary,
             )

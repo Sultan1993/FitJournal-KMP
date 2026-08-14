@@ -350,11 +350,21 @@ private fun workloadRows(
         workoutRecords.flatMap { it.exercises }.groupBy { it.exercise.primaryCategory.type }
 
     return entries.map { entry ->
-        val tonnage = exercisesByCategory[entry.category].orEmpty().sumOf { we -> TonnageCalculator.forExercise(we) }
+        val exercises = exercisesByCategory[entry.category].orEmpty()
+        val tonnage = exercises.sumOf { we -> TonnageCalculator.forExercise(we) }
+        // Cardio buckets carry no tonnage, so they report their logged minutes
+        // instead of an empty amount column. WorkoutSet.duration is in minutes.
+        val minutes = exercises
+            .filter { it.exercise.resultType == ResultType.DISTANCE_DURATION }
+            .sumOf { we -> we.sets.sumOf { it.duration ?: 0 } }
         WorkoutDetailsContract.WorkloadRow(
             category = entry.category,
             percentage = entry.percentage,
-            tonnageText = if (tonnage > 0.0) WorkoutValueFormatter.groupedTonnage(tonnage, measurementSystem) else null,
+            amountText = when {
+                tonnage > 0.0 -> WorkoutValueFormatter.groupedTonnage(tonnage, measurementSystem)
+                minutes > 0 -> WorkoutValueFormatter.duration(minutes)
+                else -> null
+            },
         )
     }
 }

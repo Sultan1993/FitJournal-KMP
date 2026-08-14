@@ -293,23 +293,41 @@ class WorkoutDetailsBuilderTest {
         assertEquals(2, workload.size)
         val chestRow = workload.first { it.category == CategoryType.CHEST }
         assertEquals(93.75, chestRow.percentage)
-        assertEquals("750 kg", chestRow.tonnageText)
+        assertEquals("750 kg", chestRow.amountText)
         val backRow = workload.first { it.category == CategoryType.BACK }
         assertEquals(6.25, backRow.percentage)
-        assertEquals("100 kg", backRow.tonnageText)
+        assertEquals("100 kg", backRow.amountText)
         assertTrue(workload.none { it.category == CategoryType.OTHER }, "no synthetic OTHER bucket")
     }
 
     @Test
-    fun workload_zeroTonnageBucket_hasNullTonnageText() = runTest {
+    fun workload_cardioBucket_showsTotalMinutes() = runTest {
         // 8 total sets: chest 6 (75%), cardio 2 (25%) -> both stay explicit buckets.
+        // Cardio has no tonnage, so its amount column reports logged minutes.
         val chest = workoutExercise(category = CategoryType.CHEST, sets = List(6) { set(10.0, 5) })
-        val cardio = workoutExercise(category = CategoryType.CARDIO, resultType = ResultType.DISTANCE_DURATION, sets = List(2) { cardioSet() })
+        val cardio = workoutExercise(
+            category = CategoryType.CARDIO,
+            resultType = ResultType.DISTANCE_DURATION,
+            sets = List(2) { cardioSet(duration = 20) },
+        )
         val workload = build(listOf(record(exercises = listOf(chest, cardio)))).workouts.single().workload
 
         val cardioRow = workload.first { it.category == CategoryType.CARDIO }
         assertEquals(25.0, cardioRow.percentage)
-        assertNull(cardioRow.tonnageText, "cardio sets never carry tonnage")
+        assertEquals("40 min", cardioRow.amountText, "2 sets x 20 min")
+    }
+
+    @Test
+    fun workload_bucketWithNeitherTonnageNorMinutes_hasNullAmount() = runTest {
+        val chest = workoutExercise(category = CategoryType.CHEST, sets = List(6) { set(10.0, 5) })
+        val cardio = workoutExercise(
+            category = CategoryType.CARDIO,
+            resultType = ResultType.DISTANCE_DURATION,
+            sets = List(2) { cardioSet(duration = null) },
+        )
+        val workload = build(listOf(record(exercises = listOf(chest, cardio)))).workouts.single().workload
+
+        assertNull(workload.first { it.category == CategoryType.CARDIO }.amountText)
     }
 
     // ── sessionless workout hides duration/note/share ────────────────────
