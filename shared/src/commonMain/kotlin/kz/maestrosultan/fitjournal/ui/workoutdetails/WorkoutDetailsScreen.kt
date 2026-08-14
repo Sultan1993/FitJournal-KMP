@@ -182,7 +182,9 @@ private fun WorkoutDetailsScrollBody(
         }
 
         if (focused.skippedGroups.isNotEmpty()) {
-            Spacer(Modifier.height(26.dp))
+            // 12 + the last performed row's own 14dp bottom padding = the same 26dp
+            // section break the EXERCISES eyebrow gets after WORKLOAD.
+            Spacer(Modifier.height(12.dp))
             // Name + avatar only, no dividers.
             ExerciseRowList(
                 groups = focused.skippedGroups,

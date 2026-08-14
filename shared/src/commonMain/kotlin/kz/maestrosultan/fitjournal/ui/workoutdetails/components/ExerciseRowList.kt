@@ -70,10 +70,6 @@ fun ExerciseRowList(
     skipped: Boolean = false,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
-        if (skipped) {
-            HorizontalDivider(modifier = Modifier.padding(end = 20.dp), color = FjTheme.colors.divider)
-            Spacer(Modifier.height(18.dp))
-        }
         Text(
             text = stringResource(
                 if (skipped) Res.string.workout_details_skipped else Res.string.workout_details_tile_exercises,
