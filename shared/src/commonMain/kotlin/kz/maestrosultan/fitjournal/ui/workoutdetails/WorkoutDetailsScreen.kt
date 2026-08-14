@@ -38,7 +38,6 @@ import kz.maestrosultan.fitjournal.ui.workoutdetails.components.SessionNoteCard
 import kz.maestrosultan.fitjournal.ui.workoutdetails.components.SessionNoteEditorSheet
 import kz.maestrosultan.fitjournal.ui.workoutdetails.components.WorkloadSection
 import kz.maestrosultan.fitjournal.ui.workoutdetails.components.WorkoutActionButtons
-import kz.maestrosultan.fitjournal.ui.workoutdetails.components.WorkoutDetailsHeader
 import kz.maestrosultan.fitjournal.ui.workoutdetails.components.WorkoutDetailsHero
 import kz.maestrosultan.fitjournal.ui.workoutdetails.components.WorkoutStackCard
 import kz.maestrosultan.fitjournal.ui.workoutdetails.components.WorkoutStatTiles
@@ -70,12 +69,9 @@ private fun WorkoutDetailsBody(
     val content = state.content
     val loaded = content as? WorkoutDetailsContract.Content.Loaded
     Box(modifier = modifier.fillMaxSize().background(FjTheme.colors.background)) {
+        // Title/date + time-range/muscles are drawn by the native host chrome
+        // (iOS nav bar, Android FJScaffold top bar), not in-content.
         Column(modifier = Modifier.fillMaxSize()) {
-            WorkoutDetailsHeader(
-                title = loaded?.header?.title,
-                subtitle = loaded?.header?.subtitle,
-                modifier = Modifier.fillMaxWidth(),
-            )
             when (content) {
                 WorkoutDetailsContract.Content.Loading ->
                     Box(

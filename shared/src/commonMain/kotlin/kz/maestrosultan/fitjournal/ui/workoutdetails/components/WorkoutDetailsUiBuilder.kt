@@ -149,10 +149,10 @@ private suspend fun buildWorkoutHeader(
     now: Instant,
     muscleTitleFormatter: MuscleTitleFormatter,
 ): WorkoutDetailsContract.Header {
-    val title = muscleTitleFormatter.title(rankedMuscles(workoutRecords.flatMap { it.exercises }))
-    val dateText = LocaleFormatters.formatShortWeekdayDate(date)
-    val subtitle = timeRangeText(session, timeZone, now)?.let { "$dateText · $it" } ?: dateText
-    return WorkoutDetailsContract.Header(title = title, subtitle = subtitle)
+    val muscles = muscleTitleFormatter.title(rankedMuscles(workoutRecords.flatMap { it.exercises }))
+    // Nav bar: date is the title; time range (when a session exists) + muscles is the subtitle.
+    val subtitle = listOfNotNull(timeRangeText(session, timeZone, now), muscles).joinToString(" · ")
+    return WorkoutDetailsContract.Header(title = LocaleFormatters.formatShortWeekdayDate(date), subtitle = subtitle)
 }
 
 private suspend fun buildDayHeader(
