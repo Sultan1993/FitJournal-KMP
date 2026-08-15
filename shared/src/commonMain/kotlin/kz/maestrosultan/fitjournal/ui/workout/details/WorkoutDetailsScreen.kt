@@ -136,7 +136,7 @@ private fun WorkoutDetailsScrollBody(
         // WD3 (multi-workout, stack present) tightens the vertical rhythm vs WD1/WD2.
         val multiWorkout = loaded.stack.isNotEmpty()
         Spacer(Modifier.height(if (multiWorkout) 14.dp else 18.dp))
-        WorkoutDetailsHero(hero = loaded.hero, modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp))
+        WorkoutDetailsHero(hero = loaded.hero, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp))
 
         if (loaded.stack.isNotEmpty()) {
             Spacer(Modifier.height(18.dp))
@@ -144,7 +144,7 @@ private fun WorkoutDetailsScrollBody(
                 rows = loaded.stack,
                 focusedWorkoutNumber = loaded.focusedWorkoutNumber,
                 onSelect = { dispatch(WorkoutDetailsContract.ViewAction.SelectWorkout(it)) },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             )
         }
 
@@ -153,12 +153,12 @@ private fun WorkoutDetailsScrollBody(
             durationText = focused.durationText,
             exerciseCount = focused.exerciseCount,
             setCount = focused.setCount,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         )
 
         focused.newBest?.let { newBest ->
             Spacer(Modifier.height(11.dp))
-            NewBestCard(text = newBest.text, modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp))
+            NewBestCard(text = newBest.text, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp))
         }
 
         focused.note?.let { note ->
@@ -166,19 +166,19 @@ private fun WorkoutDetailsScrollBody(
             SessionNoteCard(
                 text = note.text,
                 onClick = { dispatch(WorkoutDetailsContract.ViewAction.NoteTapped) },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             )
         }
 
         if (focused.workload.isNotEmpty()) {
             Spacer(Modifier.height(24.dp))
-            WorkloadSection(rows = focused.workload, modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp))
+            WorkloadSection(rows = focused.workload, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp))
         }
 
         if (focused.exerciseGroups.isNotEmpty()) {
             Spacer(Modifier.height(if (multiWorkout) 22.dp else 26.dp))
             // Start inset only: rows bleed to the right edge (set strips run to the edge).
-            ExerciseRowList(groups = focused.exerciseGroups, modifier = Modifier.fillMaxWidth().padding(start = 20.dp))
+            ExerciseRowList(groups = focused.exerciseGroups, modifier = Modifier.fillMaxWidth().padding(start = 16.dp))
         }
 
         if (focused.skippedGroups.isNotEmpty()) {
@@ -189,7 +189,7 @@ private fun WorkoutDetailsScrollBody(
             ExerciseRowList(
                 groups = focused.skippedGroups,
                 skipped = true,
-                modifier = Modifier.fillMaxWidth().padding(start = 20.dp),
+                modifier = Modifier.fillMaxWidth().padding(start = 16.dp),
             )
         }
 
@@ -198,7 +198,7 @@ private fun WorkoutDetailsScrollBody(
             onRepeat = { dispatch(WorkoutDetailsContract.ViewAction.RepeatTapped) },
             onEdit = { dispatch(WorkoutDetailsContract.ViewAction.EditTapped) },
             onDelete = { dispatch(WorkoutDetailsContract.ViewAction.DeleteTapped) },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         )
     }
 }

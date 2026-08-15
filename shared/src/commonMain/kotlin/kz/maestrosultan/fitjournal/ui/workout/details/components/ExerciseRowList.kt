@@ -83,7 +83,7 @@ fun ExerciseRowList(
             if (index > 0 && !skipped) {
                 HorizontalDivider(
                     // Full-bleed left, not inset under the text.
-                    modifier = Modifier.padding(end = 20.dp),
+                    modifier = Modifier.padding(end = 16.dp),
                     color = FjTheme.colors.divider,
                 )
             }
@@ -186,7 +186,7 @@ private fun ExerciseRowContent(
                 text = row.name,
                 style = FjTheme.typography.cardTitle.copy(fontSize = 16.sp),
                 color = if (skipped) FjTheme.colors.textSecondary else FjTheme.colors.textPrimary,
-                modifier = Modifier.padding(end = 20.dp),
+                modifier = Modifier.padding(end = 16.dp),
             )
             // Skipped shows name + avatar only — no volume/delta/sets/comment (for now).
             if (!skipped) {
@@ -197,7 +197,7 @@ private fun ExerciseRowContent(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(9.dp),
-                    modifier = Modifier.padding(end = 20.dp),
+                    modifier = Modifier.padding(end = 16.dp),
                 ) {
                     Text(
                         text = volume,
@@ -214,7 +214,7 @@ private fun ExerciseRowContent(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(end = 20.dp),
+                    modifier = Modifier.padding(end = 16.dp),
                 ) {
                     PencilGlyph(size = 13.dp, color = FjTheme.colors.textSecondary)
                     Text(

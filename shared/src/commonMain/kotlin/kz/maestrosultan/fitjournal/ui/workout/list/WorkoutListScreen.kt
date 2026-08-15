@@ -131,7 +131,7 @@ private fun WorkoutListContentArea(
                                 name = row.name,
                                 isPersonal = row.isPersonal,
                                 onClick = { dispatch(WorkoutListContract.ViewAction.OpenJournalPicker) },
-                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             )
                         }
                     }
@@ -187,7 +187,7 @@ private fun WorkoutListList(
                         name = row.name,
                         isPersonal = row.isPersonal,
                         onClick = { dispatch(WorkoutListContract.ViewAction.OpenJournalPicker) },
-                        modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 8.dp),
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 8.dp),
                     )
                 }
             }
@@ -195,7 +195,7 @@ private fun WorkoutListList(
                 WorkoutListHero(
                     hero = loaded.hero,
                     measurementSystem = measurementSystem,
-                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp),
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
                 )
             }
             loaded.weeks.forEach { week ->
@@ -203,7 +203,7 @@ private fun WorkoutListList(
                     WorkoutListWeekHeader(
                         section = week,
                         measurementSystem = measurementSystem,
-                        modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 8.dp),
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 22.dp, bottom = 8.dp),
                     )
                 }
                 itemsIndexed(week.days, key = { _, day -> "day-${day.date}" }) { index, day ->
@@ -216,7 +216,7 @@ private fun WorkoutListList(
                         HorizontalDivider(
                             // Same span as the week header and the WorkoutDetails row
                             // divider — not inset past the date column.
-                            modifier = Modifier.padding(horizontal = 20.dp),
+                            modifier = Modifier.padding(horizontal = 16.dp),
                             color = FjTheme.colors.divider,
                         )
                     }
