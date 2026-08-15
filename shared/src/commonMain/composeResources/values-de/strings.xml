@@ -171,6 +171,7 @@
     <!-- Workout details screen -->
     <string name="workout_details_tile_duration">DAUER</string>
     <string name="workout_details_tile_exercises">ÜBUNGEN</string>
+    <string name="workout_details_total_volume">Gesamtvolumen</string>
     <string name="workout_details_skipped">ÜBERSPRUNGEN</string>
     <string name="workout_details_tile_sets">SÄTZE</string>
     <string name="workout_details_new_best">NEUER REKORD</string>

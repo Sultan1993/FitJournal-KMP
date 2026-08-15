@@ -185,6 +185,7 @@
     <!-- Workout details screen -->
     <string name="workout_details_tile_duration">ТРИВАЛІСТЬ</string>
     <string name="workout_details_tile_exercises">ВПРАВИ</string>
+    <string name="workout_details_total_volume">Загальний обсяг</string>
     <string name="workout_details_skipped">ПРОПУЩЕНО</string>
     <string name="workout_details_tile_sets">ПІДХОДИ</string>
     <string name="workout_details_new_best">НОВИЙ РЕКОРД</string>

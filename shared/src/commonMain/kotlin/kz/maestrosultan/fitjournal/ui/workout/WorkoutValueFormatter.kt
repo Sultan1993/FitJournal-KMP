@@ -80,6 +80,14 @@ object WorkoutValueFormatter {
         ResultType.DISTANCE_DURATION -> "min"
     }
 
+    /**
+     * [duration] split for a hero that renders the unit smaller than the number:
+     * ("27", "min") under an hour, ("1h 05m", null) above — an hour-and-minutes
+     * string has no single trailing unit to peel off.
+     */
+    fun durationParts(minutes: Int): Pair<String, String?> =
+        if (minutes in 1 until 60) minutes.toString() to "min" else duration(minutes) to null
+
     /** A cardio duration: "1h 05m" from 60 min up, "27 min" below the hour. */
     fun duration(minutes: Int): String {
         if (minutes <= 0) return EMPTY

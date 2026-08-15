@@ -47,16 +47,21 @@ object WorkoutDetailsContract {
         ) : Content
     }
 
-    data class Header(val title: String, val subtitle: String)
+    /**
+     * [subtitle] null renders nothing: a single sessionless workout has no time range
+     * to show. One workout shows its time range, several show the workout count.
+     */
+    data class Header(val title: String, val subtitle: String?)
 
     /**
-     * valueText/unitText split for the baseline-aligned hero ("10 480" + "kg"); unitText
-     * null when the headline is not a weight (a cardio-only day headlines its duration
-     * or distance). [cardioText] is the day's cardio duration shown after the weight,
-     * the way the workout-list hero does it; null when there is no cardio, or when the
-     * cardio figure is already the headline.
+     * Two side-by-side stats. [cardio] null hides that half (and the divider) — a
+     * day with no cardio. [volume] is null only on a cardio-only day, where the
+     * cardio stat stands alone.
      */
-    data class Hero(val valueText: String, val unitText: String?, val cardioText: String?)
+    data class Hero(val volume: HeroStat?, val cardio: HeroStat?)
+
+    /** "10 480" + "kg" over "Total volume"; [label] is uppercased by the UI. */
+    data class HeroStat(val value: String, val unit: String?, val label: String)
 
     data class StackRow(
         val workoutNumber: Int,

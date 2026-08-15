@@ -33,11 +33,20 @@ internal object WorkoutDetailsPreviewData {
         subtitle = "09:38–10:42 · 5 exercises",
     )
 
-    /** Weight headline with the day's cardio trailing it. */
-    val hero = WorkoutDetailsContract.Hero(valueText = "6 638", unitText = "kg", cardioText = "30 min")
+    /** Both stats: volume, then cardio with its distance in the label. */
+    val hero = WorkoutDetailsContract.Hero(
+        volume = WorkoutDetailsContract.HeroStat(value = "6 638", unit = "kg", label = "Total volume"),
+        cardio = WorkoutDetailsContract.HeroStat(value = "30", unit = "min", label = "Cardio · 5 km"),
+    )
 
-    /** Cardio-only day: the duration IS the headline, so no unit and no trailing cardio. */
-    val cardioOnlyHero = WorkoutDetailsContract.Hero(valueText = "42 min", unitText = null, cardioText = null)
+    /** No cardio: the second stat and its divider are dropped. */
+    val volumeOnlyHero = WorkoutDetailsContract.Hero(volume = hero.volume, cardio = null)
+
+    /** Cardio-only day: nothing was lifted, so the cardio stat stands alone. */
+    val cardioOnlyHero = WorkoutDetailsContract.Hero(
+        volume = null,
+        cardio = WorkoutDetailsContract.HeroStat(value = "42", unit = "min", label = "Cardio · 7.2 km"),
+    )
 
     val newBest = WorkoutDetailsContract.NewBestUi(text = "Seated Dumbbell Press · 42.5 kg × 8")
 

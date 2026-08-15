@@ -172,6 +172,7 @@
     <!-- Workout details screen -->
     <string name="workout_details_tile_duration">DURATION</string>
     <string name="workout_details_tile_exercises">EXERCISES</string>
+    <string name="workout_details_total_volume">Total volume</string>
     <string name="workout_details_skipped">SKIPPED</string>
     <string name="workout_details_tile_sets">SETS</string>
     <string name="workout_details_new_best">NEW BEST</string>

@@ -185,6 +185,7 @@
     <!-- Workout details screen -->
     <string name="workout_details_tile_duration">ВРЕМЯ</string>
     <string name="workout_details_tile_exercises">УПРАЖНЕНИЯ</string>
+    <string name="workout_details_total_volume">Общий объём</string>
     <string name="workout_details_skipped">ПРОПУЩЕНО</string>
     <string name="workout_details_tile_sets">ПОДХОДЫ</string>
     <string name="workout_details_new_best">НОВЫЙ РЕКОРД</string>

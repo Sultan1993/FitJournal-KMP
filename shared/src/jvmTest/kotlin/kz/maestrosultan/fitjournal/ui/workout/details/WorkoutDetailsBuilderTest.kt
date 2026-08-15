@@ -42,6 +42,8 @@ class WorkoutDetailsBuilderTest {
     // ── deterministic injected dependencies ─────────────────────────────
     private val titleFormatter = MuscleTitleFormatter(categoryName = { it.identifier }, fallbackTitle = { "Workout" })
     private val strings = WorkoutDetailsStrings(
+        totalVolumeLabel = { "Total volume" },
+        cardioLabel = { "Cardio" },
         workoutCount = { "$it workouts" },
         exerciseCount = { "$it exercises" },
         setCount = { "$it sets" },
@@ -179,9 +181,11 @@ class WorkoutDetailsBuilderTest {
     @Test
     fun singleWorkoutDay_heroIsWorkoutTonnage() = runTest {
         val content = build(listOf(record(exercises = listOf(workoutExercise(sets = listOf(set(60.0, 8))))))) // 480
-        assertEquals("480", content.hero.valueText)
-        assertEquals("kg", content.hero.unitText)
-        assertNull(content.hero.cardioText)
+        val volume = assertNotNull(content.hero.volume)
+        assertEquals("480", volume.value)
+        assertEquals("kg", volume.unit)
+        assertEquals("Total volume", volume.label)
+        assertNull(content.hero.cardio, "no cardio -> no second stat")
     }
 
     @Test
@@ -195,29 +199,59 @@ class WorkoutDetailsBuilderTest {
                 ),
             ),
         )
-        assertEquals("880", content.hero.valueText)
+        assertEquals("880", assertNotNull(content.hero.volume).value)
     }
 
     // ── muscle title ranking, ties keep day order ────────────────────────
 
     @Test
     fun muscleTitle_ranksByLoggedSets_tiesKeepDayOrder() = runTest {
+        // The ranked join now titles the WD3 stack rows; the nav bar shows the date.
         val back = workoutExercise(category = CategoryType.BACK, sets = listOf(set(60.0, 8), set(60.0, 8))) // 2 logged
         val shoulders = workoutExercise(category = CategoryType.SHOULDERS, sets = listOf(set(60.0, 8), set(60.0, 8))) // tie: 2 logged
         val biceps = workoutExercise(category = CategoryType.BICEPS, sets = listOf(set(60.0, 8))) // 1 logged
-        val content = build(listOf(record(exercises = listOf(back, shoulders, biceps))))
-        // Sessionless fixture, so the nav-bar subtitle is the muscle join alone.
-        assertEquals("back · shoulders · biceps", content.header.subtitle, "tie keeps day (insertion) order: back before shoulders")
+        val content = build(
+            listOf(
+                record(workoutNumber = 1, exercises = listOf(back, shoulders, biceps)),
+                record(workoutNumber = 2, exercises = listOf(workoutExercise(category = CategoryType.CHEST))),
+            ),
+        )
+        assertEquals(
+            "back · shoulders · biceps",
+            content.stack.first().title,
+            "tie keeps day (insertion) order: back before shoulders",
+        )
     }
 
     @Test
-    fun singleWorkoutHeader_titleIsDate_subtitleIsTimeRangeThenMuscles() = runTest {
+    fun singleWorkoutHeader_titleIsDate_subtitleIsTimeRange() = runTest {
+        val session = session()
         val content = build(
             listOf(record(exercises = listOf(workoutExercise(category = CategoryType.BACK)))),
+            sessions = listOf(session),
+        )
+        val expected = LocaleFormatters.formatTimeShort(session.startedAt, ZONE) +
+            "–" + LocaleFormatters.formatTimeShort(assertNotNull(session.endedAt), ZONE)
+        assertEquals(LocaleFormatters.formatFullDate(DATE), content.header.title)
+        assertEquals(expected, content.header.subtitle)
+    }
+
+    @Test
+    fun singleSessionlessWorkout_headerHasNoSubtitle() = runTest {
+        val content = build(listOf(record(exercises = listOf(workoutExercise()))))
+        assertNull(content.header.subtitle, "no session -> nothing to say under the date")
+    }
+
+    @Test
+    fun multiWorkoutDay_headerSubtitleIsTheWorkoutCount() = runTest {
+        val content = build(
+            listOf(
+                record(workoutNumber = 1, exercises = listOf(workoutExercise())),
+                record(workoutNumber = 2, exercises = listOf(workoutExercise(category = CategoryType.BACK))),
+            ),
             sessions = listOf(session()),
         )
-        assertEquals(LocaleFormatters.formatFullDate(DATE), content.header.title)
-        assertTrue(content.header.subtitle.endsWith(" · back"), "muscles follow the time range: ${content.header.subtitle}")
+        assertEquals("2 workouts", content.header.subtitle, "count replaces the time range once there are several")
     }
 
     // ── delta pill ────────────────────────────────────────────────────────
@@ -355,9 +389,11 @@ class WorkoutDetailsBuilderTest {
             sets = listOf(cardioSet(distance = 5.0, duration = 27)),
         )
         val hero = build(listOf(record(exercises = listOf(cardio)))).hero
-        assertEquals("27 min", hero.valueText)
-        assertNull(hero.unitText)
-        assertNull(hero.cardioText)
+        assertNull(hero.volume, "nothing lifted -> no volume stat")
+        val cardioStat = assertNotNull(hero.cardio)
+        assertEquals("27", cardioStat.value)
+        assertEquals("min", cardioStat.unit)
+        assertEquals("Cardio · 5 km", cardioStat.label, "distance rides in the label")
     }
 
     @Test
@@ -370,13 +406,15 @@ class WorkoutDetailsBuilderTest {
             sets = listOf(cardioSet(distance = 5.0, duration = 0)),
         )
         val hero = build(listOf(record(exercises = listOf(cardio)))).hero
-        assertEquals("5 km", hero.valueText)
-        assertNull(hero.unitText)
-        assertNull(hero.cardioText)
+        assertNull(hero.volume)
+        val cardioStat = assertNotNull(hero.cardio)
+        assertEquals("5 km", cardioStat.value, "no duration -> the distance is the value")
+        assertNull(cardioStat.unit)
+        assertEquals("Cardio", cardioStat.label)
     }
 
     @Test
-    fun mixedWorkout_distanceOnlyCardio_cardioTextIsDistanceNotZeroMin() = runTest {
+    fun mixedWorkout_distanceOnlyCardio_cardioStatIsDistance() = runTest {
         val weight = workoutExercise(sets = listOf(set(60.0, 8))) // 480
         val cardio = workoutExercise(
             category = CategoryType.CARDIO,
@@ -384,14 +422,14 @@ class WorkoutDetailsBuilderTest {
             sets = listOf(cardioSet(distance = 5.0, duration = 0)),
         )
         val hero = build(listOf(record(exercises = listOf(weight, cardio)))).hero
-        assertEquals("480", hero.valueText)
-        assertEquals("5 km", hero.cardioText)
+        assertEquals("480", assertNotNull(hero.volume).value)
+        assertEquals("5 km", assertNotNull(hero.cardio).value)
     }
 
-    // ── mixed workout AND mixed day: tonnage hero + cardioText ───────────
+    // ── mixed workout AND mixed day: tonnage + cardio stats ───────────
 
     @Test
-    fun mixedWorkout_heroKeepsTonnageValue_cardioTextIsDuration() = runTest {
+    fun mixedWorkout_heroKeepsTonnageValue_cardioStatIsDuration() = runTest {
         val weight = workoutExercise(sets = listOf(set(60.0, 8))) // 480
         val cardio = workoutExercise(
             category = CategoryType.CARDIO,
@@ -399,13 +437,15 @@ class WorkoutDetailsBuilderTest {
             sets = listOf(cardioSet(distance = 5.0, duration = 27)),
         )
         val hero = build(listOf(record(exercises = listOf(weight, cardio)))).hero
-        assertEquals("480", hero.valueText)
-        assertEquals("kg", hero.unitText)
-        assertEquals("27 min", hero.cardioText, "duration only — distance lives on the exercise row")
+        assertEquals("480", assertNotNull(hero.volume).value)
+        assertEquals("kg", assertNotNull(hero.volume).unit)
+        val cardioStat = assertNotNull(hero.cardio)
+        assertEquals("27", cardioStat.value)
+        assertEquals("Cardio · 5 km", cardioStat.label)
     }
 
     @Test
-    fun mixedDay_dayHeroKeepsTonnageValue_cardioTextIsDuration() = runTest {
+    fun mixedDay_dayHeroKeepsTonnageValue_cardioStatIsDuration() = runTest {
         val weight = workoutExercise(sets = listOf(set(60.0, 8))) // 480
         val cardio = workoutExercise(
             category = CategoryType.CARDIO,
@@ -418,9 +458,11 @@ class WorkoutDetailsBuilderTest {
                 record(workoutNumber = 2, exercises = listOf(cardio)),
             ),
         ).hero
-        assertEquals("480", hero.valueText)
-        assertEquals("kg", hero.unitText)
-        assertEquals("27 min", hero.cardioText, "duration only — distance lives on the exercise row")
+        assertEquals("480", assertNotNull(hero.volume).value)
+        assertEquals("kg", assertNotNull(hero.volume).unit)
+        val cardioStat = assertNotNull(hero.cardio)
+        assertEquals("27", cardioStat.value)
+        assertEquals("Cardio · 5 km", cardioStat.label)
     }
 
     // ── unmatched session ignored ─────────────────────────────────────────
@@ -434,28 +476,6 @@ class WorkoutDetailsBuilderTest {
         assertNull(workout.durationText, "orphan session must not attach to a different workout")
         assertNull(workout.note)
         assertFalse(workout.canShare)
-    }
-
-    @Test
-    fun unmatchedSession_excludedFromDayHeaderDuration() = runTest {
-        val matched = session(
-            workoutNumber = 1,
-            startedAt = Instant.parse("2026-08-05T09:00:00Z"),
-            endedAt = Instant.parse("2026-08-05T09:30:00Z"),
-        )
-        val orphan = session(
-            workoutNumber = 99,
-            startedAt = Instant.parse("2026-08-05T09:00:00Z"),
-            endedAt = Instant.parse("2026-08-05T11:00:00Z"),
-        )
-        val content = build(
-            listOf(
-                record(workoutNumber = 1, exercises = listOf(workoutExercise())),
-                record(workoutNumber = 2, exercises = listOf(workoutExercise(category = CategoryType.BACK))),
-            ),
-            sessions = listOf(matched, orphan),
-        )
-        assertEquals("2 workouts · 0:30", content.header.subtitle, "the orphan session's 2h must not inflate the sum")
     }
 
     // ── set chips: own numbers only ───────────────────────────────────────
