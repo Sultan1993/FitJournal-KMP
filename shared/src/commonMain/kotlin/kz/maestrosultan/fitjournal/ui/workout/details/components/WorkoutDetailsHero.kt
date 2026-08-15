@@ -54,7 +54,13 @@ fun WorkoutDetailsHero(
 
 @Composable
 private fun HeroStat(stat: WorkoutDetailsContract.HeroStat, modifier: Modifier = Modifier) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(7.dp)) {
+    // Eyebrow label on top, big number below — the design's vertical order.
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = stat.label.uppercase(),
+            style = FjTheme.typography.eyebrow.copy(fontSize = 10.5.sp, letterSpacing = 0.1.em),
+            color = FjTheme.colors.textTertiary,
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
             Text(
                 text = stat.value,
@@ -76,10 +82,5 @@ private fun HeroStat(stat: WorkoutDetailsContract.HeroStat, modifier: Modifier =
                 )
             }
         }
-        Text(
-            text = stat.label.uppercase(),
-            style = FjTheme.typography.eyebrow.copy(fontSize = 10.5.sp, letterSpacing = 0.1.em),
-            color = FjTheme.colors.textTertiary,
-        )
     }
 }
