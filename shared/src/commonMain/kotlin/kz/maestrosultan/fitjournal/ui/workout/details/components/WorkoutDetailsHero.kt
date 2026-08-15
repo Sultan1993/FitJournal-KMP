@@ -20,9 +20,10 @@ import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsContract
 
 /**
- * Two stats side by side — volume and cardio — split by a hairline. Either half is
- * dropped when the day has none of it, and the divider goes with it, so a day
- * without cardio is just the volume.
+ * Two stats — volume and cardio — filling the width in equal halves, so the
+ * hairline between them lands on the centre line. Either half is dropped when the
+ * day has none of it, and the divider goes with it: a day without cardio is just
+ * the volume, spanning the full width.
  */
 @Composable
 fun WorkoutDetailsHero(
@@ -44,14 +45,16 @@ fun WorkoutDetailsHero(
                         .background(FjTheme.colors.divider),
                 )
             }
-            HeroStat(stat)
+            // Equal weights put the divider on the centre line; the 24dp gap sits
+            // symmetrically either side of it.
+            HeroStat(stat, Modifier.weight(1f))
         }
     }
 }
 
 @Composable
-private fun HeroStat(stat: WorkoutDetailsContract.HeroStat) {
-    Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+private fun HeroStat(stat: WorkoutDetailsContract.HeroStat, modifier: Modifier = Modifier) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(7.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
             Text(
                 text = stat.value,
