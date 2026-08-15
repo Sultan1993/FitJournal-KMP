@@ -191,9 +191,11 @@ private fun ExerciseRowContent(
             // Skipped shows name + avatar only — no volume/delta/sets/comment (for now).
             if (!skipped) {
             row.volumeText?.let { volume ->
-                // Baseline-aligned, so the pill sits on the number's baseline
-                // rather than centered against its much larger line box.
+                // The PILL is centred on the number, not baselined to it: baseline
+                // alignment lines up the pill's text, which leaves its capsule
+                // hanging below the number by the pill's padding + descender.
                 Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(9.dp),
                     modifier = Modifier.padding(end = 20.dp),
                 ) {
@@ -201,9 +203,8 @@ private fun ExerciseRowContent(
                         text = volume,
                         style = FjTheme.typography.bodyStrong.copy(fontSize = 22.sp),
                         color = FjTheme.colors.textPrimary,
-                        modifier = Modifier.alignByBaseline(),
                     )
-                    row.delta?.let { DeltaPill(delta = it, modifier = Modifier.alignByBaseline()) }
+                    row.delta?.let { DeltaPill(delta = it) }
                 }
             }
             if (row.sets.isNotEmpty()) {
