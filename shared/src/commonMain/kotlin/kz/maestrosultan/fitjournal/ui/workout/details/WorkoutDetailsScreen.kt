@@ -1,6 +1,7 @@
 package kz.maestrosultan.fitjournal.ui.workout.details
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -83,14 +84,20 @@ private fun WorkoutDetailsBody(
 
                 is WorkoutDetailsContract.Content.Loaded -> {
                     val focused = content.focusedWorkout()
+                    val scrollState = rememberScrollState()
                     Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                         WorkoutDetailsScrollBody(
                             loaded = content,
                             focused = focused,
                             dispatch = dispatch,
+                            scrollState = scrollState,
                             modifier = Modifier.fillMaxSize(),
                         )
-                        TopFadeScrim(modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth())
+                        // Only once something has scrolled under it — at rest there is
+                        // nothing to fade, and the scrim would just dim the hero.
+                        if (scrollState.canScrollBackward) {
+                            TopFadeScrim(modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth())
+                        }
                         BottomFadeScrim(modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth())
                     }
                     // Share footer deferred — sharing feature is postponed. ShareTapped/
@@ -126,11 +133,12 @@ private fun WorkoutDetailsScrollBody(
     loaded: WorkoutDetailsContract.Content.Loaded,
     focused: WorkoutDetailsContract.WorkoutUi,
     dispatch: (WorkoutDetailsContract.ViewAction) -> Unit,
+    scrollState: ScrollState,
     modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
             .padding(bottom = 40.dp),
     ) {
         // WD3 (multi-workout, stack present) tightens the vertical rhythm vs WD1/WD2.
