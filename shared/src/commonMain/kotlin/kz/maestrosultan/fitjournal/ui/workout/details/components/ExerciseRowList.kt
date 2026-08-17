@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -47,6 +48,8 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_ti
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.components.ExerciseAvatar
 import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsContract
+import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsPreviewData
+import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsPreviewSurface
 import org.jetbrains.compose.resources.stringResource
 
 private val AvatarSize = 44.dp
@@ -318,3 +321,51 @@ private fun LayersGlyph(color: Color, modifier: Modifier = Modifier) {
 }
 
 // PencilGlyph extracted to Glyphs.kt (shared by SessionNoteCard + WorkoutActionButtons).
+
+@Preview(name = "ExerciseRowList Performed Light")
+@Composable
+private fun ExerciseRowListPerformedPreviewLight() {
+    WorkoutDetailsPreviewSurface(darkTheme = false) {
+        ExerciseRowList(groups = WorkoutDetailsPreviewData.plainGroups)
+    }
+}
+
+@Preview(name = "ExerciseRowList Performed Dark")
+@Composable
+private fun ExerciseRowListPerformedPreviewDark() {
+    WorkoutDetailsPreviewSurface(darkTheme = true) {
+        ExerciseRowList(groups = WorkoutDetailsPreviewData.plainGroups)
+    }
+}
+
+@Preview(name = "ExerciseRowList Superset Light")
+@Composable
+private fun ExerciseRowListSupersetPreviewLight() {
+    WorkoutDetailsPreviewSurface(darkTheme = false) {
+        ExerciseRowList(groups = WorkoutDetailsPreviewData.supersetGroups)
+    }
+}
+
+@Preview(name = "ExerciseRowList Superset Dark")
+@Composable
+private fun ExerciseRowListSupersetPreviewDark() {
+    WorkoutDetailsPreviewSurface(darkTheme = true) {
+        ExerciseRowList(groups = WorkoutDetailsPreviewData.supersetGroups)
+    }
+}
+
+@Preview(name = "ExerciseRowList Skipped Light")
+@Composable
+private fun ExerciseRowListSkippedPreviewLight() {
+    WorkoutDetailsPreviewSurface(darkTheme = false) {
+        ExerciseRowList(groups = WorkoutDetailsPreviewData.skippedGroups, skipped = true)
+    }
+}
+
+@Preview(name = "ExerciseRowList Skipped Dark")
+@Composable
+private fun ExerciseRowListSkippedPreviewDark() {
+    WorkoutDetailsPreviewSurface(darkTheme = true) {
+        ExerciseRowList(groups = WorkoutDetailsPreviewData.skippedGroups, skipped = true)
+    }
+}

@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -33,6 +34,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_de
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_edit
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_repeat
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
+import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsPreviewSurface
 import org.jetbrains.compose.resources.stringResource
 
 /** [onDelete] opens a confirm sheet upstream — it does not delete immediately. */
@@ -77,7 +79,7 @@ private fun ActionRow(
         modifier = modifier
             .fillMaxWidth()
             .height(52.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(FjTheme.colors.card)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -133,5 +135,21 @@ private fun TrashGlyph(size: Dp, color: Color, modifier: Modifier = Modifier) {
         // Inner ribs.
         drawLine(color, Offset(w * 0.42f, h * 0.42f), Offset(w * 0.43f, h * 0.70f), s * 0.8f, cap = StrokeCap.Round)
         drawLine(color, Offset(w * 0.58f, h * 0.42f), Offset(w * 0.57f, h * 0.70f), s * 0.8f, cap = StrokeCap.Round)
+    }
+}
+
+@Preview(name = "WorkoutActionButtons Light")
+@Composable
+private fun WorkoutActionButtonsPreviewLight() {
+    WorkoutDetailsPreviewSurface(darkTheme = false) {
+        WorkoutActionButtons(onRepeat = {}, onEdit = {}, onDelete = {})
+    }
+}
+
+@Preview(name = "WorkoutActionButtons Dark")
+@Composable
+private fun WorkoutActionButtonsPreviewDark() {
+    WorkoutDetailsPreviewSurface(darkTheme = true) {
+        WorkoutActionButtons(onRepeat = {}, onEdit = {}, onDelete = {})
     }
 }

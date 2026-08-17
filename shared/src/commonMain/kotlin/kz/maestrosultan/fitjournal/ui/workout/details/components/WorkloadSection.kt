@@ -20,16 +20,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.roundToInt
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_workload
-import kz.maestrosultan.fitjournal.ui.workout.nameRes
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.theme.composeColor
 import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsContract
+import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsPreviewData
+import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsPreviewSurface
+import kz.maestrosultan.fitjournal.ui.workout.nameRes
 import org.jetbrains.compose.resources.stringResource
-import kotlin.math.roundToInt
 
 /**
  * Bar segments and the "%" label both read the same [WorkloadRow.percentage] so
@@ -112,5 +115,21 @@ private fun WorkloadRow(
             textAlign = TextAlign.End,
             modifier = Modifier.width(40.dp),
         )
+    }
+}
+
+@Preview(name = "WorkloadSection Light")
+@Composable
+private fun WorkloadSectionPreviewLight() {
+    WorkoutDetailsPreviewSurface(darkTheme = false) {
+        WorkloadSection(rows = WorkoutDetailsPreviewData.workload)
+    }
+}
+
+@Preview(name = "WorkloadSection Dark")
+@Composable
+private fun WorkloadSectionPreviewDark() {
+    WorkoutDetailsPreviewSurface(darkTheme = true) {
+        WorkloadSection(rows = WorkoutDetailsPreviewData.workload)
     }
 }

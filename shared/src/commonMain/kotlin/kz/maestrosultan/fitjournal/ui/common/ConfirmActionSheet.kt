@@ -46,7 +46,7 @@ fun ConfirmActionSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = FjTheme.colors.surfaceElevated,
+        containerColor = FjTheme.colors.sheet,
     ) {
         Column(
             modifier = modifier

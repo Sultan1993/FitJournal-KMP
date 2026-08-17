@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
@@ -25,10 +26,12 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.history_set_count
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_workout_count
 import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
 import kz.maestrosultan.fitjournal.ui.format.NameStyle
-import kz.maestrosultan.fitjournal.ui.workout.list.WorkoutListContract
-import kz.maestrosultan.fitjournal.ui.workout.nameRes
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
+import kz.maestrosultan.fitjournal.ui.workout.list.WorkoutListContract
+import kz.maestrosultan.fitjournal.ui.workout.list.WorkoutListPreviewData
+import kz.maestrosultan.fitjournal.ui.workout.list.WorkoutListPreviewSurface
+import kz.maestrosultan.fitjournal.ui.workout.nameRes
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -122,5 +125,29 @@ fun WorkoutListDayRow(
                 color = FjTheme.colors.textSecondary,
             )
         }
+    }
+}
+
+@Preview(name = "WorkoutListDayRow Light")
+@Composable
+private fun WorkoutListDayRowPreviewLight() {
+    WorkoutListPreviewSurface(darkTheme = false) {
+        WorkoutListDayRow(
+            day = WorkoutListPreviewData.thisWeek.days.first(),
+            measurementSystem = MeasurementSystem.KG_KM,
+            onClick = {},
+        )
+    }
+}
+
+@Preview(name = "WorkoutListDayRow Dark")
+@Composable
+private fun WorkoutListDayRowPreviewDark() {
+    WorkoutListPreviewSurface(darkTheme = true) {
+        WorkoutListDayRow(
+            day = WorkoutListPreviewData.thisWeek.days.first(),
+            measurementSystem = MeasurementSystem.KG_KM,
+            onClick = {},
+        )
     }
 }

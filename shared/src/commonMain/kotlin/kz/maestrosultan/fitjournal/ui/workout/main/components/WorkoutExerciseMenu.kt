@@ -75,7 +75,7 @@ fun WorkoutExerciseMenu(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = FjTheme.colors.surfaceElevated,
+        containerColor = FjTheme.colors.sheet,
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
             Row(

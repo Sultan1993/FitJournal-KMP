@@ -3,10 +3,10 @@ package kz.maestrosultan.fitjournal.ui.workout.details.components
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -15,9 +15,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -26,11 +26,14 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.vector.PathParser
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_new_best
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
+import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsPreviewData
+import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsPreviewSurface
 import org.jetbrains.compose.resources.stringResource
 
 /** Literal inks, not theme tokens — the `accent` card fill is the same warm color in both themes, so `textPrimary` (which flips) can't be used. */
@@ -43,9 +46,9 @@ fun NewBestCard(text: String, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .defaultMinSize(minHeight = SummaryBlockHeight)
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(FjTheme.colors.accent)
-            .padding(horizontal = 18.dp, vertical = 13.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -92,5 +95,21 @@ private fun TrophyGlyph() {
                 style = Stroke(width = 2f, cap = StrokeCap.Round, join = StrokeJoin.Round),
             )
         }
+    }
+}
+
+@Preview(name = "NewBestCard Light")
+@Composable
+private fun NewBestCardPreviewLight() {
+    WorkoutDetailsPreviewSurface(darkTheme = false) {
+        NewBestCard(text = WorkoutDetailsPreviewData.newBest.text)
+    }
+}
+
+@Preview(name = "NewBestCard Dark")
+@Composable
+private fun NewBestCardPreviewDark() {
+    WorkoutDetailsPreviewSurface(darkTheme = true) {
+        NewBestCard(text = WorkoutDetailsPreviewData.newBest.text)
     }
 }

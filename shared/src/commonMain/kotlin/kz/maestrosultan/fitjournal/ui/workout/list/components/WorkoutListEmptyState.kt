@@ -14,12 +14,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.empty_plates
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_empty_message
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
+import kz.maestrosultan.fitjournal.ui.workout.list.WorkoutListPreviewSurface
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -46,5 +48,21 @@ fun WorkoutListEmptyState(modifier: Modifier = Modifier) {
             color = FjTheme.colors.textSecondary,
             textAlign = TextAlign.Center,
         )
+    }
+}
+
+@Preview(name = "WorkoutListEmptyState Light")
+@Composable
+private fun WorkoutListEmptyStatePreviewLight() {
+    WorkoutListPreviewSurface(darkTheme = false) {
+        WorkoutListEmptyState(modifier = Modifier.fillMaxSize())
+    }
+}
+
+@Preview(name = "WorkoutListEmptyState Dark")
+@Composable
+private fun WorkoutListEmptyStatePreviewDark() {
+    WorkoutListPreviewSurface(darkTheme = true) {
+        WorkoutListEmptyState(modifier = Modifier.fillMaxSize())
     }
 }

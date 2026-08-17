@@ -13,11 +13,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsContract
+import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsPreviewData
+import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsPreviewSurface
 
 /**
  * Two stats — volume and cardio — filling the width in equal halves, so the
@@ -55,7 +58,7 @@ fun WorkoutDetailsHero(
 @Composable
 private fun HeroStat(stat: WorkoutDetailsContract.HeroStat, modifier: Modifier = Modifier) {
     // Eyebrow label on top, big number below — the design's vertical order.
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
             text = stat.label.uppercase(),
             style = FjTheme.typography.eyebrow.copy(fontSize = 10.5.sp, letterSpacing = 0.1.em),
@@ -82,5 +85,37 @@ private fun HeroStat(stat: WorkoutDetailsContract.HeroStat, modifier: Modifier =
                 )
             }
         }
+    }
+}
+
+@Preview(name = "WorkoutDetailsHero Light")
+@Composable
+private fun WorkoutDetailsHeroPreviewLight() {
+    WorkoutDetailsPreviewSurface(darkTheme = false) {
+        WorkoutDetailsHero(hero = WorkoutDetailsPreviewData.hero)
+    }
+}
+
+@Preview(name = "WorkoutDetailsHero Dark")
+@Composable
+private fun WorkoutDetailsHeroPreviewDark() {
+    WorkoutDetailsPreviewSurface(darkTheme = true) {
+        WorkoutDetailsHero(hero = WorkoutDetailsPreviewData.hero)
+    }
+}
+
+@Preview(name = "WorkoutDetailsHero Cardio-only Light")
+@Composable
+private fun WorkoutDetailsHeroCardioOnlyPreviewLight() {
+    WorkoutDetailsPreviewSurface(darkTheme = false) {
+        WorkoutDetailsHero(hero = WorkoutDetailsPreviewData.cardioOnlyHero)
+    }
+}
+
+@Preview(name = "WorkoutDetailsHero Cardio-only Dark")
+@Composable
+private fun WorkoutDetailsHeroCardioOnlyPreviewDark() {
+    WorkoutDetailsPreviewSurface(darkTheme = true) {
+        WorkoutDetailsHero(hero = WorkoutDetailsPreviewData.cardioOnlyHero)
     }
 }

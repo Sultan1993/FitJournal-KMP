@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -40,9 +41,11 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.history_this_week
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_workout_count
 import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
 import kz.maestrosultan.fitjournal.ui.format.NameStyle
-import kz.maestrosultan.fitjournal.ui.workout.list.WorkoutListContract
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
+import kz.maestrosultan.fitjournal.ui.workout.list.WorkoutListContract
+import kz.maestrosultan.fitjournal.ui.workout.list.WorkoutListPreviewData
+import kz.maestrosultan.fitjournal.ui.workout.list.WorkoutListPreviewSurface
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -229,3 +232,18 @@ private fun WorkoutListHeroChart(
     }
 }
 
+@Preview(name = "WorkoutListHero Light")
+@Composable
+private fun WorkoutListHeroPreviewLight() {
+    WorkoutListPreviewSurface(darkTheme = false) {
+        WorkoutListHero(hero = WorkoutListPreviewData.hero, measurementSystem = MeasurementSystem.KG_KM)
+    }
+}
+
+@Preview(name = "WorkoutListHero Dark")
+@Composable
+private fun WorkoutListHeroPreviewDark() {
+    WorkoutListPreviewSurface(darkTheme = true) {
+        WorkoutListHero(hero = WorkoutListPreviewData.hero, measurementSystem = MeasurementSystem.KG_KM)
+    }
+}

@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,6 +38,8 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_add_note
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_note
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
+import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsPreviewData
+import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsPreviewSurface
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -93,8 +96,8 @@ private fun EmptyNoteButton(onClick: () -> Unit, modifier: Modifier = Modifier) 
         modifier = modifier
             .fillMaxWidth()
             .height(SummaryBlockHeight)
-            .clip(RoundedCornerShape(14.dp))
-            .drawBehind { drawDashedBorder(border, radius = 14.dp) }
+            .clip(RoundedCornerShape(16.dp))
+            .drawBehind { drawDashedBorder(border, radius = 16.dp) }
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -126,3 +129,35 @@ private fun DrawScope.drawDashedBorder(color: Color, radius: Dp) {
 }
 
 // PencilGlyph extracted to Glyphs.kt.
+
+@Preview(name = "SessionNoteCard Filled Light")
+@Composable
+private fun SessionNoteCardFilledPreviewLight() {
+    WorkoutDetailsPreviewSurface(darkTheme = false) {
+        SessionNoteCard(text = WorkoutDetailsPreviewData.note.text, onClick = {})
+    }
+}
+
+@Preview(name = "SessionNoteCard Filled Dark")
+@Composable
+private fun SessionNoteCardFilledPreviewDark() {
+    WorkoutDetailsPreviewSurface(darkTheme = true) {
+        SessionNoteCard(text = WorkoutDetailsPreviewData.note.text, onClick = {})
+    }
+}
+
+@Preview(name = "SessionNoteCard Empty Light")
+@Composable
+private fun SessionNoteCardEmptyPreviewLight() {
+    WorkoutDetailsPreviewSurface(darkTheme = false) {
+        SessionNoteCard(text = null, onClick = {})
+    }
+}
+
+@Preview(name = "SessionNoteCard Empty Dark")
+@Composable
+private fun SessionNoteCardEmptyPreviewDark() {
+    WorkoutDetailsPreviewSurface(darkTheme = true) {
+        SessionNoteCard(text = null, onClick = {})
+    }
+}

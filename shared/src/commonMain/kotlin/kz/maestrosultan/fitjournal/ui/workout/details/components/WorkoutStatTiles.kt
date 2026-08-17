@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -21,6 +22,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_ti
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_tile_exercises
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_tile_sets
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
+import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsPreviewSurface
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -51,7 +53,7 @@ fun WorkoutStatTiles(
         exercisesLabel to exerciseCount.toString(),
         setsLabel to setCount.toString(),
     )
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         tiles.forEach { (label, value) ->
             StatTile(eyebrow = label, value = value, modifier = Modifier.weight(1f))
         }
@@ -65,12 +67,12 @@ private fun StatTile(eyebrow: String, value: String, modifier: Modifier = Modifi
             .defaultMinSize(minHeight = SummaryBlockHeight)
             .clip(RoundedCornerShape(16.dp))
             .background(FjTheme.colors.card)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.Center,
     ) {
         Text(
             text = eyebrow,
-            style = FjTheme.typography.eyebrow.copy(fontSize = 10.sp, letterSpacing = 0.08.em),
+            style = FjTheme.typography.eyebrow.copy(fontSize = 10.sp),
             color = FjTheme.colors.textTertiary,
         )
         Spacer(Modifier.height(4.dp))
@@ -79,5 +81,37 @@ private fun StatTile(eyebrow: String, value: String, modifier: Modifier = Modifi
             style = FjTheme.typography.cardTitle.copy(fontSize = 19.sp),
             color = FjTheme.colors.textPrimary,
         )
+    }
+}
+
+@Preview(name = "WorkoutStatTiles Light")
+@Composable
+private fun WorkoutStatTilesPreviewLight() {
+    WorkoutDetailsPreviewSurface(darkTheme = false) {
+        WorkoutStatTiles(durationText = "1h 04m", exerciseCount = 5, setCount = 18)
+    }
+}
+
+@Preview(name = "WorkoutStatTiles Dark")
+@Composable
+private fun WorkoutStatTilesPreviewDark() {
+    WorkoutDetailsPreviewSurface(darkTheme = true) {
+        WorkoutStatTiles(durationText = "1h 04m", exerciseCount = 5, setCount = 18)
+    }
+}
+
+@Preview(name = "WorkoutStatTiles Sessionless Light")
+@Composable
+private fun WorkoutStatTilesSessionlessPreviewLight() {
+    WorkoutDetailsPreviewSurface(darkTheme = false) {
+        WorkoutStatTiles(durationText = null, exerciseCount = 5, setCount = 18)
+    }
+}
+
+@Preview(name = "WorkoutStatTiles Sessionless Dark")
+@Composable
+private fun WorkoutStatTilesSessionlessPreviewDark() {
+    WorkoutDetailsPreviewSurface(darkTheme = true) {
+        WorkoutStatTiles(durationText = null, exerciseCount = 5, setCount = 18)
     }
 }

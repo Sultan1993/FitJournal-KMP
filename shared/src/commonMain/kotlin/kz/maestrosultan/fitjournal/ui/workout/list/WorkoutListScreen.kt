@@ -33,15 +33,20 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import kz.maestrosultan.fitjournal.ui.workout.list.components.WorkoutListDayRow
-import kz.maestrosultan.fitjournal.ui.workout.list.components.WorkoutListEmptyState
-import kz.maestrosultan.fitjournal.ui.workout.list.components.WorkoutListHero
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kz.maestrosultan.fitjournal.ui.journal.JournalPickerRow
-import kz.maestrosultan.fitjournal.ui.workout.list.components.WorkoutListWeekHeader
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutCalendar
+import kz.maestrosultan.fitjournal.ui.workout.list.components.WorkoutListDayRow
+import kz.maestrosultan.fitjournal.ui.workout.list.components.WorkoutListEmptyState
+import kz.maestrosultan.fitjournal.ui.workout.list.components.WorkoutListHero
+import kz.maestrosultan.fitjournal.ui.workout.list.components.WorkoutListWeekHeader
 
 /**
  * Calendar overlay (in the layout flow, same animation as WorkoutScreen), then
@@ -264,4 +269,43 @@ private fun WorkoutListList(
             list(Modifier.fillMaxSize())
         }
     }
+}
+
+// android.content.res.Configuration.UI_MODE_NIGHT_{NO,YES} bit values. WorkoutListScreen owns
+// its own FitJournalTheme(darkTheme = isSystemInDarkTheme()) with no darkTheme param, so forcing
+// light/dark here must go through the preview renderer's uiMode, not by re-wrapping the theme.
+private const val UI_MODE_NIGHT_NO = 0x10
+private const val UI_MODE_NIGHT_YES = 0x20
+
+/** Fixed [WorkoutListContract.ViewState] — no real ViewModel wiring needed for a preview. */
+private class PreviewWorkoutListViewModel(
+    state: WorkoutListContract.ViewState,
+) : WorkoutListContract.ViewModel {
+    override val viewState: StateFlow<WorkoutListContract.ViewState> = MutableStateFlow(state)
+    override val viewEffect: Flow<WorkoutListContract.ViewEffect> = emptyFlow()
+    override fun dispatch(action: WorkoutListContract.ViewAction) = Unit
+}
+
+@Preview(name = "WorkoutListScreen Loaded Light", uiMode = UI_MODE_NIGHT_NO)
+@Composable
+private fun WorkoutListScreenLoadedLightPreview() {
+    WorkoutListScreen(viewModel = PreviewWorkoutListViewModel(WorkoutListPreviewData.loadedViewState))
+}
+
+@Preview(name = "WorkoutListScreen Loaded Dark", uiMode = UI_MODE_NIGHT_YES)
+@Composable
+private fun WorkoutListScreenLoadedDarkPreview() {
+    WorkoutListScreen(viewModel = PreviewWorkoutListViewModel(WorkoutListPreviewData.loadedViewState))
+}
+
+@Preview(name = "WorkoutListScreen Empty Light", uiMode = UI_MODE_NIGHT_NO)
+@Composable
+private fun WorkoutListScreenEmptyLightPreview() {
+    WorkoutListScreen(viewModel = PreviewWorkoutListViewModel(WorkoutListPreviewData.emptyViewState))
+}
+
+@Preview(name = "WorkoutListScreen Empty Dark", uiMode = UI_MODE_NIGHT_YES)
+@Composable
+private fun WorkoutListScreenEmptyDarkPreview() {
+    WorkoutListScreen(viewModel = PreviewWorkoutListViewModel(WorkoutListPreviewData.emptyViewState))
 }

@@ -1,9 +1,9 @@
 package kz.maestrosultan.fitjournal.ui.workout.list.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,21 +17,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.abs
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_last_week
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_this_week
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_workout_count
 import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
-import kz.maestrosultan.fitjournal.ui.workout.list.WorkoutListContract
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.theme.composeColor
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
+import kz.maestrosultan.fitjournal.ui.workout.list.WorkoutListContract
+import kz.maestrosultan.fitjournal.ui.workout.list.WorkoutListPreviewData
+import kz.maestrosultan.fitjournal.ui.workout.list.WorkoutListPreviewSurface
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
-import kotlin.math.abs
 
 /** Title/summary/delta pill on ONE baseline row, then the muscle-split bar. */
 @Composable
@@ -122,4 +125,20 @@ internal fun WorkoutListDeltaPill(
             .background(tone.copy(alpha = 0.16f))
             .padding(horizontal = 8.dp, vertical = 3.dp),
     )
+}
+
+@Preview(name = "WorkoutListWeekHeader Light")
+@Composable
+private fun WorkoutListWeekHeaderPreviewLight() {
+    WorkoutListPreviewSurface(darkTheme = false) {
+        WorkoutListWeekHeader(section = WorkoutListPreviewData.thisWeek, measurementSystem = MeasurementSystem.KG_KM)
+    }
+}
+
+@Preview(name = "WorkoutListWeekHeader Dark")
+@Composable
+private fun WorkoutListWeekHeaderPreviewDark() {
+    WorkoutListPreviewSurface(darkTheme = true) {
+        WorkoutListWeekHeader(section = WorkoutListPreviewData.thisWeek, measurementSystem = MeasurementSystem.KG_KM)
+    }
 }
