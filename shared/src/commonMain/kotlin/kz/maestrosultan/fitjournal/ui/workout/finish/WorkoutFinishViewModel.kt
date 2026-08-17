@@ -1,4 +1,4 @@
-package kz.maestrosultan.fitjournal.ui.workout.main.confirm
+package kz.maestrosultan.fitjournal.ui.workout.finish
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -32,8 +32,8 @@ import kz.maestrosultan.fitjournal.ui.workout.WorkoutUserContext
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
 
 /**
- * Shared presentation for the end-workout confirm sheet — constructed at
- * Finish-tap time while the session is still running.
+ * Shared presentation for the workout-finish sheet — constructed at Finish-tap
+ * time while the session is still running.
  *
  * Loads the summary once ([BuildSessionSummaryUseCase] with `includeBest =
  * false`: the sheet has no PR card, so the per-exercise history reads would be
@@ -42,17 +42,16 @@ import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
  * session exactly once, emitting a typed [FinishResult] on [finished] that the
  * host collects to run the post-workout flow.
  *
- * Failure contract: a summary-read failure degrades to the
- * [FinishConfirmContract.ViewState.isFallback] shell (never blocks the sheet), and an
- * end-workout failure is logged and treated as "already ended" — the finish
- * event fires regardless, because keeping the user stuck on a confirm sheet is
- * worse than any of these errors.
+ * Failure contract: a summary-read failure degrades to zero counts (never
+ * blocks the sheet), and an end-workout failure is logged and treated as
+ * "already ended" — the finish event fires regardless, because keeping the user
+ * stuck on a confirm sheet is worse than any of these errors.
  *
  * A stale tap (no running session by the time the sheet loads) shows the same
- * fallback shell. Confirm is inert in this state; the host's ever-present
- * native dismissal (Keep training / swipe) is the escape — spec §7.1.
+ * zeroed card. Confirm is inert in this state; the host's ever-present native
+ * dismissal (Keep training / swipe) is the escape — spec §7.1.
  */
-class FinishConfirmViewModel(
+class WorkoutFinishViewModel(
     private val buildSummary: BuildSessionSummaryUseCase,
     private val endWorkout: EndWorkoutUseCase,
     private val sessionRepository: WorkoutSessionRepository,
@@ -63,16 +62,16 @@ class FinishConfirmViewModel(
     // currently formats only zone-free values (LocalDate eyebrow, elapsed
     // duration), so nothing reads it yet.
     private val timeZone: TimeZone = TimeZone.currentSystemDefault(),
-) : ViewModel(), FinishConfirmContract.ViewModel {
+) : ViewModel(), WorkoutFinishContract.ViewModel {
 
-    private val _uiState = MutableStateFlow(FinishConfirmContract.ViewState.initial())
-    override val viewState: StateFlow<FinishConfirmContract.ViewState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(WorkoutFinishContract.ViewState.initial())
+    override val viewState: StateFlow<WorkoutFinishContract.ViewState> = _uiState.asStateFlow()
 
     // One host consumer handling the event exactly once — a buffered Channel,
     // not a SharedFlow, so a finish emitted before the collector attaches is
     // delivered rather than dropped.
-    private val _effects = Channel<FinishConfirmContract.ViewEffect>(Channel.BUFFERED)
-    override val viewEffect: Flow<FinishConfirmContract.ViewEffect> = _effects.receiveAsFlow()
+    private val _effects = Channel<WorkoutFinishContract.ViewEffect>(Channel.BUFFERED)
+    override val viewEffect: Flow<WorkoutFinishContract.ViewEffect> = _effects.receiveAsFlow()
 
     // Resolved once in init (repositories are id-parameterised — see
     // WorkoutUserContext); session then carries the full identity.
@@ -88,17 +87,17 @@ class FinishConfirmViewModel(
             val running = sessionRepository.getRunningSession(uid)
             if (running == null) {
                 // Stale tap: the session vanished between tap and sheet. Show the
-                // fallback shell; onConfirmFinish stays a no-op (nothing to end,
+                // zeroed card; onConfirmFinish stays a no-op (nothing to end,
                 // nothing to hand to the post-workout flow).
-                println("[FJ_FINISH_CONFIRM] no running session at confirm time — fallback shell")
-                _uiState.update { it.copy(loading = false, isFallback = true) }
+                println("[FJ_WORKOUT_FINISH] no running session at confirm time — zeroed card")
+                _uiState.update { it.copy(loading = false) }
                 return@launch
             }
             session = running
             summary = runCatching { buildSummary(running, includeBest = false) }
                 .onFailure { failure ->
                     if (failure is CancellationException) throw failure
-                    println("[FJ_FINISH_CONFIRM] summary read failed (${failure.message}) — empty-state fallback")
+                    println("[FJ_WORKOUT_FINISH] summary read failed (${failure.message}) — empty-state fallback")
                 }
                 .getOrNull()
             _uiState.value = stateOf(running, summary)
@@ -108,10 +107,10 @@ class FinishConfirmViewModel(
 
     // ─── MVI entry point ────────────────────────────────────────────────
 
-    override fun dispatch(action: FinishConfirmContract.ViewAction) {
+    override fun dispatch(action: WorkoutFinishContract.ViewAction) {
         when (action) {
-            is FinishConfirmContract.ViewAction.VisibilityChanged -> onVisibilityChanged(action.visible)
-            FinishConfirmContract.ViewAction.ConfirmFinish -> onConfirmFinish()
+            is WorkoutFinishContract.ViewAction.VisibilityChanged -> onVisibilityChanged(action.visible)
+            WorkoutFinishContract.ViewAction.ConfirmFinish -> onConfirmFinish()
         }
     }
 
@@ -151,13 +150,13 @@ class FinishConfirmViewModel(
                 // The use case returns null (never throws) on the ordinary
                 // nothing-running path, so reaching here means the write really
                 // failed. Release the latch and leave the session alone.
-                println("[FJ_FINISH_CONFIRM] endWorkout failed (${failure.message}) — session still running, retry available")
+                println("[FJ_WORKOUT_FINISH] endWorkout failed (${failure.message}) — session still running, retry available")
                 isEnding = false
                 return@launch
             }
             stopTicking() // the session is over; freeze the last rendered duration
             _effects.send(
-                FinishConfirmContract.ViewEffect.Finished(
+                WorkoutFinishContract.ViewEffect.Finished(
                     FinishResult(
                         context = PostWorkoutContext(
                             userId = current.userId,
@@ -205,27 +204,18 @@ class FinishConfirmViewModel(
         _uiState.update { if (it.durationText == text) it else it.copy(durationText = text) }
     }
 
-    private fun stateOf(session: WorkoutSession, summary: SessionSummary?): FinishConfirmContract.ViewState {
+    private fun stateOf(session: WorkoutSession, summary: SessionSummary?): WorkoutFinishContract.ViewState {
         // Single source for grouping AND unit choice, split for the sheet's separate value/unit
         // runs. substringBeforeLast/AfterLast still splits correctly under space-grouping locales.
         val tonnage = WorkoutValueFormatter.groupedTonnage(summary?.tonnageKg ?: 0.0, units)
-        return FinishConfirmContract.ViewState(
+        return WorkoutFinishContract.ViewState(
             loading = false,
-            isFallback = summary == null,
             dateText = LocaleFormatters.formatFullDate(session.date),
             tonnageValue = tonnage.substringBeforeLast(' '),
             tonnageUnit = tonnage.substringAfterLast(' '),
             durationText = formatDuration(session.durationSec(clock.now())),
             setsCount = summary?.loggedSets ?: 0,
             exercisesCount = summary?.exerciseCount ?: 0,
-            checklist = summary?.exercises.orEmpty().map { line ->
-                FinishChecklistRow(
-                    name = line.name,
-                    loggedSets = line.loggedSets,
-                    totalSets = line.totalSets,
-                    allLogged = line.totalSets > 0 && line.loggedSets == line.totalSets,
-                )
-            },
         )
     }
 

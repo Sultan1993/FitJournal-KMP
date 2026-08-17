@@ -1,6 +1,5 @@
-package kz.maestrosultan.fitjournal.ui.workout.main.confirm
+package kz.maestrosultan.fitjournal.ui.workout.finish
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -8,15 +7,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -25,11 +20,8 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -38,32 +30,29 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_confir
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_confirm_finish
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_confirm_keep_training
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_confirm_title
-import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_partial_format
-import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_sets
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_stat_duration
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_stat_exercises
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_stat_sets
 import kz.maestrosultan.fitjournal.ui.common.FjPrimaryButton
+import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
-import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
-/** Text color of the partial "L of T" pill on the `accent` background (design W4a). */
-private val PartialPillTextColor = Color(0xFF8A7326)
-
-/** Fixed height of the checklist's inner-scroll window — the sheet never grows. */
-private val ChecklistWindowHeight = 196.dp
-
 /**
- * Content of the end-workout confirm sheet (design frame W4a). Hosted by the
- * native sheet containers on both platforms — this composable draws no sheet
- * chrome beyond the grabber and paints no background (the host's sheet surface
- * shows through; the checklist fade blends to [FjTheme.colors.sheet]).
+ * Content of the workout-finish sheet (design frame W4). Hosted by the native
+ * sheet containers on both platforms — this composable draws no sheet chrome
+ * beyond the grabber and paints no background (the host's sheet surface shows
+ * through).
+ *
+ * W4 is the session summary and nothing else: volume, duration, sets,
+ * exercises. There is no per-exercise checklist and no separate failure shell —
+ * a summary that failed to load simply renders as zeros, and the record itself
+ * (the WorkoutDetails page this sheet opens) is the real confirmation.
  *
  * Pure state-in / events-out: every string and number arrives pre-formatted in
- * [FinishConfirmContract.ViewState]; nothing is re-derived here. While [FinishConfirmContract.ViewState.loading]
- * the data sections (session card, checklist) are simply not emitted; the
- * fallback shell ([FinishConfirmContract.ViewState.isFallback]) renders without the checklist.
+ * [WorkoutFinishContract.ViewState]; nothing is re-derived here. While
+ * [WorkoutFinishContract.ViewState.loading] the session card is simply not
+ * emitted.
  *
  * Type comes off [FjTheme.typography]; where the design pins a value no role
  * carries, the nearest role is `.copy()`-overridden rather than hand-built.
@@ -72,8 +61,8 @@ private val ChecklistWindowHeight = 196.dp
  * on dispose — so the ViewModel can gate its per-second duration tick.
  */
 @Composable
-fun FinishConfirmSheetContent(
-    state: FinishConfirmContract.ViewState,
+fun WorkoutFinishSheet(
+    state: WorkoutFinishContract.ViewState,
     onConfirmFinish: () -> Unit,
     onKeepTraining: () -> Unit,
     onVisibilityChanged: (Boolean) -> Unit,
@@ -106,10 +95,6 @@ fun FinishConfirmSheetContent(
 
         if (!state.loading) {
             SessionCard(state, Modifier.fillMaxWidth())
-            if (!state.isFallback) {
-                Spacer(Modifier.height(14.dp))
-                ChecklistWindow(state.checklist, Modifier.fillMaxWidth())
-            }
         }
 
         Spacer(Modifier.height(18.dp))
@@ -118,6 +103,7 @@ fun FinishConfirmSheetContent(
             onClick = onConfirmFinish,
             modifier = Modifier.fillMaxWidth(),
         )
+        Spacer(Modifier.height(4.dp))
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -148,7 +134,7 @@ private fun Grabber(modifier: Modifier = Modifier) {
 
 /** brandSubtle summary card: eyebrow, tonnage + unit, duration/sets/exercises stats. */
 @Composable
-private fun SessionCard(state: FinishConfirmContract.ViewState, modifier: Modifier = Modifier) {
+private fun SessionCard(state: WorkoutFinishContract.ViewState, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(22.dp))
@@ -160,7 +146,7 @@ private fun SessionCard(state: FinishConfirmContract.ViewState, modifier: Modifi
             style = FjTheme.typography.eyebrow,
             color = FjTheme.colors.brand,
         )
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
             Text(
                 text = state.tonnageValue,
@@ -206,90 +192,55 @@ private fun SessionStat(value: String, label: String, modifier: Modifier = Modif
 }
 
 /**
- * Fixed-height inner-scroll checklist window with a bottom fade to the sheet
- * background — the sheet itself never grows with the exercise count.
+ * `@Preview`s for the W4 finish sheet. The surface is [FjTheme.colors.sheet],
+ * not `background` — the composable paints nothing of its own and on both
+ * platforms the host's sheet container provides that fill.
  */
+
+@Preview(name = "WorkoutFinishSheet Light", widthDp = 402)
 @Composable
-private fun ChecklistWindow(rows: List<FinishChecklistRow>, modifier: Modifier = Modifier) {
-    val fadeColor = FjTheme.colors.sheet
-    Box(modifier = modifier.height(ChecklistWindowHeight)) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-        ) {
-            rows.forEach { row ->
-                ChecklistRow(row, Modifier.fillMaxWidth())
-            }
-        }
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .height(44.dp)
-                .background(
-                    Brush.verticalGradient(listOf(fadeColor.copy(alpha = 0f), fadeColor)),
-                ),
-        )
+private fun WorkoutFinishSheetPreviewLight() {
+    WorkoutFinishPreviewSurface(darkTheme = false) {
+        WorkoutFinishSheet(loadedState, {}, {}, {})
     }
 }
 
+@Preview(name = "WorkoutFinishSheet Dark", widthDp = 402)
 @Composable
-private fun ChecklistRow(row: FinishChecklistRow, modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier.padding(vertical = 7.dp, horizontal = 2.dp),
-        horizontalArrangement = Arrangement.spacedBy(11.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        ChecklistDot(filled = row.allLogged)
-        Text(
-            text = row.name,
-            style = FjTheme.typography.bodyStrong,
-            color = FjTheme.colors.textPrimary,
-            modifier = Modifier.weight(1f),
-        )
-        if (row.allLogged) {
-            Text(
-                text = pluralStringResource(Res.plurals.postworkout_sets, row.totalSets, row.totalSets),
-                style = FjTheme.typography.caption.copy(fontWeight = FontWeight.Medium),
-                color = FjTheme.colors.textTertiary,
-            )
-        } else {
-            Text(
-                text = stringResource(Res.string.postworkout_partial_format, row.loggedSets, row.totalSets),
-                style = FjTheme.typography.label.copy(
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                ),
-                color = PartialPillTextColor,
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(FjTheme.colors.accent)
-                    .padding(vertical = 3.dp, horizontal = 9.dp),
-            )
-        }
+private fun WorkoutFinishSheetPreviewDark() {
+    WorkoutFinishPreviewSurface(darkTheme = true) {
+        WorkoutFinishSheet(loadedState, {}, {}, {})
     }
 }
 
-/** 8dp leading dot: filled brand circle when done, 1.5dp dashed hollow otherwise. */
+/** The frame before the summary read lands — title and actions, no session card. */
+@Preview(name = "WorkoutFinishSheet Loading", widthDp = 402)
 @Composable
-private fun ChecklistDot(filled: Boolean, modifier: Modifier = Modifier) {
-    val color = if (filled) FjTheme.colors.brand else FjTheme.colors.border
-    Canvas(modifier = modifier.size(8.dp)) {
-        if (filled) {
-            drawCircle(color = color)
-        } else {
-            val stroke = 1.5.dp.toPx()
-            drawCircle(
-                color = color,
-                radius = (size.minDimension - stroke) / 2f,
-                style = Stroke(
-                    width = stroke,
-                    pathEffect = PathEffect.dashPathEffect(
-                        floatArrayOf(2.5.dp.toPx(), 2.dp.toPx()),
-                    ),
-                ),
-            )
+private fun WorkoutFinishSheetPreviewLoading() {
+    WorkoutFinishPreviewSurface(darkTheme = false) {
+        WorkoutFinishSheet(WorkoutFinishContract.ViewState.initial(), {}, {}, {})
+    }
+}
+
+/** Deterministic sample state — no `Clock.System`, no random; the real contract type. */
+private val loadedState = WorkoutFinishContract.ViewState(
+    loading = false,
+    dateText = "Wednesday, 22 July",
+    tonnageValue = "14,850",
+    tonnageUnit = "kg",
+    durationText = "1:04",
+    setsCount = 22,
+    exercisesCount = 6,
+)
+
+@Composable
+private fun WorkoutFinishPreviewSurface(
+    darkTheme: Boolean,
+    content: @Composable () -> Unit,
+) {
+    FitJournalTheme(darkTheme = darkTheme) {
+        Box(modifier = Modifier.fillMaxWidth().background(FjTheme.colors.sheet)) {
+            content()
         }
     }
 }

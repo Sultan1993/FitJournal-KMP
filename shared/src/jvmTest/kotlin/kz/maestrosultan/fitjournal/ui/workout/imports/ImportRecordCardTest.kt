@@ -52,7 +52,7 @@ class ImportRecordCardTest {
 
         // The card-level clickable (ImportRecordCard's toggle) sets
         // mergeDescendants = true, so nested tags only surface via the
-        // unmerged tree — see FinishConfirmSheetContentTest's sibling
+        // unmerged tree — see WorkoutFinishSheetTest's sibling
         // WorkoutSuccessScreenTest for the same house pattern.
         onAllNodesWithTag("selection_circle", useUnmergedTree = true).assertCountEquals(2)
         onAllNodesWithTag("add_set_row", useUnmergedTree = true).assertCountEquals(0)
