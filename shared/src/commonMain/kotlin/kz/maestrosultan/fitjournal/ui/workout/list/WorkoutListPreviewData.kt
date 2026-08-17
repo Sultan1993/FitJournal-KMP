@@ -1,4 +1,4 @@
-package kz.maestrosultan.fitjournal.ui.workout.list.preview
+package kz.maestrosultan.fitjournal.ui.workout.list
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -13,7 +13,6 @@ import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
-import kz.maestrosultan.fitjournal.ui.workout.list.WorkoutListContract
 
 /**
  * Deterministic sample data for the WorkoutList `@Preview` functions — no `Clock.System`,

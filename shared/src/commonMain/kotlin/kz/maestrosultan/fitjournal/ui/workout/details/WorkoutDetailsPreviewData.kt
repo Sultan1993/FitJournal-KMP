@@ -1,4 +1,4 @@
-package kz.maestrosultan.fitjournal.ui.workout.details.preview
+package kz.maestrosultan.fitjournal.ui.workout.details
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -14,7 +14,6 @@ import kz.maestrosultan.fitjournal.domain.exercise.Exercise
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
-import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsContract
 
 // SessionNoteEditorSheet has no preview on purpose: it is a ModalBottomSheet, which
 // renders as an empty frame in the static preview renderer.
@@ -51,11 +50,11 @@ internal object WorkoutDetailsPreviewData {
     val newBest = WorkoutDetailsContract.NewBestUi(text = "Seated Dumbbell Press · 42.5 kg × 8")
 
     val note = WorkoutDetailsContract.NoteUi(
-        sessionUuid = "session-1",
+        workoutNumber = 1,
         text = "Shoulders felt strong today. Went up 2.5 kg on the press and still hit all 8 reps clean.",
     )
 
-    val emptyNote = WorkoutDetailsContract.NoteUi(sessionUuid = "session-1", text = null)
+    val emptyNote = WorkoutDetailsContract.NoteUi(workoutNumber = 1, text = null)
 
     val workload = listOf(
         WorkoutDetailsContract.WorkloadRow(CategoryType.SHOULDERS, percentage = 42.0, amountText = "2 780 kg"),
@@ -205,12 +204,13 @@ internal object WorkoutDetailsPreviewData {
         canShare = true,
     )
 
-    /** No session recorded: no duration tile, no NOTE card, nothing to share. */
+    /** No session recorded: no duration tile, no NEW BEST — but a records-only
+     *  workout still shows the add-note placeholder and can be shared. */
     val sessionlessWorkout = workout.copy(
         durationText = null,
         newBest = null,
-        note = null,
-        canShare = false,
+        note = emptyNote,
+        canShare = true,
     )
 
     val loadedViewState = WorkoutDetailsContract.ViewState(
@@ -225,6 +225,7 @@ internal object WorkoutDetailsPreviewData {
         ),
         noteEditor = null,
         confirmingDelete = false,
+        showActions = true,
     )
 
     val multiWorkoutViewState = WorkoutDetailsContract.ViewState(
@@ -253,6 +254,7 @@ internal object WorkoutDetailsPreviewData {
         ),
         noteEditor = null,
         confirmingDelete = false,
+        showActions = true,
     )
 }
 

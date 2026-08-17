@@ -26,11 +26,11 @@ kotlin {
         optIn.add("kotlin.time.ExperimentalTime")
     }
 
-    // KMP Android library target (AGP 9.3 renamed `androidLibrary` → `android`).
     android {
         namespace = "kz.maestrosultan.fitjournal.multiplatform"
         compileSdk = libs.versions.compileSDK.get().toInt()
         minSdk = libs.versions.minSDK.get().toInt()
+        androidResources.enable = true
     }
 
     // Test-only JVM target. Lets the pure-commonMain repositories be unit-tested
@@ -84,6 +84,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtime.compose)
             implementation(libs.calendar.compose)
             implementation(libs.reorderable)
+            implementation(libs.compose.ui.tooling.preview)
         }
 
         commonTest.dependencies {
@@ -96,16 +97,11 @@ kotlin {
         // Android
         androidMain.dependencies {
             implementation(libs.sqldelight.android)
-            // @Preview annotation + Android Studio's preview renderer, androidMain-only:
-            // compose.components.uiToolingPreview in commonMain breaks
-            // compileCommonMainKotlinMetadata (no compatible variant for this module's
-            // bare jvm() test target), so the preview files live in androidMain instead
-            // (see ui/workoutlist/preview/). com.android.kotlin.multiplatform.library
-            // (this module's android target) also has no debug/release variants — only
-            // one "androidMain" — so there's no debugImplementation config to scope
-            // ui-tooling to; it ships in the single variant like every other dependency
-            // here.
-            implementation(libs.compose.ui.tooling.preview)
+            // Android Studio's preview RENDERER (the @Preview annotation itself is
+            // in commonMain). com.android.kotlin.multiplatform.library (this module's
+            // android target) has no debug/release variants — only one "androidMain" —
+            // so there is no debugImplementation config to scope this to; it ships in
+            // the single variant like every other dependency here.
             implementation(libs.compose.ui.tooling)
         }
 

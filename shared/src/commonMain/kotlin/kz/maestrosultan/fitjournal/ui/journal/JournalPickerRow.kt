@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
@@ -30,6 +31,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_arrow_do
 import kz.maestrosultan.fitjournal.shared.generated.resources.ic_onboarding_image_4
 import kz.maestrosultan.fitjournal.shared.generated.resources.journal_my_journal
 import kz.maestrosultan.fitjournal.shared.generated.resources.journal_onboarding_hint
+import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -106,6 +108,36 @@ fun JournalPickerRow(
                     )
                 }
             }
+        }
+    }
+}
+
+@Preview(name = "JournalPickerRow · Custom · Light")
+@Composable
+private fun JournalPickerRowCustomLight() {
+    FitJournalTheme(darkTheme = false) {
+        Box(Modifier.fillMaxWidth().background(FjTheme.colors.background).padding(20.dp)) {
+            JournalPickerRow(name = "Coaching · Alex", isPersonal = false, onClick = {})
+        }
+    }
+}
+
+@Preview(name = "JournalPickerRow · Personal · Dark")
+@Composable
+private fun JournalPickerRowPersonalDark() {
+    FitJournalTheme(darkTheme = true) {
+        Box(Modifier.fillMaxWidth().background(FjTheme.colors.background).padding(20.dp)) {
+            JournalPickerRow(name = "ignored", isPersonal = true, onClick = {})
+        }
+    }
+}
+
+@Preview(name = "JournalPickerRow · Onboarding · Light")
+@Composable
+private fun JournalPickerRowOnboardingLight() {
+    FitJournalTheme(darkTheme = false) {
+        Box(Modifier.fillMaxWidth().background(FjTheme.colors.background).padding(20.dp)) {
+            JournalPickerRow(name = "ignored", isPersonal = true, onClick = {}, showOnboarding = true)
         }
     }
 }
