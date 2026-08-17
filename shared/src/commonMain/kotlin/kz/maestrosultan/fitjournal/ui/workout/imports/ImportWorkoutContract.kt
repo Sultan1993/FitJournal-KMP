@@ -26,7 +26,19 @@ sealed interface ImportContent {
         val pages: List<ImportPage>,
         val currentPageIndex: Int,
         val selectedRecordIds: Set<String>,
-    ) : ImportContent
+    ) : ImportContent {
+        /** The page being looked at — the only one Import copies from. */
+        val currentPage: ImportPage? get() = pages.getOrNull(currentPageIndex)
+
+        /**
+         * What Import will copy: the visible page's still-selected records, in page
+         * order (already workoutNumber-then-position). Selections on the other pages
+         * are kept — swiping back to one restores what was deselected there — but
+         * they are never imported.
+         */
+        val importable: List<WorkoutRecord>
+            get() = currentPage?.records?.filter { it.id in selectedRecordIds } ?: emptyList()
+    }
 }
 
 /**
@@ -59,7 +71,9 @@ object ImportWorkoutContract {
     ) {
         val canImport: Boolean get() {
             val loaded = content as? ImportContent.Loaded ?: return false
-            return loaded.selectedRecordIds.isNotEmpty() && !importInProgress
+            // Page-scoped, like the import itself — deselecting everything on the
+            // visible page disables the button even if another page still has ticks.
+            return loaded.importable.isNotEmpty() && !importInProgress
         }
 
         companion object {

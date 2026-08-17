@@ -75,13 +75,6 @@ fun ImportWorkoutScreen(
     }
 }
 
-/**
- * The fade band at the top of the record list — 40dp, matching WorkoutList and
- * WorkoutDetails. Doubles as the list's top content padding so nothing is dimmed
- * at rest.
- */
-private val TOP_FADE = 40.dp
-
 @Composable
 private fun ImportWorkoutBody(
     state: ImportWorkoutContract.ViewState,
@@ -192,10 +185,9 @@ private fun ImportPager(
             val bottomInset = WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom).asPaddingValues().calculateBottomPadding()
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                // Top matches the fade band exactly, so at rest the first row sits
-                // where the fade ends (nothing dimmed); bottom clears the floating
+                // Top clears the pinned page dots + fade; bottom clears the floating
                 // Add button + its inset.
-                contentPadding = PaddingValues(top = TOP_FADE, bottom = bottomInset + 86.dp),
+                contentPadding = PaddingValues(top = 24.dp, bottom = bottomInset + 86.dp),
             ) {
                 item {
                     WorkoutMuscleHeader(page.records)
@@ -213,12 +205,10 @@ private fun ImportPager(
             }
         }
 
-        // Anchored to the top of the content area — i.e. directly below the calendar
-        // slot, whether that slot is expanded or collapsed to nothing. So the fade is
-        // the same band in both states; only its position moves with the calendar.
+        // List scrolls out under the page dots (native parity, matches WorkoutScreen).
         TopFadeScrim(
             color = FjTheme.colors.background,
-            height = TOP_FADE,
+            height = 24.dp,
             modifier = Modifier.align(Alignment.TopCenter),
         )
 
@@ -227,7 +217,7 @@ private fun ImportPager(
                 count = pages.size,
                 currentPage = pagerState.currentPage,
                 onDotClick = { dispatch(ImportWorkoutContract.ViewAction.SelectPage(it)) },
-                modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp),
+                modifier = Modifier.align(Alignment.TopCenter),
             )
         }
     }

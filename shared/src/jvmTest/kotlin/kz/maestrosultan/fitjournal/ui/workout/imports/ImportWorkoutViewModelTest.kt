@@ -74,6 +74,57 @@ class ImportWorkoutViewModelTest {
         },
     )
 
+    /**
+     * Import copies the page on screen, not the whole source day: a 2-workout source
+     * day imports one workout's records, and swiping picks which one.
+     */
+    @Test
+    fun importCopiesOnlyTheVisiblePage(): Unit = runBlocking {
+        val first = seedExercise()
+        val second = seedExercise()
+        val src = LocalDate(2026, 5, 10)
+        val dest = LocalDate(2026, 5, 11)
+        repo.addExercisesToDate(user, journal, src, 1, listOf(first))
+        repo.addExercisesToDate(user, journal, src, 2, listOf(second))
+        val model = vm(dest, 1)
+
+        // The VM opens on the (empty) destination day; Empty only lands once the
+        // session resolved, so it doubles as "ready for a source-date switch".
+        withTimeout(5000) { model.viewState.first { it.content is ImportContent.Empty } }
+        model.dispatch(ImportWorkoutContract.ViewAction.SelectSourceDate(src))
+        val loaded = withTimeout(5000) {
+            model.viewState.first { it.content is ImportContent.Loaded }.content as ImportContent.Loaded
+        }
+        assertEquals(2, loaded.pages.size, "source day has two workouts to page between")
+        model.dispatch(ImportWorkoutContract.ViewAction.SelectPage(1))
+        model.dispatch(ImportWorkoutContract.ViewAction.Import)
+        withTimeout(5000) { model.viewEffect.first() }
+
+        val landed = repo.getRecordsByDate(user, journal, dest, includeLastOccurrence = false)
+        assertEquals(1, landed.size, "only the visible page's single record is copied")
+        assertEquals(
+            second,
+            landed.single().exercises.single().exercise.uuid,
+            "page 1 was showing, so workout 2's exercise is the one copied",
+        )
+        model.dispose()
+    }
+
+    /** A two-workout source day must page — that page count is what drives the dots. */
+    @Test
+    fun sourceDayWithTwoWorkouts_yieldsTwoPages(): Unit = runBlocking {
+        val exId = seedExercise()
+        val src = LocalDate(2026, 5, 10)
+        repo.addExercisesToDate(user, journal, src, 1, listOf(exId))
+        repo.addExercisesToDate(user, journal, src, 2, listOf(exId))
+        val model = vm(src, 1)
+
+        val state = withTimeout(5000) { model.viewState.first { it.content is ImportContent.Loaded } }
+        val loaded = state.content as ImportContent.Loaded
+        assertEquals(listOf(1, 2), loaded.pages.map { it.workoutNumber })
+        model.dispose()
+    }
+
     @Test
     fun opensWithEverySourceRecordPreselected(): Unit = runBlocking {
         val exId = seedExercise()

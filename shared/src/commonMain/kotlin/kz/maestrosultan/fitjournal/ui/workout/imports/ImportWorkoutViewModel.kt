@@ -6,6 +6,7 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,7 +27,7 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
  * records grouped into a pager
  * (one page per workoutNumber), and per-record selection (all pre-selected on
  * load — whole-workout copy is one tap, matching the native pickers). Importing
- * copies the selected records onto [destinationDate]'s workout
+ * copies the VISIBLE page's selected records onto [destinationDate]'s workout
  * [destinationWorkoutNumber] (the page the + was tapped on) via the local-first
  * [RecordRepository], then emits [ImportWorkoutContract.ViewEffect.Dismiss].
  *
@@ -82,14 +83,14 @@ class ImportWorkoutViewModel(
     private fun onSelectSourceDate(date: LocalDate) {
         // Show loading SYNCHRONOUSLY so the new date's header never sits over the
         // old day's still-importable rows while the read is in flight.
-        _uiState.update {
-            it.copy(
-                sourceDate = date,
-                calendarExpanded = false,
-                content = ImportContent.Loading,
-            )
-        }
+        _uiState.update { it.copy(sourceDate = date, content = ImportContent.Loading) }
         loadSource(date)
+        // Let the tapped day's highlight land before the calendar collapses away —
+        // same 250ms beat as the workout screen (WorkoutViewModel.onDateSelected).
+        viewModelScope.launch {
+            delay(250)
+            _uiState.update { it.copy(calendarExpanded = false) }
+        }
     }
 
     private fun onToggleCalendar() {
@@ -159,11 +160,9 @@ class ImportWorkoutViewModel(
         val state = _uiState.value
         if (state.importInProgress) return
         val loaded = state.content as? ImportContent.Loaded ?: return
-        // Preserve pages order (already workoutNumber-then-position); do NOT re-sort
-        // by position alone, which would interleave a cross-workout selection.
-        val selected: List<WorkoutRecord> = loaded.pages
-            .flatMap { it.records }
-            .filter { it.id in loaded.selectedRecordIds }
+        // Only the page being looked at — a multi-workout source day copies the
+        // workout on screen, not every workout of that day.
+        val selected: List<WorkoutRecord> = loaded.importable
         if (selected.isEmpty()) return
         _uiState.update { it.copy(importInProgress = true) }
         viewModelScope.launch {

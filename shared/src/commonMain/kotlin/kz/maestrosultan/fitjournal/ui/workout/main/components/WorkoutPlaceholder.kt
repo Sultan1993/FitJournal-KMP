@@ -38,7 +38,6 @@ import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 fun AnotherWorkoutPlaceholder(
     title: String,
     subtitle: String,
-    onAddClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // FjTheme reads must happen in composition; capture the colors the draw phase needs.
@@ -56,7 +55,6 @@ fun AnotherWorkoutPlaceholder(
             modifier = Modifier
                 .size(96.dp)
                 .clip(RoundedCornerShape(24.dp))
-                .clickable(onClick = onAddClick)
                 .drawBehind {
                     val stroke = 1.5.dp.toPx()
                     val inset = stroke / 2f
