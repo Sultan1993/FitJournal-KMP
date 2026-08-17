@@ -145,7 +145,14 @@ object WorkoutContract {
         data class AddExercise(val workoutNumber: Int) : ViewAction
         data class CopyFromWorkout(val workoutNumber: Int) : ViewAction
 
-        /** Share the finished workout on [workoutNumber]'s page (the 4b card's Share button). */
+        /** The 4b session card tapped — open [workoutNumber]'s recap (Details, Summary variant). */
+        data class OpenWorkoutSummary(val workoutNumber: Int) : ViewAction
+
+        /**
+         * DORMANT — sharing is unfinished and ships disabled, so nothing dispatches
+         * this. Kept wired (like WorkoutDetails' ShareTapped) for when share returns;
+         * the 4b card's Share button that used to dispatch it is gone.
+         */
         data class ShareWorkout(val workoutNumber: Int) : ViewAction
     }
 
@@ -169,7 +176,14 @@ object WorkoutContract {
         /** Copy a previous workout's records onto [workoutNumber]'s page (records picker). */
         data class CopyFromWorkout(val workoutNumber: Int) : ViewEffect
 
-        /** Share the finished workout on [workoutNumber]'s page — the host opens the post-workout share. */
+        /**
+         * The 4b session card tapped — the host opens WorkoutDetails for
+         * [workoutNumber] in the Summary variant (that one workout, no picker, no
+         * actions), pushed so back returns to this screen.
+         */
+        data class OpenWorkoutSummary(val workoutNumber: Int) : ViewEffect
+
+        /** DORMANT with [ViewAction.ShareWorkout] — never emitted while share ships disabled. */
         data class ShareWorkout(val workoutNumber: Int) : ViewEffect
 
         /** End tapped — the host raises the shared post-workout confirm sheet. */

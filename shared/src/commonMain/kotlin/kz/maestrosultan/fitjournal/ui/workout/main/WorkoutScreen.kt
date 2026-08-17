@@ -31,7 +31,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import kz.maestrosultan.fitjournal.ui.common.PageDots
 import kz.maestrosultan.fitjournal.ui.common.TopFadeScrim
@@ -40,9 +39,6 @@ import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.main.components.WorkoutAddDial
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutCalendar
 import kz.maestrosultan.fitjournal.ui.workout.main.components.WorkoutSessionBar
-
-/** Dim behind the open add dial. Black in both themes, like every OS scrim. */
-private val DialScrim = Color.Black.copy(alpha = 0.5f)
 
 /**
  * The shared Workout body — a full-width pager over the day's workouts (+ the
@@ -121,7 +117,6 @@ private fun WorkoutBody(
                             page = state.pages[index],
                             measurementSystem = state.measurementSystem,
                             dispatch = dispatch,
-                            onRequestAdd = { addMenuWorkoutNumber = it },
                             modifier = Modifier.fillMaxSize(),
                         )
                     }
@@ -143,8 +138,8 @@ private fun WorkoutBody(
             }
         }
 
-        // Bar and dial are separate layers so the scrim can slide between them:
-        // opening the dial dims the Start/End bar along with everything else.
+        // Bar and dial are separate layers, with the dial's tap-catcher between
+        // them, so a tap on the Start/End bar closes the dial rather than firing.
         // Both are 56dp tall on the same inset + 16dp padding, so they stay aligned.
         AnimatedVisibility(
             visible = !state.calendarVisible,
@@ -162,20 +157,19 @@ private fun WorkoutBody(
                     // Above the bottom system inset — the host scaffold pads only the top.
                     .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))
                     .padding(16.dp)
-                    .padding(end = 68.dp),
+                    // 56dp add button + MW3's 16dp gap.
+                    .padding(end = 72.dp),
             )
         }
 
-        AnimatedVisibility(
-            visible = addMenuWorkoutNumber != null,
-            enter = fadeIn(tween(200)),
-            exit = fadeOut(tween(150)),
-            modifier = Modifier.fillMaxSize(),
-        ) {
+        // Invisible while the dial is open: swallows taps on the page behind it so
+        // they dismiss instead of acting. No dim — the scrim can only cover the
+        // Compose body (both nav bars are native and draw above it), and a dim that
+        // stops short of the nav bar looked worse than none at all.
+        if (addMenuWorkoutNumber != null) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(DialScrim)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,

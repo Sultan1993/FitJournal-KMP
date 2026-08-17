@@ -149,7 +149,7 @@ private fun AddButton(expanded: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .size(56.dp)
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(20.dp))
             .background(FjTheme.colors.brandSubtle)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -157,6 +157,7 @@ private fun AddButton(expanded: Boolean, onClick: () -> Unit) {
         Icon(
             painter = painterResource(Res.drawable.ic_common_plus),
             contentDescription = null,
+            // Same ink as the running bar's eyebrow beside it.
             tint = FjTheme.colors.brand,
             // graphicsLayer, not Modifier.rotate — deferred read keeps the spin off recomposition.
             modifier = Modifier.size(26.dp).graphicsLayer { rotationZ = rotation.value },

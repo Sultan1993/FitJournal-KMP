@@ -52,7 +52,6 @@ fun WorkoutPageContent(
     page: WorkoutPage,
     measurementSystem: MeasurementSystem,
     dispatch: (WorkoutContract.ViewAction) -> Unit,
-    onRequestAdd: (workoutNumber: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // The ephemeral N+1 page invites ANOTHER workout; an empty real page (first
@@ -61,14 +60,12 @@ fun WorkoutPageContent(
         AnotherWorkoutPlaceholder(
             title = stringResource(Res.string.workout_another_workout_title),
             subtitle = stringResource(Res.string.workout_another_workout_subtitle),
-            onAddClick = { onRequestAdd(page.workoutNumber) },
             modifier = modifier,
         )
         return
     }
     if (page.records.isEmpty()) {
         FirstWorkoutPlaceholder(
-            onAddClick = { onRequestAdd(page.workoutNumber) },
             modifier = modifier,
         )
         return
@@ -98,18 +95,22 @@ fun WorkoutPageContent(
         contentPadding = PaddingValues(top = 24.dp, bottom = 140.dp),
     ) {
         item {
-            // Finished + timed workout gets the 4b card (times, duration, Share); else the plain title.
+            // Finished + timed workout gets the 4b card (times, duration); else the plain title.
             val session = page.session
             if (session?.endedAt != null) {
                 WorkoutSessionCard(
                     records = orderedRecords,
                     session = session,
-                    onShare = { dispatch(WorkoutContract.ViewAction.ShareWorkout(page.workoutNumber)) },
+                    onClick = { dispatch(WorkoutContract.ViewAction.OpenWorkoutSummary(page.workoutNumber)) },
                 )
+                // 6dp — the same as a record card's own vertical padding, so the gap
+                // below the card matches the 6+6 between two records. The plain title
+                // (below) keeps its wider 16dp breathing room.
+                Spacer(Modifier.height(6.dp))
             } else {
                 WorkoutMuscleHeader(orderedRecords)
+                Spacer(Modifier.height(16.dp))
             }
-            Spacer(Modifier.height(16.dp))
         }
         items(orderedRecords, key = { it.id }) { record ->
             ReorderableItem(reorderState, key = record.id) { _ ->
