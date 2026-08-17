@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -17,12 +18,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,18 +31,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import kz.maestrosultan.fitjournal.shared.generated.resources.Res
-import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_plus
 import kz.maestrosultan.fitjournal.ui.common.PageDots
 import kz.maestrosultan.fitjournal.ui.common.TopFadeScrim
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
-import kz.maestrosultan.fitjournal.ui.workout.main.components.WorkoutAddMenu
+import kz.maestrosultan.fitjournal.ui.workout.main.components.WorkoutAddDial
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutCalendar
 import kz.maestrosultan.fitjournal.ui.workout.main.components.WorkoutSessionBar
-import org.jetbrains.compose.resources.painterResource
+
+/** Dim behind the open add dial. Black in both themes, like every OS scrim. */
+private val DialScrim = Color.Black.copy(alpha = 0.5f)
 
 /**
  * The shared Workout body — a full-width pager over the day's workouts (+ the
@@ -145,59 +143,70 @@ private fun WorkoutBody(
             }
         }
 
+        // Bar and dial are separate layers so the scrim can slide between them:
+        // opening the dial dims the Start/End bar along with everything else.
+        // Both are 56dp tall on the same inset + 16dp padding, so they stay aligned.
         AnimatedVisibility(
             visible = !state.calendarVisible,
             enter = fadeIn(tween(200)),
             exit = fadeOut(tween(160)),
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
-            Box(
+            WorkoutSessionBar(
+                state = state.sessionBar,
+                runningSince = state.runningSince,
+                onStart = { dispatch(WorkoutContract.ViewAction.StartSession) },
+                onEnd = { dispatch(WorkoutContract.ViewAction.RequestEndSession) },
                 modifier = Modifier
                     .fillMaxWidth()
                     // Above the bottom system inset — the host scaffold pads only the top.
                     .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))
-                    .padding(16.dp),
-            ) {
-                WorkoutSessionBar(
-                    state = state.sessionBar,
-                    runningSince = state.runningSince,
-                    onStart = { dispatch(WorkoutContract.ViewAction.StartSession) },
-                    onEnd = { dispatch(WorkoutContract.ViewAction.RequestEndSession) },
-                    modifier = Modifier.align(Alignment.CenterStart).fillMaxWidth().padding(end = 68.dp),
-                )
-                AddButton(
-                    onClick = { state.currentPage?.let { addMenuWorkoutNumber = it.workoutNumber } },
-                    modifier = Modifier.align(Alignment.CenterEnd),
-                )
-            }
-        }
-
-        addMenuWorkoutNumber?.let { workoutNumber ->
-            val close = { addMenuWorkoutNumber = null }
-            WorkoutAddMenu(
-                onFromList = { close(); dispatch(WorkoutContract.ViewAction.AddExercise(workoutNumber)) },
-                onFromWorkout = { close(); dispatch(WorkoutContract.ViewAction.CopyFromWorkout(workoutNumber)) },
-                onDismiss = close,
+                    .padding(16.dp)
+                    .padding(end = 68.dp),
             )
         }
-    }
-}
 
-@Composable
-private fun AddButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .size(56.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .background(FjTheme.colors.brandSubtle)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            painter = painterResource(Res.drawable.ic_common_plus),
-            contentDescription = null,
-            tint = FjTheme.colors.brand,
-            modifier = Modifier.size(26.dp),
-        )
+        AnimatedVisibility(
+            visible = addMenuWorkoutNumber != null,
+            enter = fadeIn(tween(200)),
+            exit = fadeOut(tween(150)),
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(DialScrim)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                    ) { addMenuWorkoutNumber = null },
+            )
+        }
+
+        AnimatedVisibility(
+            visible = !state.calendarVisible,
+            enter = fadeIn(tween(200)),
+            exit = fadeOut(tween(160)),
+            modifier = Modifier.align(Alignment.BottomEnd),
+        ) {
+            WorkoutAddDial(
+                expanded = addMenuWorkoutNumber != null,
+                onToggle = {
+                    addMenuWorkoutNumber =
+                        if (addMenuWorkoutNumber != null) null else state.currentPage?.workoutNumber
+                },
+                onFromList = {
+                    addMenuWorkoutNumber?.let { dispatch(WorkoutContract.ViewAction.AddExercise(it)) }
+                    addMenuWorkoutNumber = null
+                },
+                onFromWorkout = {
+                    addMenuWorkoutNumber?.let { dispatch(WorkoutContract.ViewAction.CopyFromWorkout(it)) }
+                    addMenuWorkoutNumber = null
+                },
+                modifier = Modifier
+                    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))
+                    .padding(16.dp),
+            )
+        }
     }
 }
