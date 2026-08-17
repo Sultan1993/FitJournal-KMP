@@ -30,6 +30,7 @@ import kz.maestrosultan.fitjournal.domain.workout.summary.DetectSessionBestUseCa
 import kz.maestrosultan.fitjournal.domain.workout.summary.SessionBest
 import kz.maestrosultan.fitjournal.domain.workout.usecase.DeleteWorkoutUseCase
 import kz.maestrosultan.fitjournal.domain.workout.usecase.RepeatWorkoutUseCase
+import kz.maestrosultan.fitjournal.domain.workout.usecase.SetWorkoutNoteUseCase
 import kz.maestrosultan.fitjournal.ui.workout.MuscleTitleFormatter
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutUserContext
 import kz.maestrosultan.fitjournal.ui.workout.details.components.WorkoutDetailsStrings
@@ -64,6 +65,7 @@ class WorkoutDetailsViewModel internal constructor(
     private val detectSessionBest: DetectSessionBestUseCase,
     private val deleteWorkout: DeleteWorkoutUseCase,
     private val repeatWorkout: RepeatWorkoutUseCase,
+    private val setWorkoutNote: SetWorkoutNoteUseCase,
     private val userContext: WorkoutUserContext,
     private val date: LocalDate,
     initialWorkoutNumber: Int?,
@@ -88,6 +90,7 @@ class WorkoutDetailsViewModel internal constructor(
         detectSessionBest: DetectSessionBestUseCase,
         deleteWorkout: DeleteWorkoutUseCase,
         repeatWorkout: RepeatWorkoutUseCase,
+        setWorkoutNote: SetWorkoutNoteUseCase,
         userContext: WorkoutUserContext,
         date: LocalDate,
         initialWorkoutNumber: Int?,
@@ -99,6 +102,7 @@ class WorkoutDetailsViewModel internal constructor(
         detectSessionBest = detectSessionBest,
         deleteWorkout = deleteWorkout,
         repeatWorkout = repeatWorkout,
+        setWorkoutNote = setWorkoutNote,
         userContext = userContext,
         date = date,
         initialWorkoutNumber = initialWorkoutNumber,
@@ -350,13 +354,13 @@ class WorkoutDetailsViewModel internal constructor(
         )
     }
 
-    /** No sync tick yet — notes are local-only. The notes flow re-emits the new text. */
+    /** The notes flow re-emits the new text; the tick drains it to AWS. */
     private fun onNoteSaved(text: String) {
         val id = identity ?: return
         val editor = noteEditor.value ?: return
         noteEditor.value = null
         viewModelScope.launch {
-            runCatching { recordRepository.setWorkoutNote(id.userId, id.journalId, date, editor.workoutNumber, text) }
+            runCatching { setWorkoutNote(id.userId, id.journalId, date, editor.workoutNumber, text) }
                 .onFailure { e ->
                     if (e is CancellationException) throw e
                     log("setWorkoutNote failed", e)

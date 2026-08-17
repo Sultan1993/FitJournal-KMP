@@ -5,17 +5,17 @@
 -- at most ONE running row per user app-wide (repository invariant,
 -- transaction-enforced — see startSession).
 --
--- Local-only mirror of the AWSWorkoutSession @model (deployed to staging
--- 2026-07-31). Sync (remoteId/pendingUpload/deletedAt) is a later increment;
--- until then a row lives and dies on-device, which is why duration cannot yet
--- survive reinstall.
+-- Synced to the AWSWorkoutSession @model: same remoteId / pendingUpload /
+-- deletedAt shape as every other synced table, drained by SyncOrchestrator's
+-- push/pull pair. Deletes are therefore TOMBSTONES (`deletedAt`), never DELETEs
+-- — a hard delete would be resurrected by the next pull. Every read filters
+-- `deletedAt IS NULL`; the page UNIQUE index deliberately does NOT, so a page
+-- holds at most one row ever and `startSession` revives the tombstone instead
+-- of inserting a duplicate.
 --
 -- date = LocalDate.toString(); startedAt/endedAt = Instant ISO-8601 TEXT.
--- comment is DEAD as of v11: workout notes moved to the `workoutNotes` table
--- (keyed by the same page), so a note can attach to a records-only workout too.
--- The column is kept, not dropped — SQLite DROP COLUMN isn't safe on the Android
--- versions we support — but nothing reads or writes it; 10.sqm backfilled its
--- values into workoutNotes.
+-- The workout note lives in the `workoutNotes` table (keyed by the same page),
+-- never here, so a note can attach to a records-only workout too.
 CREATE TABLE workoutSessions (
     uuid TEXT PRIMARY KEY NOT NULL,
     userId TEXT NOT NULL,
@@ -24,40 +24,57 @@ CREATE TABLE workoutSessions (
     workoutNumber INTEGER NOT NULL,
     startedAt TEXT NOT NULL,
     endedAt TEXT,
-    comment TEXT
+    remoteId TEXT,
+    pendingUpload INTEGER NOT NULL DEFAULT 1,
+    deletedAt TEXT
 );
 
 -- One session per page: a (userId, journalId, date, workoutNumber) has at most
 -- one session. UNIQUE so a double-Start on the same page cannot create two rows;
 -- startSession's idempotent branch relies on this being the single matching row.
+-- Unconditional (covers tombstones) so a pulled row can never land beside a
+-- local one for the same page — INSERT OR REPLACE collapses them.
 CREATE UNIQUE INDEX idx_workoutSessions_page
 ON workoutSessions(userId, journalId, date, workoutNumber);
 -- Hot path: "is anything running" on every list render.
 CREATE INDEX idx_workoutSessions_running
-ON workoutSessions(userId) WHERE endedAt IS NULL;
+ON workoutSessions(userId) WHERE endedAt IS NULL AND deletedAt IS NULL;
+-- Sync push drain. Partial on `pendingUpload = 1`, like workoutRecords.
+CREATE INDEX idx_workoutSessions_pending
+ON workoutSessions(uuid) WHERE pendingUpload = 1;
 
 -- One page's session (running or finished), or none. The UNIQUE index makes this
 -- at most one row.
 getSessionByWorkoutNumber:
 SELECT * FROM workoutSessions
+WHERE userId = ? AND journalId = ? AND date = ? AND workoutNumber = ?
+AND deletedAt IS NULL;
+
+-- The page's session uuid in ANY state (live or tombstoned) — the unique index
+-- guarantees at most one. `startSession` uses it to choose between reviving the
+-- existing row and inserting a new one (the dialect has no upsert). Mirrors
+-- `WorkoutNotes.sq`'s getNoteUuidByPage.
+getSessionUuidByPage:
+SELECT uuid FROM workoutSessions
 WHERE userId = ? AND journalId = ? AND date = ? AND workoutNumber = ?;
 
 -- Read-back by primary key (startSession / endRunningSession read-your-writes).
 getSessionById:
-SELECT * FROM workoutSessions WHERE uuid = ?;
+SELECT * FROM workoutSessions WHERE uuid = ? AND deletedAt IS NULL;
 
 -- Every session for a day, ascending by workoutNumber — the pager reads this to
 -- learn which pages carry timing.
 getSessionsForDay:
 SELECT * FROM workoutSessions
 WHERE userId = ? AND journalId = ? AND date = ?
+AND deletedAt IS NULL
 ORDER BY workoutNumber ASC;
 
 -- The one running session app-wide (invariant: at most one). ORDER BY is
 -- defensive: a repository bug must not make the answer nondeterministic.
 getRunningSession:
 SELECT * FROM workoutSessions
-WHERE userId = ? AND endedAt IS NULL
+WHERE userId = ? AND endedAt IS NULL AND deletedAt IS NULL
 ORDER BY startedAt DESC
 LIMIT 1;
 
@@ -67,37 +84,104 @@ LIMIT 1;
 -- week (the just-finished session itself is the excluded uuid). `endedAt IS
 -- NOT NULL` keeps a still-running workout out of the count. Both bounds are
 -- inclusive (unlike the half-open record windows): callers pass the week's
--- first and last day, not a next-week sentinel. This table has no deletedAt —
--- session rows are local-only in this increment and are hard-deleted.
+-- first and last day, not a next-week sentinel.
 countCompletedSessionsBetween:
 SELECT COUNT(*) FROM workoutSessions
 WHERE userId = ? AND journalId = ?
   AND date >= ? AND date <= ?
   AND endedAt IS NOT NULL
+  AND deletedAt IS NULL
   AND uuid != ?;
 
 createSession:
-INSERT INTO workoutSessions(uuid, userId, journalId, date, workoutNumber, startedAt, endedAt)
-VALUES (?, ?, ?, ?, ?, ?, NULL);
+INSERT INTO workoutSessions(uuid, userId, journalId, date, workoutNumber, startedAt, endedAt, pendingUpload)
+VALUES (?, ?, ?, ?, ?, ?, NULL, 1);
+
+-- Restart a page whose row is tombstoned (discarded empty workout, or a delete
+-- pulled from another device). Same row, so the page index still holds; the
+-- revived row pushes as an un-delete.
+reviveSessionByPage:
+UPDATE workoutSessions
+SET startedAt = ?, endedAt = NULL, deletedAt = NULL, pendingUpload = 1
+WHERE userId = ? AND journalId = ? AND date = ? AND workoutNumber = ?;
 
 -- Explicit end AND the stale auto-finish. Running rows only — a second call is a
 -- no-op, never an endedAt shift.
 endSessionById:
 UPDATE workoutSessions
-SET endedAt = ?
+SET endedAt = ?, pendingUpload = 1
 WHERE uuid = ? AND endedAt IS NULL;
 
 -- Discard ONE session by id — the empty-workout cleanup: a workout with no
 -- records is not a workout, so a session started-then-ended-with-nothing-logged
--- (or emptied by deleting every record) is deleted rather than kept. userId is
--- an extra guard so a stray uuid can never touch another user's row. No-op if
--- the row is already gone.
-deleteWorkoutSessionByUuid:
-DELETE FROM workoutSessions WHERE uuid = ? AND userId = ?;
+-- (or emptied by deleting every record) is discarded rather than kept. Soft, so
+-- the removal propagates instead of being resurrected by the next pull; userId
+-- is an extra guard so a stray uuid can never touch another user's row.
+-- Idempotent — live rows only.
+softDeleteWorkoutSessionByUuid:
+UPDATE workoutSessions
+SET deletedAt = ?, pendingUpload = 1
+WHERE uuid = ? AND userId = ? AND deletedAt IS NULL;
 
 -- Hard purge, delete-account flow (mirrors deleteWorkoutRecordsByUserId).
 deleteWorkoutSessionsByUserId:
 DELETE FROM workoutSessions WHERE userId = ?;
+
+-- ─── Sync ─────────────────────────────────────────────────────────────────
+
+-- Push drain, scoped to the signed-in user so a previous user's stale rows are
+-- never pushed under this session (see the parallel comment in Journals.sq).
+getPendingUploads:
+SELECT * FROM workoutSessions
+WHERE pendingUpload = 1
+AND userId = ?;
+
+-- Push-success ack, conditional on the row still being what was uploaded.
+--
+-- The push is read → network → ack, and End/discard both set pendingUpload = 1
+-- inside that window. An unconditional ack would clear the flag for a write that
+-- was never sent, and — because the pull overwrites any non-pending page row —
+-- the next tick would then REVERT it (a finished workout comes back running).
+-- Comparing the mutable columns instead makes a mid-flight write a no-op ack:
+-- the row stays pending and the next tick pushes the newer values.
+-- `IS` (not `=`) so NULLs compare properly. No `deletedAt IS NULL` filter — a
+-- tombstone must clear its pendingUpload once the delete has been pushed.
+updateWorkoutSessionRemoteId:
+UPDATE workoutSessions
+SET remoteId = ?, pendingUpload = 0
+WHERE uuid = ?
+  AND startedAt IS ?
+  AND endedAt IS ?
+  AND deletedAt IS ?;
+
+-- Sync-pull upsert. OR REPLACE resolves on EITHER key: the uuid PK, or the page
+-- unique index when two devices minted different uuids for the same page (the
+-- pulled row wins, which is what "server state" means here). Never bumps
+-- pendingUpload; callers apply the local-wins guard first.
+upsertSessionFromRemote:
+INSERT OR REPLACE INTO workoutSessions(uuid, remoteId, userId, journalId, date, workoutNumber, startedAt, endedAt, deletedAt, pendingUpload)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0);
+
+-- Keeps "at most one running session per user app-wide" true across a pull.
+-- `startSession` enforces it for local starts, but a pulled running row from
+-- another device would otherwise sit alongside a local one, and only the newest
+-- is reachable through getRunningSession — leaving the older one running
+-- forever, which blocks Start on every page. One running workout at a time is
+-- the product rule, so a running row arriving from another device means the user
+-- moved on: any OTHER row still marked running is finished at the newcomer's
+-- startedAt (never before its own start, hence MAX) and re-queued for push.
+finishOtherRunningSessions:
+UPDATE workoutSessions
+SET endedAt = MAX(:endedAt, startedAt), pendingUpload = 1
+WHERE userId = :userId
+  AND uuid != :uuid
+  AND endedAt IS NULL
+  AND deletedAt IS NULL;
+
+-- Local-wins guard input: is this page's row (in any state) unpushed?
+getSessionPendingByPage:
+SELECT pendingUpload FROM workoutSessions
+WHERE userId = ? AND journalId = ? AND date = ? AND workoutNumber = ?;
 
 -- FJ2.0 wipe-gate parity: keeps DefaultLocalDbWiper's "every user-scoped
 -- table" contract honest.

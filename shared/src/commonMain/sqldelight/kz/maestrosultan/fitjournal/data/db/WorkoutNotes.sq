@@ -2,14 +2,13 @@
 -- is: (userId, journalId, date, workoutNumber). Deliberately decoupled from
 -- `workoutSessions` so a note can hang on ANY workout — one logged with the
 -- timer (which has a session) OR one logged straight into the day (which does
--- not). The note used to live on `workoutSessions.comment`; it moved here so
--- records-only workouts can carry one too. `workoutSessions.comment` is now
--- dead (kept only because SQLite DROP COLUMN isn't safe on the Android versions
--- we support); its old values were backfilled here by migration 10.sqm.
+-- not). An earlier unreleased iteration hung the note off `workoutSessions`;
+-- that column is gone from both the table and 9.sqm, so there is nothing to
+-- migrate from.
 --
--- Sync-ready shape (remoteId / pendingUpload / deletedAt) mirroring the other
--- synced tables. There is no AWS sync for notes yet — this rides the SAME later
--- increment as `workoutSessions`. date = LocalDate.toString().
+-- Synced to the AWSWorkoutNote @model via remoteId / pendingUpload / deletedAt,
+-- drained by SyncOrchestrator's push/pull pair alongside `workoutSessions`.
+-- date = LocalDate.toString().
 CREATE TABLE workoutNotes (
     uuid TEXT PRIMARY KEY NOT NULL,
     userId TEXT NOT NULL,
@@ -28,6 +27,9 @@ CREATE TABLE workoutNotes (
 -- inserting a duplicate.
 CREATE UNIQUE INDEX idx_workoutNotes_page
 ON workoutNotes(userId, journalId, date, workoutNumber);
+-- Sync push drain. Partial on `pendingUpload = 1`, like workoutRecords.
+CREATE INDEX idx_workoutNotes_pending
+ON workoutNotes(uuid) WHERE pendingUpload = 1;
 
 -- One page's live note text, or none.
 getNoteByPage:
@@ -67,6 +69,40 @@ WHERE userId = ? AND journalId = ? AND date = ? AND workoutNumber = ? AND delete
 -- Hard purge — delete-account flow (mirrors deleteWorkoutRecordsByUserId).
 deleteNotesByUserId:
 DELETE FROM workoutNotes WHERE userId = ?;
+
+-- ─── Sync ─────────────────────────────────────────────────────────────────
+
+-- Push drain, scoped to the signed-in user so a previous user's stale rows are
+-- never pushed under this session (see the parallel comment in Journals.sq).
+getPendingUploads:
+SELECT * FROM workoutNotes
+WHERE pendingUpload = 1
+AND userId = ?;
+
+-- Push-success ack, conditional on the row still being what was uploaded — see
+-- the long note on `updateWorkoutSessionRemoteId`. An edit landing during the
+-- push round trip leaves the row pending instead of being silently dropped and
+-- then reverted by the pull. No `deletedAt IS NULL` filter — a tombstone must
+-- clear its pendingUpload once the delete has been pushed.
+updateWorkoutNoteRemoteId:
+UPDATE workoutNotes
+SET remoteId = ?, pendingUpload = 0
+WHERE uuid = ?
+  AND comment IS ?
+  AND deletedAt IS ?;
+
+-- Sync-pull upsert. OR REPLACE resolves on EITHER key: the uuid PK, or the page
+-- unique index when two devices minted different uuids for the same page (the
+-- pulled row wins). Never bumps pendingUpload; callers apply the local-wins
+-- guard first.
+upsertNoteFromRemote:
+INSERT OR REPLACE INTO workoutNotes(uuid, remoteId, userId, journalId, date, workoutNumber, comment, deletedAt, pendingUpload)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0);
+
+-- Local-wins guard input: is this page's row (in any state) unpushed?
+getNotePendingByPage:
+SELECT pendingUpload FROM workoutNotes
+WHERE userId = ? AND journalId = ? AND date = ? AND workoutNumber = ?;
 
 -- FJ2.0 wipe-gate parity — keeps DefaultLocalDbWiper's "every user-scoped
 -- table" contract honest.

@@ -38,6 +38,7 @@ import kz.maestrosultan.fitjournal.domain.workout.summary.DetectSessionBestUseCa
 import kz.maestrosultan.fitjournal.domain.workout.summary.WeightedSetOccurrence
 import kz.maestrosultan.fitjournal.domain.workout.usecase.DeleteWorkoutUseCase
 import kz.maestrosultan.fitjournal.domain.workout.usecase.RepeatWorkoutUseCase
+import kz.maestrosultan.fitjournal.domain.workout.usecase.SetWorkoutNoteUseCase
 import kz.maestrosultan.fitjournal.ui.workout.MuscleTitleFormatter
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutUserContext
 import kz.maestrosultan.fitjournal.ui.workout.details.components.WorkoutDetailsStrings
@@ -95,6 +96,7 @@ class WorkoutDetailsViewModelTest {
         detectSessionBest = DetectSessionBestUseCase(records),
         deleteWorkout = DeleteWorkoutUseCase(records, syncTrigger),
         repeatWorkout = RepeatWorkoutUseCase(records, syncTrigger),
+        setWorkoutNote = SetWorkoutNoteUseCase(records, syncTrigger),
         userContext = FakeUserContext(USER_ID, JOURNAL_ID, MeasurementSystem.KG_KM),
         date = DATE,
         initialWorkoutNumber = initialWorkoutNumber,
@@ -189,7 +191,8 @@ class WorkoutDetailsViewModelTest {
     fun noteSaved_writesThroughToTheRecordRepo_andClearsTheEditor() = runTest(dispatcher) {
         val records = FakeRecordRepository(listOf(squatRecord(1)))
         val sessions = FakeWorkoutSessionRepository(listOf(session("session-1", 1)))
-        val vm = viewModel(records, sessions)
+        val trigger = FakeSyncTrigger()
+        val vm = viewModel(records, sessions, trigger)
         awaitLoaded(vm)
 
         vm.dispatch(WorkoutDetailsContract.ViewAction.NoteTapped)
@@ -205,6 +208,10 @@ class WorkoutDetailsViewModelTest {
             .first { (it.content as? WorkoutDetailsContract.Content.Loaded)?.workouts?.single()?.note?.text == "Felt strong today" }
             .content as WorkoutDetailsContract.Content.Loaded
         assertEquals("Felt strong today", loaded.workouts.single().note.text, "the notes flow re-emitted the new text")
+        // The whole reason the save goes through SetWorkoutNoteUseCase: without
+        // the tick a note only reaches AWS on the next cold start / foreground /
+        // periodic tick.
+        assertEquals(listOf<SyncReason>(SyncReason.PostWrite.WorkoutNote), trigger.reasons)
     }
 
     // ─── Edit / Share carry the focused workout ────────────────────────

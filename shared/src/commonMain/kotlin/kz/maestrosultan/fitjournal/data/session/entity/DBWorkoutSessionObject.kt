@@ -19,6 +19,8 @@ data class DBWorkoutSessionObject(
     val workoutNumber: Int,
     val startedAt: Instant,
     val endedAt: Instant?,
+    val remoteId: String? = null,
+    val deletedAt: Instant? = null,
 )
 
 fun WorkoutSessions.map(): DBWorkoutSessionObject = DBWorkoutSessionObject(
@@ -29,6 +31,8 @@ fun WorkoutSessions.map(): DBWorkoutSessionObject = DBWorkoutSessionObject(
     workoutNumber = workoutNumber.toInt(),
     startedAt = parseStoredInstant(startedAt),
     endedAt = endedAt?.let(::parseStoredInstant),
+    remoteId = remoteId,
+    deletedAt = deletedAt?.let(::parseStoredInstant),
 )
 
 fun DBWorkoutSessionObject.toDomain(): WorkoutSession = WorkoutSession(

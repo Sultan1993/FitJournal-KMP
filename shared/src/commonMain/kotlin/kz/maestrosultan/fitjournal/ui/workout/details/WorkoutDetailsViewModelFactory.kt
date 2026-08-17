@@ -8,6 +8,7 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutSessionRepository
 import kz.maestrosultan.fitjournal.domain.workout.summary.DetectSessionBestUseCase
 import kz.maestrosultan.fitjournal.domain.workout.usecase.DeleteWorkoutUseCase
 import kz.maestrosultan.fitjournal.domain.workout.usecase.RepeatWorkoutUseCase
+import kz.maestrosultan.fitjournal.domain.workout.usecase.SetWorkoutNoteUseCase
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutUserContext
 
 /**
@@ -38,6 +39,7 @@ fun createWorkoutDetailsViewModel(
     detectSessionBest = DetectSessionBestUseCase(records = recordRepository),
     deleteWorkout = DeleteWorkoutUseCase(recordRepository, syncTrigger),
     repeatWorkout = RepeatWorkoutUseCase(recordRepository, syncTrigger),
+    setWorkoutNote = SetWorkoutNoteUseCase(recordRepository, syncTrigger),
     userContext = PlainWorkoutUserContext(userId, journalId, measurementSystem),
     date = date,
     initialWorkoutNumber = initialWorkoutNumber,

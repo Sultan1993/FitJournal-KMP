@@ -12,8 +12,8 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutSessionRepository
 
 /**
  * 100% local implementation (offline-first contract): SQLite is the source of
- * truth, there is no AWS sync for sessions in this increment, and nothing here
- * touches the network.
+ * truth and nothing here touches the network. Rows reach AWS only through
+ * SyncOrchestrator draining `pendingUpload`, which every write below sets.
  *
  * Timestamps come from the injected [clock] rather than `Clock.System` inline so
  * the jvmTest suite can step "now" deterministically instead of racing the wall
@@ -99,7 +99,7 @@ class DefaultWorkoutSessionRepository(
         sessionsDB.endRunningSession(userId, clock.now())?.toDomain()
 
     override suspend fun deleteSession(userId: String, sessionUuid: String) =
-        sessionsDB.deleteByUuid(sessionUuid, userId)
+        sessionsDB.deleteByUuid(sessionUuid, userId, clock.now())
 
     override suspend fun deleteUserSessions(userId: String) = sessionsDB.deleteByUserId(userId)
 }

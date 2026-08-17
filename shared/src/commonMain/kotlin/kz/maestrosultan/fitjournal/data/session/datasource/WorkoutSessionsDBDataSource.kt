@@ -16,10 +16,14 @@ import kz.maestrosultan.fitjournal.data.session.entity.map
 import kz.maestrosultan.fitjournal.data.time.toStoredString
 
 /**
- * Local-only datasource for `workoutSessions` (no AWS sync in this increment).
- * `date` crosses this boundary as the stored TEXT form (`LocalDate.toString()`)
- * so the SQL layer never has to know about calendar types. `workoutNumber`
- * crosses as `Int` and is widened to the column's `Long` at the query call.
+ * Datasource for `workoutSessions`. `date` crosses this boundary as the stored
+ * TEXT form (`LocalDate.toString()`) so the SQL layer never has to know about
+ * calendar types. `workoutNumber` crosses as `Int` and is widened to the
+ * column's `Long` at the query call.
+ *
+ * Rows sync to `AWSWorkoutSession`: every write leaves `pendingUpload = 1` for
+ * SyncOrchestrator to drain, and discards are tombstones — see the sync block
+ * at the bottom.
  */
 class WorkoutSessionsDBDataSource(
     private val dao: WorkoutSessionsQueries,
@@ -91,12 +95,15 @@ class WorkoutSessionsDBDataSource(
      * `suspend` call inside, since `NativeSqliteDriver` transactions are bound
      * to the calling thread. Ordering matters:
      *
-     * 1. this page already has a session -> return it UNCHANGED (a double-start
-     *    must not shift `startedAt`, a finished workout stays finished);
+     * 1. this page already has a LIVE session -> return it UNCHANGED (a
+     *    double-start must not shift `startedAt`, a finished workout stays
+     *    finished);
      * 2. else a DIFFERENT workout is running app-wide -> BLOCKED: return that
      *    running row without inserting or auto-finishing it — one running
      *    workout at a time, ended explicitly by the user;
-     * 3. else insert the new running row and read it back.
+     * 3. else start the page: revive its tombstone if one exists (the page
+     *    index is unconditional, so a discarded workout's row still occupies
+     *    the page), otherwise insert a new running row. Read it back either way.
      *
      * One transaction so a crash can't leave two running rows; the UNIQUE
      * (userId, journalId, date, workoutNumber) index is the backstop.
@@ -119,16 +126,30 @@ class WorkoutSessionsDBDataSource(
             val running = dao.getRunningSession(userId).executeAsOneOrNull()
             if (running != null) return@transactionWithResult running.map()
 
-            dao.createSession(
-                uuid = uuid,
-                userId = userId,
-                journalId = journalId,
-                date = date,
-                workoutNumber = workoutNumberLong,
-                startedAt = nowText,
-            )
+            val tombstoned = dao.getSessionUuidByPage(userId, journalId, date, workoutNumberLong)
+                .executeAsOneOrNull()
+            val liveUuid = if (tombstoned != null) {
+                dao.reviveSessionByPage(
+                    startedAt = nowText,
+                    userId = userId,
+                    journalId = journalId,
+                    date = date,
+                    workoutNumber = workoutNumberLong,
+                )
+                tombstoned
+            } else {
+                dao.createSession(
+                    uuid = uuid,
+                    userId = userId,
+                    journalId = journalId,
+                    date = date,
+                    workoutNumber = workoutNumberLong,
+                    startedAt = nowText,
+                )
+                uuid
+            }
             // Read-your-writes inside the same transaction/connection.
-            dao.getSessionById(uuid).executeAsOne().map()
+            dao.getSessionById(liveUuid).executeAsOne().map()
         }
     }
 
@@ -152,11 +173,16 @@ class WorkoutSessionsDBDataSource(
         }
     }
 
-    /** Discard one session by id (empty-workout cleanup); userId-scoped defensively. */
-    suspend fun deleteByUuid(uuid: String, userId: String) = withContext(Dispatchers.IO) {
-        dao.deleteWorkoutSessionByUuid(uuid, userId)
-        Unit
-    }
+    /**
+     * Discard one session by id (empty-workout cleanup); userId-scoped
+     * defensively. Tombstone, not DELETE — the removal has to reach AWS, and a
+     * hard-deleted row would be resurrected by the next pull.
+     */
+    suspend fun deleteByUuid(uuid: String, userId: String, now: Instant) =
+        withContext(Dispatchers.IO) {
+            dao.softDeleteWorkoutSessionByUuid(now.toStoredString(), uuid, userId)
+            Unit
+        }
 
     /** Hard purge for the delete-account flow. */
     suspend fun deleteByUserId(userId: String) = withContext(Dispatchers.IO) {
@@ -168,5 +194,81 @@ class WorkoutSessionsDBDataSource(
     suspend fun wipeAll() = withContext(Dispatchers.IO) {
         dao.wipeAll()
         Unit
+    }
+
+    // ─── Sync (SyncOrchestrator only) ─────────────────────────────────────
+
+    /** Unpushed rows for the signed-in user — tombstones included. */
+    suspend fun getPendingUploads(userId: String): List<DBWorkoutSessionObject> =
+        withContext(Dispatchers.IO) {
+            dao.getPendingUploads(userId).executeAsList().map { it.map() }
+        }
+
+    /**
+     * Push ack: stamp the remote id and clear the pending flag — but only if the
+     * row still holds what was uploaded. Pass the SNAPSHOT that was pushed (the
+     * object [getPendingUploads] returned), not the current row: an End or a
+     * discard landing during the network round trip must leave the row pending
+     * so the next tick pushes it, instead of being dropped and then reverted by
+     * the pull. A no-op ack simply leaves the row pending.
+     */
+    suspend fun markUploaded(session: DBWorkoutSessionObject, remoteId: String) =
+        withContext(Dispatchers.IO) {
+            dao.updateWorkoutSessionRemoteId(
+                remoteId = remoteId,
+                uuid = session.uuid,
+                startedAt = session.startedAt.toStoredString(),
+                endedAt = session.endedAt?.toStoredString(),
+                deletedAt = session.deletedAt?.toStoredString(),
+            )
+            Unit
+        }
+
+    /**
+     * Apply one pulled row, unless the local row for that page has unpushed
+     * writes (local wins; the caller still advances its cursor). Returns true
+     * when the row was written. [date] is the stored TEXT form, like everywhere
+     * else on this boundary — the platform pull hands over the AWS string as-is.
+     */
+    suspend fun upsertFromRemote(
+        uuid: String,
+        remoteId: String,
+        userId: String,
+        journalId: String,
+        date: String,
+        workoutNumber: Int,
+        startedAt: Instant,
+        endedAt: Instant?,
+        deletedAt: Instant?,
+    ): Boolean = withContext(Dispatchers.IO) {
+        val workoutNumberLong = workoutNumber.toLong()
+        dao.transactionWithResult {
+            val pendingLocally = dao
+                .getSessionPendingByPage(userId, journalId, date, workoutNumberLong)
+                .executeAsOneOrNull()
+            if (pendingLocally == 1L) return@transactionWithResult false
+            // A running row from another device means the user moved on — finish
+            // any other still-running row so "one running workout app-wide"
+            // survives the pull (see finishOtherRunningSessions).
+            if (endedAt == null && deletedAt == null) {
+                dao.finishOtherRunningSessions(
+                    endedAt = startedAt.toStoredString(),
+                    userId = userId,
+                    uuid = uuid,
+                )
+            }
+            dao.upsertSessionFromRemote(
+                uuid = uuid,
+                remoteId = remoteId,
+                userId = userId,
+                journalId = journalId,
+                date = date,
+                workoutNumber = workoutNumberLong,
+                startedAt = startedAt.toStoredString(),
+                endedAt = endedAt?.toStoredString(),
+                deletedAt = deletedAt?.toStoredString(),
+            )
+            true
+        }
     }
 }

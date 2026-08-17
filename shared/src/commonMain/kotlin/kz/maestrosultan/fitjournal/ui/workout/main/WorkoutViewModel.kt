@@ -287,6 +287,9 @@ class WorkoutViewModel(
                 sessionRepository.deleteSession(uid, running.id)
                 // Nothing was logged → the page is not a workout; drop any note with it.
                 recordRepository.clearWorkoutNote(uid, jid, running.date, running.workoutNumber)
+                // Both writes are tombstones that have to reach AWS; without this
+                // they'd sit until the next cold start / foreground / periodic tick.
+                syncTrigger.requestTick(SyncReason.PostWrite.WorkoutSession)
             }
         }
     }

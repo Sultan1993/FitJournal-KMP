@@ -5,7 +5,11 @@
 -- This migration and the .sq schema were reworked together (the earlier
 -- sessionId / one-session-per-day groundwork that lived in 9.sqm + 10.sqm was
 -- never released, so it is replaced outright rather than migrated through — and
--- 10.sqm is deleted). Keep the CREATE TABLE and index shapes byte-for-byte
+-- 10.sqm is deleted). The sync columns (remoteId / pendingUpload / deletedAt)
+-- were folded into this CREATE TABLE for the same reason rather than added by a
+-- follow-up migration: sessions have never shipped, so no device in the field
+-- carries the older shape. A dev device already at v10+ must reinstall.
+-- Keep the CREATE TABLE and index shapes byte-for-byte
 -- identical to WorkoutSessions.sq, and add the workoutRecords column so a fresh
 -- install (Schema.create) and an upgrade land on the same schema —
 -- verifyMigrations is off (see CLAUDE.md), so this is hand-verified.
@@ -18,13 +22,17 @@ CREATE TABLE workoutSessions (
     workoutNumber INTEGER NOT NULL,
     startedAt TEXT NOT NULL,
     endedAt TEXT,
-    comment TEXT
+    remoteId TEXT,
+    pendingUpload INTEGER NOT NULL DEFAULT 1,
+    deletedAt TEXT
 );
 
 CREATE UNIQUE INDEX idx_workoutSessions_page
 ON workoutSessions(userId, journalId, date, workoutNumber);
 CREATE INDEX idx_workoutSessions_running
-ON workoutSessions(userId) WHERE endedAt IS NULL;
+ON workoutSessions(userId) WHERE endedAt IS NULL AND deletedAt IS NULL;
+CREATE INDEX idx_workoutSessions_pending
+ON workoutSessions(uuid) WHERE pendingUpload = 1;
 
 -- DEFAULT 1 backfills every existing record to workout 1 (SQLite requires a
 -- default to add a NOT NULL column to a populated table). ADD COLUMN appends at

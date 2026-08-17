@@ -717,7 +717,9 @@ class DefaultRecordRepository(
     /**
      * ONE `database.transaction {}` covering both tables: every live record on
      * (date, workoutNumber) gets the same tombstone [deleteRecord] applies,
-     * then the page's session row (if any) is hard-deleted. Any throw rolls
+     * then the page's session row and note (if any) are tombstoned too — soft,
+     * so the removals propagate to AWS instead of being resurrected by the next
+     * pull. Any throw rolls
      * back BOTH. This is the only place cross-table atomicity for
      * record+session lives, because SQLDelight transactions don't compose
      * across suspend repository-method calls — true atomicity needs raw
@@ -760,7 +762,8 @@ class DefaultRecordRepository(
                     .getSessionByWorkoutNumber(userId, journalId, dateStr, workoutNumberLong)
                     .executeAsOneOrNull()
                     ?.let { session ->
-                        db.workoutSessionsQueries.deleteWorkoutSessionByUuid(session.uuid, userId)
+                        db.workoutSessionsQueries
+                            .softDeleteWorkoutSessionByUuid(nowText, session.uuid, userId)
                     }
                 // The page is gone → its note goes with it (same transaction), so a
                 // later workout reusing this (date, workoutNumber) never inherits it.
@@ -802,7 +805,10 @@ class DefaultRecordRepository(
                         .getSessionByWorkoutNumber(userId, journalId, dateStr, wnLong)
                         .executeAsOneOrNull()
                         ?.takeIf { it.endedAt != null }
-                        ?.let { db.workoutSessionsQueries.deleteWorkoutSessionByUuid(it.uuid, userId) }
+                        ?.let {
+                            db.workoutSessionsQueries
+                                .softDeleteWorkoutSessionByUuid(nowText, it.uuid, userId)
+                        }
                     db.workoutNotesQueries.softDeleteNoteByPage(nowText, userId, journalId, dateStr, wnLong)
                 }
             }
