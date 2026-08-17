@@ -26,6 +26,8 @@ fun createWorkoutViewModel(
     endWorkout: EndWorkoutUseCase,
     syncTrigger: SyncTrigger,
     initialDate: LocalDate,
+    // Which workout of the day to open on (Edit / Repeat); null = first page.
+    initialWorkoutNumber: Int? = null,
 ): WorkoutViewModel = WorkoutViewModel(
     recordRepository = recordRepository,
     sessionRepository = sessionRepository,
@@ -34,4 +36,5 @@ fun createWorkoutViewModel(
     syncTrigger = syncTrigger,
     awaitSession = { UserSession.state.filterNotNull().first() },
     initialDate = initialDate,
+    initialWorkoutNumber = initialWorkoutNumber,
 )

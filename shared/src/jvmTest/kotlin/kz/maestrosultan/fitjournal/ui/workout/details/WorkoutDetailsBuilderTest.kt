@@ -124,7 +124,6 @@ class WorkoutDetailsBuilderTest {
         workoutNumber: Int = 1,
         startedAt: Instant = Instant.parse("2026-08-05T09:00:00Z"),
         endedAt: Instant? = Instant.parse("2026-08-05T10:04:00Z"),
-        comment: String? = null,
     ) = WorkoutSession(
         id = "session-$workoutNumber",
         userId = USER,
@@ -133,7 +132,6 @@ class WorkoutDetailsBuilderTest {
         workoutNumber = workoutNumber,
         startedAt = startedAt,
         endedAt = endedAt,
-        comment = comment,
     )
 
     private suspend fun build(
@@ -141,6 +139,7 @@ class WorkoutDetailsBuilderTest {
         sessions: List<WorkoutSession> = emptyList(),
         measurementSystem: MeasurementSystem = MeasurementSystem.KG_KM,
         sessionBests: Map<Int, SessionBest?> = emptyMap(),
+        notesByWorkout: Map<Int, String> = emptyMap(),
         focusedWorkoutNumber: Int = 1,
     ) = buildWorkoutDetailsUi(
         date = DATE,
@@ -148,6 +147,7 @@ class WorkoutDetailsBuilderTest {
         sessions = sessions,
         measurementSystem = measurementSystem,
         sessionBests = sessionBests,
+        notesByWorkout = notesByWorkout,
         focusedWorkoutNumber = focusedWorkoutNumber,
         timeZone = ZONE,
         now = NOW,
@@ -360,22 +360,25 @@ class WorkoutDetailsBuilderTest {
         assertNull(workload.first { it.category == CategoryType.CARDIO }.amountText)
     }
 
-    // ── sessionless workout hides duration/note/share ────────────────────
+    // ── sessionless workout: no duration, but note + share still work ─────
 
     @Test
-    fun sessionlessWorkout_hidesDurationNoteAndShare() = runTest {
+    fun sessionlessWorkout_hidesDuration_butShowsNotePlaceholderAndShare() = runTest {
         val workout = build(listOf(record(exercises = listOf(workoutExercise()))), sessions = emptyList()).workouts.single()
-        assertNull(workout.durationText)
-        assertNull(workout.note)
-        assertFalse(workout.canShare)
+        assertNull(workout.durationText, "no session -> no duration")
+        assertNull(workout.note.text, "note is always present; empty text -> add-note placeholder")
+        assertTrue(workout.canShare, "records present -> shareable even without a session")
     }
 
     @Test
-    fun sessionedWorkout_showsDurationNoteAndShare() = runTest {
-        val s = session(comment = "Felt strong")
-        val workout = build(listOf(record(exercises = listOf(workoutExercise()))), sessions = listOf(s)).workouts.single()
+    fun workout_showsDurationFromSession_andNoteFromNotesMap() = runTest {
+        val workout = build(
+            listOf(record(exercises = listOf(workoutExercise()))),
+            sessions = listOf(session()),
+            notesByWorkout = mapOf(1 to "Felt strong"),
+        ).workouts.single()
         assertEquals("1:04", workout.durationText, "09:00-10:04 elapsed")
-        assertEquals("Felt strong", workout.note?.text)
+        assertEquals("Felt strong", workout.note.text, "note comes from the notes map, not the session")
         assertTrue(workout.canShare)
     }
 
@@ -474,8 +477,9 @@ class WorkoutDetailsBuilderTest {
             sessions = listOf(session(workoutNumber = 99)),
         ).workouts.single()
         assertNull(workout.durationText, "orphan session must not attach to a different workout")
-        assertNull(workout.note)
-        assertFalse(workout.canShare)
+        // The note is page-keyed, not session-keyed, so it is always present (placeholder here).
+        assertNull(workout.note.text)
+        assertTrue(workout.canShare)
     }
 
     // ── set chips: own numbers only ───────────────────────────────────────

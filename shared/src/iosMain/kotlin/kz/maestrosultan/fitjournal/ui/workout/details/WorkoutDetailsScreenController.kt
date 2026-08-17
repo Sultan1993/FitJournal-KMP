@@ -14,7 +14,7 @@ import platform.UIKit.UIViewController
 /**
  * iOS entry point for the shared WorkoutDetails screen (design spec §8), mirroring
  * [kz.maestrosultan.fitjournal.ui.workout.list.WorkoutListScreenController] and
- * `FinishConfirmController`/`ShareComposerController` (`PostWorkoutControllers.kt`):
+ * `WorkoutFinishSheetController`/`ShareComposerController` (`PostWorkoutControllers.kt`):
  * the Swift host owns [viewModel] (built via `createWorkoutDetailsViewModel`),
  * embeds the returned `UIViewController` in its own nav/modal chrome, and calls
  * `viewModel.dispose()` when that chrome is torn down.
@@ -40,7 +40,7 @@ import platform.UIKit.UIViewController
  *   global-functions feature is on, so Swift calls
  *   `WorkoutDetailsScreenController(viewModel:onDismiss:onEditWorkout:onShareWorkout:)`
  *   directly, with NO `WorkoutDetailsScreenControllerKt.` prefix — same precedent
- *   as `WorkoutListScreenController(...)` / `createFinishConfirmViewModel(...)`
+ *   as `WorkoutListScreenController(...)` / `createWorkoutFinishViewModel(...)`
  *   (zero `*Kt.` call sites anywhere in the app).
  * - Nested contract types ([WorkoutDetailsContract.ViewState],
  *   [WorkoutDetailsContract.HeaderNav]) bridge DOTTED.

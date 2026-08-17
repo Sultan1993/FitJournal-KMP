@@ -41,7 +41,6 @@
     <string name="postworkout_confirm_title">Training beenden?</string>
     <string name="postworkout_confirm_finish">Training beenden</string>
     <string name="postworkout_confirm_keep_training">Weiter trainieren</string>
-    <string name="postworkout_partial_format">%1$d von %2$d</string>
 
     <!-- Post-workout: success screen -->
     <string name="postworkout_saved_to_journal">Im Journal gespeichert</string>
@@ -175,6 +174,7 @@
     <string name="workout_details_skipped">ÜBERSPRUNGEN</string>
     <string name="workout_details_tile_sets">SÄTZE</string>
     <string name="workout_details_new_best">NEUER REKORD</string>
+    <string name="workout_details_achievements">ERFOLGE</string>
     <string name="workout_details_note">NOTIZ</string>
     <string name="workout_details_add_note">Trainingsnotiz hinzufügen</string>
     <string name="workout_details_workload">BELASTUNG</string>
@@ -184,6 +184,7 @@
     <string name="workout_details_share">Training teilen</string>
     <string name="workout_details_delete_confirm_title">Training löschen?</string>
     <string name="workout_details_delete_confirm_message">Das Training vom %1$s wird endgültig gelöscht. Das kann nicht rückgängig gemacht werden.</string>
+    <string name="workout_details_note_title">Trainingsnotiz</string>
     <string name="workout_details_note_save">Speichern</string>
-    <string name="workout_details_note_placeholder">Notiz zum Training hinzufügen…</string>
+    <string name="workout_details_note_placeholder">Wie lief es? Schlaf, Energie, Technik…</string>
 </resources>

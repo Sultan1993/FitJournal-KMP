@@ -11,6 +11,8 @@ import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextClearance
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.Flow
@@ -67,7 +69,7 @@ class WorkoutDetailsScreenTest {
                     workout = workoutUi(
                         durationText = null,
                         newBest = null,
-                        note = null,
+                        note = WorkoutDetailsContract.NoteUi(1, null),
                         workload = emptyList(),
                         canShare = false,
                     ),
@@ -77,8 +79,10 @@ class WorkoutDetailsScreenTest {
 
         onNodeWithText("DURATION").assertDoesNotExist()
         onNodeWithText("NEW BEST").assertDoesNotExist()
+        // The note card is always present now; with no text it shows the add-note
+        // placeholder (the filled "NOTE" eyebrow appears only once there is text).
         onNodeWithText("NOTE").assertDoesNotExist()
-        onNodeWithText("Add workout note").assertDoesNotExist()
+        onNodeWithText("Add workout note").assertExists()
         onNodeWithText("WORKLOAD").assertDoesNotExist()
         onNodeWithText("Share workout").assertDoesNotExist()
         // The two count tiles still render even for a sessionless workout.
@@ -89,7 +93,7 @@ class WorkoutDetailsScreenTest {
 
     @Test
     fun emptyNote_showsAddButton_andDispatchesNoteTapped() = runComposeUiTest {
-        val vm = FakeViewModel(loadedWd1(workout = workoutUi(note = WorkoutDetailsContract.NoteUi("s1", null))))
+        val vm = FakeViewModel(loadedWd1(workout = workoutUi(note = WorkoutDetailsContract.NoteUi(1, null))))
         setScreen(vm)
 
         onNodeWithText("NOTE").assertDoesNotExist()
@@ -100,7 +104,7 @@ class WorkoutDetailsScreenTest {
 
     @Test
     fun filledNote_dispatchesNoteTapped() = runComposeUiTest {
-        val vm = FakeViewModel(loadedWd1(workout = workoutUi(note = WorkoutDetailsContract.NoteUi("s1", "Felt strong today"))))
+        val vm = FakeViewModel(loadedWd1(workout = workoutUi(note = WorkoutDetailsContract.NoteUi(1, "Felt strong today"))))
         setScreen(vm)
 
         onNodeWithText("Felt strong today").performScrollTo().performClick()
@@ -109,16 +113,56 @@ class WorkoutDetailsScreenTest {
     }
 
     @Test
-    fun noteEditorSheet_rendersSeededText_andSaveDispatchesNoteSaved() = runComposeUiTest {
+    fun noteEditorSheet_rendersSeededText_andSaveIsInertUntilEdited() = runComposeUiTest {
         val vm = FakeViewModel(
-            loadedWd1().copy(noteEditor = WorkoutDetailsContract.NoteEditor("s1", "Seed note")),
+            loadedWd1().copy(noteEditor = WorkoutDetailsContract.NoteEditor(1, "Seed note")),
         )
         setScreen(vm)
 
         onNodeWithText("Seed note").assertExists()
+        // Design 3a: Save stays dimmed until there is something to save, so
+        // opening a note and tapping Save without touching it does nothing.
         onNodeWithText("Save").performClick()
 
-        assertEquals(WorkoutDetailsContract.ViewAction.NoteSaved("Seed note"), vm.actions.lastOrNull())
+        assertTrue(
+            vm.actions.none { it is WorkoutDetailsContract.ViewAction.NoteSaved },
+            "an unedited note has nothing to save",
+        )
+    }
+
+    @Test
+    fun noteEditorSheet_saveDispatchesTheEditedText() = runComposeUiTest {
+        val vm = FakeViewModel(
+            loadedWd1().copy(noteEditor = WorkoutDetailsContract.NoteEditor(1, "Seed note")),
+        )
+        setScreen(vm)
+
+        // The caret is seeded at the END of an existing note, so input appends.
+        onNodeWithText("Seed note").performTextInput(" and better")
+        onNodeWithText("Save").performClick()
+
+        assertEquals(
+            WorkoutDetailsContract.ViewAction.NoteSaved("Seed note and better"),
+            vm.actions.lastOrNull(),
+        )
+    }
+
+    @Test
+    fun noteEditorSheet_clearingAnExistingNote_canBeSaved() = runComposeUiTest {
+        // The reason Save is gated on "edited" rather than "non-blank": emptying
+        // a note IS a save (it removes it), and must not be a dead end.
+        val vm = FakeViewModel(
+            loadedWd1().copy(noteEditor = WorkoutDetailsContract.NoteEditor(1, "Seed note")),
+        )
+        setScreen(vm)
+
+        onNodeWithText("Seed note").performTextClearance()
+        onNodeWithText("Save").performClick()
+
+        assertEquals(
+            WorkoutDetailsContract.ViewAction.NoteSaved(""),
+            vm.actions.lastOrNull(),
+        )
     }
 
     // ------------------------------------------------------------------- WD3 stack
@@ -210,6 +254,15 @@ class WorkoutDetailsScreenTest {
         }
     }
 
+    @Test
+    fun summaryVariant_hidesActionButtons() = runComposeUiTest {
+        setScreen(FakeViewModel(loadedWd1().copy(showActions = false)))
+
+        onNodeWithText("Repeat workout").assertDoesNotExist()
+        onNodeWithText("Edit workout").assertDoesNotExist()
+        onNodeWithText("Delete workout").assertDoesNotExist()
+    }
+
     private fun loadedWd1(
         workout: WorkoutDetailsContract.WorkoutUi = workoutUi(),
     ) = WorkoutDetailsContract.ViewState(
@@ -224,6 +277,7 @@ class WorkoutDetailsScreenTest {
         ),
         noteEditor = null,
         confirmingDelete = false,
+        showActions = true,
     )
 
     private fun loadedWd3() = WorkoutDetailsContract.ViewState(
@@ -233,8 +287,8 @@ class WorkoutDetailsScreenTest {
             header = WorkoutDetailsContract.Header("Wednesday, 5 August", "2 workouts · 1:39"),
             hero = WorkoutDetailsContract.Hero(WorkoutDetailsContract.HeroStat("17 440", "kg", "Total volume"), WorkoutDetailsContract.HeroStat("30", "min", "Cardio")),
             workouts = listOf(
-                workoutUi(workoutNumber = 1, newBest = null, note = null, workload = emptyList(), exerciseGroups = emptyList()),
-                workoutUi(workoutNumber = 2, newBest = null, note = null, workload = emptyList(), exerciseGroups = emptyList()),
+                workoutUi(workoutNumber = 1, newBest = null, note = WorkoutDetailsContract.NoteUi(1, null), workload = emptyList(), exerciseGroups = emptyList()),
+                workoutUi(workoutNumber = 2, newBest = null, note = WorkoutDetailsContract.NoteUi(2, null), workload = emptyList(), exerciseGroups = emptyList()),
             ),
             focusedWorkoutNumber = 1,
             stack = listOf(
@@ -244,13 +298,14 @@ class WorkoutDetailsScreenTest {
         ),
         noteEditor = null,
         confirmingDelete = false,
+        showActions = true,
     )
 
     private fun workoutUi(
         workoutNumber: Int = 1,
         durationText: String? = "1:04",
         newBest: WorkoutDetailsContract.NewBestUi? = WorkoutDetailsContract.NewBestUi("Machine Bench Press · 100 kg × 10"),
-        note: WorkoutDetailsContract.NoteUi? = WorkoutDetailsContract.NoteUi("s1", "Felt strong today"),
+        note: WorkoutDetailsContract.NoteUi = WorkoutDetailsContract.NoteUi(1, "Felt strong today"),
         workload: List<WorkoutDetailsContract.WorkloadRow> = listOf(
             WorkoutDetailsContract.WorkloadRow(CategoryType.CHEST, 62.0, "6 500 kg"),
             WorkoutDetailsContract.WorkloadRow(CategoryType.BICEPS, 38.0, "3 980 kg"),

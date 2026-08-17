@@ -68,6 +68,7 @@ class WorkoutDetailsViewModel internal constructor(
     private val date: LocalDate,
     initialWorkoutNumber: Int?,
     headerNav: WorkoutDetailsContract.HeaderNav,
+    private val variant: WorkoutDetailsContract.Variant = WorkoutDetailsContract.Variant.Details,
     private val muscleTitleFormatter: MuscleTitleFormatter,
     private val strings: WorkoutDetailsStrings,
     private val clock: Clock = Clock.System,
@@ -91,6 +92,7 @@ class WorkoutDetailsViewModel internal constructor(
         date: LocalDate,
         initialWorkoutNumber: Int?,
         headerNav: WorkoutDetailsContract.HeaderNav,
+        variant: WorkoutDetailsContract.Variant = WorkoutDetailsContract.Variant.Details,
     ) : this(
         recordRepository = recordRepository,
         sessionRepository = sessionRepository,
@@ -101,6 +103,7 @@ class WorkoutDetailsViewModel internal constructor(
         date = date,
         initialWorkoutNumber = initialWorkoutNumber,
         headerNav = headerNav,
+        variant = variant,
         muscleTitleFormatter = MuscleTitleFormatter(),
         strings = WorkoutDetailsStrings(),
     )
@@ -112,7 +115,12 @@ class WorkoutDetailsViewModel internal constructor(
     private val noteEditor = MutableStateFlow<WorkoutDetailsContract.NoteEditor?>(null)
     private val confirmingDelete = MutableStateFlow(false)
 
-    private val _uiState = MutableStateFlow(WorkoutDetailsContract.ViewState.initial(headerNav))
+    private val _uiState = MutableStateFlow(
+        WorkoutDetailsContract.ViewState.initial(
+            headerNav,
+            showActions = variant == WorkoutDetailsContract.Variant.Details,
+        ),
+    )
     override val viewState: StateFlow<WorkoutDetailsContract.ViewState> = _uiState.asStateFlow()
 
     // One-shot outputs. Buffered so an effect emitted before the host starts
@@ -133,14 +141,15 @@ class WorkoutDetailsViewModel internal constructor(
             val measurementSystem = userContext.measurementSystem()
             identity = Identity(userId, journalId)
 
-            val rawInputs: Flow<Pair<List<WorkoutRecord>, List<WorkoutSession>>> = combine(
+            val rawInputs: Flow<RawInputs> = combine(
                 recordRepository.observeRecordsChanged(userId, journalId)
                     .mapLatest { recordRepository.getRecordsByDate(userId, journalId, date, includeLastOccurrence = true) },
                 sessionRepository.getSessionsForDayFlow(userId, journalId, date),
-            ) { records, sessions -> records to sessions }
+                recordRepository.getWorkoutNotesForDayFlow(userId, journalId, date),
+            ) { records, sessions, notes -> RawInputs(records, sessions, notes) }
 
-            val content: Flow<WorkoutDetailsContract.Content.Loaded?> = rawInputs.mapLatest { (records, sessions) ->
-                buildContentOrNull(userId, journalId, measurementSystem, records, sessions)
+            val content: Flow<WorkoutDetailsContract.Content.Loaded?> = rawInputs.mapLatest { inputs ->
+                buildContentOrNull(userId, journalId, measurementSystem, inputs.records, inputs.sessions, inputs.notes)
             }
 
             combine(content, focusedWorkoutNumber, noteEditor, confirmingDelete) { loaded, focused, editor, confirming ->
@@ -185,13 +194,22 @@ class WorkoutDetailsViewModel internal constructor(
         measurementSystem: MeasurementSystem,
         records: List<WorkoutRecord>,
         sessions: List<WorkoutSession>,
+        notesByWorkout: Map<Int, String>,
     ): WorkoutDetailsContract.Content.Loaded? {
-        if (records.isEmpty()) {
+        // Summary (post-workout) shows ONLY the finished workout: scope every
+        // downstream section to that page, so the builder yields one workout with
+        // no stack/picker. Details keeps the whole day.
+        val scopedRecords = if (variant == WorkoutDetailsContract.Variant.Summary) {
+            records.filter { it.workoutNumber == focusedWorkoutNumber.value }
+        } else {
+            records
+        }
+        if (scopedRecords.isEmpty()) {
             requestDismissOnce()
             return null
         }
         return runCatching {
-            val sessionBests: Map<Int, SessionBest?> = records
+            val sessionBests: Map<Int, SessionBest?> = scopedRecords
                 .groupBy { it.workoutNumber }
                 .mapValues { (number, workoutRecords) ->
                     detectSessionBest(
@@ -206,10 +224,11 @@ class WorkoutDetailsViewModel internal constructor(
             withContext(Dispatchers.Default) {
                 buildWorkoutDetailsUi(
                     date = date,
-                    records = records,
+                    records = scopedRecords,
                     sessions = sessions,
                     measurementSystem = measurementSystem,
                     sessionBests = sessionBests,
+                    notesByWorkout = notesByWorkout,
                     focusedWorkoutNumber = focusedWorkoutNumber.value,
                     timeZone = timeZone,
                     now = clock.now(),
@@ -276,15 +295,18 @@ class WorkoutDetailsViewModel internal constructor(
      */
     private fun onRepeatTapped() {
         val id = identity ?: return
+        val loaded = loadedContent() ?: return
+        val sourceWorkoutNumber = loaded.focusedWorkoutNumber
         viewModelScope.launch {
-            val copied = runCatching { repeatWorkout(id.userId, id.journalId, date) }
+            val newPage = runCatching { repeatWorkout(id.userId, id.journalId, date, sourceWorkoutNumber) }
                 .onFailure { e ->
                     if (e is CancellationException) throw e
                     log("repeat workout failed", e)
-                }.isSuccess
-            if (copied) {
+                }.getOrNull()
+            // Open today's freshly-copied page so the user can fill it in.
+            if (newPage != null) {
                 val today = clock.now().toLocalDateTime(timeZone).date
-                emit(WorkoutDetailsContract.ViewEffect.OpenEditWorkout(today, focusedWorkoutNumber.value))
+                emit(WorkoutDetailsContract.ViewEffect.OpenEditWorkout(today, newPage))
             }
         }
     }
@@ -318,24 +340,26 @@ class WorkoutDetailsViewModel internal constructor(
         }
     }
 
-    /** No-op when the focused workout is sessionless (no NOTE card to edit). */
+    /** Opens the note editor for the focused workout (every workout can hold a note). */
     private fun onNoteTapped() {
         val loaded = loadedContent() ?: return
         val focused = loaded.workouts.firstOrNull { it.workoutNumber == loaded.focusedWorkoutNumber } ?: return
-        val note = focused.note ?: return
-        noteEditor.value = WorkoutDetailsContract.NoteEditor(sessionUuid = note.sessionUuid, initialText = note.text ?: "")
+        noteEditor.value = WorkoutDetailsContract.NoteEditor(
+            workoutNumber = focused.workoutNumber,
+            initialText = focused.note.text ?: "",
+        )
     }
 
-    /** No sync tick — sessions are local-only. The pipeline's session flow re-emits the new text. */
+    /** No sync tick yet — notes are local-only. The notes flow re-emits the new text. */
     private fun onNoteSaved(text: String) {
         val id = identity ?: return
         val editor = noteEditor.value ?: return
         noteEditor.value = null
         viewModelScope.launch {
-            runCatching { sessionRepository.setSessionComment(id.userId, editor.sessionUuid, text) }
+            runCatching { recordRepository.setWorkoutNote(id.userId, id.journalId, date, editor.workoutNumber, text) }
                 .onFailure { e ->
                     if (e is CancellationException) throw e
-                    log("setSessionComment failed", e)
+                    log("setWorkoutNote failed", e)
                 }
         }
     }
@@ -357,6 +381,13 @@ class WorkoutDetailsViewModel internal constructor(
     }
 
     private data class Identity(val userId: String, val journalId: String)
+
+    /** One day's raw repository inputs, combined before the (expensive) UI build. */
+    private data class RawInputs(
+        val records: List<WorkoutRecord>,
+        val sessions: List<WorkoutSession>,
+        val notes: Map<Int, String>,
+    )
 
     private data class Snapshot(
         val loaded: WorkoutDetailsContract.Content.Loaded?,

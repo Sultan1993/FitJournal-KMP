@@ -11,7 +11,7 @@ import kz.maestrosultan.fitjournal.domain.workout.usecase.RepeatWorkoutUseCase
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutUserContext
 
 /**
- * Swift-friendly factory, mirroring `createFinishConfirmViewModel`: Swift hands
+ * Swift-friendly factory, mirroring `createWorkoutFinishViewModel`: Swift hands
  * over plain values so it never has to conform to the suspend [WorkoutUserContext]
  * interface. Composes [DetectSessionBestUseCase]/[DeleteWorkoutUseCase] internally.
  *
@@ -31,6 +31,7 @@ fun createWorkoutDetailsViewModel(
     date: LocalDate,
     initialWorkoutNumber: Int?,
     headerNav: WorkoutDetailsContract.HeaderNav,
+    variant: WorkoutDetailsContract.Variant = WorkoutDetailsContract.Variant.Details,
 ): WorkoutDetailsViewModel = WorkoutDetailsViewModel(
     recordRepository = recordRepository,
     sessionRepository = sessionRepository,
@@ -41,6 +42,7 @@ fun createWorkoutDetailsViewModel(
     date = date,
     initialWorkoutNumber = initialWorkoutNumber,
     headerNav = headerNav,
+    variant = variant,
 )
 
 /**

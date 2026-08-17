@@ -41,7 +41,6 @@
     <string name="postworkout_confirm_title">Завершити тренування?</string>
     <string name="postworkout_confirm_finish">Завершити тренування</string>
     <string name="postworkout_confirm_keep_training">Продовжити тренування</string>
-    <string name="postworkout_partial_format">%1$d з %2$d</string>
 
     <!-- Post-workout: success screen -->
     <string name="postworkout_saved_to_journal">Збережено в журнал</string>
@@ -189,6 +188,7 @@
     <string name="workout_details_skipped">ПРОПУЩЕНО</string>
     <string name="workout_details_tile_sets">ПІДХОДИ</string>
     <string name="workout_details_new_best">НОВИЙ РЕКОРД</string>
+    <string name="workout_details_achievements">ДОСЯГНЕННЯ</string>
     <string name="workout_details_note">НОТАТКА</string>
     <string name="workout_details_add_note">Додати нотатку до тренування</string>
     <string name="workout_details_workload">НАВАНТАЖЕННЯ</string>
@@ -198,6 +198,7 @@
     <string name="workout_details_share">Поділитися тренуванням</string>
     <string name="workout_details_delete_confirm_title">Видалити тренування?</string>
     <string name="workout_details_delete_confirm_message">Тренування за %1$s буде видалено. Цю дію не можна скасувати.</string>
+    <string name="workout_details_note_title">Замітка про тренування</string>
     <string name="workout_details_note_save">Зберегти</string>
-    <string name="workout_details_note_placeholder">Додайте нотатку про тренування…</string>
+    <string name="workout_details_note_placeholder">Як минуло? Сон, енергія, техніка…</string>
 </resources>

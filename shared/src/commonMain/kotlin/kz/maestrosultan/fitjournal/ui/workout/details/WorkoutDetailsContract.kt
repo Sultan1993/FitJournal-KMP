@@ -16,6 +16,14 @@ object WorkoutDetailsContract {
     /** Which nav affordance the inline header draws; fixed by the host at construction. */
     enum class HeaderNav { Back, Close }
 
+    /**
+     * Details = the day view (all workouts, picker when >1, Edit/Repeat/Delete).
+     * Summary = the post-workout recap of ONE workout: scoped to the finished
+     * workout (no picker) and with the action buttons hidden — the finish flow's
+     * own Close/Share chrome owns actions there.
+     */
+    enum class Variant { Details, Summary }
+
     interface ViewModel {
         val viewState: StateFlow<ViewState>
         val viewEffect: Flow<ViewEffect>
@@ -29,8 +37,13 @@ object WorkoutDetailsContract {
         val noteEditor: NoteEditor?,
         /** Delete confirmation sheet up (ConfirmActionSheet). */
         val confirmingDelete: Boolean,
+        /** Edit/Repeat/Delete row visible — false in the post-workout Summary variant. */
+        val showActions: Boolean,
     ) {
-        companion object { fun initial(headerNav: HeaderNav) = ViewState(headerNav, Content.Loading, null, false) }
+        companion object {
+            fun initial(headerNav: HeaderNav, showActions: Boolean = true) =
+                ViewState(headerNav, Content.Loading, null, false, showActions)
+        }
     }
 
     sealed interface Content {
@@ -77,7 +90,7 @@ object WorkoutDetailsContract {
         val exerciseCount: Int, // performed (>=1 logged set)
         val setCount: Int, // logged sets
         val newBest: NewBestUi?, // null hides the card
-        val note: NoteUi?, // null = sessionless -> no NOTE card at all
+        val note: NoteUi, // always present — every workout can carry a note (empty text = add-note placeholder)
         val workload: List<WorkloadRow>, // empty hides the section
         /** Performed exercises: every group with at least one logged set. */
         val exerciseGroups: List<ExerciseGroup>,
@@ -87,12 +100,14 @@ object WorkoutDetailsContract {
          * [exerciseGroups]. Empty hides the section.
          */
         val skippedGroups: List<ExerciseGroup>,
-        /** Share button visibility: a session exists so a composer summary can be built. */
+        /** Share button visibility: the workout has records, so a composer summary can be built. */
         val canShare: Boolean,
     )
 
     data class NewBestUi(val text: String) // "Machine Bench Press · 100 kg × 10"
-    data class NoteUi(val sessionUuid: String, val text: String?) // text null = WD2 empty state
+    // Keyed by the workout PAGE (date is fixed for the screen), not a session — a
+    // note can attach to any workout. text null/blank = add-note placeholder.
+    data class NoteUi(val workoutNumber: Int, val text: String?)
 
     data class WorkloadRow(
         val category: CategoryType, // color + localized name via existing CategoryType extensions
@@ -117,7 +132,7 @@ object WorkoutDetailsContract {
     data class DeltaUi(val positive: Boolean, val text: String) // "+180 kg" / "−0.4 km", formatted in VM
     data class SetChip(val valueText: String, val repsText: String)
 
-    data class NoteEditor(val sessionUuid: String, val initialText: String)
+    data class NoteEditor(val workoutNumber: Int, val initialText: String)
 
     sealed interface ViewAction {
         data object NavTapped : ViewAction

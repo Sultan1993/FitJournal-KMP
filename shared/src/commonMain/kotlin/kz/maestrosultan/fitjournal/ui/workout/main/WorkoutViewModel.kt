@@ -56,6 +56,9 @@ class WorkoutViewModel(
     private val syncTrigger: SyncTrigger,
     awaitSession: suspend () -> UserSessionState,
     initialDate: LocalDate,
+    // When set, the pager opens on the page with this workoutNumber (Edit /
+    // Repeat land on a specific workout). Null keeps the default first page.
+    private val initialWorkoutNumber: Int? = null,
     private val clock: Clock = Clock.System,
     private val timeZone: TimeZone = TimeZone.currentSystemDefault(),
 ) : ViewModel(), WorkoutContract.ViewModel {
@@ -86,6 +89,15 @@ class WorkoutViewModel(
             userId = session.userId
             journalId = session.journalId
             measurementSystem = session.measurementSystem
+            // Seed the pager to the requested workout ONCE, before the live
+            // pipeline starts, so Edit/Repeat land on the right page. Only a page
+            // that actually exists is honored; otherwise the default first page wins.
+            initialWorkoutNumber?.let { number ->
+                val records = recordRepository.getRecordsByDate(session.userId, session.journalId, initialDate, includeLastOccurrence = false)
+                val sessions = sessionRepository.getSessionsForDay(session.userId, session.journalId, initialDate)
+                val index = buildWorkoutPages(records, sessions).indexOfFirst { it.workoutNumber == number }
+                if (index >= 0) currentPageIndex.value = index
+            }
             observe(session.userId, session.journalId)
         }
     }
@@ -271,6 +283,8 @@ class WorkoutViewModel(
                 emit(WorkoutContract.ViewEffect.RequestEndSession)
             } else {
                 sessionRepository.deleteSession(uid, running.id)
+                // Nothing was logged → the page is not a workout; drop any note with it.
+                recordRepository.clearWorkoutNote(uid, jid, running.date, running.workoutNumber)
             }
         }
     }
@@ -285,23 +299,27 @@ class WorkoutViewModel(
         val jid = journalId ?: return
         viewModelScope.launch {
             recordRepository.deleteRecord(uid, jid, record)
-            discardSessionIfEmptied(uid, jid, record.date, record.workoutNumber)
+            pruneEmptiedPage(uid, jid, record.date, record.workoutNumber)
             syncTrigger.requestTick(SyncReason.PostWrite.WorkoutRecord)
         }
     }
 
     /**
-     * After deleting a record, drop a now-empty workout's FINISHED session so no
-     * "finished but nothing logged" zombie strands the page (no summary card, no
-     * Start bar — it hides while a session exists). A RUNNING session is left
-     * alone: [onRequestEndSession]'s own discard-empty handles it on End.
+     * After deleting a record, if the page now holds nothing, drop its page-level
+     * meta so a reused (date, workoutNumber) starts clean: the FINISHED session
+     * (else a "finished but nothing logged" zombie strands the page — no summary
+     * card, no Start bar) AND the note (which can exist even with no session, on a
+     * records-only workout). A RUNNING session is left alone — the workout is still
+     * in progress; [onRequestEndSession]'s discard-empty handles both on End.
      */
-    private suspend fun discardSessionIfEmptied(uid: String, jid: String, date: LocalDate, workoutNumber: Int) {
-        val session = sessionRepository.getSessionByWorkoutNumber(uid, jid, date, workoutNumber) ?: return
-        if (session.endedAt == null) return
+    private suspend fun pruneEmptiedPage(uid: String, jid: String, date: LocalDate, workoutNumber: Int) {
+        val session = sessionRepository.getSessionByWorkoutNumber(uid, jid, date, workoutNumber)
+        if (session != null && session.endedAt == null) return
         val stillHasRecords = recordRepository.getRecordsByDate(uid, jid, date)
             .any { it.workoutNumber == workoutNumber }
-        if (!stillHasRecords) sessionRepository.deleteSession(uid, session.id)
+        if (stillHasRecords) return
+        if (session != null) sessionRepository.deleteSession(uid, session.id)
+        recordRepository.clearWorkoutNote(uid, jid, date, workoutNumber)
     }
 
     /** Persist a within-page reorder ([orderedRecordIds] = the page's records, new order). */

@@ -63,6 +63,7 @@ internal suspend fun buildWorkoutDetailsUi(
     sessions: List<WorkoutSession>,
     measurementSystem: MeasurementSystem,
     sessionBests: Map<Int, SessionBest?>,
+    notesByWorkout: Map<Int, String>,
     focusedWorkoutNumber: Int,
     timeZone: TimeZone,
     now: Instant,
@@ -85,6 +86,7 @@ internal suspend fun buildWorkoutDetailsUi(
             workoutRecords = recordsByWorkout.getValue(number),
             session = sessionsByWorkout[number],
             best = sessionBests[number],
+            noteText = notesByWorkout[number],
             measurementSystem = measurementSystem,
             now = now,
         )
@@ -256,6 +258,7 @@ private fun buildWorkoutUi(
     workoutRecords: List<WorkoutRecord>,
     session: WorkoutSession?,
     best: SessionBest?,
+    noteText: String?,
     measurementSystem: MeasurementSystem,
     now: Instant,
 ): WorkoutDetailsContract.WorkoutUi {
@@ -276,11 +279,15 @@ private fun buildWorkoutUi(
         exerciseCount = performedExerciseCount(workoutExercises),
         setCount = loggedSetCount(workoutExercises),
         newBest = best?.let { newBestUi(it, measurementSystem) },
-        note = session?.let { WorkoutDetailsContract.NoteUi(sessionUuid = it.id, text = it.comment) },
+        // Always present: any workout can carry a note, keyed by its page. Blank/absent
+        // text renders the add-note placeholder.
+        note = WorkoutDetailsContract.NoteUi(workoutNumber = workoutNumber, text = noteText?.takeIf { it.isNotBlank() }),
         workload = workloadRows(workoutRecords, measurementSystem),
         exerciseGroups = performed,
         skippedGroups = skipped,
-        canShare = session != null,
+        // The share card is built from records (summary), not the session — a
+        // directly-logged workout has everything the composer needs.
+        canShare = workoutRecords.isNotEmpty(),
     )
 }
 

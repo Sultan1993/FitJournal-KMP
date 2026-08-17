@@ -88,6 +88,7 @@ class WorkoutDetailsViewModelTest {
         syncTrigger: SyncTrigger = FakeSyncTrigger(),
         initialWorkoutNumber: Int? = null,
         headerNav: WorkoutDetailsContract.HeaderNav = WorkoutDetailsContract.HeaderNav.Back,
+        variant: WorkoutDetailsContract.Variant = WorkoutDetailsContract.Variant.Details,
     ): WorkoutDetailsViewModel = WorkoutDetailsViewModel(
         recordRepository = records,
         sessionRepository = sessions,
@@ -98,6 +99,7 @@ class WorkoutDetailsViewModelTest {
         date = DATE,
         initialWorkoutNumber = initialWorkoutNumber,
         headerNav = headerNav,
+        variant = variant,
         muscleTitleFormatter = formatter,
         strings = strings,
     ).also { createdViewModels += it }
@@ -121,8 +123,9 @@ class WorkoutDetailsViewModelTest {
         assertTrue(loaded.stack.isEmpty(), "a single-workout day has no WD3 stack")
         val workout = loaded.workouts.single()
         assertEquals("1:04", workout.durationText, "09:38–10:42 session, formatDuration rule")
-        assertTrue(workout.canShare, "a session exists, so the share composer can be built")
-        assertEquals("session-1", workout.note?.sessionUuid)
+        assertTrue(workout.canShare, "records present, so the share composer can be built")
+        assertEquals(1, workout.note.workoutNumber, "the note is keyed by the workout page")
+        assertNull(workout.note.text, "no note set -> add-note placeholder")
     }
 
     // ─── SelectWorkout ──────────────────────────────────────────────────
@@ -183,7 +186,7 @@ class WorkoutDetailsViewModelTest {
     // ─── Note ───────────────────────────────────────────────────────────
 
     @Test
-    fun noteSaved_writesThroughToTheSession_andClearsTheEditor() = runTest(dispatcher) {
+    fun noteSaved_writesThroughToTheRecordRepo_andClearsTheEditor() = runTest(dispatcher) {
         val records = FakeRecordRepository(listOf(squatRecord(1)))
         val sessions = FakeWorkoutSessionRepository(listOf(session("session-1", 1)))
         val vm = viewModel(records, sessions)
@@ -191,17 +194,17 @@ class WorkoutDetailsViewModelTest {
 
         vm.dispatch(WorkoutDetailsContract.ViewAction.NoteTapped)
         val editor = vm.viewState.first { it.noteEditor != null }.noteEditor
-        assertEquals("session-1", editor?.sessionUuid)
-        assertEquals("", editor?.initialText, "no comment yet — WD2 empty state seeds an empty editor")
+        assertEquals(1, editor?.workoutNumber, "the editor is keyed by the workout page, not a session")
+        assertEquals("", editor?.initialText, "no note yet — the empty state seeds an empty editor")
 
         vm.dispatch(WorkoutDetailsContract.ViewAction.NoteSaved("Felt strong today"))
 
         assertNull(vm.viewState.first { it.noteEditor == null }.noteEditor)
-        assertEquals("Felt strong today", sessions.sessions.value.single { it.id == "session-1" }.comment)
+        assertEquals("Felt strong today", records.getWorkoutNote(USER_ID, JOURNAL_ID, DATE, 1), "note saved to the record repo, not the session")
         val loaded = vm.viewState
             .first { (it.content as? WorkoutDetailsContract.Content.Loaded)?.workouts?.single()?.note?.text == "Felt strong today" }
             .content as WorkoutDetailsContract.Content.Loaded
-        assertEquals("Felt strong today", loaded.workouts.single().note?.text, "the pipeline's session flow re-emitted the new text")
+        assertEquals("Felt strong today", loaded.workouts.single().note.text, "the notes flow re-emitted the new text")
     }
 
     // ─── Edit / Share carry the focused workout ────────────────────────
@@ -223,7 +226,7 @@ class WorkoutDetailsViewModelTest {
     }
 
     @Test
-    fun repeatTapped_copiesThisDayToToday_thenOpensAWorkout() = runTest(dispatcher) {
+    fun repeatTapped_copiesFocusedPageToToday_thenOpensTheNewPage() = runTest(dispatcher) {
         val records = FakeRecordRepository(listOf(squatRecord(1)))
         val sessions = FakeWorkoutSessionRepository(listOf(session("session-1", 1)))
         val vm = viewModel(records, sessions)
@@ -233,7 +236,36 @@ class WorkoutDetailsViewModelTest {
         advanceUntilIdle()
 
         assertEquals(DATE, records.repeatedFrom)
-        assertTrue(vm.viewEffect.first() is WorkoutDetailsContract.ViewEffect.OpenEditWorkout)
+        assertEquals(1, records.repeatedWorkoutNumber, "copies the focused page, not the whole day")
+        val effect = vm.viewEffect.first()
+        assertTrue(effect is WorkoutDetailsContract.ViewEffect.OpenEditWorkout)
+        assertEquals(3, (effect as WorkoutDetailsContract.ViewEffect.OpenEditWorkout).workoutNumber, "opens the new page the copy returned")
+    }
+
+    // ─── Summary vs Details variant ─────────────────────────────────────
+
+    @Test
+    fun summaryVariant_showsOnlyTheFinishedWorkout_noPickerNoActions() = runTest(dispatcher) {
+        val records = FakeRecordRepository(listOf(squatRecord(1), benchRecord(2)))
+        val sessions = FakeWorkoutSessionRepository(listOf(session("session-1", 1), session("session-2", 2)))
+        val vm = viewModel(records, sessions, initialWorkoutNumber = 2, variant = WorkoutDetailsContract.Variant.Summary)
+        val loaded = awaitLoaded(vm)
+
+        assertEquals(listOf(2), loaded.workouts.map { it.workoutNumber }, "only the finished workout is shown")
+        assertTrue(loaded.stack.isEmpty(), "no picker in Summary")
+        assertEquals(false, vm.viewState.value.showActions, "no Edit/Repeat/Delete in Summary")
+    }
+
+    @Test
+    fun detailsVariant_showsTheWholeDay_withPickerAndActions() = runTest(dispatcher) {
+        val records = FakeRecordRepository(listOf(squatRecord(1), benchRecord(2)))
+        val sessions = FakeWorkoutSessionRepository(listOf(session("session-1", 1), session("session-2", 2)))
+        val vm = viewModel(records, sessions, initialWorkoutNumber = 2) // Details is the default
+
+        val loaded = awaitLoaded(vm)
+        assertEquals(listOf(1, 2), loaded.workouts.map { it.workoutNumber }, "the whole day")
+        assertTrue(loaded.stack.isNotEmpty(), "picker present for a multi-workout day")
+        assertEquals(true, vm.viewState.value.showActions, "actions shown in Details")
     }
 
     @Test
@@ -356,7 +388,7 @@ class WorkoutDetailsViewModelTest {
         updatedDate = START,
     )
 
-    private fun session(id: String, workoutNumber: Int, comment: String? = null) = WorkoutSession(
+    private fun session(id: String, workoutNumber: Int) = WorkoutSession(
         id = id,
         userId = USER_ID,
         journalId = JOURNAL_ID,
@@ -364,7 +396,6 @@ class WorkoutDetailsViewModelTest {
         workoutNumber = workoutNumber,
         startedAt = START,
         endedAt = END,
-        comment = comment,
     )
 
     private fun squatRecord(workoutNumber: Int) = record(
@@ -466,6 +497,18 @@ class WorkoutDetailsViewModelTest {
             changeSignal.update { it + 1 }
         }
 
+        // In-memory workout notes keyed by workoutNumber (the screen is one day).
+        private val notes = MutableStateFlow<Map<Int, String>>(emptyMap())
+        override fun getWorkoutNotesForDayFlow(userId: String, journalId: String, date: LocalDate): Flow<Map<Int, String>> = notes
+        override suspend fun getWorkoutNote(userId: String, journalId: String, date: LocalDate, workoutNumber: Int): String? =
+            notes.value[workoutNumber]
+        override suspend fun setWorkoutNote(userId: String, journalId: String, date: LocalDate, workoutNumber: Int, text: String) {
+            notes.update { if (text.isBlank()) it - workoutNumber else it + (workoutNumber to text.trim()) }
+        }
+        override suspend fun clearWorkoutNote(userId: String, journalId: String, date: LocalDate, workoutNumber: Int) {
+            notes.update { it - workoutNumber }
+        }
+
         override suspend fun getAllRecords(userId: String, journalId: String): List<WorkoutRecord> = unsupported()
         override suspend fun getRecordsByMonth(userId: String, journalId: String, month: String, year: String): List<WorkoutRecord> = unsupported()
         override suspend fun getRecentRecords(userId: String, journalId: String): List<WorkoutRecord> = unsupported()
@@ -483,6 +526,14 @@ class WorkoutDetailsViewModelTest {
         override suspend fun addRecordsToDate(userId: String, journalId: String, date: LocalDate, records: List<WorkoutRecord>): Unit = unsupported()
         override suspend fun addRecordsFromDateToToday(userId: String, journalId: String, date: LocalDate) {
             repeatedFrom = date
+        }
+
+        /** Records what Repeat copied; returns a fixed "new page today" (3) to open. */
+        var repeatedWorkoutNumber: Int? = null
+        override suspend fun copyWorkoutToTodayAsNewPage(userId: String, journalId: String, date: LocalDate, workoutNumber: Int): Int {
+            repeatedFrom = date
+            repeatedWorkoutNumber = workoutNumber
+            return 3
         }
 
         override suspend fun replaceExerciseInRecord(
@@ -553,14 +604,6 @@ class WorkoutDetailsViewModelTest {
 
         override fun getSessionsForDayFlow(userId: String, journalId: String, date: LocalDate): Flow<List<WorkoutSession>> =
             sessions.map { list -> list.filter { it.userId == userId && it.journalId == journalId && it.date == date } }
-
-        override suspend fun setSessionComment(userId: String, sessionUuid: String, comment: String?) {
-            sessions.update { list ->
-                list.map {
-                    if (it.id == sessionUuid && it.userId == userId) it.copy(comment = comment?.takeIf(String::isNotBlank)) else it
-                }
-            }
-        }
 
         override suspend fun getSessionByWorkoutNumber(userId: String, journalId: String, date: LocalDate, workoutNumber: Int): WorkoutSession? = unsupported()
         override suspend fun getSessionsForDay(userId: String, journalId: String, date: LocalDate): List<WorkoutSession> = unsupported()
