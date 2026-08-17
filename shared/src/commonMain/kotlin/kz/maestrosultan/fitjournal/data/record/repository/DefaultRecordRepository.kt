@@ -2,9 +2,13 @@ package kz.maestrosultan.fitjournal.data.record.repository
 
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
 
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -310,6 +314,10 @@ class DefaultRecordRepository(
         val lastPosition = lastRecordPositionForDate(userId, journalId, date, workoutNumber)
         val now = Clock.System.now()
         val dateStr = date.toString()
+        // Clear-on-begin: wipe any meta a prior (deleted) occupant stranded at this
+        // page so a reused (date, workoutNumber) never inherits a stale note/duration.
+        // No-op when appending to an existing workout (page still has live records).
+        clearStalePageMetaForNewWorkouts(userId, journalId, date, setOf(workoutNumber))
         val trees = exerciseIds.mapIndexed { index, exerciseId ->
             val recordUuid = randomUuid()
             DBWorkoutRecord(
@@ -358,6 +366,24 @@ class DefaultRecordRepository(
         val source = getRecordsByDate(userId, journalId, date)
         // Repeat-workout copies the whole day "as is": keep each source's page.
         insertCopiedRecords(userId, journalId, todayInSystemTz(), source, targetWorkoutNumber = null)
+    }
+
+    override suspend fun copyWorkoutToTodayAsNewPage(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+        workoutNumber: Int,
+    ): Int? {
+        val source = getRecordsByDate(userId, journalId, date, includeLastOccurrence = false)
+            .filter { it.workoutNumber == workoutNumber }
+        if (source.isEmpty()) return null
+        val today = todayInSystemTz()
+        // A brand-new page: one past today's highest workout number (gap-safe —
+        // numbers are distinct ordinals, never renumbered).
+        val newPage = (getRecordsByDate(userId, journalId, today, includeLastOccurrence = false)
+            .maxOfOrNull { it.workoutNumber } ?: 0) + 1
+        insertCopiedRecords(userId, journalId, today, source, targetWorkoutNumber = newPage)
+        return newPage
     }
 
     override suspend fun replaceExerciseInRecord(
@@ -412,6 +438,12 @@ class DefaultRecordRepository(
         if (sources.isEmpty()) return
         val now = Clock.System.now()
         val dateStr = date.toString()
+        // Clear-on-begin for import / repeat / copy: same guarantee as the direct-add
+        // path — a reused empty page must not inherit a stranded note/finished session.
+        clearStalePageMetaForNewWorkouts(
+            userId, journalId, date,
+            sources.map { targetWorkoutNumber ?: it.workoutNumber }.toSet(),
+        )
         // [targetWorkoutNumber] set → every copy lands on that page; null
         // (Repeat-workout) → each keeps its source's workoutNumber. Position is
         // page-relative: seed each workout's counter from existing records, then increment.
@@ -662,10 +694,24 @@ class DefaultRecordRepository(
         workoutsDB.getWorkoutRecordsByJournal(userId, journalId)
             .filter { it.row.date == dateStr }
             .forEach { workoutsDB.softDeleteWorkoutRecord(it.row.uuid) }
+        // Every page of the day is now empty → tombstone its notes too, so a later
+        // workout on this date can't inherit them.
+        database?.let { db ->
+            withContext(Dispatchers.IO) {
+                val nowText = Clock.System.now().toStoredString()
+                db.workoutNotesQueries.getNotesForDay(userId, journalId, dateStr)
+                    .executeAsList()
+                    .forEach { note ->
+                        db.workoutNotesQueries.softDeleteNoteByPage(nowText, userId, journalId, dateStr, note.workoutNumber)
+                    }
+            }
+        }
     }
 
     override suspend fun deleteUserRecords(userId: String) {
         workoutsDB.deleteAllForUser(userId)
+        // Workout notes are owned here now — purge them in the same account-delete.
+        database?.let { db -> withContext(Dispatchers.IO) { db.workoutNotesQueries.deleteNotesByUserId(userId) } }
     }
 
     /**
@@ -716,7 +762,144 @@ class DefaultRecordRepository(
                     ?.let { session ->
                         db.workoutSessionsQueries.deleteWorkoutSessionByUuid(session.uuid, userId)
                     }
+                // The page is gone → its note goes with it (same transaction), so a
+                // later workout reusing this (date, workoutNumber) never inherits it.
+                db.workoutNotesQueries.softDeleteNoteByPage(nowText, userId, journalId, dateStr, workoutNumberLong)
             }
+        }
+    }
+
+    /**
+     * Before a NEW workout is written to a page, wipe any metadata a prior
+     * (deleted) occupant stranded at that (date, workoutNumber) so it can't bleed
+     * into the new one. Applies ONLY to pages with no live records (a fresh
+     * workout, not an append). A RUNNING session is the current timer workout —
+     * never touched; only a finished session is stale. All in one transaction.
+     * Shared by the direct-add and copy/import/repeat write paths.
+     */
+    private suspend fun clearStalePageMetaForNewWorkouts(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+        workoutNumbers: Set<Int>,
+    ) {
+        if (workoutNumbers.isEmpty()) return
+        val db = database ?: return
+        val dateStr = date.toString()
+        val nextDayStr = date.plusDaysSafe(1).toString()
+        val nowText = Clock.System.now().toStoredString()
+        withContext(Dispatchers.IO) {
+            db.transaction {
+                val liveNumbers = db.workoutRecordsQueries
+                    .getWorkoutRecordsByJournal(userId, journalId, dateStr, nextDayStr)
+                    .executeAsList()
+                    .map { it.workoutNumber }
+                    .toSet()
+                workoutNumbers.forEach { wn ->
+                    val wnLong = wn.toLong()
+                    if (wnLong in liveNumbers) return@forEach // appending to an existing workout
+                    db.workoutSessionsQueries
+                        .getSessionByWorkoutNumber(userId, journalId, dateStr, wnLong)
+                        .executeAsOneOrNull()
+                        ?.takeIf { it.endedAt != null }
+                        ?.let { db.workoutSessionsQueries.deleteWorkoutSessionByUuid(it.uuid, userId) }
+                    db.workoutNotesQueries.softDeleteNoteByPage(nowText, userId, journalId, dateStr, wnLong)
+                }
+            }
+        }
+    }
+
+    // ─── Workout notes (per-page, decoupled from sessions) ───────────────
+
+    override suspend fun getWorkoutNote(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+        workoutNumber: Int,
+    ): String? = withContext(Dispatchers.IO) {
+        val db = database ?: return@withContext null
+        db.workoutNotesQueries
+            .getNoteByPage(userId, journalId, date.toString(), workoutNumber.toLong())
+            .executeAsOneOrNull()
+    }
+
+    override fun getWorkoutNotesForDayFlow(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+    ): Flow<Map<Int, String>> {
+        val db = database ?: return flowOf(emptyMap())
+        return db.workoutNotesQueries
+            .getNotesForDay(userId, journalId, date.toString())
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .map { rows -> rows.associate { it.workoutNumber.toInt() to it.comment } }
+    }
+
+    /** Blank clears (tombstone); otherwise upsert — a reused page revives its row. */
+    override suspend fun setWorkoutNote(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+        workoutNumber: Int,
+        text: String,
+    ) {
+        val trimmed = text.trim()
+        if (trimmed.isEmpty()) {
+            clearWorkoutNote(userId, journalId, date, workoutNumber)
+            return
+        }
+        val db = checkNotNull(database) {
+            "DefaultRecordRepository.setWorkoutNote requires the primary constructor's `database`."
+        }
+        val dateStr = date.toString()
+        val nextDayStr = date.plusDaysSafe(1).toString()
+        val workoutNumberLong = workoutNumber.toLong()
+        withContext(Dispatchers.IO) {
+            // Manual upsert (the dialect has no ON CONFLICT): revive the page's
+            // existing row if any (keeping its uuid/remoteId for sync), else insert.
+            db.transaction {
+                // Guard the save/delete race: if the page has no live records the
+                // workout was deleted mid-save — don't resurrect a note for a gone page.
+                val pageHasRecords = db.workoutRecordsQueries
+                    .getWorkoutRecordsByJournal(userId, journalId, dateStr, nextDayStr)
+                    .executeAsList()
+                    .any { it.workoutNumber == workoutNumberLong }
+                if (!pageHasRecords) return@transaction
+                val existing = db.workoutNotesQueries
+                    .getNoteUuidByPage(userId, journalId, dateStr, workoutNumberLong)
+                    .executeAsOneOrNull()
+                if (existing != null) {
+                    db.workoutNotesQueries.reviveNoteByPage(trimmed, userId, journalId, dateStr, workoutNumberLong)
+                } else {
+                    db.workoutNotesQueries.insertNote(
+                        uuid = randomUuid(),
+                        userId = userId,
+                        journalId = journalId,
+                        date = dateStr,
+                        workoutNumber = workoutNumberLong,
+                        comment = trimmed,
+                    )
+                }
+            }
+        }
+    }
+
+    override suspend fun clearWorkoutNote(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+        workoutNumber: Int,
+    ) {
+        val db = database ?: return
+        withContext(Dispatchers.IO) {
+            db.workoutNotesQueries.softDeleteNoteByPage(
+                deletedAt = Clock.System.now().toStoredString(),
+                userId = userId,
+                journalId = journalId,
+                date = date.toString(),
+                workoutNumber = workoutNumber.toLong(),
+            )
         }
     }
 

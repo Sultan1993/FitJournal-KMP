@@ -1,0 +1,74 @@
+-- A free-text note attached to one workout, keyed by the same "page" a workout
+-- is: (userId, journalId, date, workoutNumber). Deliberately decoupled from
+-- `workoutSessions` so a note can hang on ANY workout — one logged with the
+-- timer (which has a session) OR one logged straight into the day (which does
+-- not). The note used to live on `workoutSessions.comment`; it moved here so
+-- records-only workouts can carry one too. `workoutSessions.comment` is now
+-- dead (kept only because SQLite DROP COLUMN isn't safe on the Android versions
+-- we support); its old values were backfilled here by migration 10.sqm.
+--
+-- Sync-ready shape (remoteId / pendingUpload / deletedAt) mirroring the other
+-- synced tables. There is no AWS sync for notes yet — this rides the SAME later
+-- increment as `workoutSessions`. date = LocalDate.toString().
+CREATE TABLE workoutNotes (
+    uuid TEXT PRIMARY KEY NOT NULL,
+    userId TEXT NOT NULL,
+    journalId TEXT NOT NULL,
+    date TEXT NOT NULL,
+    workoutNumber INTEGER NOT NULL,
+    comment TEXT NOT NULL,
+    remoteId TEXT,
+    pendingUpload INTEGER NOT NULL DEFAULT 1,
+    deletedAt TEXT
+);
+
+-- One note per page. UNIQUE is the upsert conflict target AND guarantees a page
+-- can never hold two notes. The index is unconditional (covers tombstoned rows),
+-- so a page has at most ONE row ever — `upsertNote` revives it rather than
+-- inserting a duplicate.
+CREATE UNIQUE INDEX idx_workoutNotes_page
+ON workoutNotes(userId, journalId, date, workoutNumber);
+
+-- One page's live note text, or none.
+getNoteByPage:
+SELECT comment FROM workoutNotes
+WHERE userId = ? AND journalId = ? AND date = ? AND workoutNumber = ? AND deletedAt IS NULL;
+
+-- Every live note for a day (workoutNumber -> comment) — the details pipeline.
+getNotesForDay:
+SELECT workoutNumber, comment FROM workoutNotes
+WHERE userId = ? AND journalId = ? AND date = ? AND deletedAt IS NULL;
+
+-- The page's note uuid if a row exists in ANY state (live or tombstoned) — the
+-- unique index guarantees at most one. The repository uses this to choose between
+-- reviving the existing row and inserting a new one (the dialect has no upsert).
+getNoteUuidByPage:
+SELECT uuid FROM workoutNotes
+WHERE userId = ? AND journalId = ? AND date = ? AND workoutNumber = ?;
+
+-- Insert a brand-new note row (no prior row for this page).
+insertNote:
+INSERT INTO workoutNotes(uuid, userId, journalId, date, workoutNumber, comment, pendingUpload, deletedAt)
+VALUES (?, ?, ?, ?, ?, ?, 1, NULL);
+
+-- Revive/overwrite the existing row for a page (live or tombstoned) with new text.
+reviveNoteByPage:
+UPDATE workoutNotes
+SET comment = ?, pendingUpload = 1, deletedAt = NULL
+WHERE userId = ? AND journalId = ? AND date = ? AND workoutNumber = ?;
+
+-- Tombstone one page's note (page emptied, or note cleared). Soft-delete so a
+-- future note sync can propagate the removal; pendingUpload = 1 pushes it.
+softDeleteNoteByPage:
+UPDATE workoutNotes
+SET deletedAt = ?, pendingUpload = 1
+WHERE userId = ? AND journalId = ? AND date = ? AND workoutNumber = ? AND deletedAt IS NULL;
+
+-- Hard purge — delete-account flow (mirrors deleteWorkoutRecordsByUserId).
+deleteNotesByUserId:
+DELETE FROM workoutNotes WHERE userId = ?;
+
+-- FJ2.0 wipe-gate parity — keeps DefaultLocalDbWiper's "every user-scoped
+-- table" contract honest.
+wipeAll:
+DELETE FROM workoutNotes;

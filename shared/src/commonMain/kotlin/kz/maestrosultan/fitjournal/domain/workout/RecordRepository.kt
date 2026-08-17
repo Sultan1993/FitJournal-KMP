@@ -1,6 +1,7 @@
 package kz.maestrosultan.fitjournal.domain.workout
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
@@ -187,6 +188,19 @@ interface RecordRepository {
     )
 
     /**
+     * Copies workout [workoutNumber] of [date] onto TODAY as a brand-new page
+     * (today's max workoutNumber + 1), clearing weights/reps to a "do it again"
+     * template (see [addRecordsToDate]). Returns the new page's workoutNumber, or
+     * null when the source workout has no records. Default no-ops for fakes.
+     */
+    suspend fun copyWorkoutToTodayAsNewPage(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+        workoutNumber: Int,
+    ): Int? = null
+
+    /**
      * Replaces the single workoutExercise [targetWorkoutExerciseId] inside
      * [recordId] with a fresh one pointing at catalog [newExerciseId], dropping
      * that member's sets and keeping its slot. Any OTHER members of a superset
@@ -309,4 +323,47 @@ interface RecordRepository {
         workoutExerciseId: String,
         setId: String,
     ): Boolean
+
+    // ─── Workout notes (per-page free-text, decoupled from sessions) ─────
+    //
+    // A note is keyed by the workout PAGE (date, workoutNumber), not by a
+    // session, so ANY workout can carry one — timed or logged straight into the
+    // day. Kept here (not on WorkoutSessionRepository) so the details pipeline
+    // reads note + records from one repo, and so the page-empty cleanup can
+    // tombstone the note in the same place records are deleted.
+    //
+    // Defaults are no-ops so test fakes of RecordRepository need no change; the
+    // real repository overrides all four.
+
+    /** The live note text for one workout page, or null when there is none. */
+    suspend fun getWorkoutNote(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+        workoutNumber: Int,
+    ): String? = null
+
+    /** Live notes for a day as `workoutNumber -> text`, reactive (re-emits on edit). */
+    fun getWorkoutNotesForDayFlow(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+    ): Flow<Map<Int, String>> = flowOf(emptyMap())
+
+    /** Upsert a page's note; a blank [text] clears it (tombstone). */
+    suspend fun setWorkoutNote(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+        workoutNumber: Int,
+        text: String,
+    ) {}
+
+    /** Tombstone a page's note — the page emptied, or is being reused for a new workout. */
+    suspend fun clearWorkoutNote(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+        workoutNumber: Int,
+    ) {}
 }

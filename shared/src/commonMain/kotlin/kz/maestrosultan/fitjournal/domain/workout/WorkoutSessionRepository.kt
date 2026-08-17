@@ -68,14 +68,6 @@ interface WorkoutSessionRepository {
     suspend fun endSession(userId: String): WorkoutSession?
 
     /**
-     * Set (or clear, with a null/blank note) the free-text comment on ONE
-     * session. [userId]-scoped defensively; a blank note is normalized to null.
-     * A note can be added while the workout runs or after it's finished.
-     * Local-only — no sync in this increment.
-     */
-    suspend fun setSessionComment(userId: String, sessionUuid: String, comment: String?)
-
-    /**
      * Hard-delete ONE session by id — the empty-workout cleanup. A workout with
      * no records is not a workout, so its session (started then ended with
      * nothing logged, or emptied by deleting every record) is discarded rather

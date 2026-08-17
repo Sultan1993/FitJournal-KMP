@@ -54,6 +54,92 @@ class RecordRepositoryTest {
         assertTrue(workoutsDB.getPendingUploads(userId).any { it.uuid == rec.id }, "a new record must be queued for upload")
     }
 
+    // ─── Workout notes (per-page, decoupled from sessions) ───────────────
+
+    @Test
+    fun workoutNote_set_read_update_clear(): Unit = runBlocking {
+        val exId = seedCatalogExercise()
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId))
+        assertNull(repo.getWorkoutNote(userId, journalId, date, 1), "no note yet")
+
+        repo.setWorkoutNote(userId, journalId, date, 1, "  Felt strong  ")
+        assertEquals("Felt strong", repo.getWorkoutNote(userId, journalId, date, 1), "trimmed + stored")
+
+        repo.setWorkoutNote(userId, journalId, date, 1, "Even better")
+        assertEquals("Even better", repo.getWorkoutNote(userId, journalId, date, 1), "revived/updated in place, no duplicate row")
+
+        repo.setWorkoutNote(userId, journalId, date, 1, "   ")
+        assertNull(repo.getWorkoutNote(userId, journalId, date, 1), "a blank note clears it")
+    }
+
+    @Test
+    fun deletingWholeWorkout_removesItsNote(): Unit = runBlocking {
+        val exId = seedCatalogExercise()
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId))
+        repo.setWorkoutNote(userId, journalId, date, 1, "Leg day")
+        assertEquals("Leg day", repo.getWorkoutNote(userId, journalId, date, 1))
+
+        repo.deleteWorkoutAtomic(userId, journalId, date, 1)
+        assertNull(repo.getWorkoutNote(userId, journalId, date, 1), "the note dies with the workout")
+    }
+
+    @Test
+    fun addingFirstRecordToAReusedPage_clearsStaleNote(): Unit = runBlocking {
+        val exId = seedCatalogExercise()
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId))
+        repo.setWorkoutNote(userId, journalId, date, 1, "Ghost note")
+
+        // Empty the page WITHOUT note cleanup (simulate a delete path that misses it),
+        // stranding the note at (date, 1).
+        val recId = repo.getRecordsByDate(userId, journalId, date).single().id
+        workoutsDB.softDeleteWorkoutRecord(recId)
+        assertEquals("Ghost note", repo.getWorkoutNote(userId, journalId, date, 1), "stranded by the bypassing delete")
+
+        // A brand-new workout reuses (date, 1): clear-on-begin wipes the ghost so the
+        // new workout starts clean — the guarantee even if a delete path regresses.
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId))
+        assertNull(repo.getWorkoutNote(userId, journalId, date, 1), "clear-on-begin removed the stale note")
+    }
+
+    @Test
+    fun importingIntoAReusedPage_clearsStaleNote(): Unit = runBlocking {
+        val exId = seedCatalogExercise()
+        // Page 1 gets a note, then is emptied by a bypassing delete (note stranded).
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId))
+        repo.setWorkoutNote(userId, journalId, date, 1, "Ghost note")
+        val recId = repo.getRecordsByDate(userId, journalId, date).single().id
+        workoutsDB.softDeleteWorkoutRecord(recId)
+        assertEquals("Ghost note", repo.getWorkoutNote(userId, journalId, date, 1))
+
+        // Import a copied workout onto the reused page 1: the copy path must also
+        // clear-on-begin, not just the direct-add path.
+        val otherDate = LocalDate(2026, 2, 1)
+        repo.addExercisesToDate(userId, journalId, otherDate, 1, listOf(exId))
+        val source = repo.getRecordsByDate(userId, journalId, otherDate)
+        repo.addRecordsToWorkout(userId, journalId, date, 1, source)
+
+        assertNull(repo.getWorkoutNote(userId, journalId, date, 1), "importing onto the reused page cleared the stale note")
+    }
+
+    @Test
+    fun copyWorkoutToTodayAsNewPage_landsOnTheNextFreePage_nullWhenEmpty(): Unit = runBlocking {
+        val exId = seedCatalogExercise()
+        // Source workout 2 on a past date; today (fresh db) is empty.
+        repo.addExercisesToDate(userId, journalId, date, 2, listOf(exId))
+
+        assertEquals(1, repo.copyWorkoutToTodayAsNewPage(userId, journalId, date, 2), "today empty -> new page 1")
+        assertEquals(2, repo.copyWorkoutToTodayAsNewPage(userId, journalId, date, 2), "second repeat -> next page today")
+        assertNull(repo.copyWorkoutToTodayAsNewPage(userId, journalId, date, 99), "no source records -> null, no copy")
+    }
+
+    @Test
+    fun setWorkoutNote_onAPageWithNoLiveRecords_isNoOp(): Unit = runBlocking {
+        // The save/delete race: a note write that lands after the workout is gone must
+        // NOT resurrect a note for a page with no live records.
+        repo.setWorkoutNote(userId, journalId, date, 1, "Orphan attempt")
+        assertNull(repo.getWorkoutNote(userId, journalId, date, 1), "no live records -> note save is a no-op")
+    }
+
     @Test
     fun syncPull_preservesWorkoutNumber_notResetToOne(): Unit = runBlocking {
         // Regression: pull upsert used to omit workoutNumber, resetting it to the

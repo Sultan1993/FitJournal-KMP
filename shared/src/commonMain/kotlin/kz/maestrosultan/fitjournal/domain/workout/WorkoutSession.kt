@@ -12,8 +12,6 @@ data class WorkoutSession(
     val workoutNumber: Int,
     val startedAt: Instant,
     val endedAt: Instant?,
-    /** Optional free-text note the user attached to this workout (null = none). */
-    val comment: String? = null,
 ) {
     val isRunning: Boolean get() = endedAt == null
 

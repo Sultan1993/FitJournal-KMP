@@ -152,15 +152,6 @@ class WorkoutSessionsDBDataSource(
         }
     }
 
-    /**
-     * Set (or clear, when [comment] is null) one session's free-text note.
-     * userId-scoped defensively. Live or finished.
-     */
-    suspend fun setComment(userId: String, sessionUuid: String, comment: String?) = withContext(Dispatchers.IO) {
-        dao.updateSessionComment(comment = comment, uuid = sessionUuid, userId = userId)
-        Unit
-    }
-
     /** Discard one session by id (empty-workout cleanup); userId-scoped defensively. */
     suspend fun deleteByUuid(uuid: String, userId: String) = withContext(Dispatchers.IO) {
         dao.deleteWorkoutSessionByUuid(uuid, userId)

@@ -1,0 +1,34 @@
+-- v10 -> v11: workoutNotes — a per-workout note keyed by page
+-- (userId, journalId, date, workoutNumber), decoupled from workoutSessions.
+--
+-- Keep the CREATE TABLE + index shapes byte-for-byte identical to
+-- WorkoutNotes.sq so a fresh install (Schema.create) and an upgrade land on the
+-- same schema — verifyMigrations is off (see CLAUDE.md), so this is hand-verified.
+--
+-- workoutSessions.comment is NOT dropped (SQLite DROP COLUMN isn't safe on the
+-- Android versions we still support); it becomes a dead column and its existing
+-- values are backfilled into workoutNotes below. Sessions are local-only and the
+-- feature is recent, so this backfill touches at most a handful of rows.
+
+CREATE TABLE workoutNotes (
+    uuid TEXT PRIMARY KEY NOT NULL,
+    userId TEXT NOT NULL,
+    journalId TEXT NOT NULL,
+    date TEXT NOT NULL,
+    workoutNumber INTEGER NOT NULL,
+    comment TEXT NOT NULL,
+    remoteId TEXT,
+    pendingUpload INTEGER NOT NULL DEFAULT 1,
+    deletedAt TEXT
+);
+
+CREATE UNIQUE INDEX idx_workoutNotes_page
+ON workoutNotes(userId, journalId, date, workoutNumber);
+
+-- Backfill: move any existing session comments into the new table. The session
+-- uuid is reused as the note uuid — a page holds at most one session, so it is
+-- unique. Empty strings are skipped (they carry no note).
+INSERT INTO workoutNotes(uuid, userId, journalId, date, workoutNumber, comment, pendingUpload, deletedAt)
+SELECT uuid, userId, journalId, date, workoutNumber, comment, 1, NULL
+FROM workoutSessions
+WHERE comment IS NOT NULL AND comment != '';
