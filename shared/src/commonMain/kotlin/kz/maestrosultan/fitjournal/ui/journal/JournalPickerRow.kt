@@ -38,7 +38,9 @@ import org.jetbrains.compose.resources.stringResource
 
 /**
  * The selected-journal row that opens the journal picker — a brand-tinted name +
- * chevron on a rounded [FjTheme.colors.sheet] card. Shared across screens (Workout
+ * chevron on a rounded [FjTheme.colors.surface] card (the same fill native Home and
+ * Measurements give their `JournalSelector`; `sheet` is white in light, so a row
+ * painted with it disappears against the background). Shared across screens (Workout
  * History today; Home / Measurements next), mirroring native Android's
  * `JournalSelector`. The personal journal always shows a localized "My journal"
  * rather than its stored name; callers pass the raw [name] + [isPersonal] so the
@@ -61,7 +63,7 @@ fun JournalPickerRow(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(FjTheme.colors.sheet)
+            .background(FjTheme.colors.surface)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,

@@ -42,6 +42,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_note_placeholder
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_note_save
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_note_title
+import kz.maestrosultan.fitjournal.ui.common.rememberSheetCloser
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsContract
@@ -75,6 +76,8 @@ fun SessionNoteEditorSheet(
     modifier: Modifier = Modifier,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    // Save acts after the sheet has slid out, not the instant it's tapped.
+    val close = rememberSheetCloser(sheetState)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -90,7 +93,7 @@ fun SessionNoteEditorSheet(
             // The editor identity: a different workout's note is a different
             // editing session, so both the draft and the focus request restart.
             editorKey = editor.workoutNumber,
-            onSave = onSave,
+            onSave = { text -> close { onSave(text) } },
         )
     }
 }

@@ -140,6 +140,9 @@ class WorkoutDetailsScreenTest {
         // The caret is seeded at the END of an existing note, so input appends.
         onNodeWithText("Seed note").performTextInput(" and better")
         onNodeWithText("Save").performClick()
+        // Sheet buttons act only once the sheet has finished sliding out
+        // (rememberSheetCloser), so let the hide animation run first.
+        waitForIdle()
 
         assertEquals(
             WorkoutDetailsContract.ViewAction.NoteSaved("Seed note and better"),
@@ -158,6 +161,7 @@ class WorkoutDetailsScreenTest {
 
         onNodeWithText("Seed note").performTextClearance()
         onNodeWithText("Save").performClick()
+        waitForIdle()
 
         assertEquals(
             WorkoutDetailsContract.ViewAction.NoteSaved(""),
@@ -200,6 +204,7 @@ class WorkoutDetailsScreenTest {
         // (in the popup root, traversed last).
         onAllNodesWithText("Delete workout").assertCountEquals(2)
         onAllNodesWithText("Delete workout").onLast().performClick()
+        waitForIdle()
 
         assertTrue(WorkoutDetailsContract.ViewAction.DeleteConfirmed in vm.actions)
     }

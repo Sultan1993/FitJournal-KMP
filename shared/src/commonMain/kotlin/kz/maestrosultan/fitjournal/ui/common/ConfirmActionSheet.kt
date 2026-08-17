@@ -43,6 +43,8 @@ fun ConfirmActionSheet(
     cancelLabel: String = stringResource(Res.string.common_cancel),
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    // Both buttons act after the sheet has slid out, not the instant they're tapped.
+    val close = rememberSheetCloser(sheetState)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -69,7 +71,7 @@ fun ConfirmActionSheet(
                 text = confirmLabel,
                 container = FjTheme.colors.negative,
                 content = Color.White,
-                onClick = onConfirm,
+                onClick = { close(onConfirm) },
                 modifier = Modifier.padding(bottom = 10.dp),
             )
             SheetButton(
@@ -77,7 +79,7 @@ fun ConfirmActionSheet(
                 // A subtle neutral fill that adapts to either theme.
                 container = FjTheme.colors.textPrimary.copy(alpha = 0.08f),
                 content = FjTheme.colors.textPrimary,
-                onClick = onDismiss,
+                onClick = { close(onDismiss) },
             )
         }
     }

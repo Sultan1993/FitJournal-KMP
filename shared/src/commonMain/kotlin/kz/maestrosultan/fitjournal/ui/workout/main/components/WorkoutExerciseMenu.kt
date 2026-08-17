@@ -38,6 +38,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.workout_menu_repla
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_menu_stats
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_menu_superset_add
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_menu_superset_remove
+import kz.maestrosultan.fitjournal.ui.common.rememberSheetCloser
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.components.ExerciseAvatar
 import org.jetbrains.compose.resources.DrawableResource
@@ -71,6 +72,8 @@ fun WorkoutExerciseMenu(
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    // Rows run their action after the sheet has slid out, not the instant it's tapped.
+    val close = rememberSheetCloser(sheetState)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -97,23 +100,23 @@ fun WorkoutExerciseMenu(
             MenuDivider()
 
             // Group 1 — read-only exercise info.
-            MenuRow(Res.drawable.ic_common_info, stringResource(Res.string.workout_menu_about), onClick = onAbout)
-            MenuRow(Res.drawable.ic_common_history, stringResource(Res.string.workout_menu_history), onClick = onHistory)
-            MenuRow(Res.drawable.ic_common_chart, stringResource(Res.string.workout_menu_stats), onClick = onStats)
+            MenuRow(Res.drawable.ic_common_info, stringResource(Res.string.workout_menu_about), onClick = { close(onAbout) })
+            MenuRow(Res.drawable.ic_common_history, stringResource(Res.string.workout_menu_history), onClick = { close(onHistory) })
+            MenuRow(Res.drawable.ic_common_chart, stringResource(Res.string.workout_menu_stats), onClick = { close(onStats) })
             MenuDivider()
 
             // Group 2 — edit actions.
             MenuRow(
                 icon = Res.drawable.ic_common_edit,
                 text = stringResource(if (hasNote) Res.string.workout_menu_note_edit else Res.string.workout_menu_note_add),
-                onClick = onNote,
+                onClick = { close(onNote) },
             )
-            MenuRow(Res.drawable.ic_swap, stringResource(Res.string.workout_menu_replace), onClick = onReplace)
+            MenuRow(Res.drawable.ic_swap, stringResource(Res.string.workout_menu_replace), onClick = { close(onReplace) })
             // canAddToSuperset requires a next record to pair with.
             if (isSuperset) {
-                MenuRow(Res.drawable.ic_workout_superset, stringResource(Res.string.workout_menu_superset_remove), onClick = onRemoveFromSuperset)
+                MenuRow(Res.drawable.ic_workout_superset, stringResource(Res.string.workout_menu_superset_remove), onClick = { close(onRemoveFromSuperset) })
             } else if (canAddToSuperset) {
-                MenuRow(Res.drawable.ic_workout_superset, stringResource(Res.string.workout_menu_superset_add), onClick = onAddToSuperset)
+                MenuRow(Res.drawable.ic_workout_superset, stringResource(Res.string.workout_menu_superset_add), onClick = { close(onAddToSuperset) })
             }
 
             // A superset member has no standalone delete — it splits out via "Remove from superset".
@@ -123,7 +126,7 @@ fun WorkoutExerciseMenu(
                     icon = Res.drawable.ic_common_delete,
                     text = stringResource(Res.string.workout_menu_delete),
                     color = FjTheme.colors.negative,
-                    onClick = onDelete,
+                    onClick = { close(onDelete) },
                 )
             }
         }
