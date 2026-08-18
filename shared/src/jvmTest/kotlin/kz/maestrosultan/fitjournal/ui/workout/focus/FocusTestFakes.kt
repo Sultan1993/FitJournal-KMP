@@ -4,6 +4,7 @@ import kotlin.time.Instant
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,6 +13,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -150,7 +152,7 @@ fun focusRecord(
  * without depending on the test JVM's locale or on compose-resource loading
  * (the `WorkoutDetailsStrings` pattern).
  */
-val focusTestStrings: FocusStrings = FocusStrings(
+internal val focusTestStrings: FocusStrings = FocusStrings(
     supersetLabel = { "Superset" },
     finishWorkout = { "Finish workout" },
     finishExercise = { "Finish exercise" },
@@ -162,7 +164,7 @@ val focusTestStrings: FocusStrings = FocusStrings(
     categoryName = { type -> type.identifier },
 )
 
-val focusTestErrorStrings: FocusErrorStrings = FocusErrorStrings(
+internal val focusTestErrorStrings: FocusErrorStrings = FocusErrorStrings(
     exerciseNotFound = { "not-found" },
     saveSetFailed = { "save-failed" },
     deleteSetFailed = { "delete-failed" },
@@ -580,10 +582,28 @@ fun focusTest(
  * test. The channel is UNLIMITED-buffered, so effects emitted before this
  * collector starts are still delivered — the recorder can be attached right
  * after construction without racing `Load`.
+ *
+ * [UnconfinedTestDispatcher] is LOAD-BEARING, not a style choice. `backgroundScope`
+ * stamps its dispatches as background work (`isForeground = context[BackgroundWork]
+ * === null`, `TestCoroutineScheduler.kt:69`) and `advanceUntilIdle()` is
+ * `advanceUntilIdleOr { events.none(TestDispatchEvent::isForeground) }`
+ * (`:110`) — it STOPS as soon as only background events remain. A default-dispatched
+ * collector therefore has its resumption (the append) still sitting in the queue when
+ * `advanceUntilIdle()` returns, so the assertion reads an empty list even though the
+ * VM emitted. Unconfined starts the collector eagerly at `launch` and resumes it
+ * INLINE on send, so `received` is appended synchronously inside the emitting task
+ * and is correct the moment `advanceUntilIdle()` comes back.
+ *
+ * This also makes the negative assertions (`effects.isEmpty()`, `none { … }`) mean
+ * what they say: with a queued collector they could pass because nothing had been
+ * DELIVERED yet, rather than because nothing was emitted.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 fun TestScope.recordEffects(viewModel: WorkoutFocusViewModel): MutableList<WorkoutFocusContract.ViewEffect> {
     val received = mutableListOf<WorkoutFocusContract.ViewEffect>()
-    backgroundScope.launch { viewModel.viewEffect.collect { received += it } }
+    backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+        viewModel.viewEffect.collect { received += it }
+    }
     return received
 }
 

@@ -51,7 +51,7 @@ class WorkoutFocusLogAdvanceTest {
             )
             // The use case owns the tick (a record is the sync unit); the VM must
             // not fire a second one, and there is no set-level reason to invent.
-            assertEquals(listOf(SyncReason.PostWrite.WorkoutRecord), bed.syncTrigger.reasons)
+            assertEquals<List<SyncReason>>(listOf(SyncReason.PostWrite.WorkoutRecord), bed.syncTrigger.reasons)
         }
     }
 
@@ -129,7 +129,7 @@ class WorkoutFocusLogAdvanceTest {
             assertEquals(1, bed.repository.countOf("addSet("))
             assertEquals(2, after.realSlots().size, "one appended row")
             assertTrue(effects.none { it is WorkoutFocusContract.ViewEffect.ShowError }, "$effects")
-            assertEquals(listOf(SyncReason.PostWrite.WorkoutRecord), bed.syncTrigger.reasons)
+            assertEquals<List<SyncReason>>(listOf(SyncReason.PostWrite.WorkoutRecord), bed.syncTrigger.reasons)
         }
     }
 }

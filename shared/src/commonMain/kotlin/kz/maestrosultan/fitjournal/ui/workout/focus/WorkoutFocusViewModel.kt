@@ -1470,7 +1470,7 @@ class WorkoutFocusViewModel internal constructor(
      * platform notification: cancelling its scope here would kill a rest the
      * user is still taking.
      */
-    fun dispose() {
+    override fun dispose() {
         viewModelScope.cancel()
     }
 
