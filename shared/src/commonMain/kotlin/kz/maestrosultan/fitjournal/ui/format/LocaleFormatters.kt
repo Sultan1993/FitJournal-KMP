@@ -63,12 +63,28 @@ expect object LocaleFormatters {
 }
 
 /**
- * Elapsed duration as h:mm, e.g. 4980s -> "1:23", 300s -> "0:05". Pure
- * arithmetic with no locale involvement, so it lives in common code instead of
- * being implemented three times inside the expect object.
+ * Elapsed duration: `m:ss` under an hour, `h:mm:ss` at or above one.
+ * 30s -> "0:30", 125s -> "2:05", 4980s -> "1:23:00".
+ *
+ * The seconds field is not cosmetic. This was `h:mm`, which rendered a workout's
+ * first minute as "0:00" — indistinguishable from "no data", and it disagreed
+ * with the running session bar (which has always counted in m:ss) at the exact
+ * moment both were on screen. The finish sheet also re-formats this once a
+ * second, so a format that can't show seconds left 59 of every 60 ticks
+ * invisible.
+ *
+ * Digit count disambiguates: two fields is always m:ss, three is always h:mm:ss.
+ * Pure arithmetic with no locale involvement, so it lives in common code rather
+ * than being implemented three times inside the expect object.
  */
 internal fun formatDuration(seconds: Long): String {
     val safe = seconds.coerceAtLeast(0)
-    val minutes = (safe % 3600) / 60
-    return "${safe / 3600}:${minutes.toString().padStart(2, '0')}"
+    val h = safe / 3600
+    val m = (safe % 3600) / 60
+    val s = safe % 60
+    return if (h > 0) {
+        "$h:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}"
+    } else {
+        "$m:${s.toString().padStart(2, '0')}"
+    }
 }

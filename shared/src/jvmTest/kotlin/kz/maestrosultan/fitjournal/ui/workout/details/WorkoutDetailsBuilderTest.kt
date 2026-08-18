@@ -377,7 +377,10 @@ class WorkoutDetailsBuilderTest {
             sessions = listOf(session()),
             notesByWorkout = mapOf(1 to "Felt strong"),
         ).workouts.single()
-        assertEquals("1:04", workout.durationText, "09:00-10:04 elapsed")
+        // h:mm:ss at or above an hour. Was "1:04" under the old h:mm rule, which
+        // rendered a workout's first minute as "0:00" and disagreed with the
+        // running session bar — see formatDuration.
+        assertEquals("1:04:00", workout.durationText, "09:00-10:04 elapsed")
         assertEquals("Felt strong", workout.note.text, "note comes from the notes map, not the session")
         assertTrue(workout.canShare)
     }

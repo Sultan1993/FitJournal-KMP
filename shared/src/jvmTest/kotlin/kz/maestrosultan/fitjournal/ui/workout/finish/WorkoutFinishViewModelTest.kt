@@ -399,7 +399,7 @@ class WorkoutFinishViewModelTest {
         val state = vm.viewState.value
         assertFalse(state.loading)
         assertEquals(LocaleFormatters.formatFullDate(DATE), state.dateText)
-        assertEquals("0:05", state.durationText)
+        assertEquals("5:00", state.durationText) // 300s; m:ss since the h:mm rule was dropped
         assertEquals(
             "1,580",
             state.tonnageValue,
@@ -426,7 +426,7 @@ class WorkoutFinishViewModelTest {
         assertEquals("0", state.tonnageValue)
         // Session-derived pieces still render — only the summary read failed.
         assertEquals(LocaleFormatters.formatFullDate(DATE), state.dateText)
-        assertEquals("0:01", state.durationText)
+        assertEquals("1:00", state.durationText) // 60s
 
         // Finishing still works; the event carries the empty summary.
         val events = collectFinished(vm)
@@ -466,22 +466,22 @@ class WorkoutFinishViewModelTest {
         bed.clock.instant = T0 + 60.seconds
         val vm = bed.vm()
         runCurrent()
-        assertEquals("0:01", vm.viewState.value.durationText)
+        assertEquals("1:00", vm.viewState.value.durationText) // 60s
 
         bed.clock.instant = T0 + 120.seconds
         advanceTimeBy(1_000)
         runCurrent()
-        assertEquals("0:02", vm.viewState.value.durationText, "visible sheet ticks")
+        assertEquals("2:00", vm.viewState.value.durationText, "visible sheet ticks")
 
         vm.dispatch(WorkoutFinishContract.ViewAction.VisibilityChanged(false))
         bed.clock.instant = T0 + 600.seconds
         advanceTimeBy(10_000)
         runCurrent()
-        assertEquals("0:02", vm.viewState.value.durationText, "hidden sheet must not tick")
+        assertEquals("2:00", vm.viewState.value.durationText, "hidden sheet must not tick")
 
         vm.dispatch(WorkoutFinishContract.ViewAction.VisibilityChanged(true))
         runCurrent()
-        assertEquals("0:10", vm.viewState.value.durationText, "becoming visible catches up immediately")
+        assertEquals("10:00", vm.viewState.value.durationText, "becoming visible catches up immediately")
         vm.dispose()
     }
 

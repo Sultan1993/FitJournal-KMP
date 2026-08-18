@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.coroutines.delay
+import kz.maestrosultan.fitjournal.ui.format.formatDuration
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_end
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_session_label
@@ -181,14 +182,9 @@ private fun elapsedText(runningSince: Instant?): String {
         }
     }
     val seconds = (now - runningSince).inWholeSeconds.coerceAtLeast(0)
-    return formatElapsed(seconds)
+    return formatDuration(seconds)
 }
 
-private fun formatElapsed(totalSeconds: Long): String {
-    val h = totalSeconds / 3600
-    val m = (totalSeconds % 3600) / 60
-    val s = totalSeconds % 60
-    return if (h > 0) "$h:${m.pad()}:${s.pad()}" else "$m:${s.pad()}"
-}
-
-private fun Long.pad(): String = toString().padStart(2, '0')
+// formatElapsed lived here until the finish sheet was found rendering the same
+// session in a different format at the same moment. Both now share
+// `ui/format/formatDuration`, which this one's behaviour became.

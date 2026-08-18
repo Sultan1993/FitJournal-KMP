@@ -124,7 +124,7 @@ class WorkoutDetailsViewModelTest {
         assertEquals(listOf(1), loaded.workouts.map { it.workoutNumber })
         assertTrue(loaded.stack.isEmpty(), "a single-workout day has no WD3 stack")
         val workout = loaded.workouts.single()
-        assertEquals("1:04", workout.durationText, "09:38–10:42 session, formatDuration rule")
+        assertEquals("1:04:00", workout.durationText, "09:38–10:42 session, formatDuration rule (h:mm:ss at/above an hour)")
         assertTrue(workout.canShare, "records present, so the share composer can be built")
         assertEquals(1, workout.note.workoutNumber, "the note is keyed by the workout page")
         assertNull(workout.note.text, "no note set -> add-note placeholder")
