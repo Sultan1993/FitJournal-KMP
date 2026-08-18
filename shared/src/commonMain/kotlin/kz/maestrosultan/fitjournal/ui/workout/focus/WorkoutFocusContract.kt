@@ -167,8 +167,13 @@ data class FocusStripItemUi(
     val isSuperset: Boolean,
     val isActive: Boolean,
     /**
-     * Every member has ≥ 1 set. Deliberately counts unfilled target rows too
-     * (`sets.isNotEmpty`) — faithful port of the current behaviour.
+     * True only when at least one set is actually LOGGED — a repeat-workout
+     * carrying only unfilled target rows is NOT done yet. Both shipping
+     * builders test exactly this, with the same comment (iOS
+     * `FocusViewStateBuilder.swift:218-221`, Android `FocusViewStateBuilder.kt:160`).
+     * An earlier revision of this KDoc claimed the opposite (`sets.isNotEmpty`);
+     * that was wrong and would tick every exercise the instant a repeated day
+     * loaded. Do not "restore" it.
      */
     val isCompleted: Boolean,
 )
