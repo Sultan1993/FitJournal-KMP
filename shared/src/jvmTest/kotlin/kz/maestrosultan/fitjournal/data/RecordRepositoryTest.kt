@@ -228,6 +228,49 @@ class RecordRepositoryTest {
     }
 
     @Test
+    fun lastOccurrence_onATwoWorkoutDay_neverHintsFromTheFuture(): Unit = runBlocking {
+        // Regression: the newest→oldest sort keyed on (date, position, ...) but
+        // NOT workoutNumber. Since 9.sqm `position` is page-relative, so both of
+        // a day's workouts sit at position 0 and tie; the stable sort then kept
+        // input order (workoutNumber ASC) — backwards — and workout 1 took
+        // workout 2 as its "previous", hinting a session that hadn't happened.
+        val exId = seedCatalogExercise()
+        val prevDate = LocalDate(2026, 2, 1)
+        val dayDate = LocalDate(2026, 2, 2)
+
+        // A day BEFORE, so workout 1 has a legitimate previous to point at.
+        repo.addExercisesToDate(userId, journalId, prevDate, 1, listOf(exId))
+        val prevWe = repo.getRecordsByDate(userId, journalId, prevDate).single().exercises.single().id
+        repo.addSet(userId, journalId, prevWe, 50.0, 12, null, null)
+
+        // Morning (workout 1) then evening (workout 2), same date.
+        repo.addExercisesToDate(userId, journalId, dayDate, 1, listOf(exId))
+        repo.addExercisesToDate(userId, journalId, dayDate, 2, listOf(exId))
+        val day = repo.getRecordsByDate(userId, journalId, dayDate)
+        val morning = day.single { it.workoutNumber == 1 }.exercises.single()
+        val evening = day.single { it.workoutNumber == 2 }.exercises.single()
+        repo.addSet(userId, journalId, morning.id, 60.0, 10, null, null)
+        repo.addSet(userId, journalId, evening.id, 80.0, 6, null, null)
+
+        val after = repo.getRecordsByDate(userId, journalId, dayDate)
+        val morningHint = after.single { it.workoutNumber == 1 }.exercises.single().lastOccurrence
+        val eveningHint = after.single { it.workoutNumber == 2 }.exercises.single().lastOccurrence
+
+        assertEquals(
+            prevDate,
+            morningHint?.date,
+            "workout 1's previous is the DAY BEFORE, never the evening session of the same day",
+        )
+        assertEquals(50.0, morningHint?.setAt(0)?.weight)
+        assertEquals(
+            dayDate,
+            eveningHint?.date,
+            "workout 2's previous is workout 1 of the same day",
+        )
+        assertEquals(60.0, eveningHint?.setAt(0)?.weight)
+    }
+
+    @Test
     fun lastOccurrence_alignsPerPosition_notLastSetOnEverySet(): Unit = runBlocking {
         // Regression: the previous-set hint used to take the prior occurrence's
         // LAST set and stamp its weight onto every set, instead of aligning by

@@ -694,11 +694,25 @@ class DefaultRecordRepository(
         workoutsDB.getWorkoutRecordsByJournal(userId, journalId)
             .filter { it.row.date == dateStr }
             .forEach { workoutsDB.softDeleteWorkoutRecord(it.row.uuid) }
-        // Every page of the day is now empty → tombstone its notes too, so a later
-        // workout on this date can't inherit them.
+        // Every page of the day is now empty → tombstone its sessions and notes
+        // too, so a later workout on this date can't inherit them.
+        //
+        // The sessions half is load-bearing beyond tidiness: `getRunningSession`
+        // is user-scoped, not date-scoped, so a session left RUNNING here becomes
+        // a ghost that `startSession` returns for every page — blocking Start
+        // app-wide until the user ends a workout whose records no longer exist.
+        // (`clearStalePageMetaForNewWorkouts` can't rescue it either: that only
+        // touches sessions with endedAt != null.) Tombstoned, not deleted, so the
+        // removal reaches AWS instead of being resurrected by the next pull.
         database?.let { db ->
             withContext(Dispatchers.IO) {
                 val nowText = Clock.System.now().toStoredString()
+                db.workoutSessionsQueries.getSessionsForDay(userId, journalId, dateStr)
+                    .executeAsList()
+                    .forEach { session ->
+                        db.workoutSessionsQueries
+                            .softDeleteWorkoutSessionByUuid(nowText, session.uuid, userId)
+                    }
                 db.workoutNotesQueries.getNotesForDay(userId, journalId, dateStr)
                     .executeAsList()
                     .forEach { note ->
@@ -1075,8 +1089,17 @@ class DefaultRecordRepository(
         for ((_, contexts) in byExerciseUuid) {
             // Sort newest → oldest so each entry's "previous" is the next one;
             // matches `getLastWorkoutExercisesForExercisesBeforeDate`'s tiebreaker chain.
+            //
+            // workoutNumber is load-bearing and must stay ABOVE position: since
+            // 9.sqm, `position` is page-relative (it restarts at 0 for each
+            // workout of the day), so on a two-workout day both records sit at
+            // position 0 and tie. The stable sort then keeps input order — which
+            // is workoutNumber ASC, exactly backwards for a newest-first chain —
+            // and the morning row would take the EVENING session as its "last
+            // time", i.e. a hint from a session that hadn't happened yet.
             val sorted = contexts.sortedWith(
                 compareByDescending<WeContext> { it.tree.row.date }
+                    .thenByDescending { it.tree.row.workoutNumber }
                     .thenByDescending { it.tree.row.position }
                     .thenByDescending { it.exWithSets.exercise.position }
             )

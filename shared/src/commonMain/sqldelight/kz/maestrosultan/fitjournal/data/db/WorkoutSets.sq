@@ -126,8 +126,14 @@ AND NOT EXISTS (
     AND wr2.deletedAt IS NULL
     AND (
         wr2.date > wr.date
-        OR (wr2.date = wr.date AND wr2.position > wr.position)
-        OR (wr2.date = wr.date AND wr2.position = wr.position AND we2.position > we.position)
+        -- workoutNumber before position: `position` is page-relative since 9.sqm
+        -- (restarts at 0 per workout), so on a two-workout day it cannot rank
+        -- records against each other. Without this key both candidates survive
+        -- the NOT EXISTS and the caller collapses them arbitrarily — "last time"
+        -- could show the morning's lift when the evening's was the real last one.
+        OR (wr2.date = wr.date AND wr2.workoutNumber > wr.workoutNumber)
+        OR (wr2.date = wr.date AND wr2.workoutNumber = wr.workoutNumber AND wr2.position > wr.position)
+        OR (wr2.date = wr.date AND wr2.workoutNumber = wr.workoutNumber AND wr2.position = wr.position AND we2.position > we.position)
     )
 );
 

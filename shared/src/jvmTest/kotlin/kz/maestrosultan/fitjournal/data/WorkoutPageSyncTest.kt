@@ -2,8 +2,13 @@ package kz.maestrosultan.fitjournal.data
 
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDate
+import kz.maestrosultan.fitjournal.data.exercise.datasource.CategoriesDBDataSource
+import kz.maestrosultan.fitjournal.data.exercise.datasource.ExercisesDBDataSource
+import kz.maestrosultan.fitjournal.data.exercise.mapper.ExerciseDBMapper
 import kz.maestrosultan.fitjournal.data.journal.datasource.JournalsDBDataSource
 import kz.maestrosultan.fitjournal.data.record.datasource.WorkoutNotesDBDataSource
+import kz.maestrosultan.fitjournal.data.record.datasource.WorkoutsDBDataSource
+import kz.maestrosultan.fitjournal.data.record.repository.DefaultRecordRepository
 import kz.maestrosultan.fitjournal.data.session.datasource.WorkoutSessionsDBDataSource
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -232,6 +237,35 @@ class WorkoutPageSyncTest {
 
         assertNull(sessionsDB.getSessionByWorkoutNumber(userId, journalId, date.toString(), 1))
         assertNull(sessionsDB.getRunningSession(userId))
+    }
+
+    @Test
+    fun deletingAWholeDayTombstonesItsRunningSession(): Unit = runBlocking {
+        // Regression: deleteRecordsForDate tombstoned records and notes but not
+        // sessions. getRunningSession is USER-scoped, not date-scoped, so a
+        // session left running became a ghost that startSession returned for
+        // every page — blocking Start app-wide until the user ended a workout
+        // whose records no longer existed.
+        val records = DefaultRecordRepository(
+            WorkoutsDBDataSource(db.workoutRecordsQueries, db.workoutExercisesQueries, db.workoutSetsQueries),
+            ExercisesDBDataSource(db.exercisesQueries, ExerciseDBMapper(CategoriesDBDataSource(db.categoryQueries))),
+            testExerciseMapper,
+            database = db,
+        )
+        sessionsDB.startSession("s1", userId, journalId, date.toString(), 1, startedAt)
+        assertNotNull(sessionsDB.getRunningSession(userId), "precondition: a workout is running")
+
+        records.deleteRecordsForDate(userId, journalId, date)
+
+        assertNull(
+            sessionsDB.getRunningSession(userId),
+            "the day's running session must go with its records, or Start stays blocked everywhere",
+        )
+        assertEquals(
+            listOf("s1"),
+            sessionsDB.getPendingUploads(userId).map { it.uuid },
+            "the tombstone has to reach AWS too",
+        )
     }
 
     @Test
