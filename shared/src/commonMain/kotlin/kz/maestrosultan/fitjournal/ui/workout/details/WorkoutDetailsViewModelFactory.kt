@@ -53,7 +53,7 @@ fun createWorkoutDetailsViewModel(
  * and simply handed back. Mirrors iOS's `IosWorkoutUserContext`, moved to
  * commonMain because this factory is.
  */
-private class PlainWorkoutUserContext(
+internal class PlainWorkoutUserContext(
     private val userId: String,
     private val journalId: String,
     private val measurementSystem: MeasurementSystem,
