@@ -105,7 +105,11 @@ fun buildWorkoutListFeed(
 private fun journalRow(journals: List<Journal>, selectedJournalId: String): WorkoutListContract.JournalRow? {
     if (journals.size <= 1) return null
     val journal = journals.firstOrNull { it.id == selectedJournalId } ?: journals.first()
-    return WorkoutListContract.JournalRow(name = journal.name, isPersonal = journal.isPersonal)
+    return WorkoutListContract.JournalRow(
+        id = journal.id,
+        name = journal.name,
+        isPersonal = journal.isPersonal,
+    )
 }
 
 /** A "workout" is a distinct (date, workoutNumber) pair. */

@@ -22,7 +22,7 @@ internal object WorkoutListPreviewData {
 
     val today: LocalDate = LocalDate(2026, 8, 10)
 
-    val journalRow = WorkoutListContract.JournalRow(name = "Main Journal", isPersonal = false)
+    val journalRow = WorkoutListContract.JournalRow(id = "journal-1", name = "Main Journal", isPersonal = false)
 
     /** Exactly 11 slots (oldest -> current); only the last one is the current week. */
     val hero = WorkoutListContract.Hero(

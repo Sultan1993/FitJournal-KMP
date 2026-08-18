@@ -8,6 +8,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
@@ -44,7 +46,10 @@ import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutCalendar
 import kz.maestrosultan.fitjournal.ui.workout.list.components.WorkoutListDayRow
-import kz.maestrosultan.fitjournal.ui.workout.list.components.WorkoutListEmptyState
+import kz.maestrosultan.fitjournal.shared.generated.resources.Res
+import kz.maestrosultan.fitjournal.shared.generated.resources.history_empty_message
+import kz.maestrosultan.fitjournal.ui.workout.main.components.FirstWorkoutPlaceholder
+import org.jetbrains.compose.resources.stringResource
 import kz.maestrosultan.fitjournal.ui.workout.list.components.WorkoutListHero
 import kz.maestrosultan.fitjournal.ui.workout.list.components.WorkoutListWeekHeader
 
@@ -97,17 +102,44 @@ private fun WorkoutListBody(
                 )
             }
 
-            WorkoutListContentArea(
-                content = state.content,
-                measurementSystem = state.measurementSystem,
-                dispatch = dispatch,
-                isRefreshing = isRefreshing,
-                onRefresh = onRefresh,
+            // Switching journals swaps the whole feed at once (the pipeline holds
+            // the old content until the new one is built, so there is no spinner
+            // in between) — crossfade it instead of hard-cutting. `contentKey` is
+            // the journal id, so ordinary updates within one journal (logging a
+            // set, a sync landing) still redraw in place with no animation. Also
+            // gives the new journal a fresh subtree, so the list starts at the top
+            // rather than inheriting the previous journal's scroll offset.
+            AnimatedContent(
+                targetState = state.content,
+                contentKey = { it.journalKey },
+                transitionSpec = { fadeIn(tween(200)) togetherWith fadeOut(tween(140)) },
+                label = "journalSwitch",
                 modifier = Modifier.fillMaxWidth().weight(1f),
-            )
+            ) { content ->
+                WorkoutListContentArea(
+                    content = content,
+                    measurementSystem = state.measurementSystem,
+                    dispatch = dispatch,
+                    isRefreshing = isRefreshing,
+                    onRefresh = onRefresh,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
         }
     }
 }
+
+/**
+ * Which journal this content belongs to — the crossfade's identity. Null while
+ * loading, and null whenever the user has a single journal (the row isn't built
+ * then, and there is nothing to switch between), so those cases never animate.
+ */
+private val WorkoutListContract.Content.journalKey: String?
+    get() = when (this) {
+        WorkoutListContract.Content.Loading -> null
+        is WorkoutListContract.Content.Empty -> journalRow?.id
+        is WorkoutListContract.Content.Loaded -> journalRow?.id
+    }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -126,31 +158,45 @@ private fun WorkoutListContentArea(
             }
 
         is WorkoutListContract.Content.Empty -> {
-            // LazyColumn (even though empty) gives PTR its overscroll gesture;
-            // no onRefresh -> no PTR at all.
-            val empty: @Composable (Modifier) -> Unit = { m ->
+            // The journal row sits OUTSIDE the scrollable, so it stays put instead
+            // of being one item above a full-viewport placeholder that can scroll
+            // it away. The placeholder takes the rest.
+            //
+            // That leaves the LazyColumn holding only the placeholder — kept
+            // (rather than a plain Column) because PTR needs a scrollable child
+            // for its overscroll gesture, and pulling to refresh matters most on
+            // exactly this screen: no workouts yet, waiting on the first sync.
+            // No onRefresh -> no PTR at all.
+            val emptyBody: @Composable (Modifier) -> Unit = { m ->
                 LazyColumn(modifier = m.fillMaxSize()) {
-                    content.journalRow?.let { row ->
-                        item(key = "journal") {
-                            JournalPickerRow(
-                                name = row.name,
-                                isPersonal = row.isPersonal,
-                                onClick = { dispatch(WorkoutListContract.ViewAction.OpenJournalPicker) },
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            )
-                        }
-                    }
                     item(key = "empty") {
-                        WorkoutListEmptyState(modifier = Modifier.fillParentMaxSize())
+                        FirstWorkoutPlaceholder(
+                            modifier = Modifier.fillParentMaxSize(),
+                            text = stringResource(Res.string.history_empty_message),
+                        )
                     }
                 }
             }
-            if (onRefresh != null) {
-                PullToRefreshBox(isRefreshing = isRefreshing, onRefresh = onRefresh, modifier = modifier) {
-                    empty(Modifier)
+            Column(modifier = modifier.fillMaxSize()) {
+                content.journalRow?.let { row ->
+                    JournalPickerRow(
+                        name = row.name,
+                        isPersonal = row.isPersonal,
+                        onClick = { dispatch(WorkoutListContract.ViewAction.OpenJournalPicker) },
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
                 }
-            } else {
-                empty(modifier)
+                if (onRefresh != null) {
+                    PullToRefreshBox(
+                        isRefreshing = isRefreshing,
+                        onRefresh = onRefresh,
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                    ) {
+                        emptyBody(Modifier)
+                    }
+                } else {
+                    emptyBody(Modifier.fillMaxWidth().weight(1f))
+                }
             }
         }
 

@@ -79,7 +79,10 @@ object ImportWorkoutContract {
         companion object {
             fun initial(sourceDate: LocalDate) = ViewState(
                 sourceDate = sourceDate,
-                calendarExpanded = false,
+                // Open expanded: picking the day to copy FROM is the first thing
+                // this screen asks for, so the calendar is the primary control,
+                // not a disclosure. Collapses itself 250ms after a day is picked.
+                calendarExpanded = true,
                 workoutDays = emptyMap(),
                 content = ImportContent.Loading,
                 importInProgress = false,

@@ -49,7 +49,8 @@ object WorkoutListContract {
         ) : Content
     }
 
-    data class JournalRow(val name: String, val isPersonal: Boolean)
+    /** [id] identifies which journal the feed was built for — the switch animation's key. */
+    data class JournalRow(val id: String, val name: String, val isPersonal: Boolean)
 
     data class Hero(
         val currentWeekTonnage: Double,

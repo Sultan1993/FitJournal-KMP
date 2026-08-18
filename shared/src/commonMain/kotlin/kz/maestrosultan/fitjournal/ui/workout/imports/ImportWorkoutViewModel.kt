@@ -63,6 +63,11 @@ class ImportWorkoutViewModel(
             // Open on the destination day's own records; the user swaps the source
             // via the calendar (mirrors the old native picker's initial state).
             loadSource(destinationDate)
+            // The calendar starts expanded, so its month dots have to be loaded
+            // here too — onToggleCalendar only fetches them on the way open, which
+            // would leave the first month showing no "days with workouts" markers,
+            // the one thing that makes a source day pickable.
+            loadWorkoutDays(destinationDate.year, destinationDate.monthNumber)
         }
     }
 

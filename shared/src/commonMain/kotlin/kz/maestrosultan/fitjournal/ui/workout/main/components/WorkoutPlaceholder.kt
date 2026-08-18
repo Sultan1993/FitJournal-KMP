@@ -122,15 +122,20 @@ fun AnotherWorkoutPlaceholder(
 }
 
 /**
- * The first (empty) workout page — the day's primary empty state, restored from
- * native: the workout illustration above the "Press + to add exercises" hint.
- * Distinct from [AnotherWorkoutPlaceholder], which is the ephemeral N+1 "add
- * another workout" page. Tapping the illustration opens the add chooser, the
- * same as the bottom + button.
+ * The app's "no workouts here" empty state: the workout illustration above one
+ * muted line. Used by the day page (its primary empty state, restored from
+ * native) AND by the history list — one component, so the two screens can't
+ * drift into different illustrations again.
+ *
+ * [text] is the only thing that varies: the day page says "Press + to add
+ * exercises" because it HAS a + button; the history list, which doesn't, says
+ * "your workouts will appear here". Distinct from [AnotherWorkoutPlaceholder],
+ * the ephemeral N+1 "add another workout" page.
  */
 @Composable
 fun FirstWorkoutPlaceholder(
     modifier: Modifier = Modifier,
+    text: String = stringResource(Res.string.workout_first_workout_hint),
 ) {
     Column(
         modifier = modifier
@@ -151,7 +156,7 @@ fun FirstWorkoutPlaceholder(
         Spacer(Modifier.height(20.dp))
 
         Text(
-            text = stringResource(Res.string.workout_first_workout_hint),
+            text = text,
             modifier = Modifier.widthIn(max = 300.dp),
             style = FjTheme.typography.body.copy(lineHeight = 20.sp),
             color = FjTheme.colors.textSecondary,

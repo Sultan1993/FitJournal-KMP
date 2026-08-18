@@ -77,8 +77,12 @@ private fun StackRow(
     val shape = RoundedCornerShape(16.dp)
     // The highlight (background + lift + text colors) crossfades between rows on
     // select, so it glides to the tapped row instead of blinking there.
+    // surfaceElevated, NOT surface: surface and the container's `card` are the
+    // same #F1F3F9 in light, so the selected row was invisible against its own
+    // tray (dark got away with it — #26262E on #18181F). surfaceElevated is the
+    // token meant for nested picker segments and separates in both themes.
     val background by animateColorAsState(
-        if (focused) FjTheme.colors.surface else Color.Transparent,
+        if (focused) FjTheme.colors.surfaceElevated else Color.Transparent,
         label = "stackRowBackground",
     )
     val elevation by animateDpAsState(if (focused) 6.dp else 0.dp, label = "stackRowElevation")
