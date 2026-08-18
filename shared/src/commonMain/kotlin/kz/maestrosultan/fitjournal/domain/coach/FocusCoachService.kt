@@ -32,6 +32,12 @@ class NoopFocusCoachService : FocusCoachService {
  * available, then today's set lines (or "No sets logged yet"). Exposed so a
  * future real implementation of [FocusCoachService] can build its prompt
  * from the same shared logic both platforms already agree on.
+ *
+ * Divergence: the "Last session:" guard below is `last != null &&
+ * last.sets.isNotEmpty()`, matching Android. iOS only checks `last != null`
+ * and would print an empty "Last session:" header for a last occurrence with
+ * zero sets. This shared version takes Android's (stricter) behaviour; the
+ * seam is dormant (Noop only) so nothing observes the difference today.
  */
 fun buildAdvicePrompt(exercise: WorkoutExercise): String = buildString {
     appendLine("Exercise: ${exercise.exercise.name}")

@@ -35,9 +35,16 @@ class GetBestWeightResultUseCase(
         return if (max == null || max == 0.0) null else max
     }
 
+    /**
+     * A null [WorkoutSet.reps] coerces to 0 rather than being dropped, matching
+     * iOS's `repsValue ?? 0` — a WEIGHT_REPS set with a logged weight but no
+     * reps still counts toward the average's denominator. There is no Android
+     * original for this iOS-only use case to diverge from; this is iOS's
+     * shipped behaviour, taken verbatim.
+     */
     private fun workingWeight(sets: List<WorkoutSet>): Double? {
-        val reps = sets.mapNotNull { it.reps }
-        if (reps.isEmpty() || reps.sum() == 0) return null
+        val reps = sets.map { it.reps ?: 0 }
+        if (reps.sum() == 0) return null
         val averageRepCount = reps.sum() / reps.size
         val atAverage = sets.filter { it.reps == averageRepCount }.mapNotNull { it.weight }.maxOrNull()
         return atAverage ?: findNearestWorkingWeight(sets, averageRepCount, increment = 1)

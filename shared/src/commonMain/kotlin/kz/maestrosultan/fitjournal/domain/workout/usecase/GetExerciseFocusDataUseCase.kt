@@ -1,6 +1,5 @@
 package kz.maestrosultan.fitjournal.domain.workout.usecase
 
-import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.domain.calculation.OneRepMaxCalculator
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
 
@@ -42,7 +41,6 @@ class GetExerciseFocusDataUseCase(
         userId: String,
         journalId: String,
         exerciseUuid: String,
-        before: LocalDate,
     ): ExerciseFocusData {
         val sets = recordRepository.getSetsForExercise(userId, journalId, exerciseUuid)
 
