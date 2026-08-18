@@ -1,0 +1,464 @@
+package kz.maestrosultan.fitjournal.ui.workout.focus
+
+import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
+import kz.maestrosultan.fitjournal.domain.exercise.allCategories
+import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
+import kz.maestrosultan.fitjournal.domain.workout.DisplaySetValues
+import kz.maestrosultan.fitjournal.domain.workout.ResultType
+import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
+import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
+import kz.maestrosultan.fitjournal.domain.workout.WorkoutSet
+import kz.maestrosultan.fitjournal.domain.workout.resultType
+import kz.maestrosultan.fitjournal.domain.workout.usecase.ExerciseFocusData
+import kz.maestrosultan.fitjournal.shared.generated.resources.Res
+import kz.maestrosultan.fitjournal.shared.generated.resources.focus_finish_exercise
+import kz.maestrosultan.fitjournal.shared.generated.resources.focus_finish_next
+import kz.maestrosultan.fitjournal.shared.generated.resources.focus_finish_workout
+import kz.maestrosultan.fitjournal.shared.generated.resources.focus_last_hint
+import kz.maestrosultan.fitjournal.shared.generated.resources.focus_minutes
+import kz.maestrosultan.fitjournal.shared.generated.resources.focus_reps
+import kz.maestrosultan.fitjournal.shared.generated.resources.history_set_count
+import kz.maestrosultan.fitjournal.shared.generated.resources.workout_superset
+import kz.maestrosultan.fitjournal.ui.theme.assetFolder
+import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
+import kz.maestrosultan.fitjournal.ui.workout.nameRes
+import org.jetbrains.compose.resources.getPluralString
+import org.jetbrains.compose.resources.getString
+
+/**
+ * Compose-resource lookups injected (the
+ * [kz.maestrosultan.fitjournal.ui.workout.details.components.WorkoutDetailsStrings]
+ * pattern) so jvmTest supplies fixed strings instead of depending on the test
+ * JVM's locale or on resource loading. Production callers use the defaults.
+ *
+ * [setCount] reuses the module's existing `history_set_count` plural rather
+ * than adding a Focus-only duplicate: it is byte-identical to iOS's
+ * `workout.set.count` in every shipped locale. [lastHint] is deliberately
+ * `focus_last_hint` and NOT the older `workout_last_prefix` — the two differ in
+ * ru/uk, and Focus ships the newer copy.
+ */
+internal class FocusStrings(
+    val supersetLabel: suspend () -> String = { getString(Res.string.workout_superset) },
+    val finishWorkout: suspend () -> String = { getString(Res.string.focus_finish_workout) },
+    val finishExercise: suspend () -> String = { getString(Res.string.focus_finish_exercise) },
+    val finishNext: suspend (String) -> String = { getString(Res.string.focus_finish_next, it) },
+    val lastHint: suspend (String) -> String = { getString(Res.string.focus_last_hint, it) },
+    val repsUnit: suspend () -> String = { getString(Res.string.focus_reps) },
+    val minutesUnit: suspend () -> String = { getString(Res.string.focus_minutes) },
+    val setCount: suspend (Int) -> String = { getPluralString(Res.plurals.history_set_count, it, it) },
+    val categoryName: suspend (CategoryType) -> String = { getString(it.nameRes) },
+)
+
+/**
+ * The pure Focus view-state builder — one reconciliation of iOS
+ * `FocusViewStateBuilder.swift` and Android `FocusViewStateBuilder.kt`, which
+ * had drifted. No repository, no scope, no platform type: it is handed the
+ * day's records plus the ViewModel's input state and returns [FocusUi].
+ *
+ * **It formats; it never re-derives.** The estimated 1RM and max set arrive
+ * already computed on [focusData]
+ * ([kz.maestrosultan.fitjournal.domain.workout.usecase.GetExerciseFocusDataUseCase],
+ * which runs [kz.maestrosultan.fitjournal.domain.calculation.OneRepMaxCalculator]);
+ * number/unit text comes from [WorkoutValueFormatter]; which numbers a row
+ * shows comes from [WorkoutExercise.displayValuesAt]; which prior set a row
+ * aligns against comes from
+ * [kz.maestrosultan.fitjournal.domain.workout.LastOccurrence.setAt]. Every one
+ * of those rules has been re-derived locally before and every time it produced
+ * a reported bug — see [buildSlots] and [lastHintAt].
+ *
+ * [activeRecord] must be an element of [dayRecords] and [activeExercise] one of
+ * its members; the ViewModel resolves both before calling (it dismisses instead
+ * of rendering an empty day).
+ */
+internal suspend fun buildFocusUi(
+    dayRecords: List<WorkoutRecord>,
+    activeRecord: WorkoutRecord,
+    activeExercise: WorkoutExercise,
+    editorMode: FocusEditorMode,
+    input: FocusInputState,
+    focusData: ExerciseFocusData?,
+    coachText: String?,
+    isPickerOpen: Boolean,
+    isMenuOpen: Boolean,
+    isConfirmingRemove: Boolean,
+    measurementSystem: MeasurementSystem,
+    historyRevision: Int,
+    strings: FocusStrings = FocusStrings(),
+): FocusUi {
+    val isSuperset = activeRecord.exercises.size > 1
+    val resultType = activeExercise.resultType
+    val isCardio = resultType == ResultType.DISTANCE_DURATION
+    val unit = WorkoutValueFormatter.unit(resultType, measurementSystem)
+
+    return FocusUi(
+        isSuperset = isSuperset,
+        pill = buildPill(dayRecords, activeRecord, activeExercise, isSuperset, strings),
+        pickerItems = dayRecords.map { buildStripItem(it, activeRecord, strings) },
+        isPickerOpen = isPickerOpen,
+        memberItems = if (isSuperset) buildMemberItems(activeRecord, activeExercise, strings) else null,
+        title = activeExercise.exercise.name,
+        muscles = musclesLine(activeExercise, strings),
+        // isNotBlank, not isNotEmpty: a whitespace-only comment would otherwise
+        // render an empty note card. (Android's guard; iOS checks emptiness.)
+        note = activeExercise.comment?.takeIf { it.isNotBlank() },
+        stats = buildStats(focusData, isCardio, measurementSystem),
+        coachSegments = coachText
+            ?.takeIf { it.isNotBlank() }
+            // A raw advice string is one Body segment; the emphasis split is
+            // reserved for a future structured coach response.
+            ?.let { listOf(FocusCoachSegmentUi(it, FocusCoachSegmentUi.Emphasis.Body)) },
+        editor = buildEditor(activeExercise, editorMode, input, unit, isCardio, measurementSystem, strings),
+        slots = buildSlots(activeExercise, editorMode, input, unit, measurementSystem, strings),
+        setDots = buildDots(activeExercise, editorMode),
+        finishButton = buildFinishButton(dayRecords, activeRecord, strings),
+        menu = if (isMenuOpen) {
+            FocusMenuUi(
+                hasNote = !activeExercise.comment.isNullOrBlank(),
+                isSuperset = isSuperset,
+                // By day POSITION, not list index — the rule both platforms ship
+                // (iOS ExerciseFocusViewModel.swift:980, Android :1098).
+                canSupersetWithNext = dayRecords.any { it.position > activeRecord.position },
+            )
+        } else {
+            null
+        },
+        confirmRemove = activeExercise.exercise.name.takeIf { isConfirmingRemove },
+        historyRevision = historyRevision,
+    )
+}
+
+// ── Set stack ───────────────────────────────────────────────────────────
+
+/**
+ * One row per set in order, plus the trailing synthetic "add another" row.
+ *
+ * A filled row shows its own numbers; an unfilled one shows the prior
+ * occurrence's set at this position (overflow → its last set). Both come out of
+ * ONE [WorkoutExercise.displayValuesAt] call, so the value and the rep count
+ * can never describe two different sets — resolving the two fields
+ * independently down the fallback chain is what once paired last session's
+ * weight with today's rep count.
+ *
+ * `fallBackToPreviousSet = false` here, and on every read-only row: a list row
+ * shows its own data or last time's ghost, never a number borrowed from the row
+ * above it. The single site that passes `true` is [focusEditorSeedValues].
+ */
+private suspend fun buildSlots(
+    exercise: WorkoutExercise,
+    editorMode: FocusEditorMode,
+    input: FocusInputState,
+    unit: String,
+    measurementSystem: MeasurementSystem,
+    strings: FocusStrings,
+): List<FocusSetSlotUi> {
+    val expandedId = editorMode.expandedSlotId
+    val activeSetId = activeSetId(exercise)
+
+    val rows = exercise.sets.mapIndexed { index, set ->
+        val display = exercise.displayValuesAt(index, fallBackToPreviousSet = false)
+        FocusSetSlotUi(
+            id = set.id,
+            number = index + 1,
+            kind = when {
+                set.isLogged -> FocusSetSlotUi.Kind.Finished
+                set.id == activeSetId -> FocusSetSlotUi.Kind.Active
+                else -> FocusSetSlotUi.Kind.Target
+            },
+            isAddAnother = false,
+            valueText = WorkoutValueFormatter.number(display.value),
+            valueUnit = unit,
+            repsText = "× ${WorkoutValueFormatter.repsNumber(display.reps)}",
+            isExpanded = set.id == expandedId,
+            lastHint = lastHintAt(exercise, index, measurementSystem, strings),
+        )
+    }
+
+    // Always last, always present: collapsed it is the dashed add button,
+    // expanded it is the new-set editor. Modelling it as a normal row lets it
+    // animate off the same `isExpanded` flag as every other row rather than
+    // swapping a button for a row.
+    val addAnother = FocusSetSlotUi(
+        id = FocusEditorMode.NEW_SET_ID,
+        number = exercise.sets.size + 1,
+        kind = FocusSetSlotUi.Kind.Active,
+        isAddAnother = true,
+        // Mirrors the live keypad draft rather than any stored set.
+        valueText = input.valueText.ifEmpty { WorkoutValueFormatter.EMPTY },
+        valueUnit = unit,
+        repsText = "× ${input.repsText.ifEmpty { WorkoutValueFormatter.EMPTY }}",
+        isExpanded = expandedId == FocusEditorMode.NEW_SET_ID,
+        lastHint = lastHintAt(exercise, exercise.sets.size, measurementSystem, strings),
+    )
+
+    return rows + addAnother
+}
+
+/**
+ * One dot per real set row, mirroring [buildSlots]'s kinds. The add-another row
+ * gets a dot ONLY once the user has explicitly opened it — a set that does not
+ * exist yet must not appear in the strip.
+ */
+private fun buildDots(
+    exercise: WorkoutExercise,
+    editorMode: FocusEditorMode,
+): List<FocusSetDotUi> {
+    val activeSetId = activeSetId(exercise)
+    val dots = exercise.sets.mapIndexed { index, set ->
+        FocusSetDotUi(
+            id = index,
+            kind = when {
+                set.isLogged -> FocusSetDotUi.Kind.Done
+                set.id == activeSetId -> FocusSetDotUi.Kind.Current
+                else -> FocusSetDotUi.Kind.Target
+            },
+        )
+    }
+    return if (editorMode is FocusEditorMode.AddingNew) {
+        dots + FocusSetDotUi(id = exercise.sets.size, kind = FocusSetDotUi.Kind.Current)
+    } else {
+        dots
+    }
+}
+
+/**
+ * The next real set to do: the FIRST unfilled row. Null when every existing set
+ * is filled — a non-existent "next set" is deliberately never promoted to
+ * active, because a new row appears only once Add-another is tapped.
+ */
+private fun activeSetId(exercise: WorkoutExercise): String? =
+    exercise.sets.firstOrNull { !it.isLogged }?.id
+
+// ── Editor ──────────────────────────────────────────────────────────────
+
+private suspend fun buildEditor(
+    exercise: WorkoutExercise,
+    editorMode: FocusEditorMode,
+    input: FocusInputState,
+    unit: String,
+    isCardio: Boolean,
+    measurementSystem: MeasurementSystem,
+    strings: FocusStrings,
+): FocusEditorUi {
+    val editing = editorMode as? FocusEditorMode.Editing
+    // Add/collapsed mode appends, so the ordinal is one past the existing rows.
+    val setNumber = editing?.number ?: (exercise.sets.size + 1)
+    val editedSet = editing?.let { mode -> exercise.sets.firstOrNull { it.id == mode.setId } }
+
+    return FocusEditorUi(
+        setNumber = setNumber,
+        valueText = input.valueText,
+        repsText = input.repsText,
+        unit = unit,
+        repsUnit = (if (isCardio) strings.minutesUnit() else strings.repsUnit()).lowercase(),
+        focusedField = input.focusedField,
+        // "Save changes" only for an already-FILLED set …
+        isEditing = editedSet?.isLogged == true,
+        // … while ANY existing row — filled or an unfilled target — commits
+        // through saveSet. The two flags stay split on purpose: an unfilled
+        // target titles "Log set n" but must still update in place.
+        editsExistingSet = editing != null,
+        lastHint = lastHintAt(exercise, setNumber - 1, measurementSystem, strings),
+    )
+}
+
+/**
+ * The editor stepper's seed — **the one place `fallBackToPreviousSet = true` is
+ * legal.** The stepper has to show SOME number, so an otherwise empty row may
+ * fall back to the row above it; every read-only row in [buildSlots] passes
+ * `false` so it can never borrow from its neighbour.
+ *
+ * Both numbers come from the single [WorkoutExercise.displayValuesAt] call, so
+ * the seeded weight and rep count always describe the same set. Shared with the
+ * commit-target path so tapping a target row and opening its editor can never
+ * resolve to different numbers (iOS `resolvedValues`, Android `resolvedValues`).
+ */
+internal fun focusEditorSeedValues(exercise: WorkoutExercise, set: WorkoutSet): DisplaySetValues {
+    // Position in the loaded list — the sibling fallback is n-1, not
+    // `sets.last()`; when editing a middle row those differ.
+    val index = exercise.sets.indexOfFirst { it.id == set.id }
+    // A set that is not in the exercise (stale id after a reload) has no
+    // position to align against — show its own values, nothing borrowed.
+    if (index < 0) return DisplaySetValues(value = set.displayValue, reps = set.displayReps)
+    return exercise.displayValuesAt(index, fallBackToPreviousSet = true)
+}
+
+/**
+ * `"Last: 70 kg × 8"` for the row at [position].
+ *
+ * Reads [WorkoutExercise.lastOccurrence] DIRECTLY rather than going through
+ * `displayValuesAt`: this line is explicitly about the PREVIOUS session, so it
+ * must never fall back to the row's own values — a row carrying its own numbers
+ * still advertises last time's here.
+ *
+ * Alignment is [kz.maestrosultan.fitjournal.domain.workout.LastOccurrence.setAt],
+ * never a bare index into `lastOccurrence.sets`: that function owns the
+ * overflow-to-last and clamp-to-first rules, and an early FJ-2.0 build that
+ * indexed the list itself stamped the prior occurrence's heaviest set onto
+ * every row of a repeated workout.
+ */
+private suspend fun lastHintAt(
+    exercise: WorkoutExercise,
+    position: Int,
+    measurementSystem: MeasurementSystem,
+    strings: FocusStrings,
+): String? {
+    val prior = exercise.lastOccurrence?.setAt(position) ?: return null
+    // No defining number last time → nothing worth advertising.
+    val priorValue = prior.displayValue ?: return null
+    val body = WorkoutValueFormatter.pair(
+        value = priorValue,
+        // 0 is WorkoutValueFormatter's unset sentinel; collapsing it to absent
+        // keeps the hint at "70 kg" instead of the stray "70 kg —".
+        reps = prior.displayReps?.takeIf { it != 0 },
+        resultType = exercise.resultType,
+        system = measurementSystem,
+    ) ?: return null
+    return strings.lastHint(body)
+}
+
+// ── Header / picker / members ───────────────────────────────────────────
+
+private suspend fun buildPill(
+    dayRecords: List<WorkoutRecord>,
+    activeRecord: WorkoutRecord,
+    activeExercise: WorkoutExercise,
+    isSuperset: Boolean,
+    strings: FocusStrings,
+): FocusPillUi = FocusPillUi(
+    imageNames = activeRecord.exercises.map { it.thumbName },
+    title = if (isSuperset) strings.supersetLabel() else activeExercise.exercise.name,
+    // Over the day's RECORDS — a superset counts as one, not as its members.
+    // coerceAtLeast(0) so an unknown active record reads "1/n", never "0/n".
+    position = "${dayRecords.indexOfFirst { it.id == activeRecord.id }.coerceAtLeast(0) + 1}/${dayRecords.size}",
+    isSuperset = isSuperset,
+)
+
+private suspend fun buildStripItem(
+    record: WorkoutRecord,
+    activeRecord: WorkoutRecord,
+    strings: FocusStrings,
+): FocusStripItemUi {
+    val isSuperset = record.exercises.size > 1
+    return FocusStripItemUi(
+        // Tapping the row selects the record's FIRST member.
+        id = record.exercises.firstOrNull()?.id ?: record.id,
+        recordId = record.id,
+        name = if (isSuperset) {
+            strings.supersetLabel()
+        } else {
+            record.exercises.firstOrNull()?.exercise?.name.orEmpty()
+        },
+        imageNames = record.exercises.map { it.thumbName },
+        isSuperset = isSuperset,
+        isActive = record.id == activeRecord.id,
+        // "Done" only when the record holds at least one real LOGGED set. A
+        // repeated workout arrives as unfilled target rows and is not done yet,
+        // so this is emphatically not `sets.isNotEmpty()` — both platforms ship
+        // the logged test (iOS FocusViewStateBuilder.swift:218-221, Android
+        // FocusViewStateBuilder.kt:160).
+        isCompleted = record.exercises.any { member -> member.sets.any { it.isLogged } },
+    )
+}
+
+private suspend fun buildMemberItems(
+    activeRecord: WorkoutRecord,
+    activeExercise: WorkoutExercise,
+    strings: FocusStrings,
+): List<FocusMemberItemUi> = activeRecord.exercises.mapIndexed { index, member ->
+    FocusMemberItemUi(
+        workoutExerciseId = member.id,
+        // A/B/C… in record order, any member count.
+        letter = ('A' + index).toString(),
+        name = member.exercise.name,
+        muscles = musclesLine(member, strings),
+        imageName = member.thumbName,
+        // Every existing row counts, filled or not — the row is what this
+        // member still has to do.
+        setCountText = strings.setCount(member.sets.size),
+        isActive = member.id == activeExercise.id,
+    )
+}
+
+/**
+ * Bottom button: "Finish exercise" + "Next • <name>" when a record follows the
+ * active one in day order; "Finish workout" and NO subtitle on the last one.
+ */
+private suspend fun buildFinishButton(
+    dayRecords: List<WorkoutRecord>,
+    activeRecord: WorkoutRecord,
+    strings: FocusStrings,
+): FocusFinishButtonUi {
+    val activeIndex = dayRecords.indexOfFirst { it.id == activeRecord.id }
+    val next = dayRecords.getOrNull(activeIndex + 1)
+        ?: return FocusFinishButtonUi(title = strings.finishWorkout(), subtitle = null)
+    val name = if (next.exercises.size > 1) {
+        strings.supersetLabel()
+    } else {
+        next.exercises.firstOrNull()?.exercise?.name.orEmpty()
+    }
+    return FocusFinishButtonUi(
+        title = strings.finishExercise(),
+        subtitle = strings.finishNext(name),
+    )
+}
+
+// ── Stats ───────────────────────────────────────────────────────────────
+
+/**
+ * Hidden entirely for cardio or when there is no data. Formats only: the
+ * estimate and the max set arrive already computed on [ExerciseFocusData].
+ */
+private fun buildStats(
+    focusData: ExerciseFocusData?,
+    isCardio: Boolean,
+    measurementSystem: MeasurementSystem,
+): FocusStatsUi? {
+    if (isCardio || focusData == null) return null
+    if (focusData.estimatedOneRepMax == null && focusData.maxSet == null) return null
+
+    val weightUnit = WorkoutValueFormatter.unit(ResultType.WEIGHT_REPS, measurementSystem)
+    return FocusStatsUi(
+        estOneRepMaxText = focusData.estimatedOneRepMax?.toString(),
+        estOneRepMaxUnit = weightUnit,
+        maxSetText = focusData.maxSet?.let { WorkoutValueFormatter.number(it.weight) },
+        maxSetUnit = focusData.maxSet?.let { "$weightUnit × ${it.reps}" } ?: weightUnit,
+        // The value opens the calculator only when there is an estimate to open it with.
+        isEstOneRepMaxTappable = focusData.estimatedOneRepMax != null,
+    )
+}
+
+// ── Shared bits ─────────────────────────────────────────────────────────
+
+/** "Quadriceps · Glutes" — ALL category titles, localized, in catalog order. */
+private suspend fun musclesLine(exercise: WorkoutExercise, strings: FocusStrings): String =
+    exercise.exercise.allCategories
+        .map { strings.categoryName(it.type) }
+        .joinToString(" · ")
+
+/**
+ * The thumbnail string, in ONE OF EXACTLY TWO shapes — the renderer resolves
+ * these two and nothing else, and an unrecognised shape fails SILENTLY (the
+ * bundled-image loader swallows the miss and draws an empty box), so a third
+ * shape would produce blank thumbnails with no error anywhere:
+ *
+ * 1. `"files/exercises/<folder>/<name>.png"` when the exercise has a bundled
+ *    image — built exactly as `ExerciseAvatar.kt:73-77` builds it
+ *    ([assetFolder] is null for OTHER, and the name is `image1 ?: image2`).
+ * 2. Otherwise the bare [CategoryType.identifier] (`"chest"`), which the
+ *    renderer maps back to a [CategoryType] and draws via `iconResource()`.
+ *
+ * Emphatically NOT a bare `image1` (no `files/exercises/` prefix, resolves to
+ * nothing) and not a platform asset name like `"category.chest.small"`.
+ */
+private val WorkoutExercise.thumbName: String
+    get() {
+        val folder = exercise.primaryCategory.type.assetFolder()
+        val name = exercise.image1 ?: exercise.image2
+        // Both halves required: OTHER has no folder, and a custom exercise has
+        // no bundled image — either way, fall back to the category identifier.
+        return if (folder != null && name != null) {
+            "files/exercises/$folder$name.png"
+        } else {
+            exercise.primaryCategory.type.identifier
+        }
+    }
