@@ -31,6 +31,33 @@ class JournalRepositoryTest {
     private val userId = "user-1"
 
     @Test
+    fun pushAck_clearsOnMatch_andNoOpsOnAStaleSnapshot(): Unit = runBlocking {
+        // The ack is snapshot-conditional. Both halves matter: it must still
+        // CLEAR normally (or the row re-pushes forever), and must NOT clear when
+        // an edit landed during the round trip (or that edit is dropped and then
+        // reverted by the same tick's pull).
+        val id = UUID.randomUUID().toString()
+        repo.createJournal(id, userId, "Legs", comments = null, isPersonal = false, workoutGoal = null)
+        val pushed = ds.getPendingUploads(userId).single { it.uuid == id }
+
+        // An edit lands mid-flight, then the in-flight ack arrives: no-op.
+        repo.updateJournal(id, "Legs renamed", comments = null, workoutGoal = null)
+        ds.markUploaded(id, id, pushed.updatedDate)
+        assertTrue(
+            ds.getPendingUploads(userId).any { it.uuid == id },
+            "a stale ack must leave the row pending so the rename still gets pushed",
+        )
+
+        // The next tick acks the CURRENT row: clears.
+        val current = ds.getPendingUploads(userId).single { it.uuid == id }
+        ds.markUploaded(id, id, current.updatedDate)
+        assertTrue(
+            ds.getPendingUploads(userId).none { it.uuid == id },
+            "a matching ack must clear, or the row would re-push on every tick forever",
+        )
+    }
+
+    @Test
     fun create_readsBack_andIsPendingUpload(): Unit = runBlocking {
         val id = UUID.randomUUID().toString()
         repo.createJournal(id, userId, "Legs", comments = "leg day", isPersonal = false, workoutGoal = 3)

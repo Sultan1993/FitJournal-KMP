@@ -50,6 +50,31 @@ class ExerciseRepositoryTest {
     }
 
     @Test
+    fun pushAck_clearsOnMatch_andNoOpsOnAStaleSnapshot(): Unit = runBlocking {
+        // Exercises compare the name columns + deletedAt rather than updatedDate
+        // (DBExerciseObject carries no updatedDate), so this is the one ack whose
+        // predicate differs — worth pinning both directions explicitly.
+        val catUuid = seedCategory()
+        val id = UUID.randomUUID().toString()
+        repo.createExercise(id, userId, "Bench Press", catUuid, ResultType.WEIGHT_REPS)
+        val pushed = exDs.getPendingUploads(userId).single { it.uuid == id }
+
+        repo.updateExerciseName(id, "Renamed mid-flight")
+        exDs.markUploaded(pushed, id)
+        assertTrue(
+            exDs.getPendingUploads(userId).any { it.uuid == id },
+            "a stale ack must leave the row pending so the rename still gets pushed",
+        )
+
+        val current = exDs.getPendingUploads(userId).single { it.uuid == id }
+        exDs.markUploaded(current, id)
+        assertTrue(
+            exDs.getPendingUploads(userId).none { it.uuid == id },
+            "a matching ack must clear, or the row would re-push on every tick forever",
+        )
+    }
+
+    @Test
     fun rename_changesName(): Unit = runBlocking {
         val catUuid = seedCategory()
         val id = UUID.randomUUID().toString()

@@ -20,6 +20,28 @@ class BodyMeasurementsRepositoryTest {
     private val date = LocalDate(2026, 1, 15)
 
     @Test
+    fun pushAck_clearsOnMatch_andNoOpsOnAStaleSnapshot(): Unit = runBlocking {
+        // See the twin in JournalRepositoryTest for why both halves matter.
+        val id = UUID.randomUUID().toString()
+        repo.createBodyMeasurement(id, userId, journalId, BodyMeasurementType.WEIGHT, 80.5, date, null)
+        val pushed = ds.getPendingUploads(userId).single { it.uuid == id }
+
+        repo.updateBodyMeasurement(id, 81.0, date, null)
+        ds.markUploaded(id, id, pushed.updatedDate)
+        assertTrue(
+            ds.getPendingUploads(userId).any { it.uuid == id },
+            "a stale ack must leave the row pending so the edit still gets pushed",
+        )
+
+        val current = ds.getPendingUploads(userId).single { it.uuid == id }
+        ds.markUploaded(id, id, current.updatedDate)
+        assertTrue(
+            ds.getPendingUploads(userId).none { it.uuid == id },
+            "a matching ack must clear, or the row would re-push on every tick forever",
+        )
+    }
+
+    @Test
     fun create_readsBack_andIsPendingUpload(): Unit = runBlocking {
         val id = UUID.randomUUID().toString()
         repo.createBodyMeasurement(id, userId, journalId, BodyMeasurementType.WEIGHT, 80.5, date, "morning")
