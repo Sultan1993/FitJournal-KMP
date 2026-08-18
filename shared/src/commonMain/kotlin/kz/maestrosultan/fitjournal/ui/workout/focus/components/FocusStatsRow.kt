@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -103,7 +104,7 @@ private fun FocusStatCell(
         Row(modifier = valueRowModifier, verticalAlignment = Alignment.Bottom) {
             Text(
                 text = value ?: VALUE_PLACEHOLDER,
-                style = FjTheme.typography.numberLarge.copy(fontSize = 26.sp),
+                style = FjTheme.typography.numberLarge.copy(fontSize = 26.sp, fontWeight = FontWeight.Bold),
                 color = FjTheme.colors.textPrimary,
             )
             Text(

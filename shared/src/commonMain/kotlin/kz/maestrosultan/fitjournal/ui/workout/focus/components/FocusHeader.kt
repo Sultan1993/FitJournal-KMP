@@ -17,14 +17,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.hapticfeedback.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_a11y_close
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_a11y_menu
@@ -51,7 +51,6 @@ fun FocusHeader(
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val haptics = LocalHapticFeedback.current
     Row(
         modifier = modifier.fillMaxWidth().height(46.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -63,10 +62,7 @@ fun FocusHeader(
         FocusHeaderPill(
             pill = pill,
             isPickerOpen = isPickerOpen,
-            onClick = {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                onTogglePicker()
-            },
+            onClick = onTogglePicker,
             modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
         )
         circleButton(
@@ -99,7 +95,7 @@ private fun FocusHeaderPill(
         Box(modifier = Modifier.weight(1f).padding(start = 8.dp)) {
             Text(
                 text = pill.title,
-                style = FjTheme.typography.bodyStrong,
+                style = FjTheme.typography.bodyStrong.copy(fontSize = 16.sp, fontWeight = FontWeight.SemiBold),
                 color = FjTheme.colors.textPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -107,7 +103,7 @@ private fun FocusHeaderPill(
         }
         Text(
             text = pill.position,
-            style = FjTheme.typography.label,
+            style = FjTheme.typography.label.copy(fontSize = 12.sp, fontWeight = FontWeight.SemiBold),
             color = FjTheme.colors.textTertiary,
         )
         Icon(
