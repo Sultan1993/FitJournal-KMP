@@ -116,7 +116,18 @@ fun FocusExercisePicker(
                             val newTarget = (dragOriginIndex + (dragTranslation / rowHeightPx).let {
                                 if (it >= 0) (it + 0.5f).toInt() else (it - 0.5f).toInt()
                             }).coerceIn(0, order.lastIndex)
-                            if (newTarget != dragTargetIndex) dragTargetIndex = newTarget
+                            if (newTarget != dragTargetIndex) {
+                                dragTargetIndex = newTarget
+                                // Selection tick as the dragged row crosses a neighbour —
+                                // fires on the insertion-index CHANGE only, never per
+                                // pointer move and never again on drop (that's the
+                                // dragStart impact above / no haptic on end). Compose
+                                // Multiplatform has no UISelectionFeedbackGenerator
+                                // equivalent; TextHandleMove is the closest distinct
+                                // constant from LongPress (the impact used elsewhere),
+                                // so it stands in for iOS's selectionChanged() here.
+                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            }
                         },
                         onDragEnd = {
                             val reordered = dragTargetIndex != dragOriginIndex
