@@ -61,9 +61,9 @@ fun WorkoutExerciseMenu(
     hasNote: Boolean,
     isSuperset: Boolean,
     canAddToSuperset: Boolean,
-    onAbout: () -> Unit,
-    onHistory: () -> Unit,
-    onStats: () -> Unit,
+    onAbout: (() -> Unit)? = null,
+    onHistory: (() -> Unit)? = null,
+    onStats: (() -> Unit)? = null,
     onNote: () -> Unit,
     onReplace: () -> Unit,
     onAddToSuperset: () -> Unit,
@@ -100,10 +100,12 @@ fun WorkoutExerciseMenu(
             MenuDivider()
 
             // Group 1 — read-only exercise info.
-            MenuRow(Res.drawable.ic_common_info, stringResource(Res.string.workout_menu_about), onClick = { close(onAbout) })
-            MenuRow(Res.drawable.ic_common_history, stringResource(Res.string.workout_menu_history), onClick = { close(onHistory) })
-            MenuRow(Res.drawable.ic_common_chart, stringResource(Res.string.workout_menu_stats), onClick = { close(onStats) })
-            MenuDivider()
+            onAbout?.let { cb -> MenuRow(Res.drawable.ic_common_info, stringResource(Res.string.workout_menu_about), onClick = { close(cb) }) }
+            onHistory?.let { cb -> MenuRow(Res.drawable.ic_common_history, stringResource(Res.string.workout_menu_history), onClick = { close(cb) }) }
+            onStats?.let { cb -> MenuRow(Res.drawable.ic_common_chart, stringResource(Res.string.workout_menu_stats), onClick = { close(cb) }) }
+            if (onAbout != null || onHistory != null || onStats != null) {
+                MenuDivider()
+            }
 
             // Group 2 — edit actions.
             MenuRow(
