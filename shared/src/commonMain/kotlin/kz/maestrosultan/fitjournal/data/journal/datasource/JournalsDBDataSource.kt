@@ -12,21 +12,26 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kz.maestrosultan.fitjournal.data.db.BodyMeasurementsQueries
 import kz.maestrosultan.fitjournal.data.db.JournalsQueries
+import kz.maestrosultan.fitjournal.data.db.WorkoutNotesQueries
 import kz.maestrosultan.fitjournal.data.db.WorkoutRecordsQueries
+import kz.maestrosultan.fitjournal.data.db.WorkoutSessionsQueries
 import kz.maestrosultan.fitjournal.data.journal.entity.DBJournalObject
 import kz.maestrosultan.fitjournal.data.journal.entity.map
 import kz.maestrosultan.fitjournal.data.time.toStoredString
 
 /**
- * @param recordsDao / @param measurementsDao are here only for
- * [softDeleteJournalCascade]. A journal's children live in other tables with no
- * FOREIGN KEY back to `journals`, so the cascade has to be written by hand — and
- * it has to be one transaction, which means one owner holding all three Queries.
+ * @param recordsDao / @param measurementsDao / @param sessionsDao / @param
+ * notesDao are here only for [softDeleteJournalCascade]. A journal's children
+ * live in other tables with no FOREIGN KEY back to `journals`, so the cascade
+ * has to be written by hand — and it has to be one transaction, which means one
+ * owner holding every Queries it touches.
  */
 class JournalsDBDataSource(
     private val dao: JournalsQueries,
     private val recordsDao: WorkoutRecordsQueries,
     private val measurementsDao: BodyMeasurementsQueries,
+    private val sessionsDao: WorkoutSessionsQueries,
+    private val notesDao: WorkoutNotesQueries,
 ) {
 
     suspend fun getJournals(userId: String): List<DBJournalObject> = withContext(Dispatchers.IO) {
@@ -219,6 +224,18 @@ class JournalsDBDataSource(
             measurementsDao.softDeleteBodyMeasurementsByJournal(
                 deletedAt = deletedAtText,
                 updatedDate = updatedDateText,
+                userId = userId,
+                journalId = uuid,
+            )
+            // Page-keyed children. They sync too, so skipping them here would
+            // leave live rows on AWS that nothing ever tombstones.
+            sessionsDao.softDeleteWorkoutSessionsByJournal(
+                deletedAt = deletedAtText,
+                userId = userId,
+                journalId = uuid,
+            )
+            notesDao.softDeleteWorkoutNotesByJournal(
+                deletedAt = deletedAtText,
                 userId = userId,
                 journalId = uuid,
             )

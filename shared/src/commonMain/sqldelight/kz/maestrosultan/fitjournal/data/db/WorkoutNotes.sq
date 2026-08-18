@@ -66,6 +66,15 @@ UPDATE workoutNotes
 SET deletedAt = ?, pendingUpload = 1
 WHERE userId = ? AND journalId = ? AND date = ? AND workoutNumber = ? AND deletedAt IS NULL;
 
+-- Journal-delete cascade — see the twin on WorkoutSessions.sq. Without it a
+-- deleted journal's notes stay live locally and strand forever on AWS.
+softDeleteWorkoutNotesByJournal:
+UPDATE workoutNotes
+SET deletedAt = ?, pendingUpload = 1
+WHERE userId = ?
+AND journalId = ?
+AND deletedAt IS NULL;
+
 -- Hard purge — delete-account flow (mirrors deleteWorkoutRecordsByUserId).
 deleteNotesByUserId:
 DELETE FROM workoutNotes WHERE userId = ?;

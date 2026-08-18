@@ -123,6 +123,17 @@ UPDATE workoutSessions
 SET deletedAt = ?, pendingUpload = 1
 WHERE uuid = ? AND userId = ? AND deletedAt IS NULL;
 
+-- Journal-delete cascade. Sessions are page-keyed, so nothing else tombstones
+-- them when their journal goes: without this they stay live locally AND strand
+-- forever on AWS (nothing would ever push a deletedAt for them).
+-- Mirrors softDeleteWorkoutRecordsByJournal.
+softDeleteWorkoutSessionsByJournal:
+UPDATE workoutSessions
+SET deletedAt = ?, pendingUpload = 1
+WHERE userId = ?
+AND journalId = ?
+AND deletedAt IS NULL;
+
 -- Hard purge, delete-account flow (mirrors deleteWorkoutRecordsByUserId).
 deleteWorkoutSessionsByUserId:
 DELETE FROM workoutSessions WHERE userId = ?;

@@ -24,6 +24,8 @@ class JournalRepositoryTest {
         db.journalsQueries,
         db.workoutRecordsQueries,
         db.bodyMeasurementsQueries,
+        db.workoutSessionsQueries,
+        db.workoutNotesQueries,
     )
     private val repo = DefaultJournalRepository(ds)
     private val userId = "user-1"

@@ -2,6 +2,7 @@ package kz.maestrosultan.fitjournal.data
 
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDate
+import kz.maestrosultan.fitjournal.data.journal.datasource.JournalsDBDataSource
 import kz.maestrosultan.fitjournal.data.record.datasource.WorkoutNotesDBDataSource
 import kz.maestrosultan.fitjournal.data.session.datasource.WorkoutSessionsDBDataSource
 import kotlin.test.Test
@@ -231,6 +232,45 @@ class WorkoutPageSyncTest {
 
         assertNull(sessionsDB.getSessionByWorkoutNumber(userId, journalId, date.toString(), 1))
         assertNull(sessionsDB.getRunningSession(userId))
+    }
+
+    @Test
+    fun deletingAJournalTombstonesItsSessionsAndNotes(): Unit = runBlocking {
+        // Both tables are page-keyed with no FK back to `journals`, so the
+        // cascade is hand-written. Miss them and a deleted journal's rows stay
+        // live on AWS forever — nothing else would ever push a deletedAt.
+        val journals = JournalsDBDataSource(
+            db.journalsQueries,
+            db.workoutRecordsQueries,
+            db.bodyMeasurementsQueries,
+            db.workoutSessionsQueries,
+            db.workoutNotesQueries,
+        )
+        sessionsDB.startSession("s1", userId, journalId, date.toString(), 1, startedAt)
+        db.workoutNotesQueries.insertNote("n1", userId, journalId, date.toString(), 1, "leg day")
+        sessionsDB.markUploaded(sessionsDB.getPendingUploads(userId).single(), "s1")
+        notesDB.markUploaded(notesDB.getPendingUploads(userId).single(), "n1")
+
+        journals.softDeleteJournalCascade(uuid = journalId, userId = userId, deletedAt = startedAt)
+
+        assertNull(
+            sessionsDB.getSessionByWorkoutNumber(userId, journalId, date.toString(), 1),
+            "the journal's session is gone from reads",
+        )
+        assertNull(
+            db.workoutNotesQueries.getNoteByPage(userId, journalId, date.toString(), 1).executeAsOneOrNull(),
+            "the journal's note is gone from reads",
+        )
+        assertEquals(
+            listOf("s1"),
+            sessionsDB.getPendingUploads(userId).map { it.uuid },
+            "the session tombstone is queued for push",
+        )
+        assertEquals(
+            listOf("n1"),
+            notesDB.getPendingUploads(userId).map { it.uuid },
+            "the note tombstone is queued for push",
+        )
     }
 
     // ─── Notes ────────────────────────────────────────────────────────────

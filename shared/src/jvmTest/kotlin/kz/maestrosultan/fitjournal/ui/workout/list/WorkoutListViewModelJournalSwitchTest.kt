@@ -68,7 +68,15 @@ class WorkoutListViewModelJournalSwitchTest {
         WorkoutsDBDataSource(db.workoutRecordsQueries, db.workoutExercisesQueries, db.workoutSetsQueries)
     private val recordRepo = DefaultRecordRepository(workoutsDB, exDs, testExerciseMapper)
     private val journalRepo =
-        DefaultJournalRepository(JournalsDBDataSource(db.journalsQueries, db.workoutRecordsQueries, db.bodyMeasurementsQueries))
+        DefaultJournalRepository(
+            JournalsDBDataSource(
+                db.journalsQueries,
+                db.workoutRecordsQueries,
+                db.bodyMeasurementsQueries,
+                db.workoutSessionsQueries,
+                db.workoutNotesQueries,
+            ),
+        )
 
     private val userId = "user-1"
     private val sessionFlow = MutableStateFlow<UserSessionState?>(null)
@@ -80,6 +88,14 @@ class WorkoutListViewModelJournalSwitchTest {
 
     @AfterTest
     fun tearDown() {
+        // Dispose BEFORE resetMain, and unconditionally: an assertion that throws
+        // mid-test skips the in-body dispose(), and the VM's still-running
+        // coroutines then resume onto a Main dispatcher that no longer exists.
+        // That throws inside coroutine completion, which surfaces as an
+        // "uncaught exception before the test started" failure on whichever test
+        // happens to run next — an intermittent red suite with an innocent victim.
+        createdViewModels.forEach { it.dispose() }
+        createdViewModels.clear()
         Dispatchers.resetMain()
     }
 
@@ -176,6 +192,8 @@ class WorkoutListViewModelJournalSwitchTest {
 
     // ── harness ──────────────────────────────────────────────────────────
 
+    private val createdViewModels = mutableListOf<WorkoutListViewModel>()
+
     private fun vm(recordRepository: RecordRepository = recordRepo) = WorkoutListViewModel(
         recordRepository = recordRepository,
         journalRepository = journalRepo,
@@ -183,7 +201,7 @@ class WorkoutListViewModelJournalSwitchTest {
         clock = object : Clock { override fun now(): Instant = FIXED_NOW },
         timeZone = TimeZone.UTC,
         firstDayOfWeek = DayOfWeek.MONDAY,
-    )
+    ).also { createdViewModels += it }
 
     private fun session(journalId: String) = UserSessionState(
         userId = userId,
