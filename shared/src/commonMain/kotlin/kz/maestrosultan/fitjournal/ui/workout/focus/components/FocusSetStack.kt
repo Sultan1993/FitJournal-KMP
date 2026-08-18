@@ -42,6 +42,8 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.hapticfeedback.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.font.FontWeight
@@ -195,6 +197,7 @@ private fun FocusAccordionRow(
     // expanded-row state (that lives entirely in slot.isExpanded / editor).
     val offsetX = remember(slot.id) { Animatable(0f) }
     val scope = rememberCoroutineScope()
+    val haptics = LocalHapticFeedback.current
 
     // Swipe-action confirmations — scoped against the "zero mutableStateOf
     // for expanded/editor state" criterion, not against it: these two flags
@@ -233,7 +236,11 @@ private fun FocusAccordionRow(
         if (canCommit && offsetX.value > 0f) {
             FocusSwipeCommit(
                 width = CommitRevealWidth,
-                onCommit = { onCommitTarget(slot.id); scope.launch { offsetX.animateTo(0f) } },
+                onCommit = {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onCommitTarget(slot.id)
+                    scope.launch { offsetX.animateTo(0f) }
+                },
                 modifier = Modifier.align(Alignment.CenterStart),
             )
         }
