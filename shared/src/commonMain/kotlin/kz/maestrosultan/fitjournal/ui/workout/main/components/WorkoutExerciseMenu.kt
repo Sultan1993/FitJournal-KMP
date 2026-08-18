@@ -52,11 +52,19 @@ import org.jetbrains.compose.resources.stringResource
  * VM actions (wired by the caller). [onDelete] only *requests* deletion — the
  * caller closes this sheet and raises a [ConfirmActionSheet]. Rows the caller
  * wires to "close then act", so the sheet dismisses on selection.
+ *
+ * [exercise] is optional — same shape as [onAbout]/[onHistory]/[onStats]
+ * below, nullable for the same Focus-reuse reason. `WorkoutPageContent` (the
+ * original caller) always has a real domain `Exercise` and keeps its avatar.
+ * The shared Focus screen does not: its view state is deliberately
+ * UI-projected with no domain types, and its native predecessor's menu was a
+ * plain iOS action sheet with no avatar row at all. `null` collapses the
+ * header to just the name, rather than inventing a fake `Exercise`.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkoutExerciseMenu(
-    exercise: Exercise,
+    exercise: Exercise? = null,
     exerciseName: String,
     hasNote: Boolean,
     isSuperset: Boolean,
@@ -87,8 +95,10 @@ fun WorkoutExerciseMenu(
                     .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                ExerciseAvatar(exercise = exercise, size = 40.dp)
-                Spacer(Modifier.width(14.dp))
+                if (exercise != null) {
+                    ExerciseAvatar(exercise = exercise, size = 40.dp)
+                    Spacer(Modifier.width(14.dp))
+                }
                 Text(
                     text = exerciseName,
                     style = FjTheme.typography.cardTitle,
