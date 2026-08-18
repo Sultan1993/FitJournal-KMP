@@ -5,6 +5,8 @@ import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.data.exercise.datasource.CategoriesDBDataSource
 import kz.maestrosultan.fitjournal.data.exercise.datasource.ExercisesDBDataSource
 import kz.maestrosultan.fitjournal.data.exercise.mapper.ExerciseDBMapper
+import kz.maestrosultan.fitjournal.data.exercise.repository.DefaultExerciseRepository
+import kz.maestrosultan.fitjournal.domain.workout.ResultType
 import kz.maestrosultan.fitjournal.data.journal.datasource.JournalsDBDataSource
 import kz.maestrosultan.fitjournal.data.record.datasource.WorkoutNotesDBDataSource
 import kz.maestrosultan.fitjournal.data.record.datasource.WorkoutsDBDataSource
@@ -237,6 +239,41 @@ class WorkoutPageSyncTest {
 
         assertNull(sessionsDB.getSessionByWorkoutNumber(userId, journalId, date.toString(), 1))
         assertNull(sessionsDB.getRunningSession(userId))
+    }
+
+    @Test
+    fun workoutRecordAckDoesNotClearASetLoggedDuringThePush(): Unit = runBlocking {
+        // The one that mattered most: the ack used to clear pendingUpload by uuid
+        // alone, so a set logged during the round trip was dropped — and the SAME
+        // tick's pull then rebuilt the tree from the server copy, losing it.
+        val exercises = ExercisesDBDataSource(
+            db.exercisesQueries,
+            ExerciseDBMapper(CategoriesDBDataSource(db.categoryQueries)),
+        )
+        val workoutsDB = WorkoutsDBDataSource(
+            db.workoutRecordsQueries, db.workoutExercisesQueries, db.workoutSetsQueries,
+        )
+        val records = DefaultRecordRepository(workoutsDB, exercises, testExerciseMapper, database = db)
+
+        val catUuid = "cat-1"
+        CategoriesDBDataSource(db.categoryQueries)
+            .createCategory(catUuid, catUuid, "Legs", "Ноги", "Ноги", 1, null)
+        val exId = "ex-1"
+        DefaultExerciseRepository(exercises, testExerciseMapper)
+            .createExercise(exId, userId, "Squat", catUuid, ResultType.WEIGHT_REPS)
+
+        records.addExercisesToDate(userId, journalId, date, 1, listOf(exId))
+        val rec = records.getRecordsByDate(userId, journalId, date).single()
+        val pushedSnapshot = workoutsDB.getPendingUploads(userId).single { it.uuid == rec.id }
+
+        // A set lands while the upload is in flight — bumps updatedDate + pending.
+        records.addSet(userId, journalId, rec.exercises.single().id, 100.0, 5, null, null)
+        workoutsDB.markUploaded(rec.id, rec.id, pushedSnapshot.updatedDate)
+
+        assertTrue(
+            workoutsDB.getPendingUploads(userId).any { it.uuid == rec.id },
+            "the stale ack must NOT clear the flag — the set it missed still has to be pushed",
+        )
     }
 
     @Test

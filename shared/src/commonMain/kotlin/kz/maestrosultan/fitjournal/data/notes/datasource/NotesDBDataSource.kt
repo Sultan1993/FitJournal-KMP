@@ -104,9 +104,15 @@ class NotesDBDataSource(private val dao: NotesQueries) {
         dao.getPendingUploads(userId).executeAsList().map { it.map() }
     }
 
-    suspend fun markUploaded(uuid: String, remoteId: String) = withContext(Dispatchers.IO) {
-        dao.updateNoteRemoteId(remoteId = remoteId, uuid = uuid)
-    }
+    /** Push ack — see [JournalsDBDataSource.markUploaded] for why [updatedDate] is compared. */
+    suspend fun markUploaded(uuid: String, remoteId: String, updatedDate: Instant) =
+        withContext(Dispatchers.IO) {
+            dao.updateNoteRemoteId(
+                remoteId = remoteId,
+                uuid = uuid,
+                updatedDate = updatedDate.toStoredString(),
+            )
+        }
 
     /**
      * Apply a row pulled from AWS, clearing pendingUpload. Caller must

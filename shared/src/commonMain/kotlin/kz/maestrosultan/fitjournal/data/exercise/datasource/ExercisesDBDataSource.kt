@@ -280,10 +280,21 @@ class ExercisesDBDataSource(
      * because custom exercises don't have per-locale source data — the
      * user types one name and we mirror it across locales (legacy parity).
      */
-    suspend fun renameExercise(uuid: String, nameEn: String, nameRu: String, nameUk: String?) =
-        withContext(Dispatchers.IO) {
-            dao.renameExercise(nameEn = nameEn, nameRu = nameRu, nameUk = nameUk, uuid = uuid)
-        }
+    suspend fun renameExercise(
+        uuid: String,
+        nameEn: String,
+        nameRu: String,
+        nameUk: String?,
+        updatedDate: Instant = Clock.System.now(),
+    ) = withContext(Dispatchers.IO) {
+        dao.renameExercise(
+            nameEn = nameEn,
+            nameRu = nameRu,
+            nameUk = nameUk,
+            updatedDate = updatedDate.toStoredString(),
+            uuid = uuid,
+        )
+    }
 
     suspend fun deleteExercise(uuid: String) = withContext(Dispatchers.IO) {
         dao.deleteExercise(uuid)
@@ -368,10 +379,15 @@ class ExercisesDBDataSource(
             val secondary: List<DBCategoryObject>? = secondaryCategoryUuids
                 ?.takeIf { it.isNotEmpty() }
                 ?.split(";")
-                ?.map { secondaryUuid ->
-                    categoryByUuid[secondaryUuid]
-                        ?: error("Secondary category not found for exercise '$uuid': '$secondaryUuid'")
-                }
+                // mapNotNull, NOT error(): secondaryCategoryUuids is a ';'-joined
+                // blob written verbatim from AWS with no foreign key behind it, so
+                // an id this device hasn't seeded yet is reachable and normal.
+                // Throwing from inside a row mapper aborts the WHOLE query — and
+                // this one feeds every record read — so one server row would take
+                // down exercises, workouts, history and stats at once (an
+                // uncatchable SIGABRT on iOS, on every launch, since the row is
+                // already local). Drop the unresolvable id instead.
+                ?.mapNotNull { secondaryUuid -> categoryByUuid[secondaryUuid] }
             DBExerciseObject(
                 uuid = uuid,
                 remoteId = remoteId,
@@ -448,9 +464,22 @@ class ExercisesDBDataSource(
      * `remoteId` (which equals `uuid` in our id-as-AWS-id model). Called
      * by the SyncOrchestrator after a successful AWS push.
      */
-    suspend fun markUploaded(uuid: String, remoteId: String) = withContext(Dispatchers.IO) {
-        dao.updateExerciseRemoteId(remoteId = remoteId, uuid = uuid)
-    }
+    /**
+     * Push ack — see [kz.maestrosultan.fitjournal.data.journal.datasource.JournalsDBDataSource.markUploaded].
+     * Pass the SNAPSHOT that was pushed; a rename or tombstone landing during the
+     * round trip makes this a no-op so the row stays pending.
+     */
+    suspend fun markUploaded(exercise: DBExerciseObject, remoteId: String) =
+        withContext(Dispatchers.IO) {
+            dao.updateExerciseRemoteId(
+                remoteId = remoteId,
+                uuid = exercise.uuid,
+                nameEn = exercise.nameEn,
+                nameRu = exercise.nameRu,
+                nameUk = exercise.nameUk,
+                deletedAt = exercise.deletedAt?.toStoredString(),
+            )
+        }
 
     /**
      * Apply a row pulled from AWS, clearing pendingUpload. Caller must

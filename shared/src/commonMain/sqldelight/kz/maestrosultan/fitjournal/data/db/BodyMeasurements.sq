@@ -81,10 +81,13 @@ AND deletedAt IS NULL;
 
 -- Push-success ack. No `deletedAt IS NULL` filter — tombstones must
 -- also clear their pendingUpload after a successful tombstone push.
+-- Conditional on the row still being what was uploaded — see the long note on
+-- `updateExerciseRemoteId`. An edit landing during the round trip stays pending
+-- instead of being dropped and then reverted by the pull.
 updateBodyMeasurementRemoteId:
 UPDATE bodyMeasurements
 SET remoteId = ?, pendingUpload = 0
-WHERE uuid = ?;
+WHERE uuid = ? AND updatedDate IS ?;
 
 -- Sync-pull upsert: writes the row from AWS without bumping pendingUpload.
 -- Callers must check `pendingUpload=1` on the existing row before calling

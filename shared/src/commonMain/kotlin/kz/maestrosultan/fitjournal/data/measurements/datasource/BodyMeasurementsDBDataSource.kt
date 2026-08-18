@@ -153,9 +153,15 @@ class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
         dao.getPendingUploads(userId).executeAsList().map { it.map() }
     }
 
-    suspend fun markUploaded(uuid: String, remoteId: String) = withContext(Dispatchers.IO) {
-        dao.updateBodyMeasurementRemoteId(remoteId = remoteId, uuid = uuid)
-    }
+    /** Push ack — see [kz.maestrosultan.fitjournal.data.journal.datasource.JournalsDBDataSource.markUploaded]. */
+    suspend fun markUploaded(uuid: String, remoteId: String, updatedDate: Instant) =
+        withContext(Dispatchers.IO) {
+            dao.updateBodyMeasurementRemoteId(
+                remoteId = remoteId,
+                uuid = uuid,
+                updatedDate = updatedDate.toStoredString(),
+            )
+        }
 
     /**
      * Apply a row pulled from AWS, clearing pendingUpload. Caller must

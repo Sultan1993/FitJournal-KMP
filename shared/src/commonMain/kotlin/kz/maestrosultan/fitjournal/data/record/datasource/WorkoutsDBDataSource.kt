@@ -332,9 +332,20 @@ class WorkoutsDBDataSource(
         )
     }
 
-    suspend fun markUploaded(uuid: String, remoteId: String) = withContext(Dispatchers.IO) {
-        recordsDao.updateWorkoutRecordRemoteId(remoteId = remoteId, uuid = uuid)
-    }
+    /**
+     * Push ack. [updatedDate] must come from the tree that was actually uploaded
+     * (push re-reads it before sending), not the enumerated snapshot — otherwise
+     * a set logged mid-flight has its pendingUpload cleared, and the same tick's
+     * pull rebuilds the tree from the server copy and the set is gone.
+     */
+    suspend fun markUploaded(uuid: String, remoteId: String, updatedDate: Instant) =
+        withContext(Dispatchers.IO) {
+            recordsDao.updateWorkoutRecordRemoteId(
+                remoteId = remoteId,
+                uuid = uuid,
+                updatedDate = updatedDate.toStoredString(),
+            )
+        }
 
     suspend fun replaceWorkoutRecordFromRemote(record: DBWorkoutRecord) = withContext(Dispatchers.IO) {
         recordsDao.transaction {

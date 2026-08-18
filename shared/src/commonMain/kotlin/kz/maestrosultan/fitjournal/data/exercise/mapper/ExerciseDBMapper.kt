@@ -26,14 +26,22 @@ class ExerciseDBMapper(private val categoryDataSource: CategoriesDBDataSource) {
     ): DBExerciseObject {
         val primaryCategory = categoryDataSource.getCategoryByUuidBlocking(primaryCategoryUuid)
             ?: error("Catalog category not found for exercise '$uuid': '$primaryCategoryUuid'")
+        // mapNotNull, NOT error(): `secondaryCategoryUuids` is a ';'-joined blob
+        // written verbatim from AWS with no foreign key behind it (only
+        // primaryCategoryUuid has one). A server row referencing a muscle group
+        // this device hasn't seeded yet is therefore reachable and normal — and
+        // throwing here aborts the WHOLE query, not just this row, taking down
+        // the exercise picker, workouts, history and stats at once. On iOS an
+        // unbridged Kotlin throw is an uncatchable SIGABRT, and since the bad row
+        // is already persisted it would abort on every launch. Dropping the
+        // unresolvable id degrades to "one missing secondary muscle" instead.
         val secondaryCategories = if (secondaryCategoryUuids.isNullOrEmpty()) {
             emptyList()
         } else {
             secondaryCategoryUuids
                 .split(";")
-                .map { secondaryUuid ->
+                .mapNotNull { secondaryUuid ->
                     categoryDataSource.getCategoryByUuidBlocking(secondaryUuid)
-                        ?: error("Secondary category not found for exercise '$uuid': '$secondaryUuid'")
                 }
         }
 

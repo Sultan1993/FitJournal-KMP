@@ -18,21 +18,21 @@ class DefaultBodyMeasurementsRepository(
 ) : BodyMeasurementsRepository {
 
     override suspend fun getBodyMeasurements(userId: String, journalId: String): List<BodyMeasurement> =
-        localDataSource.getBodyMeasurements(userId, journalId).map { it.toDomain() }
+        localDataSource.getBodyMeasurements(userId, journalId).mapNotNull { it.toDomain() }
 
     override fun getBodyMeasurementsFlow(
         userId: String,
         journalId: String,
     ): Flow<List<BodyMeasurement>> =
         localDataSource.getBodyMeasurementsFlow(userId, journalId)
-            .map { rows -> rows.map { it.toDomain() } }
+            .map { rows -> rows.mapNotNull { it.toDomain() } }
 
     override suspend fun getBodyMeasurementsByType(
         userId: String,
         journalId: String,
         type: BodyMeasurementType,
     ): List<BodyMeasurement> =
-        localDataSource.getBodyMeasurementsByType(userId, journalId, type.id).map { it.toDomain() }
+        localDataSource.getBodyMeasurementsByType(userId, journalId, type.id).mapNotNull { it.toDomain() }
 
     override suspend fun createBodyMeasurement(
         uuid: String,
@@ -84,9 +84,18 @@ class DefaultBodyMeasurementsRepository(
     }
 }
 
-private fun DBBodyMeasurementObject.toDomain(): BodyMeasurement {
-    val resolvedType = BodyMeasurementType.create(type)
-        ?: error("Unknown body-measurement type id: $type")
+/**
+ * Null when `type` doesn't resolve, so the caller can drop just that row.
+ *
+ * NOT `error()`: `type` is free-form TEXT written verbatim from AWS with no
+ * CHECK constraint and no validation on the pull path, and [BodyMeasurementType]'s
+ * own KDoc records that this column historically carried platform-skewed values.
+ * Throwing failed the ENTIRE list read — the user lost access to every
+ * measurement over one bad row — and on iOS an unbridged Kotlin throw is an
+ * uncatchable SIGABRT on a row that is already persisted locally.
+ */
+private fun DBBodyMeasurementObject.toDomain(): BodyMeasurement? {
+    val resolvedType = BodyMeasurementType.create(type) ?: return null
     return BodyMeasurement(
         id = uuid,
         userId = userId,

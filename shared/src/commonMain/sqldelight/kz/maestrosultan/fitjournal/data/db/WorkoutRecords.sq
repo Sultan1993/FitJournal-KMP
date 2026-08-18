@@ -109,10 +109,16 @@ SET position = ?, comment = ?, startedAt = ?, durationSec = ?, updatedDate = ?, 
 WHERE uuid = ?
 AND deletedAt IS NULL;
 
+-- Conditional on the row still being what was uploaded — see the long note on
+-- `updateExerciseRemoteId`. This is the one that mattered most: logging another
+-- set mid-push would otherwise clear the flag, and the SAME tick's pull would
+-- then rebuild the tree from the server copy, losing the set outright.
+-- The caller passes the updatedDate of the tree it actually uploaded (push
+-- re-reads the tree before sending), not the enumerated snapshot's.
 updateWorkoutRecordRemoteId:
 UPDATE workoutRecords
 SET remoteId = ?, pendingUpload = 0
-WHERE uuid = ?;
+WHERE uuid = ? AND updatedDate IS ?;
 
 -- Sync-pull upsert for the parent record. Children (workoutExercises +
 -- workoutSets) are wiped via FK ON DELETE CASCADE when the row is replaced

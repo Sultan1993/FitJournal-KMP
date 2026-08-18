@@ -122,16 +122,32 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 -- Live-only — tombstoned rows should never be edited from UI.
 renameExercise:
 UPDATE exercises
-SET nameEn = ?, nameRu = ?, nameUk = ?, pendingUpload = 1
+-- updatedDate is bumped so the push ack (which compares it) can tell that a
+-- rename landed during the network round trip. Purely local column — never
+-- sent to AWS, which manages its own updatedAt.
+SET nameEn = ?, nameRu = ?, nameUk = ?, updatedDate = ?, pendingUpload = 1
 WHERE uuid = ?
 AND deletedAt IS NULL;
 
 -- Push-success ack. No `deletedAt IS NULL` filter — tombstones must
 -- also clear their pendingUpload after a successful tombstone push.
+-- Conditional on the row still being what was uploaded: the push is
+-- read -> network -> ack, and a rename or a tombstone landing inside that
+-- window would otherwise have its pendingUpload cleared and never be sent —
+-- then the SAME tick's pull, seeing a non-pending row, would overwrite it with
+-- the server copy. Comparing updatedDate makes a mid-flight write a no-op ack,
+-- leaving the row pending for the next tick. `IS` so NULLs compare properly.
+-- Compares the mutable columns rather than updatedDate: unlike the other synced
+-- tables, DBExerciseObject doesn't carry updatedDate, and a rename + a tombstone
+-- are the only mutations this row has.
 updateExerciseRemoteId:
 UPDATE exercises
 SET remoteId = ?, pendingUpload = 0
-WHERE uuid = ?;
+WHERE uuid = ?
+  AND nameEn IS ?
+  AND nameRu IS ?
+  AND nameUk IS ?
+  AND deletedAt IS ?;
 
 -- Sync-pull upsert: writes the row from AWS without bumping pendingUpload.
 -- Used by SyncOrchestrator pull. Callers must check `pendingUpload=1` on

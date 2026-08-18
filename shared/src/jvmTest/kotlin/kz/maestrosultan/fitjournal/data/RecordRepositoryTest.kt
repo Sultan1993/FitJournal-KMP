@@ -196,7 +196,13 @@ class RecordRepositoryTest {
         val rec = repo.getRecordsByDate(userId, journalId, date).single()
         val weId = rec.exercises.single().id
         // Drain the initial pendingUpload so we can assert the no-op doesn't re-queue it.
-        workoutsDB.markUploaded(rec.id, "remote-1")
+        // The ack is snapshot-conditional, so it must carry the row's current
+        // updatedDate — passing a stale one would (correctly) no-op.
+        workoutsDB.markUploaded(
+            rec.id,
+            "remote-1",
+            workoutsDB.getPendingUploads(userId).single { it.uuid == rec.id }.updatedDate,
+        )
         assertTrue(workoutsDB.getPendingUploads(userId).none { it.uuid == rec.id })
 
         val updated = repo.updateSet(userId, journalId, weId, "ghost-set", 100.0, 5, null, null)

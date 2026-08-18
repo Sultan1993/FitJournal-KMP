@@ -259,9 +259,20 @@ class JournalsDBDataSource(
         )
     }
 
-    suspend fun markUploaded(uuid: String, remoteId: String) = withContext(Dispatchers.IO) {
-        dao.updateJournalRemoteId(remoteId = remoteId, uuid = uuid)
-    }
+    /**
+     * Push ack. [updatedDate] must be the value the pushed row carried — the ack
+     * no-ops if the row changed during the network round trip, leaving it pending
+     * for the next tick instead of dropping the write (and having the same tick's
+     * pull then overwrite it with the server copy).
+     */
+    suspend fun markUploaded(uuid: String, remoteId: String, updatedDate: Instant) =
+        withContext(Dispatchers.IO) {
+            dao.updateJournalRemoteId(
+                remoteId = remoteId,
+                uuid = uuid,
+                updatedDate = updatedDate.toStoredString(),
+            )
+        }
 
     suspend fun upsertFromRemote(
         uuid: String,

@@ -77,10 +77,13 @@ AND deletedAt IS NULL;
 -- Push-success ack. No `deletedAt IS NULL` filter — tombstones must
 -- also clear their pendingUpload after a successful tombstone push.
 -- See the parallel comment in `Notes.sq` for the race rationale.
+-- Conditional on the row still being what was uploaded — see the long note on
+-- `updateExerciseRemoteId`. A rename/tombstone landing during the round trip
+-- stays pending instead of being dropped and then reverted by the pull.
 updateJournalRemoteId:
 UPDATE journals
 SET remoteId = ?, pendingUpload = 0
-WHERE uuid = ?;
+WHERE uuid = ? AND updatedDate IS ?;
 
 -- Sync-pull upsert: writes the row from AWS without bumping pendingUpload.
 -- Used by SyncOrchestrator pull. Callers must check `pendingUpload=1` on
