@@ -17,6 +17,7 @@ import kz.maestrosultan.fitjournal.domain.workout.ResultType
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSet
+import kz.maestrosultan.fitjournal.domain.workout.usecase.ExerciseFocusData
 
 /**
  * Cases 17-19 (§13) — slot/dot kinds, superset members, and the finish button.
@@ -55,6 +56,7 @@ class WorkoutFocusStateBuilderTest {
         type: CategoryType = CategoryType.CHEST,
         secondary: List<CategoryType> = emptyList(),
         image: String? = "img_$name",
+        resultType: ResultType = ResultType.WEIGHT_REPS,
     ) = Exercise(
         uuid = "ex-$name",
         remoteId = "ex-$name",
@@ -64,7 +66,7 @@ class WorkoutFocusStateBuilderTest {
         secondaryCategories = secondary.map { category(it) },
         image1 = image,
         image2 = null,
-        resultType = ResultType.WEIGHT_REPS,
+        resultType = resultType,
         isPersonal = false,
     )
 
@@ -78,6 +80,18 @@ class WorkoutFocusStateBuilderTest {
         distance = null,
         duration = null,
         resultType = ResultType.WEIGHT_REPS,
+    )
+
+    private fun cardioSet(id: String, distance: Double?, duration: Int?) = WorkoutSet(
+        id = id,
+        userId = "u",
+        journalId = "j",
+        date = date,
+        weight = null,
+        reps = null,
+        distance = distance,
+        duration = duration,
+        resultType = ResultType.DISTANCE_DURATION,
     )
 
     private fun member(id: String, catalog: Exercise, sets: List<WorkoutSet>) = WorkoutExercise(
@@ -107,18 +121,20 @@ class WorkoutFocusStateBuilderTest {
         activeRecord: WorkoutRecord,
         activeExercise: WorkoutExercise = activeRecord.exercises.first(),
         editorMode: FocusEditorMode = FocusEditorMode.Collapsed,
+        focusData: ExerciseFocusData? = null,
+        measurementSystem: MeasurementSystem = MeasurementSystem.KG_KM,
     ): FocusUi = buildFocusUi(
         dayRecords = dayRecords,
         activeRecord = activeRecord,
         activeExercise = activeExercise,
         editorMode = editorMode,
         input = FocusInputState(),
-        focusData = null,
+        focusData = focusData,
         coachText = null,
         isPickerOpen = false,
         isMenuOpen = false,
         isConfirmingRemove = false,
-        measurementSystem = MeasurementSystem.KG_KM,
+        measurementSystem = measurementSystem,
         historyRevision = 0,
         strings = strings,
     )
@@ -449,6 +465,152 @@ class WorkoutFocusStateBuilderTest {
             strings = strings,
         )
         assertEquals("Bench Press", confirming.confirmRemove)
+    }
+
+    // ── stats ───────────────────────────────────────────────
+
+    /** A weight-and-reps record with one logged set, for the stats cases. */
+    private fun statsRecord(resultType: ResultType = ResultType.WEIGHT_REPS): WorkoutRecord {
+        val exercise = member(
+            id = "we-1",
+            catalog = catalog("Bench Press", resultType = resultType),
+            sets = listOf(
+                if (resultType == ResultType.WEIGHT_REPS) {
+                    set("s1", 80.0, 10)
+                } else {
+                    cardioSet("s1", 5.0, 30)
+                },
+            ),
+        )
+        return record("r1", position = 1, members = listOf(exercise))
+    }
+
+    private val fullStats = ExerciseFocusData(
+        estimatedOneRepMax = 104,
+        oneRepMaxSource = ExerciseFocusData.SetValues(weight = 82.5, reps = 6),
+        maxSet = ExerciseFocusData.SetValues(weight = 82.5, reps = 6),
+    )
+
+    /**
+     * The stats row FORMATS what `GetExerciseFocusDataUseCase` already computed
+     * — it never re-derives an estimate (invariant 9). Asserted as rendered text,
+     * with a fractional max-set weight so the trailing-zero trim is exercised
+     * rather than assumed.
+     */
+    @Test
+    fun stats_renderTheComputedEstimateAndMaxSet() = runTest {
+        val record = statsRecord()
+
+        val stats = assertNotNull(build(listOf(record), record, focusData = fullStats).stats)
+
+        assertEquals("104", stats.estOneRepMaxText)
+        assertEquals("kg", stats.estOneRepMaxUnit)
+        assertEquals("82.5", stats.maxSetText)
+        assertEquals("kg × 6", stats.maxSetUnit)
+        // An estimate exists, so tapping it can open the calculator.
+        assertTrue(stats.isEstOneRepMaxTappable)
+    }
+
+    /** Units follow the user's measurement system, both figures together. */
+    @Test
+    fun stats_useTheUsersMeasurementSystem() = runTest {
+        val record = statsRecord()
+
+        val stats = assertNotNull(
+            build(
+                listOf(record),
+                record,
+                focusData = fullStats,
+                measurementSystem = MeasurementSystem.LB_MI,
+            ).stats,
+        )
+
+        assertEquals("lb", stats.estOneRepMaxUnit)
+        assertEquals("lb × 6", stats.maxSetUnit)
+        // Relabelled, never converted — the stored figure is already in the
+        // user's unit, so the number must not move.
+        assertEquals("82.5", stats.maxSetText)
+    }
+
+    /**
+     * A max set with no estimate (every logged set missing reps): the 1RM half
+     * goes to the "—" placeholder and must NOT be tappable — there is no source
+     * set to prefill the calculator with.
+     */
+    @Test
+    fun stats_dropTheEstimate_whenOnlyAMaxSetExists() = runTest {
+        val record = statsRecord()
+
+        val stats = assertNotNull(
+            build(
+                listOf(record),
+                record,
+                focusData = ExerciseFocusData(
+                    estimatedOneRepMax = null,
+                    oneRepMaxSource = null,
+                    maxSet = ExerciseFocusData.SetValues(weight = 100.0, reps = 8),
+                ),
+            ).stats,
+        )
+
+        assertNull(stats.estOneRepMaxText)
+        assertFalse(stats.isEstOneRepMaxTappable)
+        // Whole weights lose the ".0".
+        assertEquals("100", stats.maxSetText)
+        assertEquals("kg × 8", stats.maxSetUnit)
+    }
+
+    /** An estimate with no max set: the max-set half keeps the bare unit. */
+    @Test
+    fun stats_keepTheBareUnit_whenOnlyAnEstimateExists() = runTest {
+        val record = statsRecord()
+
+        val stats = assertNotNull(
+            build(
+                listOf(record),
+                record,
+                focusData = ExerciseFocusData(
+                    estimatedOneRepMax = 96,
+                    oneRepMaxSource = ExerciseFocusData.SetValues(weight = 80.0, reps = 6),
+                    maxSet = null,
+                ),
+            ).stats,
+        )
+
+        assertEquals("96", stats.estOneRepMaxText)
+        assertTrue(stats.isEstOneRepMaxTappable)
+        assertNull(stats.maxSetText)
+        assertEquals("kg", stats.maxSetUnit)
+    }
+
+    /** No data at all — not loaded yet, or nothing ever logged — hides the row. */
+    @Test
+    fun stats_areHidden_whenThereIsNoData() = runTest {
+        val record = statsRecord()
+
+        assertNull(build(listOf(record), record, focusData = null).stats)
+        assertNull(
+            build(
+                listOf(record),
+                record,
+                focusData = ExerciseFocusData(
+                    estimatedOneRepMax = null,
+                    oneRepMaxSource = null,
+                    maxSet = null,
+                ),
+            ).stats,
+        )
+    }
+
+    /**
+     * Hidden entirely for cardio even when data is present: a 1RM over a
+     * distance/duration exercise is meaningless.
+     */
+    @Test
+    fun stats_areHiddenForCardio_evenWithData() = runTest {
+        val record = statsRecord(ResultType.DISTANCE_DURATION)
+
+        assertNull(build(listOf(record), record, focusData = fullStats).stats)
     }
 
     // ── thumbnails ──────────────────────────────────────────────────────
