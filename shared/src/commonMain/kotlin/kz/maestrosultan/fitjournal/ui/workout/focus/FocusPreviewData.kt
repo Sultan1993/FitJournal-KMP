@@ -225,7 +225,7 @@ object FocusPreviewData {
                 isAddAnother = false,
                 valueText = "5.2",
                 valueUnit = "km",
-                repsText = "× 30 min",
+                repsText = "× 30",
                 isExpanded = false,
                 lastHint = null,
             ),
