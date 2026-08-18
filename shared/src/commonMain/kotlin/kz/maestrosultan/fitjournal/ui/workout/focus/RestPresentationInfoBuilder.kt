@@ -23,6 +23,12 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
  * Copy is passed in already resolved ([setOfFormat]/[setFormat]/
  * [nextLineFormat]) rather than resolved here, so this function stays pure
  * and testable without importing Compose Resources.
+ *
+ * [RestPresentationInfo.imageNames] entries are platform-neutral TOKENS, not
+ * resolved asset names — see [thumbName]. For a superset these thumbs are the
+ * ONLY cue distinguishing it from a single exercise (no set/next lines are
+ * shown), so a presenter that drops one silently makes a superset look like a
+ * single exercise.
  */
 fun buildRestPresentationInfo(
     record: WorkoutRecord,
@@ -47,6 +53,18 @@ fun buildRestPresentationInfo(
     )
 }
 
+/**
+ * A platform-neutral TOKEN for this exercise's thumbnail — NOT a
+ * ready-to-use asset name. Either the exercise's own [kz.maestrosultan.fitjournal.domain.exercise.Exercise.image1]
+ * (already an asset name both apps resolve as-is), or, as a fallback, the
+ * bare [kz.maestrosultan.fitjournal.domain.exercise.CategoryType.identifier] (e.g. `"chest"`).
+ *
+ * Each platform's presenter MUST map that fallback to its own asset
+ * convention before resolving it — iOS `"category.<id>.small"`, Android
+ * `"ic_category_<id>_small"`. A presenter that passes the bare identifier
+ * straight to its image loader (`UIImage(named:)`, drawable lookup, …) will
+ * silently resolve nothing and the thumbnail is dropped with no error.
+ */
 private val WorkoutExercise.thumbName: String
     get() = exercise.image1 ?: exercise.primaryCategory.type.identifier
 
