@@ -23,13 +23,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,11 +53,16 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
+import kz.maestrosultan.fitjournal.shared.generated.resources.common_cancel
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_add_another_set
+import kz.maestrosultan.fitjournal.shared.generated.resources.focus_delete_set_title
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_log_set_n
+import kz.maestrosultan.fitjournal.shared.generated.resources.focus_reset
+import kz.maestrosultan.fitjournal.shared.generated.resources.focus_reset_set_title
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_save_changes
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_sets
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_target
+import kz.maestrosultan.fitjournal.shared.generated.resources.workout_menu_delete
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_set_label
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
@@ -186,6 +196,15 @@ private fun FocusAccordionRow(
     val offsetX = remember(slot.id) { Animatable(0f) }
     val scope = rememberCoroutineScope()
 
+    // Swipe-action confirmations — scoped against the "zero mutableStateOf
+    // for expanded/editor state" criterion, not against it: these two flags
+    // carry no accordion meaning (the open row still comes only from
+    // slot.isExpanded / editor), they are transient widget-only state that
+    // exists purely so a mis-tap while scrolling can't mutate a set (1:1
+    // with iOS FocusSetStackView's confirmDelete/confirmReset, :122-124).
+    var confirmDelete by remember(slot.id) { mutableStateOf(false) }
+    var confirmReset by remember(slot.id) { mutableStateOf(false) }
+
     // A row the VM expands mid-swipe (e.g. post-log advance) must not keep a
     // stale reveal once it collapses back.
     LaunchedEffect(expanded) {
@@ -204,8 +223,10 @@ private fun FocusAccordionRow(
             FocusSwipeActions(
                 canReset = canReset,
                 width = revealWidthDp,
-                onReset = { onResetSet(slot.id); scope.launch { offsetX.animateTo(0f) } },
-                onDelete = { onDeleteSet(slot.id); scope.launch { offsetX.animateTo(0f) } },
+                // Swipe alone never mutates a set — it only arms the confirm
+                // dialog below; DeleteSet/ResetSet dispatch from there.
+                onReset = { confirmReset = true },
+                onDelete = { confirmDelete = true },
                 modifier = Modifier.align(Alignment.CenterEnd),
             )
         }
@@ -283,6 +304,48 @@ private fun FocusAccordionRow(
             }
         }
     }
+
+    if (confirmDelete) {
+        FocusSwipeConfirmDialog(
+            title = stringResource(Res.string.focus_delete_set_title, slot.number),
+            confirmLabel = stringResource(Res.string.workout_menu_delete),
+            onConfirm = {
+                confirmDelete = false
+                onDeleteSet(slot.id)
+                scope.launch { offsetX.animateTo(0f) }
+            },
+            onDismiss = {
+                confirmDelete = false
+                scope.launch { offsetX.animateTo(0f) }
+            },
+        )
+    }
+    if (confirmReset) {
+        FocusSwipeConfirmDialog(
+            title = stringResource(Res.string.focus_reset_set_title, slot.number),
+            confirmLabel = stringResource(Res.string.focus_reset),
+            onConfirm = {
+                confirmReset = false
+                onResetSet(slot.id)
+                scope.launch { offsetX.animateTo(0f) }
+            },
+            onDismiss = {
+                confirmReset = false
+                scope.launch { offsetX.animateTo(0f) }
+            },
+        )
+    }
+}
+
+/** Shared shape for the two swipe-action confirmations (delete / reset). */
+@Composable
+private fun FocusSwipeConfirmDialog(title: String, confirmLabel: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        confirmButton = { TextButton(onClick = onConfirm) { Text(confirmLabel) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(Res.string.common_cancel)) } },
+    )
 }
 
 @Composable
