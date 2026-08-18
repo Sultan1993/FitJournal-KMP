@@ -246,6 +246,9 @@ class RecordingRecordRepository(
     /** Thrown by the next write (consumed), so a test can drive one failure. */
     var failNextWrite: Throwable? = null
 
+    /** Thrown by every [deleteRecord] while set — the half-committed split+delete case. */
+    var failDeleteRecord: Throwable? = null
+
     /** Set false to make [updateSet]/[deleteSet] report "the row was already gone". */
     var writesFindTheSet: Boolean = true
 
@@ -377,6 +380,9 @@ class RecordingRecordRepository(
 
     override suspend fun deleteRecord(userId: String, journalId: String, record: WorkoutRecord) {
         calls += "deleteRecord(${record.id})"
+        // Its OWN switch, not [failNextWrite]: the partial-failure case needs the
+        // FIRST step of a composed write to commit and only the SECOND to fail.
+        failDeleteRecord?.let { throw it }
         day = day.filterNot { it.id == record.id }
     }
 

@@ -1421,8 +1421,26 @@ class WorkoutFocusViewModel internal constructor(
     private val activeRecord: WorkoutRecord?
         get() = dayRecords.firstOrNull { it.id == activeRecordId }
 
+    /**
+     * Record-SCOPED, deliberately — Android's semantics
+     * (`ExerciseFocusViewModel.kt:198-199`), NOT iOS's global
+     * `exerciseById` (`ExerciseFocusViewModel.swift:1230-1233`).
+     *
+     * [buildFocusUi] documents that the active exercise must be one of the
+     * ACTIVE RECORD's members, and a multi-step write that re-parents a member
+     * can break that pair: `removeExerciseFromSuperset` moves the member into a
+     * new split record, so a global lookup keeps resolving it while
+     * [activeRecordId] still points at the record it just left. The screen then
+     * renders one record's thumbs and position with another record's title and
+     * set stack.
+     *
+     * Scoping the lookup here makes the pair coherent by construction, and is
+     * what makes the `activeExercise == null` recovery guard in
+     * [handleRemoveExerciseConfirmed] fire at all — with the global lookup that
+     * guard was dead code on the exact path it was written for.
+     */
     private val activeExercise: WorkoutExercise?
-        get() = activeExerciseId?.let { exerciseById(it) }
+        get() = activeRecord?.exercises?.firstOrNull { it.id == activeExerciseId }
 
     private fun exerciseById(id: String): WorkoutExercise? =
         dayRecords.flatMap { it.exercises }.firstOrNull { it.id == id }
