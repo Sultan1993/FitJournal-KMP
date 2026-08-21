@@ -7,6 +7,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +21,8 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
+import kz.maestrosultan.fitjournal.domain.quota.WorkoutQuota
+import kz.maestrosultan.fitjournal.domain.quota.WorkoutQuotaGate
 import kz.maestrosultan.fitjournal.domain.sync.SyncReason
 import kz.maestrosultan.fitjournal.domain.sync.SyncTrigger
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
@@ -54,6 +57,7 @@ class WorkoutViewModel(
     private val startWorkout: StartWorkoutUseCase,
     private val endWorkout: EndWorkoutUseCase,
     private val syncTrigger: SyncTrigger,
+    private val quotaGate: WorkoutQuotaGate,
     awaitSession: suspend () -> UserSessionState,
     initialDate: LocalDate,
     // When set, the pager opens on the page with this workoutNumber (Edit /
@@ -124,16 +128,59 @@ class WorkoutViewModel(
                 emit(WorkoutContract.ViewEffect.OpenExerciseInfo(action.exerciseId, action.section))
             is WorkoutContract.ViewAction.EditNote -> emit(WorkoutContract.ViewEffect.EditNote(action.workoutExerciseId))
             is WorkoutContract.ViewAction.ReplaceExercise -> emit(WorkoutContract.ViewEffect.ReplaceExercise(action.workoutExerciseId))
-            is WorkoutContract.ViewAction.AddExercise -> emit(WorkoutContract.ViewEffect.AddExercise(action.workoutNumber))
-            is WorkoutContract.ViewAction.CopyFromWorkout -> emit(WorkoutContract.ViewEffect.CopyFromWorkout(action.workoutNumber))
+            // Gated: the exercise picker and the copy picker are how a NEW workout
+            // gets opened. On a workout that already has records the gate says yes
+            // by itself (rule 3), so "add a further exercise" needs no exception.
+            is WorkoutContract.ViewAction.AddExercise -> ifWorkoutWritable(action.workoutNumber) {
+                emit(WorkoutContract.ViewEffect.AddExercise(action.workoutNumber))
+            }
+
+            is WorkoutContract.ViewAction.CopyFromWorkout -> ifWorkoutWritable(action.workoutNumber) {
+                emit(WorkoutContract.ViewEffect.CopyFromWorkout(action.workoutNumber))
+            }
+
+            // Ungated: opening the recap is a read, not a write.
             is WorkoutContract.ViewAction.OpenWorkoutSummary ->
                 emit(WorkoutContract.ViewEffect.OpenWorkoutSummary(action.workoutNumber))
+
             is WorkoutContract.ViewAction.ShareWorkout -> emit(WorkoutContract.ViewEffect.ShareWorkout(action.workoutNumber))
         }
     }
 
     private fun emit(effect: WorkoutContract.ViewEffect) {
         _effects.trySend(effect)
+    }
+
+    /**
+     * Run [proceed] only if the free quota allows writing in the viewed date's
+     * [workoutNumber] slot; otherwise send the paywall and write NOTHING. The
+     * gate's own rule ("you may write in a workout that already exists, you may
+     * not open a new one") is what keeps this to the three workout-OPENING
+     * actions — Start, Add exercise, Copy — with every set/edit/reorder/delete
+     * left ungated, since those all target a slot that already passes the gate.
+     */
+    private fun ifWorkoutWritable(workoutNumber: Int, proceed: suspend () -> Unit) {
+        val uid = userId ?: return
+        val jid = journalId ?: return
+        val date = _uiState.value.selectedDate
+        viewModelScope.launch {
+            // Default true: the gate reads SQLite, so a locked or corrupt database
+            // throws. Letting that escape would crash Android and SIGABRT iOS on a
+            // tap; swallowing it toward ALLOW costs at most one un-metered workout
+            // and matches what every native call site already does.
+            val allowed = try {
+                quotaGate.canWriteWorkout(uid, jid, date, workoutNumber)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Throwable) {
+                true
+            }
+            if (allowed) {
+                proceed()
+            } else {
+                emit(WorkoutContract.ViewEffect.ShowPaywall(PaywallReason.QuotaExhausted))
+            }
+        }
     }
 
     private fun today(): LocalDate = clock.todayIn(timeZone)
@@ -264,7 +311,7 @@ class WorkoutViewModel(
         val jid = journalId ?: return
         val page = _uiState.value.currentPage ?: return
         val date = _uiState.value.selectedDate
-        viewModelScope.launch { startWorkout(uid, jid, date, page.workoutNumber) }
+        ifWorkoutWritable(page.workoutNumber) { startWorkout(uid, jid, date, page.workoutNumber) }
     }
 
     /**

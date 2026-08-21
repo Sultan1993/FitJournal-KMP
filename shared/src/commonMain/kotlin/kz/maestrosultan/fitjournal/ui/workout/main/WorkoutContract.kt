@@ -154,6 +154,7 @@ object WorkoutContract {
          * the 4b card's Share button that used to dispatch it is gone.
          */
         data class ShareWorkout(val workoutNumber: Int) : ViewAction
+
     }
 
     /**
@@ -188,5 +189,23 @@ object WorkoutContract {
 
         /** End tapped — the host raises the shared post-workout confirm sheet. */
         data object RequestEndSession : ViewEffect
+
+        /**
+         * A gated workout write was refused because the free quota is exhausted,
+         * or the meter card was tapped. The host presents the paywall: modally on
+         * iOS, as a pushed route WITHOUT popUpTo(0) on Android, so dismissing
+         * returns to the Workout screen.
+         */
+        data class ShowPaywall(val reason: PaywallReason) : ViewEffect
     }
 }
+
+/**
+ * Which surface asked for the paywall. Picks the Remote-Config placement and
+ * nothing else. An enum, not a sealed hierarchy: the cases carry no payload.
+ */
+/**
+ * Why the paywall is being raised. One case: the only shared trigger is a gated
+ * write being refused. (The home meter card raises it natively, per platform.)
+ */
+enum class PaywallReason { QuotaExhausted }

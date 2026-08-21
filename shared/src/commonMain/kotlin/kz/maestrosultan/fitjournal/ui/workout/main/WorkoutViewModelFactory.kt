@@ -3,6 +3,7 @@ package kz.maestrosultan.fitjournal.ui.workout.main
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.LocalDate
+import kz.maestrosultan.fitjournal.domain.quota.WorkoutQuotaGate
 import kz.maestrosultan.fitjournal.domain.sync.SyncTrigger
 import kz.maestrosultan.fitjournal.domain.user.UserSession
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
@@ -34,6 +35,9 @@ fun createWorkoutViewModel(
     startWorkout = startWorkout,
     endWorkout = endWorkout,
     syncTrigger = syncTrigger,
+    // Built here rather than taken as a parameter: its only dependency is the
+    // repository already being passed, so neither platform's call site changes.
+    quotaGate = WorkoutQuotaGate(recordRepository),
     awaitSession = { UserSession.state.filterNotNull().first() },
     initialDate = initialDate,
     initialWorkoutNumber = initialWorkoutNumber,
