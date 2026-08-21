@@ -8,6 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kz.maestrosultan.fitjournal.data.db.WorkoutExercisesQueries
 import kz.maestrosultan.fitjournal.data.db.WorkoutRecordsQueries
@@ -41,6 +42,32 @@ class WorkoutsDBDataSource(
             .asFlow()
             .mapToOne(Dispatchers.IO)
             .flowOn(Dispatchers.IO)
+
+    // ─── Free-quota reads (see domain/quota/WorkoutQuotaGate) ─────────────
+
+    suspend fun countMeteredWorkouts(userId: String): Int =
+        withContext(Dispatchers.IO) {
+            recordsDao.countMeteredWorkouts(userId)
+                .executeAsOne()
+                .toInt()
+        }
+
+    fun countMeteredWorkoutsFlow(userId: String): Flow<Int> =
+        recordsDao.countMeteredWorkouts(userId)
+            .asFlow()
+            .mapToOne(Dispatchers.IO)
+            .map { it.toInt() }
+            .flowOn(Dispatchers.IO)
+
+    suspend fun hasAnyRecordInWorkout(
+        userId: String,
+        journalId: String,
+        date: String,
+        workoutNumber: Int,
+    ): Boolean = withContext(Dispatchers.IO) {
+        recordsDao.workoutSlotExists(userId, journalId, date, workoutNumber.toLong())
+            .executeAsOne()
+    }
 
     suspend fun getPendingUploads(userId: String): List<DBWorkoutRecordRow> = withContext(Dispatchers.IO) {
         recordsDao.getPendingUploads(userId).executeAsList().map { it.map() }

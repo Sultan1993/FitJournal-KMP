@@ -1,5 +1,6 @@
 package kz.maestrosultan.fitjournal.domain.workout
 
+import kotlin.time.Instant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.datetime.LocalDate
@@ -131,6 +132,38 @@ interface RecordRepository {
         exerciseUuid: String,
         upToDate: LocalDate,
     ): List<WeightedSetOccurrence>
+
+    // ─── Free-quota reads ──────────────────────────────────────────────
+
+    /**
+     * Number of distinct WORKOUTS — (journalId, date, workoutNumber) across ALL
+     * of the user's journals — that this user has EVER logged. Tombstoned
+     * records count: deleting a workout must not refund quota.
+     *
+     * All of history, with no start boundary. Only a never-subscriber is ever
+     * counted (see [kz.maestrosultan.fitjournal.domain.quota.WorkoutQuotaGate]),
+     * and under the hard wall a never-subscriber could not log at all — so there
+     * is nothing for a cutoff instant to protect.
+     *
+     * Default returns 0 so the jvmTest fakes need no edit (same trick
+     * [addRecordsToWorkout] uses) and so a fake fails OPEN.
+     */
+    suspend fun countMeteredWorkouts(userId: String): Int = 0
+
+    /** Reactive [countMeteredWorkouts] — re-emits on every workoutRecords write. */
+    fun countMeteredWorkoutsFlow(userId: String): Flow<Int> = flowOf(0)
+
+    /**
+     * True when the ([journalId], [date], [workoutNumber]) workout slot already
+     * holds any record, live OR tombstoned — i.e. that workout exists, so the
+     * quota gate lets writes into it through. Default fails OPEN.
+     */
+    suspend fun hasAnyRecordInWorkout(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+        workoutNumber: Int,
+    ): Boolean = true
 
     // ─── Writes ────────────────────────────────────────────────────────
 

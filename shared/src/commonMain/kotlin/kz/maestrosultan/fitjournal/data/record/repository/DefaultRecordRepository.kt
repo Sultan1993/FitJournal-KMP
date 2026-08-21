@@ -276,6 +276,19 @@ class DefaultRecordRepository(
             )
         }
 
+    override suspend fun countMeteredWorkouts(userId: String): Int =
+        workoutsDB.countMeteredWorkouts(userId)
+
+    override fun countMeteredWorkoutsFlow(userId: String): Flow<Int> =
+        workoutsDB.countMeteredWorkoutsFlow(userId)
+
+    override suspend fun hasAnyRecordInWorkout(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+        workoutNumber: Int,
+    ): Boolean = workoutsDB.hasAnyRecordInWorkout(userId, journalId, date.toString(), workoutNumber)
+
     /**
      * 3-year window (`[threeYearsAgo, far-future)`), matching `getRecentRecords`
      * so the exercise details page never surfaces older history than the rest of the app.

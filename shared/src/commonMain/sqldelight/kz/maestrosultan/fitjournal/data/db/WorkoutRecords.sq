@@ -97,6 +97,52 @@ FROM workoutRecords
 WHERE userId = ?
 AND journalId = ?;
 
+-- Metered WORKOUTS for the free-quota meter: one row per
+-- (journalId, date, workoutNumber) this user has EVER logged; COUNT them.
+--   * NO start boundary. Only a never-subscriber is ever counted (WorkoutQuotaGate
+--     answers "already subscribed" without touching this query), and under the
+--     hard wall a never-subscriber could not log anything — so there is no history
+--     for a cutoff instant to protect. The pre-paywall free era is the one
+--     exception and those accounts have been walled out for years.
+--   * workoutNumber IS part of the key: two workouts logged on one date are two
+--     counted workouts. The slot is stable across a reinstall because both
+--     remote upserts thread the column (see upsertWorkoutRecordFromRemote), so
+--     a pull re-materialises the same (date, workoutNumber) grouping it pushed.
+--   * userId only, no journalId filter: the quota is per ACCOUNT, across journals.
+--   * Tombstones are COUNTED ON PURPOSE — deleting a workout must not refund
+--     quota. User-facing deletes are soft (softDeleteWorkoutRecord*).
+--   * A user-scoped scan. idx_workoutRecords_live_journal is partial on
+--     `deletedAt IS NULL` and CANNOT serve this; fine at this table size.
+countMeteredWorkouts:
+SELECT COUNT(*) FROM (
+    SELECT journalId, date, workoutNumber
+    FROM workoutRecords
+    WHERE userId = ?
+    GROUP BY journalId, date, workoutNumber
+);
+
+-- Does this workout slot hold any record (live OR tombstoned)? Sole consumer is
+-- WorkoutQuotaGate: a slot that already holds a record stays writable at
+-- exhaustion, which is what "you may write in a workout that already exists"
+-- means — it is why pressing Start costs nothing and why nobody is amputated
+-- part-way through the workout they are standing in the gym doing.
+--
+-- DELETED-INCLUSIVE, and that has to match countMeteredWorkouts, which has no
+-- deletedAt filter either. If this one excluded tombstones an emptied slot would
+-- still be CHARGED by the meter while being unwritable — quota spent on a workout
+-- you cannot use.
+--
+-- EXISTS, not COUNT(*): the only consumer wants a boolean, and this runs on every
+-- gated tap, so stopping at the first matching row beats counting every record in
+-- the slot.
+workoutSlotExists:
+SELECT EXISTS(
+    SELECT 1
+    FROM workoutRecords
+    WHERE userId = ? AND journalId = ? AND date = ? AND workoutNumber = ?
+    LIMIT 1
+);
+
 createWorkoutRecord:
 INSERT INTO workoutRecords(uuid, remoteId, userId, journalId, date, position, comment, startedAt, durationSec, pendingUpload, createdDate, updatedDate, workoutNumber)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
