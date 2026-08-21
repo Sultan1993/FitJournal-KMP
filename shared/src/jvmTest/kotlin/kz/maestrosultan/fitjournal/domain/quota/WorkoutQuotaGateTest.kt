@@ -39,8 +39,7 @@ import kz.maestrosultan.fitjournal.domain.workout.ResultType
  * The whole semantics of the metered reverse trial, over the REAL
  * [DefaultRecordRepository] and a real (in-memory) SQLite database — the count
  * lives in SQL (`countMeteredWorkouts`, grouped by `(journalId, date,
- * workoutNumber)` with `HAVING MIN(createdDate) >= ?`), so a hand-written fake
- * repository would prove nothing.
+ * workoutNumber)`), so a hand-written fake repository would prove nothing.
  *
  * iOS has no test target, so this file is the only automated proof that the
  * gate's answers are right on either platform.
@@ -59,6 +58,7 @@ import kz.maestrosultan.fitjournal.domain.workout.ResultType
  *  7c an unresolved ENTITLEMENT never walls a payer (the one fail-CLOSED risk)
  *  7d hasEverSubscribed is sticky once true; reset() is the only clear
  *  7e canOpenNewWorkout ignores rule 3 (Repeat's slot is always new)
+ *  7f needsEntitlementHistory arms the foreground retry in exactly one state
  *  9  at exhaustion: existing workouts stay writable, new ones are refused —
  *     including a fresh workoutNumber on a date that already has workouts
  *  9b a workout whose records are all tombstoned still counts as existing
@@ -118,9 +118,10 @@ class WorkoutQuotaGateTest {
 
     /**
      * Insert one `workoutRecords` row directly through the generated query,
-     * because `createdDate` must be controllable — `addExercisesToDate` stamps
-     * `Clock.System.now()`, and the cutoff cases are entirely about
-     * `createdDate`. No child rows: both quota queries read the parent table
+     * because the slot key `(journalId, date, workoutNumber)` must be set
+     * exactly — `addExercisesToDate` picks `workoutNumber` itself, and these
+     * cases are entirely about which slot a row lands in. No child rows: both
+     * quota queries read the parent table
      * only, and cases that need the tree go through the repository instead.
      */
     private fun seedRecord(
@@ -364,6 +365,37 @@ class WorkoutQuotaGateTest {
     }
 
     // ─── 7e. Opening a slot that does not exist yet (Repeat) ─────────────────
+
+    /**
+     * Case 7f — the foreground retry's ONLY guard, so it has to be true in
+     * exactly the state a retry can fix and false everywhere a probe would be
+     * wasted, unanswerable, or able to overwrite a cached answer.
+     */
+    @Test
+    fun needsEntitlementHistory_armsOnlyWhileAnAnswerIsBothMissingAndNeeded() {
+        // Fresh process, nobody entitled: the miss the retry exists to close.
+        assertTrue(FreeQuotaSettings.needsEntitlementHistory)
+
+        // Resolved either way — the answer is cached on disk, never re-probe.
+        FreeQuotaSettings.setHasEverSubscribed(false)
+        assertFalse(FreeQuotaSettings.needsEntitlementHistory)
+        FreeQuotaSettings.reset()
+        FreeQuotaSettings.setHasEverSubscribed(true)
+        assertFalse(FreeQuotaSettings.needsEntitlementHistory)
+
+        // Entitled with NO history answer: a monetization-disabled build, where
+        // Qonversion was never initialised. Unmetered regardless, so don't ask.
+        FreeQuotaSettings.reset()
+        FreeQuotaSettings.setEntitled(true)
+        assertNull(FreeQuotaSettings.config.value.hasEverSubscribed)
+        assertFalse(FreeQuotaSettings.needsEntitlementHistory)
+
+        // Authoritatively NOT entitled and still no history: this user becomes
+        // metered the moment we learn, so the retry must stay armed.
+        FreeQuotaSettings.reset()
+        FreeQuotaSettings.setEntitled(false)
+        assertTrue(FreeQuotaSettings.needsEntitlementHistory)
+    }
 
     @Test
     fun canOpenNewWorkout_ignoresRule3_becauseTheTargetSlotIsAlwaysNew(): Unit = runBlocking {

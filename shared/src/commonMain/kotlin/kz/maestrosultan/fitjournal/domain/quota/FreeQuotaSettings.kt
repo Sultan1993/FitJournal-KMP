@@ -107,4 +107,22 @@ object FreeQuotaSettings {
     fun setEntitled(entitled: Boolean) {
         _isEntitled.value = entitled
     }
+
+    /**
+     * Is there still an entitlement-history answer worth going to the network
+     * for? The platforms poll this on FOREGROUND and re-probe when it is true.
+     *
+     * [Config.hasEverSubscribed] is resolved once per account and then cached on
+     * disk, so this is only ever true when the FIRST resolution missed — signed
+     * in offline, or Qonversion didn't answer inside the launch timeout. Without
+     * the retry that miss lasts until the next cold start, which users rarely
+     * perform; with it, one app switch closes the unmetered window.
+     *
+     * Entitled short-circuits it. An entitled user is [WorkoutQuota.Unlimited]
+     * whatever the history says, and on a monetization-disabled build (the
+     * `setEntitled(true)` branch of ConfigurationViewModel) Qonversion was never
+     * initialised — so the probe would be both pointless and unanswerable.
+     */
+    val needsEntitlementHistory: Boolean
+        get() = _config.value.hasEverSubscribed == null && _isEntitled.value != true
 }
