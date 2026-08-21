@@ -59,6 +59,7 @@ import kz.maestrosultan.fitjournal.domain.workout.ResultType
  *  7d hasEverSubscribed is sticky once true; reset() is the only clear
  *  7e canOpenNewWorkout ignores rule 3 (Repeat's slot is always new)
  *  7f needsEntitlementHistory arms the foreground retry in exactly one state
+ *  7g an UNKNOWN push never demotes a known answer (either direction)
  *  9  at exhaustion: existing workouts stay writable, new ones are refused —
  *     including a fresh workoutNumber on a date that already has workouts
  *  9b a workout whose records are all tombstoned still counts as existing
@@ -365,6 +366,38 @@ class WorkoutQuotaGateTest {
     }
 
     // ─── 7e. Opening a slot that does not exist yet (Repeat) ─────────────────
+
+    /**
+     * Case 7g — an UNKNOWN push never demotes a KNOWN answer, in either
+     * direction. Sticky-true (7d) always covered `true`; `false` was open, and
+     * the foreground retry is what made overlapping probes reachable.
+     */
+    @Test
+    fun anUnknownProbeNeverErasesAnAuthoritativeAnswer(): Unit = runBlocking {
+        seedExhaustingHistory()
+        meterOn(limit = 10)
+        assertEquals(WorkoutQuota.Metered(used = 10, limit = 10), gate.getQuota(USER))
+
+        // A second, slower probe misses the network ceiling and reports "unknown"
+        // AFTER the first resolved false. Before the guard this reset the field to
+        // null -> Unmetered, and an exhausted never-subscriber could open new
+        // workouts again until the next foreground re-read the disk cache.
+        FreeQuotaSettings.setHasEverSubscribed(null)
+        assertEquals(false, FreeQuotaSettings.config.value.hasEverSubscribed)
+        assertEquals(WorkoutQuota.Metered(used = 10, limit = 10), gate.getQuota(USER))
+        assertFalse(gate.canOpenNewWorkout(USER))
+
+        // Same in the other direction, which 7d already covered — asserted here
+        // so both halves of the monotonic rule live in one place.
+        FreeQuotaSettings.reset()
+        FreeQuotaSettings.setHasEverSubscribed(true)
+        FreeQuotaSettings.setHasEverSubscribed(null)
+        assertEquals(true, FreeQuotaSettings.config.value.hasEverSubscribed)
+
+        // reset() is the ONE escape — logout has to be able to clear it.
+        FreeQuotaSettings.reset()
+        assertNull(FreeQuotaSettings.config.value.hasEverSubscribed)
+    }
 
     /**
      * Case 7f — the foreground retry's ONLY guard, so it has to be true in

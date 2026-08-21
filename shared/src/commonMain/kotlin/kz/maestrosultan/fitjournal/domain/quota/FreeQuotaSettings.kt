@@ -49,15 +49,28 @@ object FreeQuotaSettings {
     /**
      * Subscription layer → shared. Pass null to mean "still unknown".
      *
-     * STICKY ONCE TRUE: having ever subscribed is a fact about the past and
-     * cannot become false. Without this a later offline/failed probe would
-     * silently hand a former subscriber a fresh free allowance on the next
-     * launch, which is a reinstall-free way to reset the meter.
+     * Two monotonic rules, and only [reset] escapes them:
+     *
+     * 1. STICKY ONCE TRUE. Having ever subscribed is a fact about the past and
+     *    cannot become false. Without this a later offline/failed probe would
+     *    silently hand a former subscriber a fresh free allowance on the next
+     *    launch — a reinstall-free way to reset the meter.
+     *
+     * 2. UNKNOWN NEVER DEMOTES A KNOWN ANSWER. `null` means "we did not find
+     *    out", which is not news and must not erase what we already learned.
+     *    The foreground retry made overlapping probes possible for the first
+     *    time, and without this a slow probe that misses the network ceiling
+     *    lands AFTER a fast one that resolved an authoritative `false` and puts
+     *    the user back to unmetered until the next foreground re-reads disk.
+     *    Fail-open and self-healing, but free to close.
      */
     fun setHasEverSubscribed(hasEverSubscribed: Boolean?) {
         _config.update { current ->
-            if (current.hasEverSubscribed == true) current
-            else current.copy(hasEverSubscribed = hasEverSubscribed)
+            when {
+                current.hasEverSubscribed == true -> current
+                hasEverSubscribed == null && current.hasEverSubscribed != null -> current
+                else -> current.copy(hasEverSubscribed = hasEverSubscribed)
+            }
         }
     }
 

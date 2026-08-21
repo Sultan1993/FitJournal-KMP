@@ -14,9 +14,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -111,14 +114,25 @@ class WorkoutListViewModel(
             FeedResult(content, s.measurementSystem, today)
         }
 
-        // Quota is per ACCOUNT, so it hangs off the session's userId only — it
-        // deliberately does NOT restart on a journal switch. `.catch` is the
-        // fail-open guard: a broken quota read must show NO card, never a wall.
+        // Quota is per ACCOUNT: keyed on userId with distinctUntilChanged so a
+        // JOURNAL switch (same user, new journalId) does not tear down and re-run
+        // the count — the allowance spans journals and cannot have changed.
+        //
+        // `onStart` is load-bearing, not cosmetic. This is a `combine` source, and
+        // combine emits nothing until EVERY source has, so without a starting
+        // value a metered user's whole history screen would sit on Loading behind
+        // a COUNT query it has no reason to wait for. Seeding null (= no card)
+        // decouples them: the list renders, the card joins when it resolves.
+        //
+        // `.catch` is the fail-open guard: a broken quota read shows NO card,
+        // never a wall.
         val quotaCard: Flow<QuotaCardContent?> = combine(
-            session.flatMapLatest { quotaGate.getQuotaFlow(it.userId) },
+            session.map { it.userId }.distinctUntilChanged()
+                .flatMapLatest { userId -> quotaGate.getQuotaFlow(userId) },
             quotaPrice,
         ) { quota, price -> quota.toCardContent(price, timeZone) }
             .catch { emit(null) }
+            .onStart { emit(null) }
 
         viewModelScope.launch {
             combine(feed, calendarVisible, workoutDays, quotaCard) { f, calVisible, days, quota ->
