@@ -64,6 +64,21 @@ reach Superwall either, so metering it would block the user with no way to buy. 
 count is derived from the records table rather than stored, so the first definitive answer applies
 retroactively and nothing is minted in the meantime.
 
+**The unknown window is retried, not just waited out.** Resolution happens during configuration, so a
+user who signs in offline — or whose probe misses the 3s launch ceiling — is unmetered. Both platforms
+therefore re-attempt it on FOREGROUND re-entry (Android `FitJournalApplication`'s ProcessLifecycleOwner
+ON_START, iOS `SceneWillEnterForeground`), guarded by the shared `FreeQuotaSettings.needsEntitlementHistory`
+so neither can drift on when a probe is worth making: the answer is still null AND the user is not
+entitled anyway. That turns "unmetered until the next COLD start" — which users rarely perform — into
+"unmetered until the next app switch". The retry is a no-op once the per-uid answer is cached, and it
+is non-throwing by contract on both sides: its caller is a fire-and-forget background task on a scope
+with no exception handler.
+
+`hasEverHadSubscription()` is tri-state on both platforms for the same reason `checkSubscription()`
+always was: a Qonversion ERROR is `null`/UNKNOWN, never `false`. Getting that wrong was not theoretical
+— Android threw (crashing launch, and stranding the user because the throw escaped `failOpen` before
+`_subscriptionState` was emitted) and iOS coerced it to a definitive `false` it then cached forever.
+
 **The gate is one rule: you may write in a workout that already exists; you may not open a new one.**
 
 A "workout" is a distinct `(journalId, date, workoutNumber)`. Gated in shared code: Start,
