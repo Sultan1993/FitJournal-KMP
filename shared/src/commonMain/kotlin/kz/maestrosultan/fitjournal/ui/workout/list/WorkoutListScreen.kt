@@ -42,6 +42,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kz.maestrosultan.fitjournal.ui.journal.JournalPickerRow
+import kz.maestrosultan.fitjournal.ui.quota.QuotaCard
+import kz.maestrosultan.fitjournal.ui.quota.QuotaCardContent
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutCalendar
@@ -118,6 +120,7 @@ private fun WorkoutListBody(
             ) { content ->
                 WorkoutListContentArea(
                     content = content,
+                    quota = state.quota,
                     measurementSystem = state.measurementSystem,
                     dispatch = dispatch,
                     isRefreshing = isRefreshing,
@@ -127,6 +130,27 @@ private fun WorkoutListBody(
             }
         }
     }
+}
+
+/**
+ * The quota card, or nothing at all. Null content means an entitled user or an
+ * unresolved state, and both must render NOTHING — never an empty card (see
+ * `WorkoutQuota.toCardContent`). Both call sites go through this so the two
+ * content branches cannot drift.
+ */
+@Composable
+private fun QuotaCardSlot(
+    quota: QuotaCardContent?,
+    dispatch: (WorkoutListContract.ViewAction) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    quota ?: return
+    QuotaCard(
+        content = quota,
+        onUpgradeClick = { dispatch(WorkoutListContract.ViewAction.QuotaUpgradeTapped) },
+        onRestoreClick = { dispatch(WorkoutListContract.ViewAction.QuotaRestoreTapped) },
+        modifier = modifier,
+    )
 }
 
 /**
@@ -145,6 +169,7 @@ private val WorkoutListContract.Content.journalKey: String?
 @Composable
 private fun WorkoutListContentArea(
     content: WorkoutListContract.Content,
+    quota: QuotaCardContent?,
     measurementSystem: kz.maestrosultan.fitjournal.domain.user.MeasurementSystem,
     dispatch: (WorkoutListContract.ViewAction) -> Unit,
     isRefreshing: Boolean,
@@ -186,6 +211,12 @@ private fun WorkoutListContentArea(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     )
                 }
+                // Under the picker, and pinned outside the scrollable for the same
+                // reason the picker is: the placeholder below fills the viewport,
+                // so an in-list card would be scrollable away on a screen that has
+                // nothing else to scroll. An empty journal is also exactly when the
+                // card reads "10 of 10 left".
+                QuotaCardSlot(quota, dispatch, Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
                 if (onRefresh != null) {
                     PullToRefreshBox(
                         isRefreshing = isRefreshing,
@@ -203,6 +234,7 @@ private fun WorkoutListContentArea(
         is WorkoutListContract.Content.Loaded ->
             WorkoutListList(
                 loaded = content,
+                quota = quota,
                 measurementSystem = measurementSystem,
                 dispatch = dispatch,
                 isRefreshing = isRefreshing,
@@ -216,6 +248,7 @@ private fun WorkoutListContentArea(
 @Composable
 private fun WorkoutListList(
     loaded: WorkoutListContract.Content.Loaded,
+    quota: QuotaCardContent?,
     measurementSystem: kz.maestrosultan.fitjournal.domain.user.MeasurementSystem,
     dispatch: (WorkoutListContract.ViewAction) -> Unit,
     isRefreshing: Boolean,
@@ -239,6 +272,15 @@ private fun WorkoutListList(
                         isPersonal = row.isPersonal,
                         onClick = { dispatch(WorkoutListContract.ViewAction.OpenJournalPicker) },
                         modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 8.dp),
+                    )
+                }
+            }
+            quota?.let {
+                item(key = "quota") {
+                    QuotaCardSlot(
+                        quota = it,
+                        dispatch = dispatch,
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp),
                     )
                 }
             }

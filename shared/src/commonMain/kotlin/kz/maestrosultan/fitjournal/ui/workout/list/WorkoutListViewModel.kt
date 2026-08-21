@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
@@ -25,11 +26,14 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.journal.JournalRepository
+import kz.maestrosultan.fitjournal.domain.quota.WorkoutQuotaGate
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.domain.user.UserSession
 import kz.maestrosultan.fitjournal.domain.user.UserSessionState
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
 import kz.maestrosultan.fitjournal.kmp.time.firstDayOfWeekFromLocale
+import kz.maestrosultan.fitjournal.ui.quota.QuotaCardContent
+import kz.maestrosultan.fitjournal.ui.quota.toCardContent
 import kz.maestrosultan.fitjournal.ui.workout.list.components.buildWorkoutListFeed
 
 /**
@@ -49,6 +53,7 @@ import kz.maestrosultan.fitjournal.ui.workout.list.components.buildWorkoutListFe
 class WorkoutListViewModel(
     private val recordRepository: RecordRepository,
     private val journalRepository: JournalRepository,
+    private val quotaGate: WorkoutQuotaGate = WorkoutQuotaGate(recordRepository),
     sessionState: Flow<UserSessionState?> = UserSession.state,
     private val clock: Clock = Clock.System,
     private val timeZone: TimeZone = TimeZone.currentSystemDefault(),
@@ -60,6 +65,14 @@ class WorkoutListViewModel(
     // Overlay + dots are separate surfaces from the record feed, combined in.
     private val calendarVisible = MutableStateFlow(false)
     private val workoutDays = MutableStateFlow<Map<LocalDate, List<CategoryType>>>(emptyMap())
+
+    // PUSHED by the host (see [setQuotaCardPrice]) rather than pulled: the price
+    // comes from each platform's purchase SDK, which has no business being named
+    // in common code — and a `suspend () -> String?` constructor parameter is not
+    // expressible from Swift (it bridges as KotlinSuspendFunction0, which a Swift
+    // closure cannot satisfy). Null until the host answers, and null forever if it
+    // never does, which renders the card's unpriced copy.
+    private val quotaPrice = MutableStateFlow<String?>(null)
 
     private val _uiState = MutableStateFlow(WorkoutListContract.ViewState.initial(today()))
     override val viewState: StateFlow<WorkoutListContract.ViewState> = _uiState.asStateFlow()
@@ -98,17 +111,28 @@ class WorkoutListViewModel(
             FeedResult(content, s.measurementSystem, today)
         }
 
+        // Quota is per ACCOUNT, so it hangs off the session's userId only — it
+        // deliberately does NOT restart on a journal switch. `.catch` is the
+        // fail-open guard: a broken quota read must show NO card, never a wall.
+        val quotaCard: Flow<QuotaCardContent?> = combine(
+            session.flatMapLatest { quotaGate.getQuotaFlow(it.userId) },
+            quotaPrice,
+        ) { quota, price -> quota.toCardContent(price, timeZone) }
+            .catch { emit(null) }
+
         viewModelScope.launch {
-            combine(feed, calendarVisible, workoutDays) { f, calVisible, days ->
+            combine(feed, calendarVisible, workoutDays, quotaCard) { f, calVisible, days, quota ->
                 WorkoutListContract.ViewState(
                     content = f.content,
                     calendarVisible = calVisible,
                     workoutDays = days,
                     measurementSystem = f.measurementSystem,
                     today = f.today,
+                    quota = quota,
                 )
             }.collect { _uiState.value = it }
         }
+
 
         // Dots are a lazily-loaded side surface that doesn't rebuild itself on
         // a session switch — clear + cancel any in-flight load here, then
@@ -138,7 +162,18 @@ class WorkoutListViewModel(
             is WorkoutListContract.ViewAction.SelectDate -> onSelectDate(action.date)
             is WorkoutListContract.ViewAction.OpenDay -> emit(WorkoutListContract.ViewEffect.OpenWorkoutDetails(action.date))
             WorkoutListContract.ViewAction.OpenJournalPicker -> emit(WorkoutListContract.ViewEffect.OpenJournalPicker)
+            WorkoutListContract.ViewAction.QuotaUpgradeTapped -> emit(WorkoutListContract.ViewEffect.ShowPaywall)
+            WorkoutListContract.ViewAction.QuotaRestoreTapped -> emit(WorkoutListContract.ViewEffect.RestorePurchase)
         }
+    }
+
+    /**
+     * Host -> shared: the localized store price the quota card quotes, or null
+     * when the plan is not configured / the store could not be reached. Safe to
+     * call at any time and from any thread; the card redraws when it lands.
+     */
+    fun setQuotaCardPrice(price: String?) {
+        quotaPrice.value = price
     }
 
     private fun emit(effect: WorkoutListContract.ViewEffect) {

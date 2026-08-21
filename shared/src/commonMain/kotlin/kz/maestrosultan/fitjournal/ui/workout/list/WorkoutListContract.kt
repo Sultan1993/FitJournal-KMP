@@ -6,6 +6,7 @@ import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.domain.calculation.WorkloadMuscleEntry
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
+import kz.maestrosultan.fitjournal.ui.quota.QuotaCardContent
 
 /**
  * MVI contract for the WorkoutList screen. Public rather than internal because
@@ -29,6 +30,16 @@ object WorkoutListContract {
         val measurementSystem: MeasurementSystem,
         /** Calendar's selectedDate source — mirror of WorkoutContract.ViewState.selectedDate. */
         val today: LocalDate,
+        /**
+         * Free-quota card, or null when there is nothing to draw — an entitled
+         * user AND every unresolved state (see `WorkoutQuota.toCardContent`).
+         *
+         * Lives on ViewState rather than inside [Content] because the quota is
+         * per ACCOUNT, not per journal: it must not be rebuilt or re-animated by
+         * a journal switch. It is still RENDERED inside the content area, since
+         * its place is directly under the journal picker.
+         */
+        val quota: QuotaCardContent? = null,
     ) {
         companion object { fun initial(today: LocalDate) = ViewState(Content.Loading, false, emptyMap(), MeasurementSystem.KG_KM, today) }
     }
@@ -117,10 +128,24 @@ object WorkoutListContract {
         /** Day-row tap. */
         data class OpenDay(val date: LocalDate) : ViewAction
         data object OpenJournalPicker : ViewAction
+        /** Quota card's primary CTA — Upgrade / See plans / Renew. */
+        data object QuotaUpgradeTapped : ViewAction
+        /** Quota card's secondary CTA, lapsed state only. */
+        data object QuotaRestoreTapped : ViewAction
     }
 
     sealed interface ViewEffect {
         data class OpenWorkoutDetails(val date: LocalDate) : ViewEffect
         data object OpenJournalPicker : ViewEffect
+        /**
+         * Raise the subscription paywall. The host owns Superwall — shared code
+         * never learns which placement, or that Superwall exists at all.
+         */
+        data object ShowPaywall : ViewEffect
+        /**
+         * Re-check entitlement with the store (the lapsed card's "Restore
+         * purchase"). Host-owned for the same reason as [ShowPaywall].
+         */
+        data object RestorePurchase : ViewEffect
     }
 }
