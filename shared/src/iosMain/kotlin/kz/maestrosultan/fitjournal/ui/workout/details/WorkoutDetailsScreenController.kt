@@ -38,7 +38,7 @@ import platform.UIKit.UIViewController
  * memory):**
  * - This top-level factory bridges as a BARE global Swift function — SKIE's
  *   global-functions feature is on, so Swift calls
- *   `WorkoutDetailsScreenController(viewModel:onDismiss:onEditWorkout:onShareWorkout:)`
+ *   `WorkoutDetailsScreenController(viewModel:onDismiss:onEditWorkout:onShareWorkout:onShowPaywall:)`
  *   directly, with NO `WorkoutDetailsScreenControllerKt.` prefix — same precedent
  *   as `WorkoutListScreenController(...)` / `createWorkoutFinishViewModel(...)`
  *   (zero `*Kt.` call sites anywhere in the app).
@@ -57,7 +57,7 @@ import platform.UIKit.UIViewController
  * Nothing here may throw across the SKIE boundary — an unhandled Kotlin exception
  * is an uncatchable iOS `SIGABRT`, not a catchable Swift error (see the
  * `ios-aborts-on-unbridged-kmp-exceptions` memory). The `when` below is exhaustive
- * over a sealed interface and the three closures are plain Swift-supplied lambdas,
+ * over a sealed interface and the four closures are plain Swift-supplied lambdas,
  * so there is no throwing surface to guard here.
  */
 fun WorkoutDetailsScreenController(
@@ -65,6 +65,7 @@ fun WorkoutDetailsScreenController(
     onDismiss: () -> Unit,
     onEditWorkout: (LocalDate, Int) -> Unit,
     onShareWorkout: (LocalDate, Int) -> Unit,
+    onShowPaywall: () -> Unit,
 ): UIViewController = ComposeUIViewController {
     FitJournalTheme {
         // The VM's effect stream is a buffered Channel — one consumer, delivered
@@ -75,6 +76,7 @@ fun WorkoutDetailsScreenController(
                     WorkoutDetailsContract.ViewEffect.Dismiss -> onDismiss()
                     is WorkoutDetailsContract.ViewEffect.OpenEditWorkout -> onEditWorkout(effect.date, effect.workoutNumber)
                     is WorkoutDetailsContract.ViewEffect.OpenShareComposer -> onShareWorkout(effect.date, effect.workoutNumber)
+                    WorkoutDetailsContract.ViewEffect.ShowPaywall -> onShowPaywall()
                 }
             }
         }

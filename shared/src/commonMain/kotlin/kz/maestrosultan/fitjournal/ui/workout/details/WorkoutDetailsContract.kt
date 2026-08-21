@@ -150,6 +150,12 @@ object WorkoutDetailsContract {
 
     sealed interface ViewEffect {
         data object Dismiss : ViewEffect
+
+        /**
+         * Repeat was refused by the free-workout quota. The host raises the
+         * paywall; nothing was written, so the screen simply stays put.
+         */
+        data object ShowPaywall : ViewEffect
         /**
          * workoutNumber = the focused workout at tap time. Hosts currently open the
          * DAY pager and intentionally do not consume it — carried for future deepening.

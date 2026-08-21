@@ -29,6 +29,7 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutSessionRepository
 import kz.maestrosultan.fitjournal.domain.workout.summary.DetectSessionBestUseCase
 import kz.maestrosultan.fitjournal.domain.workout.summary.SessionBest
 import kz.maestrosultan.fitjournal.domain.workout.usecase.DeleteWorkoutUseCase
+import kz.maestrosultan.fitjournal.domain.quota.WorkoutQuotaGate
 import kz.maestrosultan.fitjournal.domain.workout.usecase.RepeatWorkoutUseCase
 import kz.maestrosultan.fitjournal.domain.workout.usecase.SetWorkoutNoteUseCase
 import kz.maestrosultan.fitjournal.ui.workout.MuscleTitleFormatter
@@ -67,6 +68,9 @@ class WorkoutDetailsViewModel internal constructor(
     private val repeatWorkout: RepeatWorkoutUseCase,
     private val setWorkoutNote: SetWorkoutNoteUseCase,
     private val userContext: WorkoutUserContext,
+    // Constructed from recordRepository so neither the public constructor (Android
+    // builds this VM through Hilt) nor the Swift factory has to carry it.
+    private val quotaGate: WorkoutQuotaGate = WorkoutQuotaGate(recordRepository),
     private val date: LocalDate,
     initialWorkoutNumber: Int?,
     headerNav: WorkoutDetailsContract.HeaderNav,
@@ -296,12 +300,32 @@ class WorkoutDetailsViewModel internal constructor(
      * Copies this workout onto today (as a template), then opens today's workout —
      * reusing OpenEditWorkout, which the hosts already map to "open the workout for
      * this date". A copy failure stays on the details screen (nothing to open).
+     *
+     * GATED. A repeat always lands on a BRAND-NEW page of today
+     * (`max(workoutNumber) + 1`), so unlike Add-exercise or Copy it can never be
+     * satisfied by rule 3 — it always opens a new workout and therefore always
+     * spends quota. Refusal writes nothing and raises the paywall; the screen
+     * stays where it is.
      */
     private fun onRepeatTapped() {
         val id = identity ?: return
         val loaded = loadedContent() ?: return
         val sourceWorkoutNumber = loaded.focusedWorkoutNumber
         viewModelScope.launch {
+            // Default true: the gate reads SQLite, so a locked or corrupt database
+            // throws, and letting that decide "exhausted" would lock a user out of
+            // their own log. Matches every other gate call site.
+            val allowed = try {
+                quotaGate.canOpenNewWorkout(id.userId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Throwable) {
+                true
+            }
+            if (!allowed) {
+                emit(WorkoutDetailsContract.ViewEffect.ShowPaywall)
+                return@launch
+            }
             val newPage = runCatching { repeatWorkout(id.userId, id.journalId, date, sourceWorkoutNumber) }
                 .onFailure { e ->
                     if (e is CancellationException) throw e

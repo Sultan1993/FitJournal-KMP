@@ -6,6 +6,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kz.maestrosultan.fitjournal.domain.quota.FreeQuotaSettings
 import kotlin.test.assertTrue
 import kotlin.time.Instant
 import kotlinx.coroutines.Dispatchers
@@ -68,6 +69,9 @@ class WorkoutDetailsViewModelTest {
     fun tearDown() {
         createdViewModels.forEach { it.dispose() }
         createdViewModels.clear()
+        // FreeQuotaSettings is a global object and jvmTest runs every class in one
+        // JVM — a leaked metered state would silently refuse a later class's writes.
+        FreeQuotaSettings.reset()
         Dispatchers.resetMain()
     }
 
@@ -247,6 +251,44 @@ class WorkoutDetailsViewModelTest {
         val effect = vm.viewEffect.first()
         assertTrue(effect is WorkoutDetailsContract.ViewEffect.OpenEditWorkout)
         assertEquals(3, (effect as WorkoutDetailsContract.ViewEffect.OpenEditWorkout).workoutNumber, "opens the new page the copy returned")
+    }
+
+    @Test
+    fun repeatTapped_whenTheQuotaRefuses_raisesThePaywall_andCopiesNOTHING() = runTest(dispatcher) {
+        // The gate call site, not the gate: a refusal must write nothing at all.
+        // Repeat always lands on a BRAND-NEW page of today, so it can never be
+        // satisfied by "the slot already exists" — it always spends quota.
+        FreeQuotaSettings.setLimit(10)
+        FreeQuotaSettings.setHasEverSubscribed(true)
+        FreeQuotaSettings.setEntitled(false)
+
+        val records = FakeRecordRepository(listOf(squatRecord(1)))
+        val vm = viewModel(records, FakeWorkoutSessionRepository(listOf(session("session-1", 1))))
+        awaitLoaded(vm)
+
+        vm.dispatch(WorkoutDetailsContract.ViewAction.RepeatTapped)
+        advanceUntilIdle()
+
+        assertEquals(WorkoutDetailsContract.ViewEffect.ShowPaywall, vm.viewEffect.first())
+        assertNull(records.repeatedFrom, "refused: nothing may be copied")
+        assertNull(records.repeatedWorkoutNumber)
+    }
+
+    @Test
+    fun repeatTapped_whenTheGateThrows_isALLOWED() = runTest(dispatcher) {
+        // Fail OPEN. The gate reads SQLite, so a locked or corrupt database throws,
+        // and letting that decide "refused" would lock a user out of their own log.
+        FreeQuotaSettings.setLimit(10)
+        FreeQuotaSettings.setHasEverSubscribed(false)
+
+        val records = FakeRecordRepository(listOf(squatRecord(1)), failQuotaCount = true)
+        val vm = viewModel(records, FakeWorkoutSessionRepository(listOf(session("session-1", 1))))
+        awaitLoaded(vm)
+
+        vm.dispatch(WorkoutDetailsContract.ViewAction.RepeatTapped)
+        advanceUntilIdle()
+
+        assertEquals(DATE, records.repeatedFrom, "a throwing gate must not block the write")
     }
 
     // ─── Summary vs Details variant ─────────────────────────────────────
@@ -459,7 +501,14 @@ class WorkoutDetailsViewModelTest {
      */
     private class FakeRecordRepository(
         initial: List<WorkoutRecord>,
+        /** Set true to make the quota count throw — proves the gate call site fails OPEN. */
+        private val failQuotaCount: Boolean = false,
     ) : RecordRepository {
+
+        override suspend fun countMeteredWorkouts(userId: String): Int {
+            if (failQuotaCount) throw IllegalStateException("database is locked")
+            return 0
+        }
         private val records = MutableStateFlow(initial)
         private val changeSignal = MutableStateFlow(0)
 
