@@ -1,0 +1,244 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Implementation plan — usage-metered reverse trial (10 free workout days)</title>
+<style>
+:root{--bg:#f5f7fa;--sf:#fff;--sf2:#eef1f6;--bd:#d7dde6;--ink:#1a2029;--soft:#54606f;--faint:#8791a0;
+--mech:#1f9d68;--std:#2560c4;--fro:#7c53e6;--bad:#cc4444;--mono:ui-monospace,Menlo,Consolas,monospace}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1117;--sf:#161c25;--sf2:#1c232e;--bd:#2a3441;--ink:#e7ecf3;--soft:#9aa6b6;--faint:#647084;--mech:#43c78c;--std:#5b8cf0;--fro:#a689f7;--bad:#e5706b}}
+:root[data-theme="light"]{--bg:#f5f7fa;--sf:#fff;--sf2:#eef1f6;--bd:#d7dde6;--ink:#1a2029;--soft:#54606f;--faint:#8791a0;--mech:#1f9d68;--std:#2560c4;--fro:#7c53e6;--bad:#cc4444}
+:root[data-theme="dark"]{--bg:#0d1117;--sf:#161c25;--sf2:#1c232e;--bd:#2a3441;--ink:#e7ecf3;--soft:#9aa6b6;--faint:#647084;--mech:#43c78c;--std:#5b8cf0;--fro:#a689f7;--bad:#e5706b}
+*{box-sizing:border-box}
+body{margin:0 auto;max-width:1180px;background:var(--bg);color:var(--ink);font:15px/1.62 system-ui,-apple-system,sans-serif;padding:40px 24px 72px}
+a{color:var(--std)}
+h1{font-size:27px;line-height:1.25;margin:0 0 6px;letter-spacing:-.01em}
+h3{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono);margin:0 0 14px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.wnum{color:var(--ink);font-weight:700}.wmeta{color:var(--faint);text-transform:none;letter-spacing:0}
+.sub{color:var(--soft);font-family:var(--mono);font-size:12.5px;margin-bottom:24px;word-break:break-all}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:30px}
+.stat{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:9px 15px}
+.stat b{font-size:19px;display:block;line-height:1.2}.stat span{font-size:11px;color:var(--faint);font-family:var(--mono)}
+.brief{background:var(--sf);border:1px solid var(--bd);border-left:3px solid var(--std);border-radius:10px;padding:4px 20px;margin-bottom:34px}
+.brief h4{font-size:14px;margin:14px 0 6px}
+.wave{margin-bottom:34px}.wave.bad .wnum{color:var(--bad)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;align-items:start}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:15px 17px 5px}
+.card header{border-bottom:1px solid var(--bd);padding-bottom:10px;margin-bottom:12px}
+.card h4{margin:0 0 7px;font-size:15px;line-height:1.35}
+.meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.after{font-family:var(--mono);font-size:10.5px;color:var(--faint)}.after.free{opacity:.65}
+.blk{margin-bottom:14px}
+.blk h5{margin:0 0 5px;font:600 10.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.07em;color:var(--faint)}
+.blk p{margin:0 0 7px}.blk ul,.blk ol{margin:0 0 7px;padding-left:20px}.blk li{margin:2px 0}
+.blk :last-child{margin-bottom:0}
+.crit li{color:var(--soft)}
+.files code{display:inline-block;margin:0 4px 4px 0}
+pre.code{background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:9px 11px;overflow-x:auto;max-height:260px;overflow-y:auto;margin:0 0 7px}
+pre.code code{background:none;padding:0;font-size:11.5px;line-height:1.5;white-space:pre}
+code{font-family:var(--mono);font-size:.88em;background:color-mix(in srgb,var(--bd) 45%,transparent);padding:1px 5px;border-radius:4px;word-break:break-word}
+.chip{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+.chip.mechanical{color:var(--mech);background:color-mix(in srgb,var(--mech) 14%,transparent)}
+.chip.standard{color:var(--std);background:color-mix(in srgb,var(--std) 14%,transparent)}
+.chip.frontier{color:var(--fro);background:color-mix(in srgb,var(--fro) 14%,transparent)}
+.chip.bad{color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent)}
+details.checks{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:12px 18px;margin-top:10px}
+details.checks summary{cursor:pointer;font:600 11.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--faint)}
+details.checks ul{margin:12px 0 2px;padding-left:20px}
+details.checks li{margin:4px 0;color:var(--soft)}
+details.checks b{color:var(--bad);font-family:var(--mono);font-size:12.5px}
+details.checks .ok{color:var(--mech)}
+</style>
+<h1>Implementation plan — usage-metered reverse trial (10 free workout days)</h1>
+<div class="sub">docs/superpowers/plans/2026-08-03-paywall-quota-plan.md &nbsp;·&nbsp; spec: Multiplatform/docs/superpowers/specs/2026-08-03-paywall-quota-design.md</div>
+<div class="stats">
+  <div class="stat"><b>0</b><span>tasks</span></div>
+  <div class="stat"><b>0</b><span>waves</span></div>
+  <div class="stat"><b style="color:var(--mech)">0</b><span>mechanical</span></div>
+  <div class="stat"><b style="color:var(--std)">0</b><span>standard</span></div>
+  <div class="stat"><b style="color:var(--fro)">0</b><span>frontier</span></div>
+</div>
+<div class="brief"><h4>Cross-task contracts — PINNED</h4>
+<p>Every name below is referenced by at least two tasks, often in parallel waves and across repos. Implementers must use these exactly. Where a name differs from the spec's prose, the value here wins (deviations are flagged and justified).</p>
+<h4>Repos and paths</h4>
+<p>Three independent git repos, all on <code>feature/paywall-quota</code>:</p>
+<ul>
+<li><code>/Users/sultan/Development/FitJournal-paywall/Multiplatform</code></li>
+<li><code>/Users/sultan/Development/FitJournal-paywall/Android</code> (consumes KMP via <code>includeBuild(&quot;../Multiplatform&quot;)</code>)</li>
+<li><code>/Users/sultan/Development/FitJournal-paywall/iOS</code> (consumes KMP via the Xcode &quot;Build KMP framework&quot; Run Script)</li>
+</ul>
+<p>All <code>files</code> paths are prefixed with the worktree dir. No build-config edits are needed anywhere; the worktree set resolves as-is.</p>
+<h4>Build-contention rules (hard rules)</h4>
+<p><strong>Rule B1 — iOS: exactly one <code>xcodebuild</code> in the plan, at Task 27.</strong> The standing instruction is to share Xcode's default DerivedData (no <code>-derivedDataPath</code>) and to *wait* rather than race its <code>build.db</code>; concurrent invocations risk corrupting it. Tasks 21–26 therefore carry build-free verifies — <code>grep -c</code> counts, <code>rg -U</code> ordering patterns and negative assertions, chosen so a wrong or misplaced edit actually fails — and each says so in its own text: compilation is proven at Task 27. Task 28 re-runs the same build after 27 has completed, never concurrently. There is no iOS test target and no SwiftLint; do not invent one.</p>
+<p><strong>Rule B2 — Android: no app-wide compile before Task 18.</strong> Task 6 deliberately breaks <code>:app</code>'s exhaustive <code>when (effect)</code> until Task 18 repairs it. Tasks 13–17 verify with <strong>module-scoped</strong> Gradle targets only (concurrent Gradle invocations block on file locks rather than corrupt, so same-wave module verifies are safe). Task 18 is the first task permitted to run <code>:app:compileDebugKotlin</code>, because it *is* the repair; Task 19 depends on it. Task 20 is the only task running <code>assembleDebug</code>/<code>lint</code>. Module coordinates confirmed against <code>Android/settings.gradle.kts</code>:</p>
+<p>| Task | Modules touched | Verify target | |---|---|---| | 13 | <code>:common:remoteconfig</code> | <code>:common:remoteconfig:compileDebugKotlin</code> | | 14 | <code>:common:user</code>, <code>:feature:subscription</code> | <code>:feature:subscription:compileDebugKotlin</code> (depends on <code>:common:user</code>) | | 15 | <code>:feature:configuration</code> | <code>:feature:configuration:compileDebugKotlin</code> | | 16, 17 | <code>:feature:subscription</code> | <code>:feature:subscription:compileDebugKotlin</code> | | 18, 19 | <code>:app</code> | <code>:app:compileDebugKotlin</code> | | 20 | all | <code>:app:compileDebugKotlin assembleDebug lint :feature:configuration:testDebugUnitTest</code> |</p>
+<p>There is <strong>no <code>:feature:workout</code> module</strong> — every workout screen (<code>WorkoutCmpHostViewModel</code>, <code>WorkoutDetailsViewModel</code>, <code>ExerciseDetailsCalendarViewModel</code>) lives in <code>:app</code>. Android-repo and iOS-repo tasks may run concurrently with each other: different repos, no shared outputs.</p>
+<h4>TDD policy (and where it honestly does not apply)</h4>
+<p>A strict test-first ordering is unachievable across a compiled multiplatform module: a jvmTest cannot reference <code>WorkoutQuotaGate</code> before the type exists. The plan therefore applies <strong>RED/GREEN with repair rights</strong> to the three pure-logic seams:</p>
+<ul>
+<li><strong>Tasks 9, 10 and 11 each write EVERY assertion from the spec's numbered list for their seam before running the suite once</strong>, record that first run's failures verbatim as the RED observation, then fix forward. Each carries its seam's <strong>implementation files as repair-only entries</strong> in <code>files</code>; they are in strictly later waves than the tasks that authored those files, so no wave collides. A repair may fix logic; it may not change a pinned contract or weaken an earlier acceptance criterion.</li>
+<li><strong>Tasks 1–8</strong> are the implementation half; each names the spec cases it is answerable for.</li>
+<li><strong>Tasks 13–19 and 21–26 (platform glue) get no failing-test step, deliberately.</strong> They are one-line wiring, key declarations, nav arguments and delegate plumbing — no logic a test would not simply restate. Their real checks are the structural verifies, compilation, and the manual matrix. Manufacturing test scaffolding for a <code>setEntitled(true)</code> call would be ceremony.</li>
+</ul>
+<h4>Test file ownership</h4>
+<ul>
+<li>All KMP tests live in <code>Multiplatform/shared/src/jvmTest</code>, one <strong>new</strong> file per test task. <strong>No two tasks may edit the same test file.</strong></li>
+<li>Task 9 owns <code>WorkoutQuotaGateTest.kt</code> (spec tests 1–12, incl. 6, 7b, 7c). Task 10 owns <code>WorkoutQuotaCardTest.kt</code> (13–15). Task 11 owns <code>WorkoutQuotaGatingTest.kt</code> (16–19, 18b). Nobody else creates a test file.</li>
+<li>Existing KMP test files (<code>RecordRepositoryTest.kt</code>, <code>ImportWorkoutViewModelTest.kt</code>, <code>WorkoutSuccessViewModelTest.kt</code>, <code>FinishConfirmViewModelTest.kt</code>, <code>WorkoutPagesTest.kt</code>) must compile and pass <strong>unmodified</strong> — that is what the <code>RecordRepository</code> interface defaults buy.</li>
+<li>The <strong>only</strong> permitted edit to an existing test anywhere is <code>Android/feature/configuration/src/test/kotlin/kz/maestrosultan/fitjournal/feature/migration/ConfigurationGateTest.kt</code>, and only to add a mock for a new constructor parameter. Declared in Task 20's <code>files</code>.</li>
+<li>Tasks 1–8 verify with <code>:shared:assemble</code> only; Task 12 is the single barrier running the full <code>:shared:jvmTest</code>.</li>
+</ul>
+<h4>KMP: <code>WorkoutQuota</code> (package <code>kz.maestrosultan.fitjournal.domain.quota</code>)</h4>
+<pre class="code"><code>sealed interface WorkoutQuota {
+    data object Unlimited : WorkoutQuota
+    data class Metered(val used: Int, val limit: Int) : WorkoutQuota {
+        val remaining: Int get() = (limit - used).coerceAtLeast(0)
+        val isExhausted: Boolean get() = remaining == 0
+    }
+}</code></pre>
+<p>SKIE Swift names: <code>WorkoutQuotaUnlimited</code>, <code>WorkoutQuotaMetered</code>.</p>
+<h4>KMP: <code>FreeQuotaSettings</code> (package <code>kz.maestrosultan.fitjournal.domain.quota</code>)</h4>
+<p><strong>Three setters, not one</strong> — a deliberate refinement of spec §4.1's single <code>setConfig(...)</code>: the Remote Config layer and the subscription layer each know only half the config. Behaviour identical.</p>
+<pre class="code"><code>object FreeQuotaSettings {
+    data class Config(val limit: Int, val globalCutoff: Instant?, val personalCutoff: Instant?)
+    val config: StateFlow&lt;Config&gt;
+    val effectiveCutoff: Instant?                               // max(global, personal); null when global is null
+    fun setRemoteConfig(limit: Long, globalCutoffIso: String)   // each ConfigurationViewModel
+    fun setPersonalCutoff(personalCutoffIso: String?)           // each platform's subscription layer
+    val isEntitled: StateFlow&lt;Boolean&gt;
+    fun setEntitled(entitled: Boolean)
+}</code></pre>
+<p>Swift (SKIE: Kotlin <code>object</code> → <code>.shared</code>, <code>Long</code> → <code>Int64</code>):</p>
+<pre class="code"><code>FreeQuotaSettings.shared.setRemoteConfig(limit: Int64(limit), globalCutoffIso: iso)
+FreeQuotaSettings.shared.setPersonalCutoff(personalCutoffIso: iso)   // nil to clear
+FreeQuotaSettings.shared.setEntitled(entitled: true)</code></pre>
+<p><strong>Ownership:</strong> <code>ConfigurationViewModel</code> pushes <code>setRemoteConfig(...)</code> only. The subscription layer is the sole owner of <code>personalCutoff</code> and <strong>always re-pushes on every launch</strong>, including when the stored stamp is unchanged — otherwise a cold start drops it.</p>
+<p><strong>Permitted <code>setEntitled</code> call sites — exactly three per platform, no others:</strong> <code>SuperwallController.activateSubscription</code> (true), <code>SuperwallController.deactivateSubscription</code> (false), and the pinned monetization-disabled branch of <code>ConfigurationViewModel</code> (true).</p>
+<h4>KMP: <code>WorkoutQuotaGate</code> (package <code>kz.maestrosultan.fitjournal.domain.quota</code>)</h4>
+<pre class="code"><code>class WorkoutQuotaGate(
+    private val records: RecordRepository,
+    private val clock: Clock = Clock.System,
+    private val timeZone: TimeZone = TimeZone.currentSystemDefault(),
+) {
+    suspend fun getQuota(userId: String): WorkoutQuota
+    fun getQuotaFlow(userId: String): Flow&lt;WorkoutQuota&gt;
+    suspend fun canWriteWorkout(
+        userId: String, journalId: String, date: LocalDate, isSessionRunningOnDate: Boolean,
+    ): Boolean
+}</code></pre>
+<h4>KMP: <code>RecordRepository</code> additions (package <code>kz.maestrosultan.fitjournal.domain.workout</code>)</h4>
+<pre class="code"><code>suspend fun countMeteredWorkoutDays(userId: String, since: Instant): Int = 0
+fun countMeteredWorkoutDaysFlow(userId: String, since: Instant): Flow&lt;Int&gt; = flowOf(0)
+suspend fun hasAnyRecordOnDay(userId: String, journalId: String, date: LocalDate): Boolean = true</code></pre>
+<h4>KMP: SQLDelight query names (<code>WorkoutRecords.sq</code>)</h4>
+<ul>
+<li><code>countMeteredWorkoutDays</code> — params <code>(userId, sinceIso)</code>, returns <code>Long</code></li>
+<li><code>countRecordsOnDayIncludingDeleted</code> — params <code>(userId, journalId, dateIso)</code>, returns <code>Long</code></li>
+</ul>
+<h4>KMP: <code>WorkoutContract</code> additions (package <code>kz.maestrosultan.fitjournal.ui.workout</code>)</h4>
+<pre class="code"><code>val quota: WorkoutQuota = WorkoutQuota.Unlimited,        // last ctor param of ViewState, DEFAULTED
+data class ShowPaywall(val reason: PaywallReason) : ViewEffect
+data object TapMeter : ViewAction
+enum class PaywallReason { QuotaExhausted, MeterTapped }  // TOP-LEVEL, outside object WorkoutContract</code></pre>
+<p>SKIE Swift names: <code>WorkoutContractViewEffectShowPaywall</code>, <code>PaywallReason.quotaExhausted</code>, <code>WorkoutContractViewActionTapMeter</code>. State nesting stays dotted: <code>WorkoutContract.ViewState</code>.</p>
+<h4>KMP: <code>WorkoutQuotaCard</code> (package <code>kz.maestrosultan.fitjournal.ui.workout.components</code>)</h4>
+<pre class="code"><code>@Composable
+fun WorkoutQuotaCard(quota: WorkoutQuota.Metered, onClick: () -&gt; Unit, modifier: Modifier = Modifier)</code></pre>
+<h4>KMP: <code>createWorkoutViewModel</code> — signature UNCHANGED</h4>
+<pre class="code"><code>fun createWorkoutViewModel(
+    recordRepository: RecordRepository, sessionRepository: WorkoutSessionRepository,
+    startWorkout: StartWorkoutUseCase, endWorkout: EndWorkoutUseCase,
+    syncTrigger: SyncTrigger, initialDate: LocalDate,
+): WorkoutViewModel</code></pre>
+<p>The factory builds <code>WorkoutQuotaGate(recordRepository)</code> internally, so <strong>no iOS call site changes</strong>. Android's <code>WorkoutCmpHostViewModel</code> constructs <code>WorkoutViewModel(...)</code> directly and does gain <code>quotaGate = WorkoutQuotaGate(recordRepository)</code>.</p>
+<h4>KMP: Compose resource names</h4>
+<pre class="code"><code>Res.plurals.quota_workouts_left       // %1$d — quantity = remaining
+Res.plurals.quota_exhausted_title     // %1$d — quantity = limit
+Res.string.quota_exhausted_subtitle
+Res.string.quota_upgrade_cta</code></pre>
+<p>Locales: <code>values</code>, <code>values-de</code>, <code>values-ru</code>, <code>values-uk</code>. ru/uk MUST carry <code>one</code>/<code>few</code>/<code>many</code>/<code>other</code>; en/de carry <code>one</code>/<code>other</code>.</p>
+<h4>Remote Config: four keys, one truth table</h4>
+<p>| Key string | Android <code>RemoteConfigKey</code> | iOS <code>FirebaseKey</code> case | Bundled default | Reader | |---|---|---|---|---| | <code>free_workout_quota</code> | <code>FREE_WORKOUT_QUOTA</code> | <code>freeWorkoutQuota</code> | <code>10</code> | <code>getLong</code> / <code>getInt(key:)</code> | | <code>free_workout_quota_started_at</code> | <code>FREE_WORKOUT_QUOTA_STARTED_AT</code> | <code>freeWorkoutQuotaStartedAt</code> | <code>9999-01-01T00:00:00Z</code> | <code>getString</code> / <code>getString(key:)</code> | | <code>paywall_placement</code> | <code>PAYWALL_PLACEMENT</code> | <code>paywallPlacement</code> | <code>paywall_final</code> | <code>getString</code> / <code>getString(key:)</code> | | <code>paywall_placement_quota</code> | <code>PAYWALL_PLACEMENT_QUOTA</code> | <code>paywallPlacementQuota</code> | <code>paywall_final</code> | <code>getString</code> / <code>getString(key:)</code> |</p>
+<p>iOS case names are load-bearing: <code>FirebaseKey.name</code> derives the key via <code>String(describing: self).snakeCaseString</code>, so the case spelling IS the key.</p>
+<h4>Placement-key selection rule (both platforms must agree)</h4>
+<ul>
+<li><strong>Onboarding / launch-gate paywall → <code>paywall_placement</code>.</strong></li>
+<li><strong>In-app quota paywall (exhausted write or meter tap) → <code>paywall_placement_quota</code>.</strong></li>
+</ul>
+<p>Android: the *same* <code>SubscriptionPaywallScreen</code> serves both, so <strong><code>SubscriptionPaywallViewModel</code> selects the key from its <code>origin</code> argument and exposes <code>val placement: String</code></strong> (Task 16); the screen reads <code>viewModel.placement</code> and never reads Remote Config itself (Task 17). iOS: two presentations, each naming its key — <code>SubscriptionPaywallViewController(viewModel:placement:)</code> defaults to <code>paywallPlacement</code>; the top-level <code>presentQuotaPaywall(from:)</code> helper passes <code>paywallPlacementQuota</code> (Task 24).</p>
+<h4>Superwall SDK APIs — PINNED, no resolution left to execution</h4>
+<p><strong>Android (SDK 2.7.15).</strong> Import <code>com.superwall.sdk.paywall.presentation.PaywallPresentationHandler</code>. Signature (Context7-confirmed):</p>
+<pre class="code"><code>fun Superwall.register(
+    placement: String,
+    params: Map&lt;String, Any&gt;? = null,
+    handler: PaywallPresentationHandler? = null,
+    feature: () -&gt; Unit,
+)</code></pre>
+<p>So <code>Superwall.instance.register(placement = placement, handler = handler) { finish() }</code> is valid with default <code>params</code>. Callbacks: <code>handler.onDismiss { paywallInfo, paywallResult -&gt; }</code> (<code>PaywallResult.Purchased</code>/<code>.Declined</code>/<code>.Restored</code>), <code>handler.onSkip { reason -&gt; }</code> (<code>PaywallSkippedReason.EventNotFound</code>/<code>.Holdout</code>/<code>.NoRuleMatch</code>/<code>.UserIsSubscribed</code>), <code>handler.onError { error -&gt; }</code>.</p>
+<p><strong>iOS (SDK ≥ 4.10.0, pinned 4.15.3).</strong> <code>register()</code> takes an optional <code>params</code> and an optional <code>handler</code>, so <code>Superwall.shared.register(placement: placement, handler: handler) { finish() }</code> is a valid overload — <strong>do not pass <code>params:</code></strong>. Callbacks: <code>handler.onDismiss { paywallInfo, result in }</code> (<code>.purchased(product)</code>/<code>.declined</code>/<code>.restored</code>), <code>handler.onSkip { reason in }</code> (<code>.holdout</code>/<code>.noAudienceMatch</code>/<code>.placementNotFound</code>), <code>handler.onError { error in }</code>.</p>
+<p><strong>Feature Gating is a dashboard setting.</strong> &quot;Non Gated ensures the feature block always fires after the paywall is dismissed.&quot; Under Non-Gated <strong>both</strong> the <code>feature</code> block and <code>onDismiss</code> fire → <code>finish()</code> must be one-shot on both platforms.</p>
+<h4>Android nav contract (<code>SubscriptionPaywallDestination</code>)</h4>
+<pre class="code"><code>const val PARAM_ORIGIN = &quot;origin&quot;; const val ORIGIN_LAUNCH = &quot;launch&quot;; const val ORIGIN_IN_APP = &quot;inApp&quot;
+override val route: String = &quot;subscription_paywall?origin={origin}&quot;
+override val arguments: List&lt;NamedNavArgument&gt;   // NavType.StringType, defaultValue = ORIGIN_LAUNCH
+fun launchRoute(): String = &quot;subscription_paywall?origin=launch&quot;
+fun inAppRoute(): String = &quot;subscription_paywall?origin=inApp&quot;</code></pre>
+<p>Consumed by Task 16 (defines), 17 (reads <code>viewModel.placement</code>), 18 and 19 (navigate to <code>inAppRoute()</code>, never with <code>popUpTo(0)</code>).</p>
+<h4>iOS in-app paywall presenter — one reusable, non-private helper</h4>
+<p>Declared at <strong>top level</strong> in <code>iOS/FitJournal/Subscription/Presentation/Superwall/SubscriptionPaywallViewController.swift</code> by Task 24, called by Tasks 25 and 26:</p>
+<pre class="code"><code>@MainActor
+func presentQuotaPaywall(from presenter: UIViewController)</code></pre>
+<p>It builds a <code>SuperwallPaywallViewController</code> with the <code>paywallPlacementQuota</code> placement, sets <code>.modalPresentationStyle = .fullScreen</code>, and presents it. It sets <strong>no delegate</strong>: Task 24 also makes <code>SuperwallPaywallViewController</code> dismiss itself when <code>delegate == nil</code>, so the modal case needs no coordinator plumbing. That is why Tasks 25 and 26 touch neither <code>WorkoutCoordinator.swift</code> nor <code>ExerciseCoordinator.swift</code> — nothing is pushed and no navigation state changes.</p>
+<h4>iOS per-screen paywall state case (Task 26)</h4>
+<p>Both entry-point screens use the house <code>LiveData&lt;State&gt;</code> + <code>emitState(_:)</code> + <code>state.observe(self) { vc, state in switch state { … } }</code> pattern. Each gains exactly one new <code>State</code> case named <strong><code>paywallRequired</code></strong>, whose observer branch resets that screen's loading UI and calls <code>presentQuotaPaywall(from: vc)</code>.</p>
+<h4>Per-user stamp key (both platforms)</h4>
+<p>Keyed on the <strong>Firebase UID</strong>, never <code>awsUserId</code> — <code>awsUserId</code> is provisioned later by <code>MigrationViewModel</code> and is still unset at the demotion site on a fresh reinstall, while the Firebase UID is already the key for subscription identity (<code>ConfigureSubscriptionUseCase.kt:12-19</code>, <code>ConfigureSubscriptionUseCase.swift:26-32</code>).</p>
+<ul>
+<li>Android <code>SubscriptionStore</code>: <code>suspend fun getFreeQuotaResumedAt(firebaseUid: String): String?</code> / <code>suspend fun setFreeQuotaResumedAt(firebaseUid: String, iso: String?)</code>; key <code>&quot;free_quota_resumed_at_$firebaseUid&quot;</code>.</li>
+<li>iOS <code>UserStorage</code>: <code>func freeQuotaResumedAt(for firebaseUid: String) -&gt; String?</code> / <code>func setFreeQuotaResumedAt(_ iso: String?, for firebaseUid: String)</code>; key <code>&quot;free_quota_resumed_at_&quot; + firebaseUid</code>.</li>
+</ul>
+<h4>Stamp algorithm (identical on both platforms)</h4>
+<p>At the demotion site (<code>failOpen(cached)</code>), in order:</p>
+<ol>
+<li><code>existing = store.getFreeQuotaResumedAt(uid)</code></li>
+<li>if <code>existing == null</code>:</li>
+</ol>
+<ul>
+<li><code>cached != null</code> → <code>newStamp = cached.expirationDate?.toIsoUtcString() ?: nowIso</code></li>
+<li>else if best-effort <code>hasEverHadSubscription()</code> is true → <code>newStamp = nowIso</code></li>
+<li>else → <code>newStamp = null</code></li>
+<li>if <code>newStamp != null</code> → <code>store.setFreeQuotaResumedAt(uid, newStamp)</code></li>
+</ul>
+<ol>
+<li><code>FreeQuotaSettings.setPersonalCutoff(existing ?: newStamp)</code> — <strong>always</strong>, even when nothing was written.</li>
+</ol>
+<p>At <code>activateSubscription(...)</code>: <code>store.setFreeQuotaResumedAt(uid, null)</code> → <code>setPersonalCutoff(null)</code> → <code>setEntitled(true)</code>.</p>
+<p>ISO formatting: Android <code>Instant.toString()</code> (from <code>LocalDateTime.toInstant(TimeZone.UTC)</code>); iOS <code>ISO8601DateFormatter().string(from:)</code>. Both yield <code>yyyy-MM-dd'T'HH:mm:ssZ</code>, which <code>Instant.parse</code> accepts.</p>
+<p><strong>The stamp must be pushed before the launch gate navigates.</strong> On iOS that means <code>failOpen</code> becomes <code>private func failOpen(_ cached: Subscription?) async</code> and both call sites inside <code>private func checkSubscription() async</code> use <code>await failOpen(cached)</code> — no detached <code>Task { }</code>.</p>
+<h4>iOS Date → KMP LocalDate</h4>
+<p>Use the existing <code>Date().kotlinLocalDate</code> / <code>date.kotlinLocalDate</code> extension (<code>iOS/FitJournal/Core/Extensions/Date+Instant.swift:67</code>). Do not write a new converter.</p>
+<h4>Deferred, human-owned prerequisite gate (M23 / M24)</h4>
+<p>The no-trial product <strong>does not exist yet</strong> in App Store Connect, Play Console, Qonversion or Superwall — the human will supply the id later, and this build is written assuming it will exist. Therefore <strong>matrix cases M23 (no-trial / annual-first / direct-charge inspection) and M24 (real sandbox purchase) cannot be run during implementation.</strong> They are not &quot;allowed to fail&quot;; they are <strong>deferred to a named blocker on the rollout path</strong> that Task 28 must emit as a to-do. No task may mark them passed, excused, or N/A-by-platform. The three prerequisites (spec §5.1) that the human must complete and verify <strong>before metering is activated in production</strong> are:</p>
+<ol>
+<li>Create the no-trial product in App Store Connect and in Play Console (Play: a base plan with <strong>no free-trial and no intro offer attached</strong> — Qonversion auto-selects the most profitable offer when the app passes no offer id, which would silently reintroduce the trial the brief forbids).</li>
+<li>Create the product in the <strong>Qonversion dashboard on both platforms</strong>, linked to the <code>Premium</code> entitlement, with the Qonversion Product ID equal to the App Store product id (iOS) and to <code>&quot;&lt;storeId&gt;.&lt;basePlanId&gt;&quot;</code> (Android).</li>
+<li>Build the Superwall paywall with <strong>annual pre-selected as the lead option</strong>, no trial language, and a visible decline affordance; then point <code>paywall_placement</code> / <code>paywall_placement_quota</code> at it if the placement name changes.</li>
+</ol>
+<h4>Hard boundaries (spec non-goals — a task needing one of these is mis-derived)</h4>
+<p>No task may touch: either <code>SyncOrchestrator</code>, the <code>upsertWorkoutRecordFromRemote*</code> statements, <code>schema.graphql</code>, any generated Amplify model, <code>MigrationViewModel</code>, <code>DefaultAWSUserMigrator</code>, or add any <code>.sqm</code>. No <code>verifyCommonMainFitJournalDatabaseMigration</code> in any verify (permanently red). No new analytics events. No blocking of non-workout writes.</p>
+<p>---</p></div>
+
+<div class="brief"><h4>Wave map (derived from <code>blockedBy</code>, for reading convenience)</h4>
+<p>| Wave | Tasks | Repo(s) | Notes | |---|---|---|---| | 1 | 1, 2, 3 | Multiplatform | File-disjoint KMP foundations | | 2 | 4, 5, 6 | Multiplatform | Gate, card, contract — each compiles standalone | | 3 | 7, 8, 9, 10 | Multiplatform | VM gating (frontier), screen render, two RED/GREEN suites | | 4 | 11 | Multiplatform | Gating RED/GREEN suite (needs Task 7) | | 5 | <strong>12</strong> | Multiplatform | <strong>BARRIER</strong> — assemble + full jvmTest + arm64 framework link | | 6 | 13, 14 ‖ 21, 22 | Android ‖ iOS | Module-scoped Gradle verifies; iOS structural verifies only | | 7 | 15, 16 ‖ 23, 24 | Android ‖ iOS | Still module-scoped / structural — no <code>:app</code> compile, no <code>xcodebuild</code> | | 8 | 17, 18 ‖ 25 | Android ‖ iOS | Task 18 is the first <code>:app:compileDebugKotlin</code> (it restores exhaustiveness) | | 9 | 19 ‖ 26 | Android ‖ iOS | Depends on 18 / on 24+25 | | 10 | <strong>20</strong> | Android | <strong>BARRIER</strong> — <code>:app</code> compile + assembleDebug + lint + unit tests + Debug-bypass inspection | | 11 | <strong>27</strong> | iOS | <strong>BARRIER</strong> — the only <code>xcodebuild</code> in the plan | | 12 | <strong>28</strong> | all three | <strong>BARRIER</strong> — both-platform Debug inspection, then the metered matrix |</p>
+<p>Within-wave source-file disjointness holds in every wave (Task 24 no longer lists <code>SuperwallPaywallContract.swift</code>, and remains disjoint from 15/16/23). Build-output contention is eliminated: exactly one <code>xcodebuild</code> at Task 27 plus the chained re-run at Task 28 after 27 completes, and every Android verify before Task 18 is module-scoped.</p>
+<p>Tier distribution: <code>mechanical</code> 1, 2, 3, 4, 5, 6, 13, 15, 16, 21, 23 (11); <code>standard</code> 8, 9, 10, 11, 12, 14, 18, 19, 20, 22, 25, 26, 27, 28 (14); <code>frontier</code> 7, 17, 24 (3).</p>
+<p>---</p>
+<h4>Closing note — the deferred C3 wave (NOT a task; do not implement)</h4>
+<p>Spec §0 defers blocking non-workout writes (notes, body measurements, journal create/rename/delete, profile edits, photo upload, custom-exercise creation). If the human asks for it, it is a purely <strong>additive</strong> wave against files this plan does not modify:</p>
+<ol>
+<li>Add one date-free overload to <code>WorkoutQuotaGate</code> — <code>suspend fun canWrite(userId: String): Boolean</code>, true unless the quota is <code>Metered</code> and exhausted (these writes carry no workout date, so neither C1 carve-out applies). This is the only edit to a file this plan touches.</li>
+<li>Six presentation sites per platform get a 3-line preflight plus the paywall entry point this plan already builds (<code>SubscriptionPaywallDestination.inAppRoute()</code> on Android, <code>presentQuotaPaywall(from:)</code> on iOS): the note editor, the body-measurement add/edit sheet, the journal create/edit screen, the profile edit screen, the photo picker, and the custom-exercise creation screen.</li>
+<li>Roughly one task per platform, plus re-running the two existing platform barriers.</li>
+</ol>
+<p>Nothing in Tasks 1–28 needs to change to accommodate it.</p></div>
+<details class="checks">
+  <summary>Structural checks (0)</summary>
+  <ul><li class="ok">none — plan is structurally clean</li></ul>
+</details>

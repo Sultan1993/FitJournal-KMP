@@ -1,0 +1,270 @@
+{
+  "lastUpdated": "2026-08-03T20:34:56.896808+00:00",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "KMP metered-day SQL, datasource, repository",
+      "description": "Add the two quota queries and expose them through the datasource and `RecordRepository` with no schema change.",
+      "blockedBy": [],
+      "status": "completed"
+    },
+    {
+      "id": 2,
+      "subject": "KMP WorkoutQuota + FreeQuotaSettings",
+      "description": "Add the sealed quota state and the global settings holder the platforms push into.",
+      "blockedBy": [],
+      "status": "completed"
+    },
+    {
+      "id": 3,
+      "subject": "KMP quota strings in four locales",
+      "description": "Add the four localized meter strings as Compose resources, with correct ru/uk plural categories.",
+      "blockedBy": [],
+      "status": "completed"
+    },
+    {
+      "id": 4,
+      "subject": "KMP WorkoutQuotaGate",
+      "description": "Implement the single quota decision point: quota state, its Flow, and the write precondition.",
+      "blockedBy": [
+        0,
+        1
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 5,
+      "subject": "KMP WorkoutQuotaCard composable",
+      "description": "Build the three-tier meter card as shared Compose, using only existing theme tokens and the new plurals.",
+      "blockedBy": [
+        1,
+        2
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 6,
+      "subject": "KMP WorkoutContract quota and paywall additions",
+      "description": "Add the quota field, the paywall effect and the meter action to the shared Workout contract, defaulted so the file compiles standalone.",
+      "blockedBy": [
+        1
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 7,
+      "subject": "KMP gate the eight write actions in WorkoutViewModel",
+      "description": "Publish the quota into `ViewState` and route the eight training-data write actions through the gate, with the in-progress carve-out.",
+      "blockedBy": [
+        3,
+        5
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 8,
+      "subject": "KMP render the meter card in WorkoutScreen",
+      "description": "Show the meter above the pager when metered, and wire its tap to the paywall action.",
+      "blockedBy": [
+        4,
+        5
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 9,
+      "subject": "KMP RED/GREEN WorkoutQuotaGateTest",
+      "description": "Write every gate assertion from spec \u00a712 first, observe the initial run, then fix forward \u2014 proving the day unit, tombstones, both cutoffs, the sentinel and the pre-cutoff-edit regression.",
+      "blockedBy": [
+        3
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 10,
+      "subject": "KMP RED/GREEN WorkoutQuotaCardTest",
+      "description": "Write every meter-card assertion first, observe the initial run, then fix forward \u2014 proving the three tiers and that copy follows the Remote-Config limit.",
+      "blockedBy": [
+        4
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 11,
+      "subject": "KMP RED/GREEN WorkoutQuotaGatingTest",
+      "description": "Write every gating assertion first, observe the initial run, then fix forward \u2014 proving exactly eight gated actions, carve-out C2, and the one-attributed-date bound.",
+      "blockedBy": [
+        6
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 12,
+      "subject": "BARRIER \u2014 KMP assemble and full jvmTest green",
+      "description": "Prove the whole shared module compiles for every target and the entire jvmTest suite passes, before either platform's glue starts.",
+      "blockedBy": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 13,
+      "subject": "Android four Remote Config keys and defaults",
+      "description": "Declare the four quota/placement Remote Config keys and their bundled defaults.",
+      "blockedBy": [
+        11
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 14,
+      "subject": "Android entitlement push and metering-cutoff stamp",
+      "description": "Push entitlement into shared code from the one choke point, and implement the four-rule personal-cutoff stamp at the one demotion site.",
+      "blockedBy": [
+        11
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 15,
+      "subject": "Android push quota config at launch",
+      "description": "Feed the Remote Config quota values into shared code once per launch, and make the monetization-disabled path unmetered.",
+      "blockedBy": [
+        12
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 16,
+      "subject": "Android paywall origin argument and placement selection",
+      "description": "Let the existing paywall screen serve both surfaces \u2014 dismissing back in-app, and selecting the correct Superwall placement per origin.",
+      "blockedBy": [
+        12
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 17,
+      "subject": "Android declinable Superwall paywall screen",
+      "description": "Make the paywall dismissable \u2014 remove the back-swallowing reflection hack, add a presentation handler with an idempotent finish, and register the ViewModel-selected placement.",
+      "blockedBy": [
+        12,
+        15
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 18,
+      "subject": "Android ShowPaywall effect in the CMP host",
+      "description": "Perform the shared screen's new paywall effect, restoring the exhaustive `when (effect)` that the contract change broke \u2014 the first task permitted to compile `:app`.",
+      "blockedBy": [
+        15
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 19,
+      "subject": "Android gate repeat-workout and add-to-date",
+      "description": "Gate the two record-creating entry points that do not go through the shared Workout ViewModel.",
+      "blockedBy": [
+        17
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 20,
+      "subject": "BARRIER \u2014 Android build, lint, Debug-bypass check",
+      "description": "Prove the Android app builds and lints clean, that nothing forbidden was touched, and \u2014 by launching an **unmodified Debug build** \u2014 that spec \u00a712 criterion 23 holds: no meter card appears.",
+      "blockedBy": [
+        13,
+        14,
+        16,
+        17,
+        18
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 21,
+      "subject": "iOS four FirebaseKey cases and defaults",
+      "description": "Declare the four quota/placement Remote Config keys and defaults on iOS.",
+      "blockedBy": [
+        11
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 22,
+      "subject": "iOS entitlement push and metering-cutoff stamp",
+      "description": "Mirror Android exactly: push entitlement from the one choke point and stamp the personal cutoff at the one demotion site, awaited before the launch gate navigates.",
+      "blockedBy": [
+        11
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 23,
+      "subject": "iOS push quota config at launch",
+      "description": "Feed the Remote Config quota values into shared code once per launch, and make the monetization-disabled path unmetered.",
+      "blockedBy": [
+        20
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 24,
+      "subject": "iOS declinable paywall and reusable quota presenter",
+      "description": "Make the paywall dismissable with a one-shot finish, let the coordinator proceed on decline, and expose one reusable non-private presenter for the in-app quota surface.",
+      "blockedBy": [
+        20
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 25,
+      "subject": "iOS ShowPaywall effect on the CMP workout screen",
+      "description": "Perform the shared screen's new paywall effect by presenting the reusable quota paywall, so dismissing returns to the workout.",
+      "blockedBy": [
+        23
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 26,
+      "subject": "iOS gate repeat-workout and add-to-date",
+      "description": "Gate the two record-creating entry points outside the shared Workout ViewModel, using each screen's existing `LiveData<State>` \u2192 observer \u2192 UI pattern.",
+      "blockedBy": [
+        23,
+        24
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 27,
+      "subject": "BARRIER \u2014 iOS arm64 simulator build",
+      "description": "The single `xcodebuild` in the plan. Prove the iOS app builds clean under strict concurrency with the shared quota changes, and that nothing forbidden was touched.",
+      "blockedBy": [
+        21,
+        22,
+        23,
+        24,
+        25
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 28,
+      "subject": "BARRIER \u2014 Debug-bypass then metered matrix",
+      "description": "Verify the unmodified-Debug bypass on **both** platforms, then run every *runnable* M-case against a genuinely metered build, and emit M23/M24 as a named human-owned rollout blocker.",
+      "blockedBy": [
+        19,
+        26
+      ],
+      "status": "pending"
+    }
+  ]
+}

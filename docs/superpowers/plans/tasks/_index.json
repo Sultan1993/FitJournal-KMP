@@ -1,0 +1,585 @@
+{
+  "1": {
+    "subject": "KMP metered-day SQL, datasource, repository",
+    "tier": "mechanical",
+    "files": [
+      "Multiplatform/shared/src/commonMain/sqldelight/kz/maestrosultan/fitjournal/data/db/WorkoutRecords.sq",
+      "Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/data/record/datasource/WorkoutsDBDataSource.kt",
+      "Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/workout/RecordRepository.kt",
+      "Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/data/record/repository/DefaultRecordRepository.kt"
+    ],
+    "blockedBy": [],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/Multiplatform && ./gradlew :shared:assemble",
+    "ac": [
+      "Exactly two new named queries added; no DDL change",
+      "Count query groups by (journalId, date) and filters with HAVING MIN(createdDate) >= ?, not a per-row WHERE",
+      "No .sqm file created or modified",
+      "upsertWorkoutRecordFromRemote* byte-identical to HEAD",
+      "All three RecordRepository additions have fail-open defaults; no existing test file edited",
+      ":shared:assemble succeeds"
+    ]
+  },
+  "2": {
+    "subject": "KMP WorkoutQuota + FreeQuotaSettings",
+    "tier": "mechanical",
+    "files": [
+      "Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/quota/WorkoutQuota.kt",
+      "Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/quota/FreeQuotaSettings.kt"
+    ],
+    "blockedBy": [],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/Multiplatform && ./gradlew :shared:assemble",
+    "ac": [
+      "WorkoutQuota is sealed with exactly Unlimited and Metered(used, limit); remaining clamps at 0",
+      "FreeQuotaSettings exposes exactly config, effectiveCutoff, setRemoteConfig, setPersonalCutoff, isEntitled, setEntitled",
+      "effectiveCutoff is null when globalCutoff is null, else max(global, personal)",
+      "Neither config setter can throw (runCatching on both parses)",
+      ":shared:assemble succeeds"
+    ]
+  },
+  "3": {
+    "subject": "KMP quota strings in four locales",
+    "tier": "mechanical",
+    "files": [
+      "Multiplatform/shared/src/commonMain/composeResources/values/strings.xml",
+      "Multiplatform/shared/src/commonMain/composeResources/values-de/strings.xml",
+      "Multiplatform/shared/src/commonMain/composeResources/values-ru/strings.xml",
+      "Multiplatform/shared/src/commonMain/composeResources/values-uk/strings.xml"
+    ],
+    "blockedBy": [],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/Multiplatform && ./gradlew :shared:assemble",
+    "ac": [
+      "All four files contain the four new resource names",
+      "ru and uk carry one/few/many/other; en and de carry one/other",
+      "Every XML file well-formed; no existing entry modified or reordered",
+      ":shared:assemble generates Res.plurals.quota_workouts_left, Res.plurals.quota_exhausted_title, Res.string.quota_exhausted_subtitle, Res.string.quota_upgrade_cta"
+    ]
+  },
+  "4": {
+    "subject": "KMP WorkoutQuotaGate",
+    "tier": "mechanical",
+    "files": [
+      "Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/quota/WorkoutQuotaGate.kt"
+    ],
+    "blockedBy": [
+      1,
+      2
+    ],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/Multiplatform && ./gradlew :shared:assemble",
+    "ac": [
+      "getQuota returns Unlimited for entitled, null global cutoff, limit<=0, and future effective cutoff",
+      "getQuota otherwise returns Metered(countMeteredWorkoutDays(userId, effectiveCutoff), limit)",
+      "canWriteWorkout implements the four allow-rules in order and returns false for a non-today date when exhausted",
+      "No @Throws and no throwing normal path",
+      ":shared:assemble succeeds"
+    ]
+  },
+  "5": {
+    "subject": "KMP WorkoutQuotaCard composable",
+    "tier": "mechanical",
+    "files": [
+      "Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/components/WorkoutQuotaCard.kt"
+    ],
+    "blockedBy": [
+      2,
+      3
+    ],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/Multiplatform && ./gradlew :shared:assemble",
+    "ac": [
+      "Parameter type is WorkoutQuota.Metered so Unlimited cannot render it",
+      "Three tiers implemented: >=4 neutral, 1-3 urgent with Upgrade, 0 exhausted with accent border plus subtitle",
+      "Exhausted title formats from quota.limit; remaining title from quota.remaining; both pass the count twice",
+      "No new color or typography token introduced",
+      ":shared:assemble succeeds"
+    ]
+  },
+  "6": {
+    "subject": "KMP WorkoutContract quota and paywall additions",
+    "tier": "mechanical",
+    "files": [
+      "Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/WorkoutContract.kt"
+    ],
+    "blockedBy": [
+      2
+    ],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/Multiplatform && ./gradlew :shared:assemble",
+    "ac": [
+      "ViewState.quota exists with default WorkoutQuota.Unlimited; ViewState.initial() unchanged",
+      "ViewAction.TapMeter and ViewEffect.ShowPaywall(reason) added",
+      "PaywallReason is a top-level enum with exactly QuotaExhausted and MeterTapped",
+      ":shared:assemble succeeds standalone",
+      "No else branch added to any shared when(effect)"
+    ]
+  },
+  "7": {
+    "subject": "KMP gate the eight write actions in WorkoutViewModel",
+    "tier": "frontier",
+    "files": [
+      "Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/WorkoutViewModel.kt",
+      "Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/WorkoutViewModelFactory.kt"
+    ],
+    "blockedBy": [
+      4,
+      6
+    ],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/Multiplatform && ./gradlew :shared:assemble",
+    "ac": [
+      "ViewState.quota populated from quotaGate.getQuotaFlow and re-emits on workoutRecords writes",
+      "Main combine stays a typed overload (<=5 args); no vararg combine introduced",
+      "Exactly the eight listed actions gated; DeleteRecord and Reorder NOT gated",
+      "gatedWrite computes running as runningSession?.date == selectedDate, not date == today",
+      "TapMeter emits ShowPaywall(MeterTapped)",
+      "createWorkoutViewModel parameter list unchanged",
+      "All pre-existing ViewModel behaviour preserved",
+      ":shared:assemble succeeds"
+    ]
+  },
+  "8": {
+    "subject": "KMP render the meter card in WorkoutScreen",
+    "tier": "standard",
+    "files": [
+      "Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/WorkoutScreen.kt"
+    ],
+    "blockedBy": [
+      5,
+      6
+    ],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/Multiplatform && ./gradlew :shared:assemble",
+    "ac": [
+      "Card renders only for WorkoutQuota.Metered, between the calendar and the pager in the Column",
+      "Tap dispatches WorkoutContract.ViewAction.TapMeter",
+      "No other composable modified; the + button stays enabled at all times",
+      ":shared:assemble succeeds"
+    ]
+  },
+  "9": {
+    "subject": "KMP RED/GREEN WorkoutQuotaGateTest",
+    "tier": "standard",
+    "files": [
+      "Multiplatform/shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/domain/quota/WorkoutQuotaGateTest.kt",
+      "Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/quota/WorkoutQuotaGate.kt",
+      "Multiplatform/shared/src/commonMain/sqldelight/kz/maestrosultan/fitjournal/data/db/WorkoutRecords.sq",
+      "Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/data/record/datasource/WorkoutsDBDataSource.kt",
+      "Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/data/record/repository/DefaultRecordRepository.kt"
+    ],
+    "blockedBy": [
+      4
+    ],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/Multiplatform && ./gradlew :shared:jvmTest --tests \"kz.maestrosultan.fitjournal.domain.quota.WorkoutQuotaGateTest\"",
+    "ac": [
+      "RED observation recorded: first-run failures listed verbatim before any fix",
+      "Cases 1,2,3,4,5,6,7,7b,7c,8,9,10,11,12 all present and passing",
+      "Cases 6 (pre-cutoff-edit) and 7b (9999 sentinel) recognisably named",
+      "Case 9 asserts canWriteWorkout is false for an earlier date that has records",
+      "Runs against the real DefaultRecordRepository over newTestDb(), not a fake",
+      "FreeQuotaSettings reset in @BeforeTest and @AfterTest",
+      "No existing test file modified; no new test dependency added",
+      "Repairs confined to logic in the four declared repair-only files"
+    ]
+  },
+  "10": {
+    "subject": "KMP RED/GREEN WorkoutQuotaCardTest",
+    "tier": "standard",
+    "files": [
+      "Multiplatform/shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/ui/workout/WorkoutQuotaCardTest.kt",
+      "Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/components/WorkoutQuotaCard.kt"
+    ],
+    "blockedBy": [
+      5
+    ],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/Multiplatform && ./gradlew :shared:jvmTest --tests \"kz.maestrosultan.fitjournal.ui.workout.WorkoutQuotaCardTest\"",
+    "ac": [
+      "RED observation recorded before any fix",
+      "Cases 13, 14, 15 and an onClick case all passing",
+      "Case 14 asserts absence of '10' as well as presence of '7'",
+      "Case 15 pins the urgent-tier boundary at remaining 3 vs 4",
+      "Uses the existing shared Compose jvmTest harness; no new test dependency",
+      "No existing test file modified"
+    ]
+  },
+  "11": {
+    "subject": "KMP RED/GREEN WorkoutQuotaGatingTest",
+    "tier": "standard",
+    "files": [
+      "Multiplatform/shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/ui/workout/WorkoutQuotaGatingTest.kt",
+      "Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/WorkoutViewModel.kt"
+    ],
+    "blockedBy": [
+      7
+    ],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/Multiplatform && ./gradlew :shared:jvmTest --tests \"kz.maestrosultan.fitjournal.ui.workout.WorkoutQuotaGatingTest\"",
+    "ac": [
+      "RED observation recorded before any fix",
+      "All eight gated actions covered individually, each asserting paywall emitted AND no write performed",
+      "Case 17 proves DeleteRecord and Reorder still write while exhausted",
+      "Case 18b covers both selectedDate values against a yesterday-dated running session",
+      "TapMeter emits ShowPaywall(MeterTapped); viewState.quota reflects Metered/Unlimited",
+      "FreeQuotaSettings reset per test and dispose() called in teardown",
+      "No existing test file modified; no new test dependency"
+    ]
+  },
+  "12": {
+    "subject": "BARRIER \u2014 KMP assemble and full jvmTest green",
+    "tier": "standard",
+    "files": [
+      "Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/quota/WorkoutQuotaGate.kt",
+      "Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/WorkoutViewModel.kt",
+      "Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/WorkoutScreen.kt",
+      "Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/data/record/repository/DefaultRecordRepository.kt"
+    ],
+    "blockedBy": [
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/Multiplatform && ./gradlew :shared:assemble :shared:jvmTest :shared:linkDebugFrameworkIosSimulatorArm64",
+    "ac": [
+      ":shared:assemble succeeds",
+      ":shared:jvmTest fully green including all pre-existing suites unmodified",
+      ":shared:linkDebugFrameworkIosSimulatorArm64 succeeds",
+      "git diff --stat shows no .sqm, no upsertWorkoutRecordFromRemote* change, no SyncOrchestrator/schema.graphql/generated-model/MigrationViewModel/DefaultAWSUserMigrator touch",
+      "No existing jvmTest file edited by this task"
+    ]
+  },
+  "13": {
+    "subject": "Android four Remote Config keys and defaults",
+    "tier": "mechanical",
+    "files": [
+      "Android/common/remoteconfig/src/main/kotlin/kz/maestrosultan/fitjournal/common/remoteconfig/domain/RemoteConfigKey.kt",
+      "Android/common/remoteconfig/src/main/res/xml/remote_config_defaults.xml"
+    ],
+    "blockedBy": [
+      12
+    ],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/Android && ./gradlew :common:remoteconfig:compileDebugKotlin && test $(grep -c 'free_workout_quota\\|paywall_placement' common/remoteconfig/src/main/kotlin/kz/maestrosultan/fitjournal/common/remoteconfig/domain/RemoteConfigKey.kt) -eq 4 && test $(grep -c '<key>free_workout_quota</key>\\|<key>free_workout_quota_started_at</key>\\|<key>paywall_placement</key>\\|<key>paywall_placement_quota</key>' common/remoteconfig/src/main/res/xml/remote_config_defaults.xml) -eq 4 && grep -q '<value>9999-01-01T00:00:00Z</value>' common/remoteconfig/src/main/res/xml/remote_config_defaults.xml",
+    "ac": [
+      "Four constants exist with exactly the pinned key strings",
+      "Four XML entries exist with defaults 10, 9999-01-01T00:00:00Z, paywall_final, paywall_final",
+      "XML well-formed; no existing entry modified or reordered",
+      ":common:remoteconfig:compileDebugKotlin succeeds"
+    ]
+  },
+  "14": {
+    "subject": "Android entitlement push and metering-cutoff stamp",
+    "tier": "standard",
+    "files": [
+      "Android/common/user/src/main/kotlin/kz/maestrosultan/fitjournal/common/user/domain/store/SubscriptionStore.kt",
+      "Android/common/user/src/main/kotlin/kz/maestrosultan/fitjournal/common/user/data/store/DefaultSubscriptionStore.kt",
+      "Android/feature/subscription/src/main/kotlin/kz/maestrosultan/fitjournal/feature/subscription/data/service/SuperwallController.kt",
+      "Android/feature/subscription/src/main/kotlin/kz/maestrosultan/fitjournal/feature/subscription/data/controller/DefaultSubscriptionController.kt"
+    ],
+    "blockedBy": [
+      12
+    ],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/Android && ./gradlew :feature:subscription:compileDebugKotlin && rg -U 'stampMeteringCutoffIfNeeded\\(cached\\)[\\s\\S]*?deactivateSubscription\\(\\)' feature/subscription/src/main/kotlin/kz/maestrosultan/fitjournal/feature/subscription/data/controller/DefaultSubscriptionController.kt && grep -q 'runCatching { qonversionController.hasEverHadSubscription() }' feature/subscription/src/main/kotlin/kz/maestrosultan/fitjournal/feature/subscription/data/controller/DefaultSubscriptionController.kt && test $(grep -c 'FreeQuotaSettings.setEntitled' feature/subscription/src/main/kotlin/kz/maestrosultan/fitjournal/feature/subscription/data/service/SuperwallController.kt) -eq 2 && test $(grep -c 'FreeQuotaSettings.setPersonalCutoff' feature/subscription/src/main/kotlin/kz/maestrosultan/fitjournal/feature/subscription/data/service/SuperwallController.kt) -eq 1 && test $(grep -c 'FreeQuotaSettings.setPersonalCutoff' feature/subscription/src/main/kotlin/kz/maestrosultan/fitjournal/feature/subscription/data/controller/DefaultSubscriptionController.kt) -eq 1 && grep -q 'free_quota_resumed_at_' common/user/src/main/kotlin/kz/maestrosultan/fitjournal/common/user/data/store/DefaultSubscriptionStore.kt",
+    "ac": [
+      "setEntitled called from SuperwallController.activateSubscription/deactivateSubscription plus the Task 15 monetization-disabled branch, and no other Android site",
+      "setPersonalCutoff called from exactly two places: activateSubscription(null) and stampMeteringCutoffIfNeeded(always)",
+      "Stamp written at most once per user and re-pushed on every launch",
+      "hasEverHadSubscription wrapped so any throw yields no stamp",
+      "Store key is free_quota_resumed_at_<firebaseUid>; null removes it",
+      "checkSubscription()'s offline fail-open behaviour unchanged",
+      "Structural verify passes: stamp precedes deactivateSubscription; setEntitled x2; setPersonalCutoff x1 per file"
+    ]
+  },
+  "15": {
+    "subject": "Android push quota config at launch",
+    "tier": "mechanical",
+    "files": [
+      "Android/feature/configuration/src/main/kotlin/kz/maestrosultan/fitjournal/feature/configuration/presentation/ConfigurationViewModel.kt"
+    ],
+    "blockedBy": [
+      13
+    ],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/Android && ./gradlew :feature:configuration:compileDebugKotlin && test $(grep -c 'FreeQuotaSettings.setRemoteConfig' feature/configuration/src/main/kotlin/kz/maestrosultan/fitjournal/feature/configuration/presentation/ConfigurationViewModel.kt) -eq 1 && test $(grep -c 'FreeQuotaSettings.setEntitled(true)' feature/configuration/src/main/kotlin/kz/maestrosultan/fitjournal/feature/configuration/presentation/ConfigurationViewModel.kt) -eq 1 && ! grep -q 'setPersonalCutoff' feature/configuration/src/main/kotlin/kz/maestrosultan/fitjournal/feature/configuration/presentation/ConfigurationViewModel.kt && rg -U 'FreeQuotaSettings.setRemoteConfig\\([\\s\\S]*?checkApp\\(\\)' feature/configuration/src/main/kotlin/kz/maestrosultan/fitjournal/feature/configuration/presentation/ConfigurationViewModel.kt",
+    "ac": [
+      "setRemoteConfig called exactly once, inside the RC-ready callback, before checkApp()",
+      "Only limit + global cutoff pushed here; setPersonalCutoff absent from this file",
+      "setEntitled(true) called exactly once, in the monetization-disabled branch",
+      "No change to routing, diagnostics steps, or the subscription gate",
+      ":feature:configuration:compileDebugKotlin succeeds"
+    ]
+  },
+  "16": {
+    "subject": "Android paywall origin argument and placement selection",
+    "tier": "mechanical",
+    "files": [
+      "Android/feature/subscription/src/main/kotlin/kz/maestrosultan/fitjournal/feature/subscription/presentation/SubscriptionPaywallDestination.kt",
+      "Android/feature/subscription/src/main/kotlin/kz/maestrosultan/fitjournal/feature/subscription/presentation/SubscriptionPaywallViewModel.kt",
+      "Android/feature/subscription/build.gradle.kts"
+    ],
+    "blockedBy": [
+      13
+    ],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/Android && ./gradlew :feature:subscription:compileDebugKotlin && grep -q 'defaultValue = ORIGIN_LAUNCH' feature/subscription/src/main/kotlin/kz/maestrosultan/fitjournal/feature/subscription/presentation/SubscriptionPaywallDestination.kt && grep -q 'NavType.StringType' feature/subscription/src/main/kotlin/kz/maestrosultan/fitjournal/feature/subscription/presentation/SubscriptionPaywallDestination.kt && grep -q 'PAYWALL_PLACEMENT_QUOTA' feature/subscription/src/main/kotlin/kz/maestrosultan/fitjournal/feature/subscription/presentation/SubscriptionPaywallViewModel.kt && grep -q 'RemoteConfigKey.PAYWALL_PLACEMENT)' feature/subscription/src/main/kotlin/kz/maestrosultan/fitjournal/feature/subscription/presentation/SubscriptionPaywallViewModel.kt && grep -q 'composeNavigator.navigateUp()' feature/subscription/src/main/kotlin/kz/maestrosultan/fitjournal/feature/subscription/presentation/SubscriptionPaywallViewModel.kt",
+    "ac": [
+      "arguments overridden with navArgument(PARAM_ORIGIN) { NavType.StringType; defaultValue = ORIGIN_LAUNCH }",
+      "launchRoute() and inAppRoute() return exactly the pinned strings",
+      "placement resolves to PAYWALL_PLACEMENT_QUOTA for inApp and PAYWALL_PLACEMENT otherwise; both keys consumed",
+      "finishPaywall() navigateUp() for inApp, unchanged popUpTo(0) navigation for launch",
+      ":feature:subscription:compileDebugKotlin succeeds"
+    ]
+  },
+  "17": {
+    "subject": "Android declinable Superwall paywall screen",
+    "tier": "frontier",
+    "files": [
+      "Android/feature/subscription/src/main/kotlin/kz/maestrosultan/fitjournal/feature/subscription/presentation/SubscriptionPaywallScreen.kt"
+    ],
+    "blockedBy": [
+      13,
+      16
+    ],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/Android && ./gradlew :feature:subscription:compileDebugKotlin && F=feature/subscription/src/main/kotlin/kz/maestrosultan/fitjournal/feature/subscription/presentation/SubscriptionPaywallScreen.kt && ! grep -q 'overrideBackPressed\\|getSuperwallActivity\\|java.lang.reflect' $F && grep -q 'import com.superwall.sdk.paywall.presentation.PaywallPresentationHandler' $F && test $(grep -c 'onDismiss\\|onSkip\\|onError' $F) -eq 3 && grep -q 'var finished = false' $F && rg -U 'LaunchedEffect\\(placement\\)[\\s\\S]*?Superwall.instance.register' $F && ! grep -q 'paywall_final\\|RemoteConfigKey' $F",
+    "ac": [
+      "overrideBackPressed, getSuperwallActivity and their exclusive imports removed",
+      "register() called from a LaunchedEffect, not a composable body",
+      "onDismiss, onSkip and onError all present and routed to one finish path; finished flag caps it at one Finish per entry",
+      "Placement comes from viewModel.placement; no Remote Config read and no paywall_final literal in this file",
+      ":feature:subscription:compileDebugKotlin succeeds",
+      "Dashboard prerequisite recorded: onboarding placement Non Gated with a visible dismissal element"
+    ]
+  },
+  "18": {
+    "subject": "Android ShowPaywall effect in the CMP host",
+    "tier": "standard",
+    "files": [
+      "Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/main/presentation/WorkoutCmpHostViewModel.kt",
+      "Android/app/build.gradle.kts"
+    ],
+    "blockedBy": [
+      16
+    ],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/Android && ./gradlew :app:compileDebugKotlin && F=app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/main/presentation/WorkoutCmpHostViewModel.kt && grep -q 'quotaGate = WorkoutQuotaGate(recordRepository)' $F && grep -q 'SubscriptionPaywallDestination.inAppRoute()' $F && ! rg -U 'ViewEffect.ShowPaywall[\\s\\S]{0,200}popUpTo' $F",
+    "ac": [
+      "quotaGate = WorkoutQuotaGate(recordRepository) passed to the shared ViewModel",
+      "when(effect) exhaustive again; new branch navigates to inAppRoute() with no popUpTo",
+      "No else branch added",
+      "All pre-existing effect branches unchanged",
+      ":app:compileDebugKotlin succeeds (first app compile since Task 6 broke exhaustiveness)"
+    ]
+  },
+  "19": {
+    "subject": "Android gate repeat-workout and add-to-date",
+    "tier": "standard",
+    "files": [
+      "Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/details/presentation/WorkoutDetailsViewModel.kt",
+      "Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/exercise/details/presentation/calendar/ExerciseDetailsCalendarViewModel.kt"
+    ],
+    "blockedBy": [
+      18
+    ],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/Android && ./gradlew :app:compileDebugKotlin && A=app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/details/presentation/WorkoutDetailsViewModel.kt && B=app/src/main/kotlin/kz/maestrosultan/fitjournal/exercise/details/presentation/calendar/ExerciseDetailsCalendarViewModel.kt && rg -U 'canWriteWorkout[\\s\\S]*?repeatWorkout\\(workoutDate\\)' $A && rg -U 'canWriteWorkout[\\s\\S]*?importExercisesToWorkoutUseCase\\(' $B && test $(grep -c 'SubscriptionPaywallDestination.inAppRoute()' $A $B | awk -F: '{s+=$2} END {print s}') -eq 2",
+    "ac": [
+      "Both entry points preflight canWriteWorkout for exactly one destination day before writing",
+      "On refusal each navigates to inAppRoute(), clears loading, and performs no write",
+      "No use case or repository modified",
+      "Existing success paths byte-for-byte unchanged",
+      ":app:compileDebugKotlin succeeds"
+    ]
+  },
+  "20": {
+    "subject": "BARRIER \u2014 Android build, lint, Debug-bypass check",
+    "tier": "standard",
+    "files": [
+      "Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/main/presentation/WorkoutCmpHostViewModel.kt",
+      "Android/feature/configuration/src/main/kotlin/kz/maestrosultan/fitjournal/feature/configuration/presentation/ConfigurationViewModel.kt",
+      "Android/feature/subscription/src/main/kotlin/kz/maestrosultan/fitjournal/feature/subscription/presentation/SubscriptionPaywallScreen.kt",
+      "Android/feature/configuration/src/test/kotlin/kz/maestrosultan/fitjournal/feature/migration/ConfigurationGateTest.kt",
+      "Android/app/build.gradle.kts"
+    ],
+    "blockedBy": [
+      14,
+      15,
+      17,
+      18,
+      19
+    ],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/Android && ./gradlew :app:compileDebugKotlin assembleDebug lint :feature:configuration:testDebugUnitTest :app:installDebug",
+    "ac": [
+      "compileDebugKotlin, assembleDebug and lint all succeed",
+      "feature:configuration unit tests pass; only change to ConfigurationGateTest.kt is an added constructor mock with no assertion changed",
+      "Debug-bypass inspection actually performed: unmodified Debug build installed and launched, Workout screen shows no meter card on a logged date and an empty date, screenshot captured at /tmp/fj-debug-nometer.png",
+      "git diff --stat shows no SyncOrchestrator/schema.graphql/generated-model/MigrationViewModel/DefaultAWSUserMigrator touch and no .sqm",
+      "Legacy workout/main/presentation/WorkoutViewModel.kt unmodified"
+    ]
+  },
+  "21": {
+    "subject": "iOS four FirebaseKey cases and defaults",
+    "tier": "mechanical",
+    "files": [
+      "iOS/FitJournal/Core/Utils/FirebaseRemoteConfig.swift"
+    ],
+    "blockedBy": [
+      12
+    ],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/iOS && F=FitJournal/Core/Utils/FirebaseRemoteConfig.swift && test $(grep -c '^    case freeWorkoutQuota$\\|^    case freeWorkoutQuotaStartedAt$\\|^    case paywallPlacement$\\|^    case paywallPlacementQuota$' $F) -eq 4 && test $(grep -c 'FirebaseKey.freeWorkoutQuota.name:\\|FirebaseKey.freeWorkoutQuotaStartedAt.name:\\|FirebaseKey.paywallPlacement.name:\\|FirebaseKey.paywallPlacementQuota.name:' $F) -eq 4 && grep -q '\"9999-01-01T00:00:00Z\" as NSObject' $F && grep -q '10 as NSNumber' $F",
+    "ac": [
+      "Four cases spelled exactly freeWorkoutQuota, freeWorkoutQuotaStartedAt, paywallPlacement, paywallPlacementQuota",
+      "All four default mappings present with 10, 9999-01-01T00:00:00Z, paywall_final, paywall_final",
+      "No existing case or default modified",
+      "No xcodebuild in this task (build-rule B1); compilation proven at Task 27"
+    ]
+  },
+  "22": {
+    "subject": "iOS entitlement push and metering-cutoff stamp",
+    "tier": "standard",
+    "files": [
+      "iOS/FitJournal/User/Domain/Storage/UserStorage.swift",
+      "iOS/FitJournal/Subscription/Data/Service/SuperwallController.swift",
+      "iOS/FitJournal/Subscription/Domain/UseCase/ConfigureSubscriptionUseCase.swift"
+    ],
+    "blockedBy": [
+      12
+    ],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/iOS && C=FitJournal/Subscription/Domain/UseCase/ConfigureSubscriptionUseCase.swift && S=FitJournal/Subscription/Data/Service/SuperwallController.swift && U=FitJournal/User/Domain/Storage/UserStorage.swift && grep -q 'private func failOpen(_ cached: Subscription?) async' $C && rg -U 'await stampMeteringCutoffIfNeeded\\(cached\\)[\\s\\S]*?deactivateSubscription\\(\\)' $C && test $(grep -c 'await failOpen(cached)' $C) -eq 2 && ! rg -q 'Task \\{[^}]*stampMeteringCutoffIfNeeded' $C && grep -q 'if existing == nil {' $C && grep -q '(try? await qonversionController.hasEverHadSubscription()) == true' $C && test $(grep -c 'setPersonalCutoff' $C) -eq 1 && test $(grep -c 'setPersonalCutoff' $S) -eq 1 && test $(grep -c 'setEntitled(entitled:' $S) -eq 2 && grep -q 'freeQuotaResumedAtPrefix' $U && grep -q 'defaults.removeObject(forKey: key)' $U",
+    "ac": [
+      "setEntitled called from SuperwallController.activateSubscription/deactivateSubscription plus the Task 23 monetization-disabled branch, and no other iOS site",
+      "setPersonalCutoff called exactly twice in total: activateSubscription(nil) and stampMeteringCutoffIfNeeded(always)",
+      "failOpen is async; the awaited stamp precedes deactivateSubscription(); both call sites use await failOpen(cached); no detached Task for the stamp",
+      "Stamp written at most once per uid (guarded by if existing == nil) and re-pushed every launch",
+      "hasEverHadSubscription try?-wrapped so any throw yields no stamp",
+      "UserDefaults key free_quota_resumed_at_<firebaseUid>; nil removes it via removeObject; logout() does not clear it",
+      "checkSubscription()'s offline fail-open behaviour unchanged",
+      "No xcodebuild in this task (build-rule B1); compilation proven at Task 27"
+    ]
+  },
+  "23": {
+    "subject": "iOS push quota config at launch",
+    "tier": "mechanical",
+    "files": [
+      "iOS/FitJournal/Configuration/Presentation/Configuration/ConfigurationViewModel.swift"
+    ],
+    "blockedBy": [
+      21
+    ],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/iOS && F=FitJournal/Configuration/Presentation/Configuration/ConfigurationViewModel.swift && test $(grep -c 'FreeQuotaSettings.shared.setRemoteConfig' $F) -eq 1 && rg -U 'setRemoteConfig\\([\\s\\S]*?checkIfAppIsTemporaryDisabled\\(\\)' $F && test $(grep -c 'FreeQuotaSettings.shared.setEntitled(entitled: true)' $F) -eq 1 && rg -U 'setEntitled\\(entitled: true\\)[\\s\\S]*?reason: \"subscription_disabled\"' $F && ! grep -q 'setPersonalCutoff' $F",
+    "ac": [
+      "setRemoteConfig called exactly once inside the RC-ready callback, before checkIfAppIsTemporaryDisabled()",
+      "Only limit + global cutoff pushed here; setPersonalCutoff absent from this file",
+      "setEntitled(entitled: true) called exactly once, in the monetization-disabled branch",
+      "No change to routing, FlowDiagnostics steps, or the subscription gate",
+      "No xcodebuild in this task (build-rule B1); compilation proven at Task 27"
+    ]
+  },
+  "24": {
+    "subject": "iOS declinable paywall and reusable quota presenter",
+    "tier": "frontier",
+    "files": [
+      "iOS/FitJournal/Subscription/Presentation/Superwall/SubscriptionPaywallViewController.swift",
+      "iOS/FitJournal/Subscription/Presentation/Superwall/SuperwallPaywallViewModel.swift",
+      "iOS/FitJournal/Configuration/ConfigurationCoordinator.swift"
+    ],
+    "blockedBy": [
+      21
+    ],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/iOS && V=FitJournal/Subscription/Presentation/Superwall/SubscriptionPaywallViewController.swift && M=FitJournal/Subscription/Presentation/Superwall/SuperwallPaywallViewModel.swift && rg -q '^@MainActor\\nfunc presentQuotaPaywall\\(from presenter: UIViewController\\)' -U $V && test $(grep -c 'handler.onDismiss\\|handler.onSkip\\|handler.onError' $V) -eq 3 && grep -q 'Superwall.shared.register(placement: placement, handler: handler)' $V && rg -U 'if let delegate = vc.delegate \\{[\\s\\S]*?vc.dismiss\\(animated: true\\)' $V && grep -q 'key: .paywallPlacementQuota' $V && grep -q 'key: .paywallPlacement)' $V && ! grep -q 'paywall_final' $V && grep -q 'private var hasFinished = false' $M && grep -q 'hasFinished = true' $M && ! rg -q 'paywallDidFinishWithSuccess' FitJournal && git diff --quiet -- FitJournal/Subscription/Presentation/Superwall/SuperwallPaywallContract.swift",
+    "ac": [
+      "hasFinished guard exists in the ViewModel; closePaywall emitted at most once per presentation",
+      "All three callbacks onDismiss, onSkip, onError present and routed to the same finish closure",
+      "Onboarding placement from FirebaseKey.paywallPlacement; presentQuotaPaywall uses paywallPlacementQuota; no paywall_final literal remains",
+      "paywallDidFinishWithSuccess renamed to paywallDidFinish and absent repo-wide; coordinator proceeds on decline as well as purchase",
+      ".closePaywall self-dismisses when delegate == nil",
+      "presentQuotaPaywall(from:) declared at top level, @MainActor, not private",
+      "SuperwallPaywallContract.swift unmodified",
+      "No xcodebuild in this task (build-rule B1); compilation proven at Task 27"
+    ]
+  },
+  "25": {
+    "subject": "iOS ShowPaywall effect on the CMP workout screen",
+    "tier": "standard",
+    "files": [
+      "iOS/FitJournal/Workout/Main/Presentation/WorkoutCmpViewController.swift"
+    ],
+    "blockedBy": [
+      24
+    ],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/iOS && F=FitJournal/Workout/Main/Presentation/WorkoutCmpViewController.swift && rg -U 'effect is WorkoutContractViewEffectShowPaywall \\{[\\s\\S]*?presentQuotaPaywall\\(from: self\\)' $F && test $(grep -c 'presentQuotaPaywall' $F) -eq 1 && git diff --quiet -- FitJournal/Workout/WorkoutCoordinator.swift",
+    "ac": [
+      "handle(_:) recognises WorkoutContractViewEffectShowPaywall and calls presentQuotaPaywall(from: self) inside that branch",
+      "WorkoutCmpControllerDelegate gains no method; WorkoutCoordinator.swift has no diff",
+      "No other effect branch changed",
+      "No xcodebuild in this task (build-rule B1); compilation proven at Task 27"
+    ]
+  },
+  "26": {
+    "subject": "iOS gate repeat-workout and add-to-date",
+    "tier": "standard",
+    "files": [
+      "iOS/FitJournal/Workout/Details/Presentation/WorkoutDetailsViewModel.swift",
+      "iOS/FitJournal/Workout/Details/Presentation/WorkoutDetailsViewController.swift",
+      "iOS/FitJournal/Exercises/Details/Presentation/Calendar/ExerciseDetailsCalendarViewModel.swift",
+      "iOS/FitJournal/Exercises/Details/Presentation/Calendar/ExerciseDetailsCalendarViewController.swift"
+    ],
+    "blockedBy": [
+      24,
+      25
+    ],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/iOS && A=FitJournal/Workout/Details/Presentation/WorkoutDetailsViewModel.swift && B=FitJournal/Exercises/Details/Presentation/Calendar/ExerciseDetailsCalendarViewModel.swift && rg -U 'canWriteWorkout\\([\\s\\S]*?guard allowed else \\{[\\s\\S]*?paywallRequired[\\s\\S]*?repeatWorkout.execute' $A && rg -U 'canWriteWorkout\\([\\s\\S]*?guard allowed else \\{[\\s\\S]*?paywallRequired[\\s\\S]*?importExercisesToWorkout.execute' $B && test $(grep -c 'case paywallRequired' $A) -eq 1 && test $(grep -c 'case paywallRequired' $B) -eq 1 && grep -q 'Date().kotlinLocalDate' $A && grep -q 'date.kotlinLocalDate' $B && grep -q 'presentQuotaPaywall(from: vc)' FitJournal/Workout/Details/Presentation/WorkoutDetailsViewController.swift && grep -q 'presentQuotaPaywall(from: vc)' FitJournal/Exercises/Details/Presentation/Calendar/ExerciseDetailsCalendarViewController.swift && git diff --quiet -- FitJournal/Workout/WorkoutCoordinator.swift FitJournal/Exercises/ExerciseCoordinator.swift",
+    "ac": [
+      "Both ViewModels await canWriteWorkout for one destination day, and the call appears before the write call in each file",
+      "Each refusal path emits .paywallRequired and returns, performing no write",
+      "Both ViewControllers handle .paywallRequired by resetting loading UI and calling presentQuotaPaywall(from: vc)",
+      "Both State enums gain exactly one case named paywallRequired",
+      "Dates converted with the existing .kotlinLocalDate extension; no new converter",
+      "No hand-written suspend/Flow bridge; no use case or repository modified",
+      "WorkoutCoordinator.swift and ExerciseCoordinator.swift have no diff",
+      "No xcodebuild in this task (build-rule B1); compilation proven at Task 27"
+    ]
+  },
+  "27": {
+    "subject": "BARRIER \u2014 iOS arm64 simulator build",
+    "tier": "standard",
+    "files": [
+      "iOS/FitJournal/Workout/Main/Presentation/WorkoutCmpViewController.swift",
+      "iOS/FitJournal/Subscription/Domain/UseCase/ConfigureSubscriptionUseCase.swift",
+      "iOS/FitJournal/Subscription/Presentation/Superwall/SubscriptionPaywallViewController.swift",
+      "iOS/FitJournal/Workout/Details/Presentation/WorkoutDetailsViewModel.swift",
+      "iOS/FitJournal/Exercises/Details/Presentation/Calendar/ExerciseDetailsCalendarViewModel.swift",
+      "iOS/FitJournal/Configuration/Presentation/Configuration/ConfigurationViewModel.swift"
+    ],
+    "blockedBy": [
+      22,
+      23,
+      24,
+      25,
+      26
+    ],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/iOS && xcodebuild -scheme FitJournal -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 16 Pro' -arch arm64 build && git diff --quiet -- FitJournal.xcodeproj/project.pbxproj && test $(grep -c 'await failOpen(cached)' FitJournal/Subscription/Domain/UseCase/ConfigureSubscriptionUseCase.swift) -eq 2",
+    "ac": [
+      "arm64 simulator xcodebuild succeeds with no errors",
+      "No -derivedDataPath passed and no x86_64 slice built",
+      "failOpen still async and still awaited at both call sites after any concurrency fixes",
+      "project.pbxproj unmodified",
+      "git diff --stat shows no SyncOrchestrator.swift/schema.graphql/amplify generated models/MigrationViewModel/DefaultAWSUserMigrator touch",
+      "osVersionMin and IPHONEOS_DEPLOYMENT_TARGET still agree at 18.0",
+      "No iOS test target or lint config added"
+    ]
+  },
+  "28": {
+    "subject": "BARRIER \u2014 Debug-bypass then metered matrix",
+    "tier": "standard",
+    "files": [
+      "Android/feature/subscription/src/main/kotlin/kz/maestrosultan/fitjournal/feature/subscription/domain/usecase/ShouldShowSubscriptionPaywallUseCase.kt",
+      "iOS/FitJournal/Subscription/Domain/UseCase/ShouldUseSubscriptionUseCase.swift"
+    ],
+    "blockedBy": [
+      20,
+      27
+    ],
+    "verify": "cd /Users/sultan/Development/FitJournal-paywall/Multiplatform && ./gradlew :shared:assemble :shared:jvmTest && cd /Users/sultan/Development/FitJournal-paywall/Android && ./gradlew :app:compileDebugKotlin assembleDebug lint :feature:configuration:testDebugUnitTest && git diff --quiet -- feature/subscription/src/main/kotlin/kz/maestrosultan/fitjournal/feature/subscription/domain/usecase/ShouldShowSubscriptionPaywallUseCase.kt && cd /Users/sultan/Development/FitJournal-paywall/iOS && xcodebuild -scheme FitJournal -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 16 Pro' -arch arm64 build && git diff --quiet -- FitJournal/Subscription/Domain/UseCase/ShouldUseSubscriptionUseCase.swift && test -f /tmp/fj-android-debug-nometer.png && test -f /tmp/fj-ios-debug-nometer.png",
+    "ac": [
+      "All three build/test gates green in one chained run",
+      "Pre-override Debug-bypass inspection executed on BOTH platforms with a clean tree; no meter card on a logged date or an empty date; both screenshots captured",
+      "Metered build produced on both platforms via the documented temporary override, and both overrides reverted (both git diff --quiet assertions pass)",
+      "Firebase cutoff used was the current instant, never backdated",
+      "M1-M19, M22, M25, M26, M27 pass on both platforms; M20 Android-only; M21 iOS-only; any failure fails this task",
+      "M26 and M27 documented as accepted behaviour with reasoning; M25 confirms no fresh allowance for a never-subscribed reinstall",
+      "M23 and M24 recorded as an unresolved human-owned BLOCKER with the four-step checklist verbatim, NOT marked passed/excused/N-A",
+      "Section 12.21 non-regression evidence recorded for all three repos",
+      "Parity confirmed across all nine behavioural surfaces",
+      "Rollout note recorded: ship with the 9999 sentinel, clear the M23/M24 blocker, then set the cutoff to the then-current instant; never backdate"
+    ]
+  }
+}
