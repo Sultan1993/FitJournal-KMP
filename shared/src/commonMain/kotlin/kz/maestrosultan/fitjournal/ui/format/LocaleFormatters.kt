@@ -49,6 +49,13 @@ expect object LocaleFormatters {
     /** Day + month + year for the current locale (skeleton "dMMMMy"). */
     fun formatDayMonthYear(date: LocalDate): String
 
+    /**
+     * Day + full month, NO year (skeleton "dMMMM") — "12 August", "12. August",
+     * "12 августа". Used by the lapsed quota card's eyebrow, where the year is
+     * noise: a subscription that ended is recent by construction.
+     */
+    fun formatDayMonth(date: LocalDate): String
+
     /** Day + short month for the current locale (skeleton "dMMM"/"dMMMy" with [withYear]). */
     fun formatDayShortMonth(date: LocalDate, withYear: Boolean = false): String
 

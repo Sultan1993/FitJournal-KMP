@@ -53,6 +53,13 @@ actual object LocaleFormatters {
             .withLocale(Locale.getDefault())
             .format(date.toJavaLocalDate())
 
+    // Test-target only, so a literal pattern is fine here — the shipping
+    // Android/iOS actuals go through a locale skeleton for component order.
+    actual fun formatDayMonth(date: LocalDate): String =
+        DateTimeFormatter.ofPattern("d MMMM")
+            .withLocale(Locale.getDefault())
+            .format(date.toJavaLocalDate())
+
     // getBestDateTimePattern is Android-only; approximate the skeleton with a
     // fixed pattern mirroring the same field set (day + short month [+ year]).
     actual fun formatDayShortMonth(date: LocalDate, withYear: Boolean): String =

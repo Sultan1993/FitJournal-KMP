@@ -187,4 +187,32 @@
     <string name="workout_details_note_title">Trainingsnotiz</string>
     <string name="workout_details_note_save">Speichern</string>
     <string name="workout_details_note_placeholder">Wie lief es? Schlaf, Energie, Technik…</string>
+
+    <!-- Free-quota card. Ported verbatim from the Android home card's
+         resources so the two surfaces cannot word the same state
+         differently; the de/ru/uk copies came with it. -->
+    <string name="quota_eyebrow">GRATIS-VERSION</string>
+    <string name="quota_used_counter">%1$d von %2$d verbraucht</string>
+    <plurals name="quota_workouts_left">
+        <item quantity="one">Noch %1$d Workout</item>
+        <item quantity="other">Noch %1$d Workouts</item>
+    </plurals>
+    <plurals name="quota_exhausted_title">
+        <item quantity="one">Dein %1$d gratis Workout ist aufgebraucht</item>
+        <item quantity="other">Deine %1$d gratis Workouts sind aufgebraucht</item>
+    </plurals>
+    <string name="quota_exhausted_subtitle">Alles, was du protokolliert hast, bleibt erhalten. Mit einem Upgrade loggst du weiter.</string>
+    <string name="quota_cta_upgrade">Upgrade für unbegrenzt</string>
+    <string name="quota_cta_see_plans">Tarife ansehen</string>
+    <string name="quota_few_left_subtitle">Unbegrenzte Workouts, ab %1$s / Monat.</string>
+    <string name="quota_exhausted_subtitle_priced">Alles, was du protokolliert hast, bleibt erhalten. Mit einem Upgrade loggst du weiter — ab %1$s / Monat.</string>
+    <string name="quota_lapsed_eyebrow">PRO BEENDET</string>
+    <string name="quota_lapsed_eyebrow_dated">PRO BEENDET · %1$s</string>
+    <plurals name="quota_lapsed_title">
+        <item quantity="one">Dein %1$d Training ist sicher</item>
+        <item quantity="other">Deine %1$d Trainings sind sicher</item>
+    </plurals>
+    <string name="quota_lapsed_subtitle">Neue Trainings kannst du erst wieder aufzeichnen, wenn du verlängerst. Gelöscht wird nie etwas.</string>
+    <string name="quota_cta_renew">Verlängern</string>
+    <string name="quota_cta_restore">Kauf wiederherstellen</string>
 </resources>

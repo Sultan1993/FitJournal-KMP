@@ -188,4 +188,32 @@
     <string name="workout_details_note_title">Workout note</string>
     <string name="workout_details_note_save">Save</string>
     <string name="workout_details_note_placeholder">How did it go? Sleep, energy, form cues…</string>
+
+    <!-- Free-quota card. Ported verbatim from the Android home card's
+         resources so the two surfaces cannot word the same state
+         differently; the de/ru/uk copies came with it. -->
+    <string name="quota_eyebrow">FREE PLAN</string>
+    <string name="quota_used_counter">%1$d of %2$d used</string>
+    <plurals name="quota_workouts_left">
+        <item quantity="one">%1$d workout left</item>
+        <item quantity="other">%1$d workouts left</item>
+    </plurals>
+    <plurals name="quota_exhausted_title">
+        <item quantity="one">You\'ve used your %1$d free workout</item>
+        <item quantity="other">You\'ve used your %1$d free workouts</item>
+    </plurals>
+    <string name="quota_exhausted_subtitle">Everything you\'ve logged stays. Upgrade to keep logging new ones.</string>
+    <string name="quota_cta_upgrade">Upgrade for unlimited</string>
+    <string name="quota_cta_see_plans">See plans</string>
+    <string name="quota_few_left_subtitle">Unlimited workouts, from %1$s / month.</string>
+    <string name="quota_exhausted_subtitle_priced">Everything you\'ve logged stays. Upgrade to keep logging new ones — from %1$s / month.</string>
+    <string name="quota_lapsed_eyebrow">PRO ENDED</string>
+    <string name="quota_lapsed_eyebrow_dated">PRO ENDED · %1$s</string>
+    <plurals name="quota_lapsed_title">
+        <item quantity="one">Your %1$d workout is safe</item>
+        <item quantity="other">Your %1$d workouts are safe</item>
+    </plurals>
+    <string name="quota_lapsed_subtitle">Logging new ones is paused until you renew. Nothing is ever deleted.</string>
+    <string name="quota_cta_renew">Renew</string>
+    <string name="quota_cta_restore">Restore purchase</string>
 </resources>

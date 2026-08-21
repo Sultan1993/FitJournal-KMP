@@ -201,4 +201,38 @@
     <string name="workout_details_note_title">Заметка о тренировке</string>
     <string name="workout_details_note_save">Сохранить</string>
     <string name="workout_details_note_placeholder">Как прошло? Сон, энергия, техника…</string>
+
+    <!-- Free-quota card. Ported verbatim from the Android home card's
+         resources so the two surfaces cannot word the same state
+         differently; the de/ru/uk copies came with it. -->
+    <string name="quota_eyebrow">БЕСПЛАТНЫЙ ПЛАН</string>
+    <string name="quota_used_counter">%1$d из %2$d использовано</string>
+    <plurals name="quota_workouts_left">
+        <item quantity="one">осталась %1$d тренировка</item>
+        <item quantity="few">осталось %1$d тренировки</item>
+        <item quantity="many">осталось %1$d тренировок</item>
+        <item quantity="other">осталось %1$d тренировки</item>
+    </plurals>
+    <plurals name="quota_exhausted_title">
+        <item quantity="one">Вы использовали %1$d бесплатную тренировку</item>
+        <item quantity="few">Вы использовали %1$d бесплатные тренировки</item>
+        <item quantity="many">Вы использовали %1$d бесплатных тренировок</item>
+        <item quantity="other">Вы использовали %1$d бесплатные тренировки</item>
+    </plurals>
+    <string name="quota_exhausted_subtitle">Всё, что вы записали, останется с вами. Оформите подписку, чтобы записывать новые тренировки.</string>
+    <string name="quota_cta_upgrade">Оформить подписку</string>
+    <string name="quota_cta_see_plans">Посмотреть тарифы</string>
+    <string name="quota_few_left_subtitle">Неограниченные тренировки, от %1$s / месяц.</string>
+    <string name="quota_exhausted_subtitle_priced">Всё, что вы записали, останется с вами. Оформите подписку, чтобы записывать новые — от %1$s / месяц.</string>
+    <string name="quota_lapsed_eyebrow">PRO ЗАВЕРШЁН</string>
+    <string name="quota_lapsed_eyebrow_dated">PRO ЗАВЕРШЁН · %1$s</string>
+    <plurals name="quota_lapsed_title">
+        <item quantity="one">Ваша %1$d тренировка сохранена</item>
+        <item quantity="few">Ваши %1$d тренировки сохранены</item>
+        <item quantity="many">Ваши %1$d тренировок сохранены</item>
+        <item quantity="other">Ваши %1$d тренировки сохранены</item>
+    </plurals>
+    <string name="quota_lapsed_subtitle">Запись новых тренировок приостановлена до продления. Ничего не удаляется.</string>
+    <string name="quota_cta_renew">Продлить</string>
+    <string name="quota_cta_restore">Восстановить покупку</string>
 </resources>
