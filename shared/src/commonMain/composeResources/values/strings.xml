@@ -145,7 +145,6 @@
     <string name="common_yesterday">Yesterday</string>
 
     <!-- History screen -->
-    <string name="history_empty_message">Your workouts will appear here</string>
     <string name="history_this_week">This week</string>
     <string name="journal_my_journal">My journal</string>
     <string name="journal_onboarding_hint">You can create multiple individual journals. The data in each journal is separated. This is especially handy if you are a personal trainer</string>
@@ -216,4 +215,9 @@
     <string name="quota_lapsed_subtitle">Logging new ones is paused until you renew. Nothing is ever deleted.</string>
     <string name="quota_cta_renew">Renew</string>
     <string name="quota_cta_restore">Restore purchase</string>
+
+    <!-- Workout-history empty state (design WH1/WH2). -->
+    <string name="history_empty_this_week">This week · no workouts yet</string>
+    <string name="history_empty_title">The first bar is yours to draw</string>
+    <string name="history_empty_body">Finish a workout and this week fills in — every workout you finish lands here.</string>
 </resources>

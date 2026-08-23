@@ -31,7 +31,9 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalTestApi::class)
 class WorkoutListScreenTest {
 
-    private val emptyMessage = "Your workouts will appear here"
+    // The WH1/WH2 empty state's headline. Asserting the ghost hero's "0"
+    // instead would be ambiguous — a real hero can legitimately render 0 too.
+    private val emptyMessage = "The first bar is yours to draw"
 
     @Test
     fun emptyState_pullDown_invokesInjectedOnRefresh() = runComposeUiTest {

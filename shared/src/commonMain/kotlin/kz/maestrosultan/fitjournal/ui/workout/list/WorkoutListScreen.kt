@@ -48,9 +48,8 @@ import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutCalendar
 import kz.maestrosultan.fitjournal.ui.workout.list.components.WorkoutListDayRow
+import kz.maestrosultan.fitjournal.ui.workout.list.components.WorkoutListEmptyState
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
-import kz.maestrosultan.fitjournal.shared.generated.resources.history_empty_message
-import kz.maestrosultan.fitjournal.ui.workout.main.components.FirstWorkoutPlaceholder
 import org.jetbrains.compose.resources.stringResource
 import kz.maestrosultan.fitjournal.ui.workout.list.components.WorkoutListHero
 import kz.maestrosultan.fitjournal.ui.workout.list.components.WorkoutListWeekHeader
@@ -195,9 +194,14 @@ private fun WorkoutListContentArea(
             val emptyBody: @Composable (Modifier) -> Unit = { m ->
                 LazyColumn(modifier = m.fillMaxSize()) {
                     item(key = "empty") {
-                        FirstWorkoutPlaceholder(
-                            modifier = Modifier.fillParentMaxSize(),
-                            text = stringResource(Res.string.history_empty_message),
+                        // fillParentMaxSize, though the content is top-aligned: the
+                        // item has to span the viewport so PTR always has a full
+                        // gesture area, not just the ~300dp the ghost occupies.
+                        WorkoutListEmptyState(
+                            measurementSystem = measurementSystem,
+                            modifier = Modifier
+                                .fillParentMaxSize()
+                                .padding(start = 16.dp, end = 16.dp, top = 20.dp),
                         )
                     }
                 }

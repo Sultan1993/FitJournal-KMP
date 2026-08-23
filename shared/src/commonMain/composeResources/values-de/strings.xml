@@ -144,7 +144,6 @@
     <string name="common_yesterday">Gestern</string>
 
     <!-- History screen -->
-    <string name="history_empty_message">Deine Workouts erscheinen hier</string>
     <string name="history_this_week">Diese Woche</string>
     <string name="journal_my_journal">Mein Journal</string>
     <string name="journal_onboarding_hint">Du kannst mehrere individuelle Journale erstellen. Die Daten in jedem Journal sind getrennt. Dies ist besonders praktisch, wenn du ein Personal Trainer bist</string>
@@ -215,4 +214,9 @@
     <string name="quota_lapsed_subtitle">Neue Trainings kannst du erst wieder aufzeichnen, wenn du verlängerst. Gelöscht wird nie etwas.</string>
     <string name="quota_cta_renew">Verlängern</string>
     <string name="quota_cta_restore">Kauf wiederherstellen</string>
+
+    <!-- Workout-history empty state (design WH1/WH2). -->
+    <string name="history_empty_this_week">Diese Woche · noch keine Workouts</string>
+    <string name="history_empty_title">Der erste Balken gehört dir</string>
+    <string name="history_empty_body">Beende ein Workout und diese Woche füllt sich — jedes Workout, das du beendest, landet hier.</string>
 </resources>
