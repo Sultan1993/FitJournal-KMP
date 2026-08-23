@@ -35,11 +35,8 @@ class WorkoutQuotaGate(
         // and a surface of its own: the lapsed card speaks about their whole
         // library rather than a meter, so it needs the TOTAL count, not the
         // remaining one.
-        is MeteringState.NoAllowance ->
-            WorkoutQuota.Lapsed(
-                totalWorkouts = records.countMeteredWorkouts(userId),
-                endedAtIso = state.endedAtIso,
-            )
+        MeteringState.NoAllowance ->
+            WorkoutQuota.Lapsed(totalWorkouts = records.countMeteredWorkouts(userId))
         is MeteringState.Counted ->
             WorkoutQuota.Metered(used = records.countMeteredWorkouts(userId), limit = state.limit)
     }
@@ -53,9 +50,9 @@ class WorkoutQuotaGate(
             .flatMapLatest {
                 when (val state = meteringState()) {
                     MeteringState.Unmetered -> flowOf<WorkoutQuota>(WorkoutQuota.Unlimited)
-                    is MeteringState.NoAllowance ->
+                    MeteringState.NoAllowance ->
                         records.countMeteredWorkoutsFlow(userId)
-                            .map { total -> WorkoutQuota.Lapsed(total, state.endedAtIso) }
+                            .map { total -> WorkoutQuota.Lapsed(total) }
                     is MeteringState.Counted ->
                         records.countMeteredWorkoutsFlow(userId)
                             .map { used -> WorkoutQuota.Metered(used, state.limit) }
@@ -71,7 +68,7 @@ class WorkoutQuotaGate(
 
     private sealed interface MeteringState {
         data object Unmetered : MeteringState
-        data class NoAllowance(val endedAtIso: String?) : MeteringState
+        data object NoAllowance : MeteringState
         data class Counted(val limit: Int) : MeteringState
     }
 
@@ -103,7 +100,7 @@ class WorkoutQuotaGate(
             // subscriber a write is the one direction that must never happen.
             true ->
                 if (FreeQuotaSettings.isEntitled.value == null) MeteringState.Unmetered
-                else MeteringState.NoAllowance(config.subscriptionEndedAtIso)
+                else MeteringState.NoAllowance
             false -> MeteringState.Counted(config.limit)
         }
     }

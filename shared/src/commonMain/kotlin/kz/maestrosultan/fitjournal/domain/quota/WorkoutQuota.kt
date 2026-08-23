@@ -25,14 +25,13 @@ sealed interface WorkoutQuota {
      * A case of its own rather than `Metered(limit, limit)` because the surface it
      * drives is genuinely different, not just differently worded: it speaks about
      * their whole library rather than a meter ("Your 47 workouts are safe"), it is
-     * dated ("PRO ENDED · 12 AUGUST"), it offers Renew AND Restore purchase, and it
+     * offers Renew AND Restore purchase, and it
      * is drawn on the neutral card rather than the brand one. None of that can be
      * expressed as a spent meter.
      *
      * [totalWorkouts] is every workout this account has ever logged, INCLUDING the
      * ones logged while subscribed — the point of the line is that nothing was
-     * lost. [endedAtIso] is display-only and may be null (an expiry we never
-     * cached), in which case the eyebrow drops the date rather than inventing one.
+     * lost.
      */
-    data class Lapsed(val totalWorkouts: Int, val endedAtIso: String?) : WorkoutQuota
+    data class Lapsed(val totalWorkouts: Int) : WorkoutQuota
 }

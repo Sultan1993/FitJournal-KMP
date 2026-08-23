@@ -205,8 +205,7 @@
     <string name="quota_cta_see_plans">Tarife ansehen</string>
     <string name="quota_few_left_subtitle">Unbegrenzte Workouts, ab %1$s / Monat.</string>
     <string name="quota_exhausted_subtitle_priced">Alles, was du protokolliert hast, bleibt erhalten. Mit einem Upgrade loggst du weiter — ab %1$s / Monat.</string>
-    <string name="quota_lapsed_eyebrow">PRO BEENDET</string>
-    <string name="quota_lapsed_eyebrow_dated">PRO BEENDET · %1$s</string>
+    <string name="quota_lapsed_eyebrow">ABO BEENDET</string>
     <plurals name="quota_lapsed_title">
         <item quantity="one">Dein %1$d Training ist sicher</item>
         <item quantity="other">Deine %1$d Trainings sind sicher</item>

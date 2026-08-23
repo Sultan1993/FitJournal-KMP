@@ -223,8 +223,7 @@
     <string name="quota_cta_see_plans">Посмотреть тарифы</string>
     <string name="quota_few_left_subtitle">Неограниченные тренировки, от %1$s / месяц.</string>
     <string name="quota_exhausted_subtitle_priced">Всё, что вы записали, останется с вами. Оформите подписку, чтобы записывать новые — от %1$s / месяц.</string>
-    <string name="quota_lapsed_eyebrow">PRO ЗАВЕРШЁН</string>
-    <string name="quota_lapsed_eyebrow_dated">PRO ЗАВЕРШЁН · %1$s</string>
+    <string name="quota_lapsed_eyebrow">ПОДПИСКА ЗАВЕРШЕНА</string>
     <plurals name="quota_lapsed_title">
         <item quantity="one">Ваша %1$d тренировка сохранена</item>
         <item quantity="few">Ваши %1$d тренировки сохранены</item>

@@ -30,15 +30,9 @@ object FreeQuotaSettings {
          * answer applies retroactively.
          */
         val hasEverSubscribed: Boolean?,
-        /**
-         * When the last subscription ran out, ISO-8601, DISPLAY ONLY — it dates the
-         * lapsed card's eyebrow and is never part of any gate decision. Null when we
-         * never cached an expiry, which the card renders as an undated eyebrow.
-         */
-        val subscriptionEndedAtIso: String?,
     )
 
-    private val _config = MutableStateFlow(Config(limit = 0, hasEverSubscribed = null, subscriptionEndedAtIso = null))
+    private val _config = MutableStateFlow(Config(limit = 0, hasEverSubscribed = null))
     val config: StateFlow<Config> = _config.asStateFlow()
 
     /** Remote Config → shared. Called once per launch, after fetchAndActivate. */
@@ -84,13 +78,8 @@ object FreeQuotaSettings {
      * subscribed, or vice versa.
      */
     fun reset() {
-        _config.value = Config(limit = 0, hasEverSubscribed = null, subscriptionEndedAtIso = null)
+        _config.value = Config(limit = 0, hasEverSubscribed = null)
         _isEntitled.value = null
-    }
-
-    /** Subscription layer → shared. Display only; see [Config.subscriptionEndedAtIso]. */
-    fun setSubscriptionEndedAt(iso: String?) {
-        _config.update { it.copy(subscriptionEndedAtIso = iso) }
     }
 
     /**

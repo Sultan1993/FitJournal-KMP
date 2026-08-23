@@ -36,7 +36,6 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.quota_exhausted_ti
 import kz.maestrosultan.fitjournal.shared.generated.resources.quota_eyebrow
 import kz.maestrosultan.fitjournal.shared.generated.resources.quota_few_left_subtitle
 import kz.maestrosultan.fitjournal.shared.generated.resources.quota_lapsed_eyebrow
-import kz.maestrosultan.fitjournal.shared.generated.resources.quota_lapsed_eyebrow_dated
 import kz.maestrosultan.fitjournal.shared.generated.resources.quota_lapsed_subtitle
 import kz.maestrosultan.fitjournal.shared.generated.resources.quota_lapsed_title
 import kz.maestrosultan.fitjournal.shared.generated.resources.quota_used_counter
@@ -77,10 +76,9 @@ sealed interface QuotaCardContent {
      *
      * Speaks about the whole library rather than a meter, so it carries
      * [totalWorkouts] (everything ever logged, including while subscribed) and
-     * NOT a remaining count. [endedAt] is a preformatted, localized day+month
-     * ("12 August") or null — an undated eyebrow beats an invented date.
+     * NOT a remaining count.
      */
-    data class Lapsed(val totalWorkouts: Int, val endedAt: String?) : QuotaCardContent
+    data class Lapsed(val totalWorkouts: Int) : QuotaCardContent
 }
 
 /**
@@ -210,10 +208,7 @@ private fun LapsedBody(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            // Undated when we never cached an expiry — better than inventing one.
-            text = content.endedAt
-                ?.let { stringResource(Res.string.quota_lapsed_eyebrow_dated, it) }
-                ?: stringResource(Res.string.quota_lapsed_eyebrow),
+            text = stringResource(Res.string.quota_lapsed_eyebrow),
             style = cardStyle(12, FontWeight.Bold),
             color = FjTheme.colors.textSecondary,
         )
@@ -395,7 +390,7 @@ private fun QuotaCardExhaustedPreview() {
 private fun QuotaCardLapsedPreview() {
     FitJournalTheme {
         QuotaCard(
-            content = QuotaCardContent.Lapsed(totalWorkouts = 47, endedAt = "12 August"),
+            content = QuotaCardContent.Lapsed(totalWorkouts = 47),
             onUpgradeClick = {},
             onRestoreClick = {},
             modifier = Modifier.padding(16.dp),

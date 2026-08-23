@@ -130,7 +130,7 @@ class WorkoutListViewModel(
             session.map { it.userId }.distinctUntilChanged()
                 .flatMapLatest { userId -> quotaGate.getQuotaFlow(userId) },
             quotaPrice,
-        ) { quota, price -> quota.toCardContent(price, timeZone) }
+        ) { quota, price -> quota.toCardContent(price) }
             .catch { emit(null) }
             .onStart { emit(null) }
 

@@ -108,10 +108,9 @@ class WorkoutQuotaGateTest {
      * — without it entitlement is merely unresolved, which must resolve to
      * Unlimited so a payer is never walled mid-launch.
      */
-    private fun lapsed(limit: Long = 10, endedAtIso: String? = null) {
+    private fun lapsed(limit: Long = 10) {
         FreeQuotaSettings.setLimit(limit)
         FreeQuotaSettings.setHasEverSubscribed(true)
-        FreeQuotaSettings.setSubscriptionEndedAt(endedAtIso)
         FreeQuotaSettings.setEntitled(false)
     }
 
@@ -320,11 +319,11 @@ class WorkoutQuotaGateTest {
         // is nothing left to spend — but this is NOT a spent meter. The card it
         // drives says "Your N workouts are safe", so the state carries the TOTAL
         // they have ever logged, including everything logged while they were paying.
-        lapsed(endedAtIso = "2026-08-12T00:00:00Z")
+        lapsed()
         repeat(3) { seedRecord(LocalDate(2026, 2, 1 + it)) }
 
         val quota = gate.getQuota(USER)
-        assertEquals(WorkoutQuota.Lapsed(totalWorkouts = 3, endedAtIso = "2026-08-12T00:00:00Z"), quota)
+        assertEquals(WorkoutQuota.Lapsed(totalWorkouts = 3), quota)
         assertFalse(gate.canOpenNewWorkout(USER), "they may not open a new workout")
 
         // Rule 3 still applies: a workout that already exists stays writable, so
@@ -334,15 +333,6 @@ class WorkoutQuotaGateTest {
             "an existing workout stays writable",
         )
         assertFalse(gate.canWriteWorkout(USER, J1, FRESH_DATE, workoutNumber = 1))
-    }
-
-    @Test
-    fun lapsedWithNoCachedExpiry_stillResolves_withAnUndatedEyebrow(): Unit = runBlocking {
-        // The expiry is display-only. When we never cached one the card must drop
-        // the date rather than invent one — so the state resolves with a null.
-        lapsed()
-
-        assertEquals(WorkoutQuota.Lapsed(totalWorkouts = 0, endedAtIso = null), gate.getQuota(USER))
     }
 
     @Test
@@ -611,7 +601,6 @@ class WorkoutQuotaGateTest {
 
         /** Arbitrary fixed creation stamp — nothing depends on WHEN a workout was logged any more. */
         val SEEDED_AT: Instant = Instant.parse("2026-02-01T10:00:00Z")
-
 
         /** Carries workouts 1 AND 2 — the second is an existing slot. */
         val DOUBLE_WORKOUT_DATE: LocalDate = LocalDate(2026, 7, 24)
