@@ -36,6 +36,21 @@ object ColorTokens {
     val brandSubtle = ColorToken(0xFFE5E1FC, 0xFF2B2650)
     val accent = ColorToken(0xFFFBEAB2, 0xFFFBEAB2)
 
+    /**
+     * Brand-coloured INK for content drawn on [brandSubtle], not on the page.
+     * Deliberately not [brand]: #7C72F2 sits too close to the light brandSubtle
+     * (#E5E1FC) and too dark on the dark one (#2B2650), so the design steps it
+     * down in light and up in dark to hold contrast on both.
+     */
+    val brandInk = ColorToken(0xFF6F66DE, 0xFFA79EFF)
+
+    /**
+     * Muted ink on [brandSubtle] — the sub-lines under a brand-card headline.
+     * Light is [textSecondary] exactly; dark is violet-tinted, because the
+     * neutral #A6A9C0 reads dirty against #2B2650.
+     */
+    val brandInkSecondary = ColorToken(0xFF61647D, 0xFFC3C0E8)
+
     // Surfaces — dark-mode elevation order (lighter = higher):
     //   background < sheet < surface(card) < surfaceElevated.
     val background = ColorToken(0xFFFFFFFF, 0xFF000000)

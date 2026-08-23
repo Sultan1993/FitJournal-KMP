@@ -134,12 +134,12 @@ private fun RemainingBody(content: QuotaCardContent.Remaining, onUpgradeClick: (
             modifier = Modifier.weight(1f),
             text = stringResource(Res.string.quota_eyebrow),
             style = eyebrowStyle(),
-            color = brandInk(),
+            color = FjTheme.colors.brandInk,
         )
         Text(
             text = stringResource(Res.string.quota_used_counter, content.used, content.limit),
             style = cardStyle(12.0, FontWeight.Medium),
-            color = brandInk(),
+            color = FjTheme.colors.brandInk,
         )
     }
 
@@ -159,7 +159,7 @@ private fun RemainingBody(content: QuotaCardContent.Remaining, onUpgradeClick: (
         Text(
             text = stringResource(Res.string.quota_few_left_subtitle, price),
             style = cardStyle(13.0, FontWeight.Normal),
-            color = brandCardSecondary(),
+            color = FjTheme.colors.brandInkSecondary,
         )
     }
 
@@ -174,7 +174,7 @@ private fun ExhaustedBody(content: QuotaCardContent.Exhausted, onUpgradeClick: (
         Text(
             text = stringResource(Res.string.quota_eyebrow),
             style = eyebrowStyle(),
-            color = brandInk(),
+            color = FjTheme.colors.brandInk,
         )
         // No meter and no counter here on purpose: a spent meter is just a row of
         // grey, and the headline already carries the only number that matters.
@@ -192,7 +192,7 @@ private fun ExhaustedBody(content: QuotaCardContent.Exhausted, onUpgradeClick: (
                 ?.let { stringResource(Res.string.quota_exhausted_subtitle_priced, it) }
                 ?: stringResource(Res.string.quota_exhausted_subtitle),
             style = cardStyle(16.0, FontWeight.Normal).copy(lineHeight = 23.2.sp), // 1.45
-            color = brandCardSecondary(),
+            color = FjTheme.colors.brandInkSecondary,
         )
     }
     QuotaButton(text = stringResource(Res.string.quota_cta_see_plans), onClick = onUpgradeClick)
@@ -268,16 +268,6 @@ private fun cardStyle(size: Double, weight: FontWeight, letterSpacing: Double = 
 @Composable
 private fun eyebrowStyle() = cardStyle(10.0, FontWeight.Bold, letterSpacing = 1.4)
 
-/** Ink for the two brand-card states. Not the `brand` token: on brandSubtle the
- *  design steps it darker in light and lighter in dark for contrast. */
-@Composable
-private fun brandInk() = if (FjTheme.colors.isDark) Color(0xFFA79EFF) else Color(0xFF6F66DE)
-
-/** Secondary ink on the BRAND card — violet-tinted in dark, where the neutral
- *  textSecondary would read as dirty against #2B2650. Light is textSecondary. */
-@Composable
-private fun brandCardSecondary() =
-    if (FjTheme.colors.isDark) Color(0xFFC3C0E8) else FjTheme.colors.textSecondary
 
 /**
  * 2b's headline, at the frame's dominant run: 22 / 500.
@@ -387,7 +377,7 @@ private const val MAX_SEGMENTS = 12
 
 /**
  * Six previews: every state in BOTH themes, because the card's brand-card ink
- * (`brandInk`, `brandCardSecondary`) and its two backgrounds are the parts most
+ * (`brandInk`, `brandInkSecondary`) and its two backgrounds are the parts most
  * likely to regress, and a light-only preview cannot show any of them.
  */
 @Composable

@@ -15,6 +15,8 @@ import kz.maestrosultan.fitjournal.kmp.design.ColorTokens
 data class FjColorScheme(
     val brand: Color,
     val brandSubtle: Color,
+    val brandInk: Color,
+    val brandInkSecondary: Color,
     val accent: Color,
     val background: Color,
     val sheet: Color,
@@ -48,6 +50,8 @@ fun fjColorScheme(dark: Boolean): FjColorScheme = with(ColorTokens) {
     FjColorScheme(
         brand = brand.compose(dark),
         brandSubtle = brandSubtle.compose(dark),
+        brandInk = brandInk.compose(dark),
+        brandInkSecondary = brandInkSecondary.compose(dark),
         accent = accent.compose(dark),
         background = background.compose(dark),
         sheet = sheet.compose(dark),
