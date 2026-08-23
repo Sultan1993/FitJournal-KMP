@@ -238,5 +238,5 @@
     <!-- Workout-history empty state (design WH1/WH2). -->
     <string name="history_empty_this_week">Эта неделя · тренировок пока нет</string>
     <string name="history_empty_title">Первый столбик — за вами</string>
-    <string name="history_empty_body">Завершите тренировку, и столбик этой недели начнёт заполняться. Всё, что вы записываете, попадает сюда — с группировкой по неделям.</string>
+    <string name="history_empty_body">Ваша первая тренировка заполнит столбик этой недели. Дальше у каждой недели будет свой.</string>
 </resources>
