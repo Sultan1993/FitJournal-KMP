@@ -133,13 +133,13 @@ private fun RemainingBody(content: QuotaCardContent.Remaining, onUpgradeClick: (
         Text(
             modifier = Modifier.weight(1f),
             text = stringResource(Res.string.quota_eyebrow),
-            style = cardStyle(12, FontWeight.Bold),
-            color = FjTheme.colors.brand,
+            style = eyebrowStyle(),
+            color = brandInk(),
         )
         Text(
             text = stringResource(Res.string.quota_used_counter, content.used, content.limit),
-            style = cardStyle(12, FontWeight.Normal),
-            color = FjTheme.colors.brand,
+            style = cardStyle(12.0, FontWeight.Medium),
+            color = brandInk(),
         )
     }
 
@@ -158,8 +158,8 @@ private fun RemainingBody(content: QuotaCardContent.Remaining, onUpgradeClick: (
     content.monthlyPrice?.let { price ->
         Text(
             text = stringResource(Res.string.quota_few_left_subtitle, price),
-            style = cardStyle(14, FontWeight.Normal),
-            color = FjTheme.colors.textSecondary,
+            style = cardStyle(13.0, FontWeight.Normal),
+            color = brandCardSecondary(),
         )
     }
 
@@ -173,8 +173,8 @@ private fun ExhaustedBody(content: QuotaCardContent.Exhausted, onUpgradeClick: (
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = stringResource(Res.string.quota_eyebrow),
-            style = cardStyle(12, FontWeight.Bold),
-            color = FjTheme.colors.brand,
+            style = eyebrowStyle(),
+            color = brandInk(),
         )
         // No meter and no counter here on purpose: a spent meter is just a row of
         // grey, and the headline already carries the only number that matters.
@@ -184,15 +184,15 @@ private fun ExhaustedBody(content: QuotaCardContent.Exhausted, onUpgradeClick: (
                 content.limit,
                 content.limit,
             ),
-            style = cardStyle(20, FontWeight.Normal),
+            style = cardStyle(24.0, FontWeight.Bold),
             color = FjTheme.colors.textPrimary,
         )
         Text(
             text = content.monthlyPrice
                 ?.let { stringResource(Res.string.quota_exhausted_subtitle_priced, it) }
                 ?: stringResource(Res.string.quota_exhausted_subtitle),
-            style = cardStyle(14, FontWeight.Normal),
-            color = FjTheme.colors.textSecondary,
+            style = cardStyle(16.0, FontWeight.Normal).copy(lineHeight = 23.2.sp), // 1.45
+            color = brandCardSecondary(),
         )
     }
     QuotaButton(text = stringResource(Res.string.quota_cta_see_plans), onClick = onUpgradeClick)
@@ -209,7 +209,7 @@ private fun LapsedBody(
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = stringResource(Res.string.quota_lapsed_eyebrow),
-            style = cardStyle(12, FontWeight.Bold),
+            style = eyebrowStyle(),
             color = FjTheme.colors.textSecondary,
         )
         Text(
@@ -218,12 +218,12 @@ private fun LapsedBody(
                 content.totalWorkouts,
                 content.totalWorkouts,
             ),
-            style = cardStyle(20, FontWeight.Normal),
+            style = cardStyle(24.0, FontWeight.Bold),
             color = FjTheme.colors.textPrimary,
         )
         Text(
             text = stringResource(Res.string.quota_lapsed_subtitle),
-            style = cardStyle(14, FontWeight.Normal),
+            style = cardStyle(16.0, FontWeight.Normal).copy(lineHeight = 23.2.sp),
             color = FjTheme.colors.textSecondary,
         )
     }
@@ -241,7 +241,7 @@ private fun LapsedBody(
             Text(
                 modifier = Modifier.fillMaxWidth().align(Alignment.Center),
                 text = stringResource(Res.string.quota_cta_restore),
-                style = cardStyle(16, FontWeight.Medium),
+                style = cardStyle(16.0, FontWeight.Medium),
                 color = FjTheme.colors.textSecondary,
                 textAlign = TextAlign.Center,
             )
@@ -251,23 +251,50 @@ private fun LapsedBody(
 
 // ─── shared pieces ───────────────────────────────────────────────────────────
 
-/** The card's own type scale, on the theme's Rubik family. See [QuotaCard]. */
+/**
+ * The card's own type scale, on the theme's Rubik family — every value taken
+ * from design frames 2b/2c/2g (and their 2e/2f/2h dark twins), which do not use
+ * the surrounding screen's scale.
+ */
 @Composable
-private fun cardStyle(size: Int, weight: FontWeight) =
-    FjTheme.typography.body.copy(fontSize = size.sp, fontWeight = weight)
+private fun cardStyle(size: Double, weight: FontWeight, letterSpacing: Double = 0.0) =
+    FjTheme.typography.body.copy(
+        fontSize = size.sp,
+        fontWeight = weight,
+        letterSpacing = letterSpacing.sp,
+    )
+
+/** 10px / 700 / 0.14em — the same eyebrow in all three states. */
+@Composable
+private fun eyebrowStyle() = cardStyle(10.0, FontWeight.Bold, letterSpacing = 1.4)
+
+/** Ink for the two brand-card states. Not the `brand` token: on brandSubtle the
+ *  design steps it darker in light and lighter in dark for contrast. */
+@Composable
+private fun brandInk() = if (FjTheme.colors.isDark) Color(0xFFA79EFF) else Color(0xFF6F66DE)
+
+/** Secondary ink on the BRAND card — violet-tinted in dark, where the neutral
+ *  textSecondary would read as dirty against #2B2650. Light is textSecondary. */
+@Composable
+private fun brandCardSecondary() =
+    if (FjTheme.colors.isDark) Color(0xFFC3C0E8) else FjTheme.colors.textSecondary
 
 /**
- * Headline with only the NUMERAL enlarged. The number is located inside the
- * already-formatted string rather than composed from two runs: in Russian the
- * word for "left" comes FIRST and the noun inflects, so the design's literal
- * "«2 workouts» + «left»" two-run layout would break silently. When the numeral
- * can't be located the whole line simply keeps one weight.
+ * 2b's headline, at the frame's dominant run: 22 / 500.
+ *
+ * THE ONE PLACE THE FRAME IS NOT REPRODUCED LITERALLY. It draws two runs —
+ * "2 workouts" at 22/500 then "left" at 13/400 — but that split point cannot be
+ * located across languages: in Russian the word for "left" comes FIRST and the
+ * noun inflects, so slicing the string would silently shrink the wrong half.
+ * Instead the whole line takes the dominant run's size and weight and only the
+ * NUMERAL is emphasised, by weight. When the numeral can't be found the line
+ * simply keeps one weight throughout.
  */
 @Composable
 private fun QuotaHeadline(formatted: String, number: Int) {
     Text(
         text = emphasiseNumeral(formatted, number),
-        style = cardStyle(20, FontWeight.Normal),
+        style = cardStyle(22.0, FontWeight.Medium),
         color = FjTheme.colors.textPrimary,
     )
 }
@@ -279,7 +306,7 @@ private fun emphasiseNumeral(formatted: String, number: Int): AnnotatedString {
         append(formatted)
         if (start >= 0) {
             addStyle(
-                style = SpanStyle(fontSize = HEADLINE_NUMERAL_SIZE, fontWeight = FontWeight.Bold),
+                style = SpanStyle(fontWeight = FontWeight.Bold),
                 start = start,
                 end = start + numeral.length,
             )
@@ -348,7 +375,7 @@ private fun QuotaButton(text: String, onClick: () -> Unit) {
         Text(
             modifier = Modifier.fillMaxWidth().align(Alignment.Center),
             text = text,
-            style = cardStyle(16, FontWeight.Medium),
+            style = cardStyle(16.0, FontWeight.Medium),
             color = Color.White,
             textAlign = TextAlign.Center,
         )
@@ -356,44 +383,46 @@ private fun QuotaButton(text: String, onClick: () -> Unit) {
 }
 
 private val METER_HEIGHT = 6.dp
-private val HEADLINE_NUMERAL_SIZE = 28.sp
 private const val MAX_SEGMENTS = 12
 
-@Preview
+/**
+ * Six previews: every state in BOTH themes, because the card's brand-card ink
+ * (`brandInk`, `brandCardSecondary`) and its two backgrounds are the parts most
+ * likely to regress, and a light-only preview cannot show any of them.
+ */
 @Composable
-private fun QuotaCardRemainingPreview() {
-    FitJournalTheme {
-        QuotaCard(
-            content = QuotaCardContent.Remaining(used = 8, limit = 10, monthlyPrice = "€2.49"),
-            onUpgradeClick = {},
-            onRestoreClick = {},
-            modifier = Modifier.padding(16.dp),
-        )
+private fun QuotaCardPreview(dark: Boolean, content: QuotaCardContent) {
+    FitJournalTheme(darkTheme = dark) {
+        Box(modifier = Modifier.background(FjTheme.colors.background).padding(16.dp)) {
+            QuotaCard(content = content, onUpgradeClick = {}, onRestoreClick = {})
+        }
     }
 }
 
-@Preview
-@Composable
-private fun QuotaCardExhaustedPreview() {
-    FitJournalTheme {
-        QuotaCard(
-            content = QuotaCardContent.Exhausted(limit = 10, monthlyPrice = "€2.49"),
-            onUpgradeClick = {},
-            onRestoreClick = {},
-            modifier = Modifier.padding(16.dp),
-        )
-    }
-}
+private val previewRemaining = QuotaCardContent.Remaining(used = 8, limit = 10, monthlyPrice = "\u20AC2.49")
+private val previewExhausted = QuotaCardContent.Exhausted(limit = 10, monthlyPrice = "\u20AC2.49")
+private val previewLapsed = QuotaCardContent.Lapsed(totalWorkouts = 47)
 
 @Preview
 @Composable
-private fun QuotaCardLapsedPreview() {
-    FitJournalTheme {
-        QuotaCard(
-            content = QuotaCardContent.Lapsed(totalWorkouts = 47),
-            onUpgradeClick = {},
-            onRestoreClick = {},
-            modifier = Modifier.padding(16.dp),
-        )
-    }
-}
+private fun QuotaCardRemainingLight() = QuotaCardPreview(dark = false, content = previewRemaining)
+
+@Preview
+@Composable
+private fun QuotaCardRemainingDark() = QuotaCardPreview(dark = true, content = previewRemaining)
+
+@Preview
+@Composable
+private fun QuotaCardExhaustedLight() = QuotaCardPreview(dark = false, content = previewExhausted)
+
+@Preview
+@Composable
+private fun QuotaCardExhaustedDark() = QuotaCardPreview(dark = true, content = previewExhausted)
+
+@Preview
+@Composable
+private fun QuotaCardLapsedLight() = QuotaCardPreview(dark = false, content = previewLapsed)
+
+@Preview
+@Composable
+private fun QuotaCardLapsedDark() = QuotaCardPreview(dark = true, content = previewLapsed)
