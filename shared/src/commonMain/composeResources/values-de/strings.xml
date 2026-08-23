@@ -218,5 +218,5 @@
     <!-- Workout-history empty state (design WH1/WH2). -->
     <string name="history_empty_this_week">Diese Woche · noch keine Workouts</string>
     <string name="history_empty_title">Der erste Balken gehört dir</string>
-    <string name="history_empty_body">Beende ein Workout und diese Woche füllt sich — jedes Workout, das du beendest, landet hier.</string>
+    <string name="history_empty_body">Beende ein Workout und der Balken dieser Woche füllt sich. Alles, was du protokollierst, landet hier — nach Wochen gruppiert.</string>
 </resources>

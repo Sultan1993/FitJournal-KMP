@@ -35,7 +35,7 @@ import org.jetbrains.compose.resources.stringResource
  * Design WH1 (dark) / WH2 (light) — the workout-history screen with nothing
  * logged yet.
  *
- * The hero drawn in GHOST form: zeroed number, ten flat tracks, muted divider,
+ * The hero drawn in GHOST form: zeroed number, flat tracks, muted divider,
  * so the payoff is visible before it exists. The tracks are flat and unanimated
  * on purpose — an animated or shimmering placeholder would read as *loading*,
  * and this screen is not loading, it is empty.
@@ -133,7 +133,7 @@ private fun GhostHero(measurementSystem: MeasurementSystem) {
 }
 
 /**
- * Ten flat tracks at a fixed, deliberately uneven set of heights — a plausible
+ * Flat tracks at a fixed, deliberately uneven set of heights — a plausible
  * chart silhouette rather than a row of equal stubs, which would read as a
  * disabled control. Fixed rather than random so the screen is identical on every
  * open; nothing here is data.
@@ -170,12 +170,13 @@ private fun GhostChart() {
 private val CHART_HEIGHT = 76.dp
 
 /**
- * WH1's silhouette, verbatim. NOTE: the live hero renders **eleven** slots
- * (`WorkoutListContract.Hero.slots`), so the ghost is one bar short of the chart
- * it previews — the design drew ten. Add an eleventh value here if the pop on
- * first workout is visible.
+ * WH1's silhouette, with an eleventh bar PREPENDED: the live hero renders
+ * exactly eleven slots (`WorkoutListContract.Hero.slots`), and a ten-bar ghost
+ * would visibly re-space itself the moment the first workout landed. Prepended
+ * rather than appended so the design's drawn rhythm survives where the eye
+ * actually rests — the right edge, which is the current week in the live chart.
  */
-private val GHOST_BAR_HEIGHTS = listOf(38, 52, 44, 60, 34, 56, 48, 64, 42, 58)
+private val GHOST_BAR_HEIGHTS = listOf(46, 38, 52, 44, 60, 34, 56, 48, 64, 42, 58)
 
 @Preview
 @Composable

@@ -198,14 +198,14 @@
         <item quantity="other">%1$d workouts left</item>
     </plurals>
     <plurals name="quota_exhausted_title">
-        <item quantity="one">You\'ve used your %1$d free workout</item>
-        <item quantity="other">You\'ve used your %1$d free workouts</item>
+        <item quantity="one">You've used your %1$d free workout</item>
+        <item quantity="other">You've used your %1$d free workouts</item>
     </plurals>
-    <string name="quota_exhausted_subtitle">Everything you\'ve logged stays. Upgrade to keep logging new ones.</string>
+    <string name="quota_exhausted_subtitle">Everything you've logged stays. Upgrade to keep logging new ones.</string>
     <string name="quota_cta_upgrade">Upgrade for unlimited</string>
     <string name="quota_cta_see_plans">See plans</string>
     <string name="quota_few_left_subtitle">Unlimited workouts, from %1$s / month.</string>
-    <string name="quota_exhausted_subtitle_priced">Everything you\'ve logged stays. Upgrade to keep logging new ones — from %1$s / month.</string>
+    <string name="quota_exhausted_subtitle_priced">Everything you've logged stays. Upgrade to keep logging new ones — from %1$s / month.</string>
     <string name="quota_lapsed_eyebrow">PRO ENDED</string>
     <string name="quota_lapsed_eyebrow_dated">PRO ENDED · %1$s</string>
     <plurals name="quota_lapsed_title">
@@ -219,5 +219,5 @@
     <!-- Workout-history empty state (design WH1/WH2). -->
     <string name="history_empty_this_week">This week · no workouts yet</string>
     <string name="history_empty_title">The first bar is yours to draw</string>
-    <string name="history_empty_body">Finish a workout and this week fills in — every workout you finish lands here.</string>
+    <string name="history_empty_body">Finish a workout and this week's bar starts filling. Everything you log lands here, grouped by week.</string>
 </resources>
