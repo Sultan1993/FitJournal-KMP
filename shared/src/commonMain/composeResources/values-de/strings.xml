@@ -190,27 +190,27 @@
     <!-- Free-quota card. Ported verbatim from the Android home card's
          resources so the two surfaces cannot word the same state
          differently; the de/ru/uk copies came with it. -->
-    <string name="quota_eyebrow">GRATIS-VERSION</string>
+    <string name="quota_eyebrow">GRATIS-TARIF</string>
     <string name="quota_used_counter">%1$d von %2$d verbraucht</string>
     <plurals name="quota_workouts_left">
         <item quantity="one">Noch %1$d Workout</item>
         <item quantity="other">Noch %1$d Workouts</item>
     </plurals>
     <plurals name="quota_exhausted_title">
-        <item quantity="one">Dein %1$d gratis Workout ist aufgebraucht</item>
-        <item quantity="other">Deine %1$d gratis Workouts sind aufgebraucht</item>
+        <item quantity="one">Dein %1$d Gratis-Workout ist aufgebraucht</item>
+        <item quantity="other">Deine %1$d Gratis-Workouts sind aufgebraucht</item>
     </plurals>
-    <string name="quota_exhausted_subtitle">Alles, was du protokolliert hast, bleibt erhalten. Mit einem Upgrade loggst du weiter.</string>
-    <string name="quota_cta_upgrade">Upgrade für unbegrenzt</string>
+    <string name="quota_exhausted_subtitle">Alles, was du protokolliert hast, bleibt erhalten. Mit einem Upgrade kannst du weiter protokollieren.</string>
+    <string name="quota_cta_upgrade">Unbegrenzt freischalten</string>
     <string name="quota_cta_see_plans">Tarife ansehen</string>
     <string name="quota_few_left_subtitle">Unbegrenzte Workouts, ab %1$s / Monat.</string>
-    <string name="quota_exhausted_subtitle_priced">Alles, was du protokolliert hast, bleibt erhalten. Mit einem Upgrade loggst du weiter — ab %1$s / Monat.</string>
+    <string name="quota_exhausted_subtitle_priced">Alles, was du protokolliert hast, bleibt erhalten. Mit einem Upgrade kannst du weiter protokollieren — ab %1$s / Monat.</string>
     <string name="quota_lapsed_eyebrow">ABO BEENDET</string>
     <plurals name="quota_lapsed_title">
-        <item quantity="one">Dein %1$d Training ist sicher</item>
-        <item quantity="other">Deine %1$d Trainings sind sicher</item>
+        <item quantity="one">Dein %1$d Workout ist sicher</item>
+        <item quantity="other">Deine %1$d Workouts sind sicher</item>
     </plurals>
-    <string name="quota_lapsed_subtitle">Neue Trainings kannst du erst wieder aufzeichnen, wenn du verlängerst. Gelöscht wird nie etwas.</string>
+    <string name="quota_lapsed_subtitle">Neue Workouts kannst du erst nach der Verlängerung protokollieren. Gelöscht wird nie etwas.</string>
     <string name="quota_cta_renew">Verlängern</string>
     <string name="quota_cta_restore">Kauf wiederherstellen</string>
 

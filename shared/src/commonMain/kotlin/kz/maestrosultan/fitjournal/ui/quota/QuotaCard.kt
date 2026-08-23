@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -235,7 +236,7 @@ private fun LapsedBody(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
-                .clickable { onRestoreClick() }
+                .clickable(role = Role.Button) { onRestoreClick() }
                 .padding(horizontal = 16.dp, vertical = 14.dp),
         ) {
             Text(
@@ -359,7 +360,7 @@ private fun QuotaButton(text: String, onClick: () -> Unit) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(FjTheme.colors.brand)
-            .clickable { onClick() }
+            .clickable(role = Role.Button) { onClick() }
             .padding(horizontal = 16.dp, vertical = 14.dp),
     ) {
         Text(

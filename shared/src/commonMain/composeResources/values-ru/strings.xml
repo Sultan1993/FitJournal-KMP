@@ -207,10 +207,10 @@
     <string name="quota_eyebrow">БЕСПЛАТНЫЙ ПЛАН</string>
     <string name="quota_used_counter">%1$d из %2$d использовано</string>
     <plurals name="quota_workouts_left">
-        <item quantity="one">осталась %1$d тренировка</item>
-        <item quantity="few">осталось %1$d тренировки</item>
-        <item quantity="many">осталось %1$d тренировок</item>
-        <item quantity="other">осталось %1$d тренировки</item>
+        <item quantity="one">Осталась %1$d тренировка</item>
+        <item quantity="few">Осталось %1$d тренировки</item>
+        <item quantity="many">Осталось %1$d тренировок</item>
+        <item quantity="other">Осталось %1$d тренировки</item>
     </plurals>
     <plurals name="quota_exhausted_title">
         <item quantity="one">Вы использовали %1$d бесплатную тренировку</item>
