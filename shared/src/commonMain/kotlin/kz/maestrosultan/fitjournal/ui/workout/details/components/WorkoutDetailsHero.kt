@@ -61,7 +61,7 @@ private fun HeroStat(stat: WorkoutDetailsContract.HeroStat, modifier: Modifier =
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
             text = stat.label.uppercase(),
-            style = FjTheme.typography.eyebrow.copy(fontSize = 10.5.sp, letterSpacing = 0.1.em),
+            style = FjTheme.typography.eyebrow.copy(fontSize = 10.5.sp),
             color = FjTheme.colors.textTertiary,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
@@ -70,8 +70,6 @@ private fun HeroStat(stat: WorkoutDetailsContract.HeroStat, modifier: Modifier =
                 style = FjTheme.typography.numberLarge.copy(
                     fontSize = 38.sp,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = (-0.02).em,
-                    lineHeight = 38.sp,
                 ),
                 color = FjTheme.colors.textPrimary,
                 modifier = Modifier.alignByBaseline(),

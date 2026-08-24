@@ -69,7 +69,7 @@ internal fun ShareCardScope.NewBestLayout(
         Row {
             Text(
                 text = best.value,
-                style = textStyle(58f, FontWeight.Bold, letterSpacingEm = -0.03f),
+                style = textStyle(58f, FontWeight.Bold),
                 maxLines = 1,
                 modifier = Modifier.alignByBaseline(),
             )
@@ -105,7 +105,7 @@ private fun ShareCardScope.NewBestBadge(
         Text(text = TrophyGlyph, style = textStyle(13f, color = BadgeInk), maxLines = 1)
         Text(
             text = caption,
-            style = textStyle(11f, FontWeight.Bold, BadgeInk, letterSpacingEm = 0.08f),
+            style = textStyle(11f, FontWeight.Bold, BadgeInk),
             maxLines = 1,
         )
     }

@@ -65,7 +65,7 @@ fun NewBestCard(text: String, modifier: Modifier = Modifier) {
             Text(
                 text = stringResource(Res.string.workout_details_new_best),
                 // Overrides eyebrow's default 1.05sp letter-spacing to match design's 0.1em.
-                style = FjTheme.typography.eyebrow.copy(fontSize = 10.sp, letterSpacing = 1.0.sp),
+                style = FjTheme.typography.eyebrow.copy(fontSize = 10.sp),
                 color = NewBestLabelInk,
             )
             Spacer(Modifier.height(2.dp))

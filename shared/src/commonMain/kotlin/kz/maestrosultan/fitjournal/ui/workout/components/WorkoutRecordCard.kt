@@ -80,7 +80,6 @@ fun WorkoutRecordCard(
                     style = FjTheme.typography.caption.copy(
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.14.em,
                     ),
                     color = FjTheme.colors.brand,
                 )

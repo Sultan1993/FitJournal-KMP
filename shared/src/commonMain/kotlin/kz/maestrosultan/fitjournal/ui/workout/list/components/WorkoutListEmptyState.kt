@@ -101,8 +101,6 @@ private fun GhostHero(measurementSystem: MeasurementSystem) {
             style = FjTheme.typography.numberLarge.copy(
                 fontSize = 34.sp,
                 fontWeight = FontWeight.Bold,
-                letterSpacing = (-0.68).sp, // -0.02em of 34px
-                lineHeight = 34.sp,
             ),
             color = FjTheme.colors.textTertiary,
             modifier = Modifier.alignByBaseline(),

@@ -50,8 +50,6 @@ internal fun ShareCardScope.StatsLayout(
                 style = textStyle(
                     size = 49f,
                     weight = FontWeight.Bold,
-                    letterSpacingEm = -0.03f,
-                    lineHeightEm = 0.92f,
                 ),
                 maxLines = 1,
                 modifier = Modifier.alignByBaseline(),

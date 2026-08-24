@@ -138,7 +138,6 @@ private fun RunningBar(runningSince: Instant?, onEnd: () -> Unit, modifier: Modi
                 style = FjTheme.typography.caption.copy(
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.12.em,
                 ),
                 color = FjTheme.colors.brand,
                 maxLines = 1,

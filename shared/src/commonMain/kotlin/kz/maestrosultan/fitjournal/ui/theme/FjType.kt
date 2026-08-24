@@ -45,16 +45,15 @@ fun rubikFamily(): FontFamily = FontFamily(
 @Composable
 fun fjTypography(): FjTypography {
     val rubik = rubikFamily()
-    fun style(size: Double, weight: FontWeight, spacing: Double = 0.0) = TextStyle(
+    fun style(size: Double, weight: FontWeight) = TextStyle(
         fontFamily = rubik,
         fontWeight = weight,
         fontSize = size.sp,
-        letterSpacing = spacing.sp,
     )
-    fun style(size: Int, weight: FontWeight, spacing: Double = 0.0) = style(size.toDouble(), weight, spacing)
+    fun style(size: Int, weight: FontWeight) = style(size.toDouble(), weight)
     return FjTypography(
         screenTitle = style(18, FontWeight.SemiBold),
-        sectionTitle = style(12, FontWeight.SemiBold, spacing = 0.4),
+        sectionTitle = style(12, FontWeight.SemiBold),
         cardTitle = style(16, FontWeight.Medium),
         body = style(15, FontWeight.Normal),
         bodyStrong = style(15, FontWeight.Medium),
@@ -62,7 +61,7 @@ fun fjTypography(): FjTypography {
         label = style(11, FontWeight.Medium),
         button = style(16, FontWeight.SemiBold),
         numberLarge = style(17, FontWeight.SemiBold),
-        eyebrow = style(10.5, FontWeight.Bold, spacing = 1.05), // 0.1em of the 10.5sp size
+        eyebrow = style(10.5, FontWeight.Bold),
     )
 }
 

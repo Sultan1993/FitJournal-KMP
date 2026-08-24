@@ -161,23 +161,16 @@ internal class ShareCardScope internal constructor(
 
     /**
      * THE text-style factory for card content. [size] is the reference sp;
-     * [letterSpacingEm] / [lineHeightEm] are em-relative on purpose — em scales
-     * with the font size, so a proportionally scaled card keeps identical
-     * tracking and leading at every canvas width.
      */
     fun textStyle(
         size: Float,
         weight: FontWeight = FontWeight.Normal,
         color: Color = palette.textPrimary,
-        letterSpacingEm: Float = 0f,
-        lineHeightEm: Float = 0f,
     ): TextStyle = TextStyle(
         fontFamily = fontFamily,
         fontWeight = weight,
         fontSize = sp(size),
         color = color,
-        letterSpacing = letterSpacingEm.em,
-        lineHeight = if (lineHeightEm > 0f) lineHeightEm.em else TextUnit.Unspecified,
         shadow = textShadow,
     )
 

@@ -258,16 +258,15 @@ private fun LapsedBody(
  * the surrounding screen's scale.
  */
 @Composable
-private fun cardStyle(size: Double, weight: FontWeight, letterSpacing: Double = 0.0) =
+private fun cardStyle(size: Double, weight: FontWeight) =
     FjTheme.typography.body.copy(
         fontSize = size.sp,
-        fontWeight = weight,
-        letterSpacing = letterSpacing.sp,
+        fontWeight = weight
     )
 
-/** 10px / 700 / 0.14em — the same eyebrow in all three states. */
+/** 10px / 700 — the same eyebrow in all three states. */
 @Composable
-private fun eyebrowStyle() = cardStyle(10.0, FontWeight.Bold, letterSpacing = 1.4)
+private fun eyebrowStyle() = cardStyle(10.0, FontWeight.Bold)
 
 
 /**

@@ -153,7 +153,6 @@ private fun SessionCard(state: WorkoutFinishContract.ViewState, modifier: Modifi
                 style = FjTheme.typography.numberLarge.copy(
                     fontSize = 42.sp,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = (-0.02).em,
                 ),
                 color = FjTheme.colors.textPrimary,
                 modifier = Modifier.alignByBaseline(),

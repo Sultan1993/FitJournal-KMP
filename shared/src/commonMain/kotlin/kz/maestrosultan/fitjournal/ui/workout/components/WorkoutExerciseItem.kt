@@ -96,7 +96,6 @@ fun WorkoutExerciseItem(
                     style = FjTheme.typography.caption.copy(
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 0.1.em,
                     ),
                     color = FjTheme.colors.textTertiary,
                     maxLines = 1,
@@ -137,7 +136,6 @@ fun WorkoutExerciseItem(
                     style = FjTheme.typography.caption.copy(
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.1.em,
                     ),
                     color = FjTheme.colors.textTertiary,
                 )

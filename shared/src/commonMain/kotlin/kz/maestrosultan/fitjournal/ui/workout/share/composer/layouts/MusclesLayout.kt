@@ -61,7 +61,7 @@ internal fun ShareCardScope.MusclesLayout(
         Row {
             Text(
                 text = data.musclesHeadline,
-                style = textStyle(34f, FontWeight.Bold, letterSpacingEm = -0.02f),
+                style = textStyle(34f, FontWeight.Bold),
                 maxLines = 1,
                 modifier = Modifier.alignByBaseline(),
             )
