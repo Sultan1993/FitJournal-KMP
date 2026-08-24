@@ -70,6 +70,17 @@ class WorkoutsDBDataSource(
             .executeAsOne()
     }
 
+    /** Tombstone-EXCLUSIVE twin of [hasAnyRecordInWorkout] — see the note on `liveWorkoutRecordExists`. */
+    suspend fun hasLiveRecordInWorkout(
+        userId: String,
+        journalId: String,
+        date: String,
+        workoutNumber: Int,
+    ): Boolean = withContext(Dispatchers.IO) {
+        recordsDao.liveWorkoutRecordExists(userId, journalId, date, workoutNumber.toLong())
+            .executeAsOne()
+    }
+
     /**
      * Last time anything was written into this workout, or null when it holds no
      * records. Drives the forgotten-session rule — see [WorkoutSessionActivity].

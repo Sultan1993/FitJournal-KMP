@@ -159,6 +159,23 @@ SELECT MAX(updatedDate)
 FROM workoutRecords
 WHERE userId = ? AND journalId = ? AND date = ? AND workoutNumber = ?;
 
+-- Does this workout slot hold any LIVE record? The tombstone-EXCLUSIVE twin of
+-- workoutSlotExists, and the two must NOT be merged into one query — they answer
+-- opposite questions on purpose:
+--   * workoutSlotExists counts tombstones, so an emptied slot is still CHARGED by
+--     the meter and therefore stays writable (quota must not be refundable).
+--   * this one does not, because a workout whose every record was deleted logged
+--     NOTHING, and the forgotten-session rule must discard it rather than record
+--     a zero-set workout the manual End path would have deleted.
+liveWorkoutRecordExists:
+SELECT EXISTS(
+    SELECT 1
+    FROM workoutRecords
+    WHERE userId = ? AND journalId = ? AND date = ? AND workoutNumber = ?
+    AND deletedAt IS NULL
+    LIMIT 1
+);
+
 createWorkoutRecord:
 INSERT INTO workoutRecords(uuid, remoteId, userId, journalId, date, position, comment, startedAt, durationSec, pendingUpload, createdDate, updatedDate, workoutNumber)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);

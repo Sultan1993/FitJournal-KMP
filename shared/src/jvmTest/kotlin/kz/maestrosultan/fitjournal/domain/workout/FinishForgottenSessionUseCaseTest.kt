@@ -6,6 +6,7 @@ import kotlin.test.assertNull
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDate
@@ -116,6 +117,46 @@ class FinishForgottenSessionUseCaseTest {
         assertNull(repo(NOW).getRunningSession(USER))
     }
 
+    @Test
+    fun aJustStartedSession_survives_evenWhenTheWorkoutsOwnRecordsAreOld(): Unit = runBlocking {
+        // The bug this guards: records outlive sessions. A workout logged WITHOUT
+        // pressing Start has records and no session row — which is exactly when the
+        // Start bar is offered again — so pressing Start hours later inherited a
+        // stale lastActivity and the very next foreground ended the live session at
+        // zero duration. Staleness must come from max(startedAt, lastActivity).
+        val now = NOW
+        seedRecordAt(now - 11.hours)
+        start(now - 30.seconds)
+
+        assertEquals(
+            FinishForgottenSessionUseCase.Outcome.NOTHING_TO_DO,
+            FinishForgottenSessionUseCase(repo(now), recordRepo, fixedClock(now))(USER),
+        )
+        assertEquals(true, repo(now).getRunningSession(USER)?.isRunning)
+    }
+
+    @Test
+    fun aSessionWhoseRecordsWereAllDeleted_isDiscarded_notRecordedAsAWorkout(): Unit = runBlocking {
+        // lastActivityInWorkout counts tombstones ON PURPOSE, so an emptied workout
+        // still reports a timestamp. Taking that as "it logged something" ends the
+        // session and mints a zero-set workout — indistinguishable from a real one
+        // — where the manual End path would have deleted it outright.
+        val now = NOW
+        val uuid = seedRecordAt(now - 5.hours)
+        db.workoutRecordsQueries.softDeleteWorkoutRecord(
+            deletedAt = (now - 4.hours).toString(),
+            updatedDate = (now - 4.hours).toString(),
+            uuid = uuid,
+        )
+        start(now - 6.hours)
+
+        assertEquals(
+            FinishForgottenSessionUseCase.Outcome.DISCARDED_EMPTY,
+            FinishForgottenSessionUseCase(repo(now), recordRepo, fixedClock(now))(USER),
+        )
+        assertEquals(emptyList(), sessionsDB.getSessionsForDay(USER, JOURNAL, DATE.toString()))
+    }
+
     // ── harness ─────────────────────────────────────────────────────────
 
     private fun repo(now: Instant) =
@@ -131,15 +172,17 @@ class FinishForgottenSessionUseCaseTest {
         return FinishForgottenSessionUseCase(repo(now), recordRepo, fixedClock(now))
     }
 
-    private fun seedRecordAt(updatedAt: Instant) {
+    private fun seedRecordAt(updatedAt: Instant): String {
+        val uuid = java.util.UUID.randomUUID().toString()
         db.workoutRecordsQueries.createWorkoutRecord(
-            uuid = java.util.UUID.randomUUID().toString(),
+            uuid = uuid,
             remoteId = null, userId = USER, journalId = JOURNAL, date = DATE.toString(),
             position = 0L, comment = null, startedAt = null, durationSec = null,
             pendingUpload = true,
             createdDate = updatedAt.toString(), updatedDate = updatedAt.toString(),
             workoutNumber = 1L,
         )
+        return uuid
     }
 
     private suspend fun start(startedAt: Instant) {

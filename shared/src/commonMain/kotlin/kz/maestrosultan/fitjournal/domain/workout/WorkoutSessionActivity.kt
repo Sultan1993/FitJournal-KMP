@@ -1,6 +1,5 @@
 package kz.maestrosultan.fitjournal.domain.workout
 
-import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Instant
@@ -10,33 +9,47 @@ import kotlin.time.Instant
  *
  * A session has `startedAt` and `endedAt` and nothing else, so "still running"
  * and "abandoned three days ago" look identical to the app. The distinguishing
- * signal is not the session at all — it is the last time the user actually
- * logged something into that workout.
+ * signal is not the session alone — it is the last time the user actually did
+ * something, which takes BOTH the session's own start and the workout's last
+ * logged write to answer.
  */
 object WorkoutSessionActivity {
 
     /**
-     * No logged activity for this long and the workout is treated as forgotten.
+     * No activity for this long and the workout is treated as forgotten.
      *
      * Generous enough for a heavy day with long rests, or a session paused for a
-     * phone call — two hours with NO logged set is past either. Short enough that
+     * phone call — two hours with NO activity is past either. Short enough that
      * a workout abandoned in the evening is closed by morning rather than
      * lingering into the next day.
      */
     val INACTIVITY_LIMIT: Duration = 2.hours
 
     /**
-     * True when [session] has logged nothing for longer than [INACTIVITY_LIMIT].
+     * The moment staleness is measured from: the LATER of the session's own start
+     * and the workout's last write.
      *
-     * [lastActivityAt] is null for a session with no records at all — started and
-     * never used. That is NOT forgotten, it is empty, and the empty-workout rule
-     * deletes it rather than ending it (see `WorkoutSessionRepository.deleteSession`),
-     * so this returns false and leaves that decision where it already lives.
+     * Both halves are load-bearing, and reading either alone is a bug we shipped:
+     *
+     *  - **`lastActivityAt` alone** treats a brand-new session as forgotten.
+     *    Records outlive sessions — a workout logged without ever pressing Start
+     *    has records and no session row, and that is exactly when the Start bar is
+     *    offered again — so `lastActivityAt` can predate `startedAt` by hours.
+     *    Pressing Start at 19:00 on a slot last written at 08:00 would be ended
+     *    instantly, at zero duration, by the very next foreground.
+     *  - **`startedAt` alone** is the signal `workoutSessions` never carried; it
+     *    cannot tell a session being actively logged from one abandoned at minute
+     *    two.
+     *
+     * `null` [lastActivityAt] means the workout holds no records at all, so the
+     * session's own start is the only evidence there is.
      */
-    fun isForgotten(lastActivityAt: Instant?, now: Instant): Boolean {
-        val last = lastActivityAt ?: return false
-        return now - last > INACTIVITY_LIMIT
-    }
+    fun activitySince(session: WorkoutSession, lastActivityAt: Instant?): Instant =
+        maxOf(lastActivityAt ?: session.startedAt, session.startedAt)
+
+    /** True when nothing has happened in [session] for longer than [INACTIVITY_LIMIT]. */
+    fun isForgotten(session: WorkoutSession, lastActivityAt: Instant?, now: Instant): Boolean =
+        now - activitySince(session, lastActivityAt) > INACTIVITY_LIMIT
 
     /**
      * The moment a forgotten workout should be recorded as having ended: its last
@@ -46,14 +59,12 @@ object WorkoutSessionActivity {
      * Adding it would hand every forgotten session a phantom two hours, which is
      * the same class of lie as the multi-day duration this exists to prevent.
      *
-     * Never later than [now] and never earlier than the session's own start, so a
-     * clock change or a record edited from another device cannot invert the
-     * interval.
+     * Clamped into `[startedAt, now]` so a clock change or a record edited from
+     * another device cannot invert the interval. Written as nested max/min rather
+     * than `coerceIn`, which THROWS on an empty range (`startedAt > now` after a
+     * backwards clock change) — and an unbridged Kotlin throw crossing SKIE is an
+     * uncatchable iOS SIGABRT.
      */
-    fun endedAtFor(session: WorkoutSession, lastActivityAt: Instant, now: Instant): Instant =
-        lastActivityAt.coerceIn(session.startedAt, now)
-
-    /** Convenience for callers holding a clock rather than a captured instant. */
-    fun isForgotten(lastActivityAt: Instant?, clock: Clock = Clock.System): Boolean =
-        isForgotten(lastActivityAt, clock.now())
+    fun endedAtFor(session: WorkoutSession, activitySince: Instant, now: Instant): Instant =
+        maxOf(session.startedAt, minOf(activitySince, now))
 }

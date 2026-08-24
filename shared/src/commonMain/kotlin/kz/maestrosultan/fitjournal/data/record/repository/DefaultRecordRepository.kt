@@ -296,6 +296,13 @@ class DefaultRecordRepository(
         workoutNumber: Int,
     ): Boolean = workoutsDB.hasAnyRecordInWorkout(userId, journalId, date.toString(), workoutNumber)
 
+    override suspend fun hasLiveRecordInWorkout(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+        workoutNumber: Int,
+    ): Boolean = workoutsDB.hasLiveRecordInWorkout(userId, journalId, date.toString(), workoutNumber)
+
     /**
      * 3-year window (`[threeYearsAgo, far-future)`), matching `getRecentRecords`
      * so the exercise details page never surfaces older history than the rest of the app.

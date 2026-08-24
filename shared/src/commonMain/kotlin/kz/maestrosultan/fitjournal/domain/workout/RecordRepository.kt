@@ -179,6 +179,22 @@ interface RecordRepository {
         workoutNumber: Int,
     ): Boolean = true
 
+    /**
+     * True when the workout slot holds at least one LIVE record — the
+     * tombstone-EXCLUSIVE twin of [hasAnyRecordInWorkout].
+     *
+     * Answers "did this workout actually log anything", which [lastActivityInWorkout]
+     * cannot: that one counts tombstones on purpose, so a slot whose every record
+     * was deleted still reports a timestamp. Default fails toward KEEPING the
+     * session, which is the recoverable direction (the user can still End it).
+     */
+    suspend fun hasLiveRecordInWorkout(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+        workoutNumber: Int,
+    ): Boolean = true
+
     // ─── Writes ────────────────────────────────────────────────────────
 
     /**

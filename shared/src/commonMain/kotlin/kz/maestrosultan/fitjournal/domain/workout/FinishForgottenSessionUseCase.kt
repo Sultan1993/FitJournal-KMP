@@ -50,30 +50,42 @@ class FinishForgottenSessionUseCase(
     private suspend fun resolve(userId: String): Outcome {
         val running = sessions.getRunningSession(userId) ?: return Outcome.NOTHING_TO_DO
         val now = clock.now()
-        val lastActivity = records.lastActivityInWorkout(
+
+        // Measured from the LATER of the session's start and the workout's last
+        // write — see [WorkoutSessionActivity.activitySince] for why reading
+        // either one alone is wrong.
+        val since = WorkoutSessionActivity.activitySince(
+            session = running,
+            lastActivityAt = records.lastActivityInWorkout(
+                userId = running.userId,
+                journalId = running.journalId,
+                date = running.date,
+                workoutNumber = running.workoutNumber,
+            ),
+        )
+        if (now - since <= INACTIVITY_LIMIT) return Outcome.NOTHING_TO_DO
+
+        // A workout that logged NOTHING is not worth saving, and "nothing" has to
+        // be counted in LIVE records. `lastActivityInWorkout` includes tombstones
+        // on purpose — deleting a set at 19:40 is still something the user did at
+        // 19:40 — so a session whose every record was since deleted carries a
+        // timestamp but holds no workout. The manual End path deletes those; an
+        // auto-close must not mint the zero-set workout that path would have
+        // refused, because nothing afterwards distinguishes it from a real one.
+        val hasLiveRecords = records.hasLiveRecordInWorkout(
             userId = running.userId,
             journalId = running.journalId,
             date = running.date,
             workoutNumber = running.workoutNumber,
         )
-
-        // No records at all: this is not a forgotten workout, it is an EMPTY one —
-        // Start was pressed and nothing was ever logged. The manual End path
-        // deletes those rather than keeping them ("a workout that logged NOTHING
-        // is not worth saving"), and an auto-close must not invent a zero-set
-        // workout in the user's history where the manual path would have left
-        // none. Staleness is measured from startedAt, the only signal it has.
-        if (lastActivity == null) {
-            if (now - running.startedAt <= INACTIVITY_LIMIT) return Outcome.NOTHING_TO_DO
+        if (!hasLiveRecords) {
             sessions.deleteSession(userId, running.id)
             return Outcome.DISCARDED_EMPTY
         }
 
-        if (!WorkoutSessionActivity.isForgotten(lastActivity, now)) return Outcome.NOTHING_TO_DO
-
         sessions.endSession(
             userId = userId,
-            endedAt = WorkoutSessionActivity.endedAtFor(running, lastActivity, now),
+            endedAt = WorkoutSessionActivity.endedAtFor(running, since, now),
         )
         return Outcome.FINISHED
     }
