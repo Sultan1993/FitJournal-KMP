@@ -143,6 +143,22 @@ SELECT EXISTS(
     LIMIT 1
 );
 
+-- When did the user last touch THIS workout? MAX(updatedDate) over its records —
+-- every write bumps updatedDate (adds, set edits, soft deletes), so this is the
+-- activity signal `workoutSessions` does not carry: the table has startedAt and
+-- endedAt and nothing in between.
+--
+-- Tombstones are INCLUDED on purpose: deleting a set at 19:40 is still something
+-- the user did at 19:40. Excluding them would date the workout to before an edit
+-- the user actually made.
+--
+-- Returns NULL when the workout has no records at all — a session started and
+-- never used. That is EMPTY, not forgotten, and the empty-workout rule deletes it.
+lastActivityInWorkout:
+SELECT MAX(updatedDate)
+FROM workoutRecords
+WHERE userId = ? AND journalId = ? AND date = ? AND workoutNumber = ?;
+
 createWorkoutRecord:
 INSERT INTO workoutRecords(uuid, remoteId, userId, journalId, date, position, comment, startedAt, durationSec, pendingUpload, createdDate, updatedDate, workoutNumber)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);

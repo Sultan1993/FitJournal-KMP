@@ -1,6 +1,7 @@
 package kz.maestrosultan.fitjournal.domain.workout
 
 import kotlinx.coroutines.flow.Flow
+import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
 
 /** 100% local (offline-first contract): no AWS imports, no network. */
@@ -62,10 +63,15 @@ interface WorkoutSessionRepository {
     ): WorkoutSession
 
     /**
-     * Ends the user's running session with endedAt = now; returns the finished
-     * session, or null if nothing was running (no-op, never throws).
+     * Ends the user's running session; returns the finished session, or null if
+     * nothing was running (no-op, never throws).
+     *
+     * [endedAt] defaults to now — the ordinary case, where the user is standing
+     * there tapping End. It is passed explicitly ONLY for a workout the user
+     * forgot to close, where "now" would record a multi-hour workout that never
+     * happened; see [WorkoutSessionActivity.endedAtFor].
      */
-    suspend fun endSession(userId: String): WorkoutSession?
+    suspend fun endSession(userId: String, endedAt: Instant? = null): WorkoutSession?
 
     /**
      * Hard-delete ONE session by id — the empty-workout cleanup. A workout with

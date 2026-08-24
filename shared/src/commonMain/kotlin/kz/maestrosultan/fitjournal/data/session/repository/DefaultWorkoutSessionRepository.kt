@@ -1,6 +1,7 @@
 package kz.maestrosultan.fitjournal.data.session.repository
 
 import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.LocalDate
@@ -95,8 +96,8 @@ class DefaultWorkoutSessionRepository(
         now = clock.now(),
     ).toDomain()
 
-    override suspend fun endSession(userId: String): WorkoutSession? =
-        sessionsDB.endRunningSession(userId, clock.now())?.toDomain()
+    override suspend fun endSession(userId: String, endedAt: Instant?): WorkoutSession? =
+        sessionsDB.endRunningSession(userId, endedAt ?: clock.now())?.toDomain()
 
     override suspend fun deleteSession(userId: String, sessionUuid: String) =
         sessionsDB.deleteByUuid(sessionUuid, userId, clock.now())

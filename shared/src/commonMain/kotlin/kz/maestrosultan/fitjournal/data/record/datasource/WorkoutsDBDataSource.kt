@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import kz.maestrosultan.fitjournal.data.time.parseStoredInstant
 import kz.maestrosultan.fitjournal.data.db.WorkoutExercisesQueries
 import kz.maestrosultan.fitjournal.data.db.WorkoutRecordsQueries
 import kz.maestrosultan.fitjournal.data.db.WorkoutSetsQueries
@@ -67,6 +68,25 @@ class WorkoutsDBDataSource(
     ): Boolean = withContext(Dispatchers.IO) {
         recordsDao.workoutSlotExists(userId, journalId, date, workoutNumber.toLong())
             .executeAsOne()
+    }
+
+    /**
+     * Last time anything was written into this workout, or null when it holds no
+     * records. Drives the forgotten-session rule — see [WorkoutSessionActivity].
+     *
+     * `MAX(updatedDate)` comes back as a nullable TEXT (SQL MAX over zero rows is
+     * NULL), hence executeAsOne().MAX plus the null check rather than a bare map.
+     */
+    suspend fun lastActivityInWorkout(
+        userId: String,
+        journalId: String,
+        date: String,
+        workoutNumber: Int,
+    ): Instant? = withContext(Dispatchers.IO) {
+        recordsDao.lastActivityInWorkout(userId, journalId, date, workoutNumber.toLong())
+            .executeAsOne()
+            .MAX
+            ?.let(::parseStoredInstant)
     }
 
     suspend fun getPendingUploads(userId: String): List<DBWorkoutRecordRow> = withContext(Dispatchers.IO) {

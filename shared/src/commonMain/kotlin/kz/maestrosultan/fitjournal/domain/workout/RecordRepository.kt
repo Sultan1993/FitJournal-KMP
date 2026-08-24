@@ -133,6 +133,20 @@ interface RecordRepository {
         upToDate: LocalDate,
     ): List<WeightedSetOccurrence>
 
+    // ─── Session activity ──────────────────────────────────────────────
+
+    /**
+     * Last time anything was written into this workout, or null when it has no
+     * records. The activity signal `workoutSessions` lacks — see
+     * [kz.maestrosultan.fitjournal.domain.workout.WorkoutSessionActivity].
+     */
+    suspend fun lastActivityInWorkout(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+        workoutNumber: Int,
+    ): Instant? = null
+
     // ─── Free-quota reads ──────────────────────────────────────────────
 
     /**

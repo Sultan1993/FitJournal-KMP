@@ -675,7 +675,7 @@ class WorkoutDetailsViewModelTest {
         ): Int = unsupported()
 
         override suspend fun startSession(userId: String, journalId: String, date: LocalDate, workoutNumber: Int): WorkoutSession = unsupported()
-        override suspend fun endSession(userId: String): WorkoutSession? = unsupported()
+        override suspend fun endSession(userId: String, endedAt: Instant?): WorkoutSession? = unsupported()
         override suspend fun deleteSession(userId: String, sessionUuid: String): Unit = unsupported()
         override suspend fun deleteUserSessions(userId: String): Unit = unsupported()
 

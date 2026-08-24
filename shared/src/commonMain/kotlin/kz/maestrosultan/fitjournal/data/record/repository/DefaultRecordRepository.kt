@@ -276,6 +276,13 @@ class DefaultRecordRepository(
             )
         }
 
+    override suspend fun lastActivityInWorkout(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+        workoutNumber: Int,
+    ): Instant? = workoutsDB.lastActivityInWorkout(userId, journalId, date.toString(), workoutNumber)
+
     override suspend fun countMeteredWorkouts(userId: String): Int =
         workoutsDB.countMeteredWorkouts(userId)
 

@@ -81,7 +81,7 @@ private class FakeSessionRepo(
 
     override suspend fun getRunningSession(userId: String): WorkoutSession? = running
 
-    override suspend fun endSession(userId: String): WorkoutSession? {
+    override suspend fun endSession(userId: String, endedAt: Instant?): WorkoutSession? {
         endCalls++
         if (endDelayMillis > 0) delay(endDelayMillis)
         if (endThrows) throw IllegalStateException("end boom")
