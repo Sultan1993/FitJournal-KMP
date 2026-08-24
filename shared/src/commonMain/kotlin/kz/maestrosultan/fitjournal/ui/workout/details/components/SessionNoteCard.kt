@@ -80,7 +80,7 @@ private fun FilledNoteCard(text: String, onClick: () -> Unit, modifier: Modifier
             Spacer(Modifier.height(5.dp))
             Text(
                 text = text,
-                style = FjTheme.typography.body.copy(fontSize = 14.5.sp, lineHeight = 21.75.sp),
+                style = FjTheme.typography.body.copy(fontSize = 14.5.sp),
                 color = FjTheme.colors.textSecondary,
             )
         }

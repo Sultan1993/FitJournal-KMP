@@ -163,7 +163,6 @@ private fun NoteEditorBody(
                 .focusRequester(focusRequester),
             textStyle = FjTheme.typography.body.copy(
                 fontSize = 16.sp,
-                lineHeight = 23.sp,
                 color = FjTheme.colors.textPrimary,
             ),
             cursorBrush = SolidColor(FjTheme.colors.brand),
@@ -172,7 +171,7 @@ private fun NoteEditorBody(
                 if (value.text.isEmpty()) {
                     Text(
                         text = stringResource(Res.string.workout_details_note_placeholder),
-                        style = FjTheme.typography.body.copy(fontSize = 16.sp, lineHeight = 23.sp),
+                        style = FjTheme.typography.body.copy(fontSize = 16.sp),
                         color = FjTheme.colors.textTertiary,
                     )
                 }

@@ -84,7 +84,6 @@ fun WorkoutListHero(
                     style = FjTheme.typography.numberLarge.copy(
                         fontSize = 34.sp,
                         fontWeight = FontWeight.Bold,
-                        lineHeight = 34.sp,
                     ),
                     color = FjTheme.colors.textPrimary,
                     modifier = Modifier.alignByBaseline(),
@@ -103,7 +102,6 @@ fun WorkoutListHero(
                     style = FjTheme.typography.numberLarge.copy(
                         fontSize = durationSize,
                         fontWeight = FontWeight.Bold,
-                        lineHeight = durationSize,
                     ),
                     color = FjTheme.colors.textPrimary,
                     modifier = Modifier.alignByBaseline(),

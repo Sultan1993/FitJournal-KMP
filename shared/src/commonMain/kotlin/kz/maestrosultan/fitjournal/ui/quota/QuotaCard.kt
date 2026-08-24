@@ -192,7 +192,7 @@ private fun ExhaustedBody(content: QuotaCardContent.Exhausted, onUpgradeClick: (
             text = content.monthlyPrice
                 ?.let { stringResource(Res.string.quota_exhausted_subtitle_priced, it) }
                 ?: stringResource(Res.string.quota_exhausted_subtitle),
-            style = cardStyle(16.0, FontWeight.Normal), // 1.45
+            style = cardStyle(16.0, FontWeight.Normal),
             color = FjTheme.colors.brandInkSecondary,
         )
     }

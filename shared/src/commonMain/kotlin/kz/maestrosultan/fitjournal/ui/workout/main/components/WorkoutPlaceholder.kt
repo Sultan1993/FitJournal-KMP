@@ -114,7 +114,7 @@ fun AnotherWorkoutPlaceholder(
         Text(
             text = subtitle,
             modifier = Modifier.widthIn(max = 300.dp),
-            style = FjTheme.typography.body.copy(lineHeight = 20.sp),
+            style = FjTheme.typography.body,
             color = FjTheme.colors.textSecondary,
             textAlign = TextAlign.Center,
         )
@@ -158,7 +158,7 @@ fun FirstWorkoutPlaceholder(
         Text(
             text = text,
             modifier = Modifier.widthIn(max = 300.dp),
-            style = FjTheme.typography.body.copy(lineHeight = 20.sp),
+            style = FjTheme.typography.body,
             color = FjTheme.colors.textSecondary,
             textAlign = TextAlign.Center,
         )

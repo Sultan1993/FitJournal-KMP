@@ -67,7 +67,6 @@ fun WorkoutListEmptyState(
                 style = FjTheme.typography.body.copy(
                     fontSize = 19.sp,
                     fontWeight = FontWeight.Medium,
-                    lineHeight = 25.65.sp, // 1.35 of 19
                 ),
                 color = FjTheme.colors.textPrimary,
                 textAlign = TextAlign.Center,
@@ -77,7 +76,6 @@ fun WorkoutListEmptyState(
                 style = FjTheme.typography.body.copy(
                     fontSize = 14.5.sp,
                     fontWeight = FontWeight.Normal,
-                    lineHeight = 21.75.sp, // 1.5 of 14.5
                 ),
                 color = FjTheme.colors.textSecondary,
                 textAlign = TextAlign.Center,
