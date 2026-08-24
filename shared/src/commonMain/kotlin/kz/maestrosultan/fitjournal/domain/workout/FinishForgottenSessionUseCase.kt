@@ -13,8 +13,8 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutSessionActivity.INACTIV
  *
  * OPPORTUNISTIC BY DESIGN. Callers run it on app foreground and on whatever
  * periodic task the platform already grants; nothing schedules work for it. The
- * threshold is [INACTIVITY_LIMIT] — three hours — so whether this fires at 3h00
- * or 3h40 is invisible: [WorkoutSessionActivity.endedAtFor] records the workout
+ * threshold is [INACTIVITY_LIMIT] — two hours — so whether this fires at 2h00
+ * or 2h40 is invisible: [WorkoutSessionActivity.endedAtFor] records the workout
  * as having ended at its LAST ACTIVITY, not at the moment we noticed. The data is
  * identical either way; only the notification clears sooner.
  *

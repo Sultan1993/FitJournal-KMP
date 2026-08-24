@@ -18,12 +18,12 @@ object WorkoutSessionActivity {
     /**
      * No logged activity for this long and the workout is treated as forgotten.
      *
-     * Deliberately generous: a heavy powerlifting day with long rests, a session
-     * paused for a phone call, a gym commute mid-workout — none of those should
-     * be declared over. Three hours is past any of them and well short of the
-     * overnight case this exists to catch.
+     * Generous enough for a heavy day with long rests, or a session paused for a
+     * phone call — two hours with NO logged set is past either. Short enough that
+     * a workout abandoned in the evening is closed by morning rather than
+     * lingering into the next day.
      */
-    val INACTIVITY_LIMIT: Duration = 3.hours
+    val INACTIVITY_LIMIT: Duration = 2.hours
 
     /**
      * True when [session] has logged nothing for longer than [INACTIVITY_LIMIT].
@@ -43,8 +43,8 @@ object WorkoutSessionActivity {
      * activity, NOT "now" and NOT "last activity + the limit".
      *
      * The limit is how abandonment is DETECTED; it is not part of the workout.
-     * Adding it would hand every forgotten session a phantom three hours, which
-     * is the same class of lie as the multi-day duration this exists to prevent.
+     * Adding it would hand every forgotten session a phantom two hours, which is
+     * the same class of lie as the multi-day duration this exists to prevent.
      *
      * Never later than [now] and never earlier than the session's own start, so a
      * clock change or a record edited from another device cannot invert the
