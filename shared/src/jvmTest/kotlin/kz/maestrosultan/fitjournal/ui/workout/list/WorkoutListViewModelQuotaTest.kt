@@ -145,15 +145,18 @@ class WorkoutListViewModelQuotaTest {
     }
 
     @Test
-    fun theCardsTwoCtas_leaveAsEffects_forTheHostToPerform(): Unit = runBlocking {
+    fun bothCardCtas_raiseThePaywall_forTheHostToPresent(): Unit = runBlocking {
         // Shared code never learns Superwall exists; both actions leave as effects.
+        // Restore deliberately lands on the SAME effect — the store's own Restore
+        // control lives on the paywall, so there is no silent in-place re-probe to
+        // fail without telling anyone.
         val vm = vm(countFlow = emptyFlow())
 
         vm.dispatch(WorkoutListContract.ViewAction.QuotaUpgradeTapped)
         assertEquals(WorkoutListContract.ViewEffect.ShowPaywall, vm.viewEffect.firstWithin())
 
         vm.dispatch(WorkoutListContract.ViewAction.QuotaRestoreTapped)
-        assertEquals(WorkoutListContract.ViewEffect.RestorePurchase, vm.viewEffect.firstWithin())
+        assertEquals(WorkoutListContract.ViewEffect.ShowPaywall, vm.viewEffect.firstWithin())
     }
 
     // ── harness ─────────────────────────────────────────────────────────

@@ -176,8 +176,11 @@ class WorkoutListViewModel(
             is WorkoutListContract.ViewAction.SelectDate -> onSelectDate(action.date)
             is WorkoutListContract.ViewAction.OpenDay -> emit(WorkoutListContract.ViewEffect.OpenWorkoutDetails(action.date))
             WorkoutListContract.ViewAction.OpenJournalPicker -> emit(WorkoutListContract.ViewEffect.OpenJournalPicker)
-            WorkoutListContract.ViewAction.QuotaUpgradeTapped -> emit(WorkoutListContract.ViewEffect.ShowPaywall)
-            WorkoutListContract.ViewAction.QuotaRestoreTapped -> emit(WorkoutListContract.ViewEffect.RestorePurchase)
+            // Both CTAs raise the paywall: Restore is served by the store's own
+            // control there, rather than by a silent in-place re-probe.
+            WorkoutListContract.ViewAction.QuotaUpgradeTapped,
+            WorkoutListContract.ViewAction.QuotaRestoreTapped,
+            -> emit(WorkoutListContract.ViewEffect.ShowPaywall)
         }
     }
 

@@ -130,7 +130,12 @@ object WorkoutListContract {
         data object OpenJournalPicker : ViewAction
         /** Quota card's primary CTA — Upgrade / See plans / Renew. */
         data object QuotaUpgradeTapped : ViewAction
-        /** Quota card's secondary CTA, lapsed state only. */
+        /**
+         * Quota card's secondary CTA, lapsed state only. Raises the same paywall as
+         * [QuotaUpgradeTapped] — the store's own Restore control lives there, and a
+         * button that re-probed entitlement in place could only report success by
+         * redrawing, leaving every failure silent.
+         */
         data object QuotaRestoreTapped : ViewAction
     }
 
@@ -142,10 +147,5 @@ object WorkoutListContract {
          * never learns which placement, or that Superwall exists at all.
          */
         data object ShowPaywall : ViewEffect
-        /**
-         * Re-check entitlement with the store (the lapsed card's "Restore
-         * purchase"). Host-owned for the same reason as [ShowPaywall].
-         */
-        data object RestorePurchase : ViewEffect
     }
 }
