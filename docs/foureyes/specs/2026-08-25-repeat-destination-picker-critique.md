@@ -34,3 +34,13 @@ with this unaddressed).
 - [Critical] fixed — The pinned use-case code failed its own required proof: `println("[FJ_QUOTA] canWriteWorkout threw…")` meant `rg -c 'canWriteWorkout'` returned 2, so spec §9.5 and the Task 13 gate would both fail on a CORRECT implementation. Coordinator CONFIRMED by running the count over the pinned lines. Drafter reworded the log to "quota check threw" and made Tasks 6 and 13 agree.
 - [Critical] fixed — The quota-gate test setup could not reach refusal or throw at all: on `FreeQuotaSettings` reset defaults the gate resolves `Unlimited` before touching the repository, so every refusal test would have passed for the wrong reason. Coordinator CONFIRMED and, in doing so, RETRACTED its own round-1 note (see the correction above): `WorkoutQuotaGateTest` uses a real `DefaultRecordRepository` over in-memory SQLite, and `FreeQuotaSettings` is a global object it resets in `@BeforeTest`/`@AfterTest` with a `meterOn(limit)` helper — exactly Sol's round-1 prescription. Drafter rewrote Task 6/10/11 test guidance to mirror that discipline and pinned which scenarios need `meterOn()`.
 - [Important] fixed — Task 13's gate had prose-only proofs for §9.6 and half of §9.7 while its `verifyCommand` ran only `:shared:jvmTest`. Drafter supplied a complete zero-safe zsh block, including `!`-inverted "must print nothing" checks (rg exits non-zero on zero matches) and a guarded `DisposableEffect` comparison against base `3bd3c4c`.
+
+## code · round 1 · 2026-08-25 · 335s
+- (none)
+
+Sol reviewed the full 18-commit range (a32cb2d..53eeb53) after all three gates were
+green, and returned `VERDICT: pass` with no findings. It was asked specifically to
+attack the close handshake's interleavings, to hunt for tests that assert falsely
+(a real one had just been found at the gate), the thrown-read-never-becomes-Single
+rule, single-gate-call-against-the-resolved-slot, and any path by which this KMP
+change could still force a native edit.
