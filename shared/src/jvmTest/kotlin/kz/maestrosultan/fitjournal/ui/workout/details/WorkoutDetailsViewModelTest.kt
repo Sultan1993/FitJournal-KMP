@@ -38,6 +38,7 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutSet
 import kz.maestrosultan.fitjournal.domain.workout.summary.DetectSessionBestUseCase
 import kz.maestrosultan.fitjournal.domain.workout.summary.WeightedSetOccurrence
 import kz.maestrosultan.fitjournal.domain.workout.usecase.DeleteWorkoutUseCase
+import kz.maestrosultan.fitjournal.domain.workout.RepeatTarget
 import kz.maestrosultan.fitjournal.domain.workout.usecase.RepeatWorkoutUseCase
 import kz.maestrosultan.fitjournal.domain.workout.usecase.SetWorkoutNoteUseCase
 import kz.maestrosultan.fitjournal.ui.workout.MuscleTitleFormatter
@@ -256,8 +257,8 @@ class WorkoutDetailsViewModelTest {
     @Test
     fun repeatTapped_whenTheQuotaRefuses_raisesThePaywall_andCopiesNOTHING() = runTest(dispatcher) {
         // The gate call site, not the gate: a refusal must write nothing at all.
-        // Repeat always lands on a BRAND-NEW page of today, so it can never be
-        // satisfied by "the slot already exists" — it always spends quota.
+        // With nothing running, Repeat opens a NEW page, which is the one arm that
+        // does spend quota — see the sibling test for the running case.
         FreeQuotaSettings.setLimit(10)
         FreeQuotaSettings.setHasEverSubscribed(true)
         FreeQuotaSettings.setEntitled(false)
@@ -272,6 +273,29 @@ class WorkoutDetailsViewModelTest {
         assertEquals(WorkoutDetailsContract.ViewEffect.ShowPaywall, vm.viewEffect.first())
         assertNull(records.repeatedFrom, "refused: nothing may be copied")
         assertNull(records.repeatedWorkoutNumber)
+    }
+
+    @Test
+    fun repeatTapped_intoTheRunningWorkout_isNEVERrefused_evenWhenExhausted() = runTest(dispatcher) {
+        // Rule 3, the mid-workout carve-out: a workout that already exists stays
+        // writable at exhaustion, so nobody is amputated part-way through one. Once
+        // Repeat can JOIN the running workout it has to ask about THAT slot rather
+        // than the blanket "am I allowed a new workout" — otherwise an exhausted
+        // user standing in the gym is refused the exercises they are mid-way doing.
+        FreeQuotaSettings.setLimit(10)
+        FreeQuotaSettings.setHasEverSubscribed(true)
+        FreeQuotaSettings.setEntitled(false)
+
+        val records = FakeRecordRepository(listOf(squatRecord(1)))
+        // Resolves to an EXISTING workout (the one that is running), not a new page.
+        records.repeatTarget = RepeatTarget(DATE, 1, isNewWorkout = false)
+        val vm = viewModel(records, FakeWorkoutSessionRepository(listOf(session("session-1", 1))))
+        awaitLoaded(vm)
+
+        vm.dispatch(WorkoutDetailsContract.ViewAction.RepeatTapped)
+        advanceUntilIdle()
+
+        assertEquals(DATE, records.repeatedFrom, "joining a live workout is never refused")
     }
 
     @Test
@@ -584,12 +608,25 @@ class WorkoutDetailsViewModelTest {
             repeatedFrom = date
         }
 
-        /** Records what Repeat copied; returns a fixed "new page today" (3) to open. */
+        /** Records what Repeat copied, and where the VM was told it would land. */
         var repeatedWorkoutNumber: Int? = null
-        override suspend fun copyWorkoutToTodayAsNewPage(userId: String, journalId: String, date: LocalDate, workoutNumber: Int): Int {
+
+        /** Overridable so a test can make Repeat JOIN a running workout instead. */
+        var repeatTarget: RepeatTarget? = null
+
+        override suspend fun resolveRepeatTarget(userId: String, journalId: String, today: LocalDate): RepeatTarget =
+            repeatTarget ?: RepeatTarget(today, 3, isNewWorkout = true)
+
+        override suspend fun copyWorkoutTo(
+            userId: String,
+            journalId: String,
+            date: LocalDate,
+            workoutNumber: Int,
+            target: RepeatTarget,
+        ): Boolean {
             repeatedFrom = date
             repeatedWorkoutNumber = workoutNumber
-            return 3
+            return true
         }
 
         override suspend fun replaceExerciseInRecord(

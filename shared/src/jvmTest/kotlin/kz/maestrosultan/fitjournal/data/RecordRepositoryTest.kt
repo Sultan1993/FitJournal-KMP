@@ -1,7 +1,11 @@
 package kz.maestrosultan.fitjournal.data
 
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.minus
 import kz.maestrosultan.fitjournal.data.exercise.datasource.CategoriesDBDataSource
 import kz.maestrosultan.fitjournal.data.exercise.datasource.ExercisesDBDataSource
 import kz.maestrosultan.fitjournal.data.exercise.mapper.ExerciseDBMapper
@@ -11,8 +15,10 @@ import kz.maestrosultan.fitjournal.data.record.repository.DefaultRecordRepositor
 import kz.maestrosultan.fitjournal.data.session.datasource.WorkoutSessionsDBDataSource
 import kz.maestrosultan.fitjournal.data.session.repository.DefaultWorkoutSessionRepository
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
+import kz.maestrosultan.fitjournal.domain.workout.RepeatTarget
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
 import java.util.UUID
+import kotlin.time.Clock
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -122,15 +128,103 @@ class RecordRepositoryTest {
     }
 
     @Test
-    fun copyWorkoutToTodayAsNewPage_landsOnTheNextFreePage_nullWhenEmpty(): Unit = runBlocking {
+    fun repeat_withNothingRunning_opensTheNextFreePageOnToday(): Unit = runBlocking {
         val exId = seedCatalogExercise()
         // Source workout 2 on a past date; today (fresh db) is empty.
         repo.addExercisesToDate(userId, journalId, date, 2, listOf(exId))
 
-        assertEquals(1, repo.copyWorkoutToTodayAsNewPage(userId, journalId, date, 2), "today empty -> new page 1")
-        assertEquals(2, repo.copyWorkoutToTodayAsNewPage(userId, journalId, date, 2), "second repeat -> next page today")
-        assertNull(repo.copyWorkoutToTodayAsNewPage(userId, journalId, date, 99), "no source records -> null, no copy")
+        assertEquals(RepeatTarget(today(), 1, isNewWorkout = true), resolve(), "today empty -> new page 1")
+        assertTrue(repeat(sourceWorkoutNumber = 2))
+        assertEquals(RepeatTarget(today(), 2, isNewWorkout = true), resolve(), "second repeat -> next page")
+        assertTrue(repeat(sourceWorkoutNumber = 2))
+        assertEquals(false, repeat(sourceWorkoutNumber = 99), "no source records -> nothing written")
     }
+
+    @Test
+    fun repeat_withASessionRunning_joinsThatWorkout_onItsOwnDate(): Unit = runBlocking {
+        // THE RULE: a repeat fills the workout you are CURRENTLY DOING. The 2h
+        // inactivity rule bounds how long a session runs, so a running one is the
+        // current workout however the calendar moved under it — start at 23:00,
+        // repeat at 01:00, and the sets belong to the 23:00 workout, NOT to a fresh
+        // page on the new date.
+        val exId = seedCatalogExercise()
+        repo.addExercisesToDate(userId, journalId, date, 2, listOf(exId))
+        // A session running on a date that is NOT today.
+        val sessionDate = today().minus(1, DateTimeUnit.DAY)
+        startSession(sessionDate, workoutNumber = 3)
+
+        assertEquals(
+            RepeatTarget(sessionDate, 3, isNewWorkout = false),
+            resolve(),
+            "the running workout is the target, whatever the date",
+        )
+        assertTrue(repeat(sourceWorkoutNumber = 2))
+        assertEquals(
+            listOf(3),
+            repo.getRecordsByDate(userId, journalId, sessionDate).map { it.workoutNumber },
+            "the copy is inside the running workout",
+        )
+        assertTrue(repo.getRecordsByDate(userId, journalId, today()).isEmpty(), "today untouched")
+    }
+
+    @Test
+    fun repeat_appendsToARunningWorkoutThatAlreadyHasRecords(): Unit = runBlocking {
+        // Append after what is there, never a second page. Positions continue.
+        val exId = seedCatalogExercise()
+        repo.addExercisesToDate(userId, journalId, date, 2, listOf(exId))
+        startSession(today(), workoutNumber = 1)
+        repo.addExercisesToDate(userId, journalId, today(), 1, listOf(exId))
+
+        assertTrue(repeat(sourceWorkoutNumber = 2))
+        val todaysRecords = repo.getRecordsByDate(userId, journalId, today())
+        assertEquals(setOf(1), todaysRecords.map { it.workoutNumber }.toSet(), "one page only")
+        assertEquals(2, todaysRecords.size, "appended, not merged into the existing record")
+        assertEquals(listOf(0, 1), todaysRecords.map { it.position }.sorted(), "positions continue")
+    }
+
+    @Test
+    fun repeat_ignoresASessionRunningInAnotherJournal(): Unit = runBlocking {
+        // Journal-scoped: joining a session in another journal would move the
+        // workout across journals.
+        val exId = seedCatalogExercise()
+        repo.addExercisesToDate(userId, journalId, date, 2, listOf(exId))
+        DefaultWorkoutSessionRepository(WorkoutSessionsDBDataSource(db.workoutSessionsQueries))
+            .startSession(userId, "another-journal", today(), workoutNumber = 5)
+
+        assertEquals(
+            RepeatTarget(today(), 1, isNewWorkout = true),
+            resolve(),
+            "a session in another journal is not this journal's current workout",
+        )
+    }
+
+    @Test
+    fun repeat_ignoresAFinishedEmptyWorkout(): Unit = runBlocking {
+        // Only a RUNNING session is a target. A finished session with no records
+        // used to capture the copy through the records-only allocator; it must not.
+        val exId = seedCatalogExercise()
+        repo.addExercisesToDate(userId, journalId, date, 2, listOf(exId))
+        val sessions = DefaultWorkoutSessionRepository(WorkoutSessionsDBDataSource(db.workoutSessionsQueries))
+        sessions.startSession(userId, journalId, today(), workoutNumber = 1)
+        sessions.endSession(userId)
+
+        assertEquals(
+            RepeatTarget(today(), 2, isNewWorkout = true),
+            resolve(),
+            "a finished workout is not the one you are doing -> new page past it",
+        )
+    }
+
+    private fun today() = Clock.System.todayIn(TimeZone.currentSystemDefault())
+
+    private suspend fun resolve() = repo.resolveRepeatTarget(userId, journalId, today())
+
+    private suspend fun repeat(sourceWorkoutNumber: Int) =
+        repo.copyWorkoutTo(userId, journalId, date, sourceWorkoutNumber, resolve())
+
+    private suspend fun startSession(on: LocalDate, workoutNumber: Int) =
+        DefaultWorkoutSessionRepository(WorkoutSessionsDBDataSource(db.workoutSessionsQueries))
+            .startSession(userId, journalId, on, workoutNumber)
 
     @Test
     fun setWorkoutNote_onAPageWithNoLiveRecords_isNoOp(): Unit = runBlocking {

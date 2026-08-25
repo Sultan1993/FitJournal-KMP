@@ -1,6 +1,7 @@
 package kz.maestrosultan.fitjournal.data.record.repository
 
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
+import kz.maestrosultan.fitjournal.domain.workout.RepeatTarget
 
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
@@ -296,6 +297,12 @@ class DefaultRecordRepository(
         workoutNumber: Int,
     ): Boolean = workoutsDB.hasAnyRecordInWorkout(userId, journalId, date.toString(), workoutNumber)
 
+    override suspend fun maxWorkoutNumberOnDate(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+    ): Int = workoutsDB.maxWorkoutNumberOnDate(userId, journalId, date.toString())
+
     override suspend fun hasLiveRecordInWorkout(
         userId: String,
         journalId: String,
@@ -395,22 +402,35 @@ class DefaultRecordRepository(
         insertCopiedRecords(userId, journalId, todayInSystemTz(), source, targetWorkoutNumber = null)
     }
 
-    override suspend fun copyWorkoutToTodayAsNewPage(
+    override suspend fun resolveRepeatTarget(
+        userId: String,
+        journalId: String,
+        today: LocalDate,
+    ): RepeatTarget {
+        val running = workoutsDB.runningWorkoutInJournal(userId, journalId)
+        if (running != null) {
+            val (dateStr, number) = running
+            return RepeatTarget(LocalDate.parse(dateStr), number, isNewWorkout = false)
+        }
+        return RepeatTarget(today, maxWorkoutNumberOnDate(userId, journalId, today) + 1, isNewWorkout = true)
+    }
+
+    override suspend fun copyWorkoutTo(
         userId: String,
         journalId: String,
         date: LocalDate,
         workoutNumber: Int,
-    ): Int? {
+        target: RepeatTarget,
+    ): Boolean {
         val source = getRecordsByDate(userId, journalId, date, includeLastOccurrence = false)
             .filter { it.workoutNumber == workoutNumber }
-        if (source.isEmpty()) return null
-        val today = todayInSystemTz()
-        // A brand-new page: one past today's highest workout number (gap-safe —
-        // numbers are distinct ordinals, never renumbered).
-        val newPage = (getRecordsByDate(userId, journalId, today, includeLastOccurrence = false)
-            .maxOfOrNull { it.workoutNumber } ?: 0) + 1
-        insertCopiedRecords(userId, journalId, today, source, targetWorkoutNumber = newPage)
-        return newPage
+        if (source.isEmpty()) return false
+        // Appending to a live workout is safe: insertCopiedRecords seeds each page's
+        // position counter from the rows already there, and
+        // clearStalePageMetaForNewWorkouts only tombstones a session that has ENDED,
+        // so it cannot delete the running session being targeted.
+        insertCopiedRecords(userId, journalId, target.date, source, targetWorkoutNumber = target.workoutNumber)
+        return true
     }
 
     override suspend fun replaceExerciseInRecord(

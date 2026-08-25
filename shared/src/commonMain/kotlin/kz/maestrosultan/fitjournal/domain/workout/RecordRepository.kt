@@ -251,17 +251,57 @@ interface RecordRepository {
     )
 
     /**
-     * Copies workout [workoutNumber] of [date] onto TODAY as a brand-new page
-     * (today's max workoutNumber + 1), clearing weights/reps to a "do it again"
-     * template (see [addRecordsToDate]). Returns the new page's workoutNumber, or
-     * null when the source workout has no records. Default no-ops for fakes.
+     * The highest workoutNumber [date] already uses, across records AND sessions
+     * — 0 for an empty day. The allocator for "give me a brand-new page".
+     *
+     * Sessions count: a session with no records yet is normal (Start creates
+     * exactly that), so a records-only maximum hands out a number a live session
+     * already owns. Default 0 for fakes.
      */
-    suspend fun copyWorkoutToTodayAsNewPage(
+    suspend fun maxWorkoutNumberOnDate(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+    ): Int = 0
+
+    /**
+     * Where a Repeat will land: **the workout you are currently doing, or a new one.**
+     *
+     *  - a session running in this journal -> ITS date and page, whatever the
+     *    calendar says. The 2h inactivity rule bounds how long a session can run,
+     *    so one still running IS the current workout: start at 23:00, repeat at
+     *    01:00, and the sets belong to the 23:00 workout.
+     *  - nothing running -> today, one past [maxWorkoutNumberOnDate].
+     *
+     * Journal-scoped, unlike the app-wide running-session read: a session running
+     * in another journal is not the workout this journal's Repeat should join.
+     *
+     * Exposed separately from the copy so the caller can ask the quota gate about
+     * the RIGHT slot — joining an existing workout must not be charged, and must
+     * not be refused to an exhausted user part-way through it. Default: a new page
+     * on [today], for fakes.
+     */
+    suspend fun resolveRepeatTarget(
+        userId: String,
+        journalId: String,
+        today: LocalDate,
+    ): RepeatTarget = RepeatTarget(today, 1, isNewWorkout = true)
+
+    /**
+     * Copies workout [workoutNumber] of [date] onto [target], clearing weights/reps
+     * to a "do it again" template (see [addRecordsToDate]). Returns false when the
+     * source workout has no records, in which case nothing was written.
+     *
+     * The destination is decided by [resolveRepeatTarget] and passed in, so the
+     * gate and the write can never disagree about which slot is involved.
+     */
+    suspend fun copyWorkoutTo(
         userId: String,
         journalId: String,
         date: LocalDate,
         workoutNumber: Int,
-    ): Int? = null
+        target: RepeatTarget,
+    ): Boolean = false
 
     /**
      * Replaces the single workoutExercise [targetWorkoutExerciseId] inside

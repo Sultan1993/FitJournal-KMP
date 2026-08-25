@@ -297,26 +297,43 @@ class WorkoutDetailsViewModel internal constructor(
     }
 
     /**
-     * Copies this workout onto today (as a template), then opens today's workout —
+     * Copies this workout forward as a template, then opens where it landed —
      * reusing OpenEditWorkout, which the hosts already map to "open the workout for
      * this date". A copy failure stays on the details screen (nothing to open).
      *
-     * GATED. A repeat always lands on a BRAND-NEW page of today
-     * (`max(workoutNumber) + 1`), so unlike Add-exercise or Copy it can never be
-     * satisfied by rule 3 — it always opens a new workout and therefore always
-     * spends quota. Refusal writes nothing and raises the paywall; the screen
-     * stays where it is.
+     * The destination is the repository's rule: a session running in this journal
+     * means the copy JOINS that workout, on ITS date; otherwise a new page opens on
+     * today. So the effect carries the resolved date, not today's.
+     *
+     * GATED, against the RESOLVED slot rather than a blanket "new workout". A repeat
+     * that joins the workout you are standing in the gym doing must not be charged
+     * and must not be refused — that is rule 3, the same carve-out that keeps every
+     * other write alive mid-workout. Only a repeat that opens a NEW page spends
+     * quota. Refusal writes nothing and raises the paywall; the screen stays put.
      */
     private fun onRepeatTapped() {
         val id = identity ?: return
         val loaded = loadedContent() ?: return
         val sourceWorkoutNumber = loaded.focusedWorkoutNumber
         viewModelScope.launch {
-            // Default true: the gate reads SQLite, so a locked or corrupt database
-            // throws, and letting that decide "exhausted" would lock a user out of
-            // their own log. Matches every other gate call site.
+            val today = clock.now().toLocalDateTime(timeZone).date
+            // Default true everywhere below: these read SQLite, so a locked or
+            // corrupt database throws, and letting that decide "exhausted" would
+            // lock a user out of their own log. Matches every other gate call site.
+            val target = try {
+                repeatWorkout.resolveTarget(id.userId, id.journalId, today)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                log("resolve repeat target failed", e)
+                return@launch
+            }
             val allowed = try {
-                quotaGate.canOpenNewWorkout(id.userId)
+                // A repeat that JOINS the running workout asks about that slot, so
+                // rule 3 answers it: an existing workout stays writable at
+                // exhaustion. Only a new page goes through the new-workout rule.
+                if (target.isNewWorkout) quotaGate.canOpenNewWorkout(id.userId)
+                else quotaGate.canWriteWorkout(id.userId, id.journalId, target.date, target.workoutNumber)
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Throwable) {
@@ -326,15 +343,15 @@ class WorkoutDetailsViewModel internal constructor(
                 emit(WorkoutDetailsContract.ViewEffect.ShowPaywall)
                 return@launch
             }
-            val newPage = runCatching { repeatWorkout(id.userId, id.journalId, date, sourceWorkoutNumber) }
-                .onFailure { e ->
-                    if (e is CancellationException) throw e
-                    log("repeat workout failed", e)
-                }.getOrNull()
-            // Open today's freshly-copied page so the user can fill it in.
-            if (newPage != null) {
-                val today = clock.now().toLocalDateTime(timeZone).date
-                emit(WorkoutDetailsContract.ViewEffect.OpenEditWorkout(today, newPage))
+            val copied = runCatching {
+                repeatWorkout(id.userId, id.journalId, date, sourceWorkoutNumber, target)
+            }.onFailure { e ->
+                if (e is CancellationException) throw e
+                log("repeat workout failed", e)
+            }.getOrDefault(false)
+            // Open where it landed so the user can fill it in.
+            if (copied) {
+                emit(WorkoutDetailsContract.ViewEffect.OpenEditWorkout(target.date, target.workoutNumber))
             }
         }
     }
