@@ -223,9 +223,17 @@ internal class RepeatPickerViewModel(
                 println("[FJ_REPEAT] month dots failed for $year-$month: $e")
                 return@launch
             }
-            // Merged, not replaced: paging back and forth must not blank the months
-            // already fetched, and a calendar can show a neighbouring month's edge days.
-            _viewState.update { it.copy(workoutDays = it.workoutDays + byDay) }
+            // Other months are kept — paging back and forth must not blank what was
+            // already fetched, and a calendar can show a neighbouring month's edge
+            // days. THIS month is replaced wholesale, though: a plain merge can only
+            // ever add days, so a day whose last record vanished between two fetches
+            // would keep its dot for the life of the sheet.
+            _viewState.update { state ->
+                val withoutThisMonth = state.workoutDays.filterKeys { day ->
+                    day.year != year || day.monthNumber != month
+                }
+                state.copy(workoutDays = withoutThisMonth + byDay)
+            }
         }
     }
 

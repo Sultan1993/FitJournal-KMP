@@ -434,6 +434,35 @@ class RepeatPickerViewModelTest {
     }
 
     @Test
+    fun refetchingAMonthDropsADayWhoseRecordsAreGone() = runTest(dispatcher) {
+        // Dots are merged across months so paging back does not blank them — but the
+        // re-fetched month must be REPLACED, not merged into. A merge can only ever
+        // add days, so a day emptied between two fetches (a sync pull tombstoning its
+        // last record while the sheet is open) would keep a dot for a day that no
+        // longer has a workout.
+        records.recordsByMonth[2026 to 5] = listOf(
+            chestRecord(SOURCE_DATE, workoutNumber = 1),
+            chestRecord(OTHER_DATE, workoutNumber = 1, id = "o1"),
+        )
+        val vm = viewModel()
+        advanceUntilIdle()
+        vm.dispatch(RepeatPickerContract.ViewAction.ChangeDayTapped)
+        advanceUntilIdle()
+        assertEquals(setOf(SOURCE_DATE, OTHER_DATE), vm.viewState.value.workoutDays.keys)
+
+        // OTHER_DATE's last record is gone; re-fetch the same month.
+        records.recordsByMonth[2026 to 5] = listOf(chestRecord(SOURCE_DATE, workoutNumber = 1))
+        vm.dispatch(RepeatPickerContract.ViewAction.CalendarMonthChanged(2026, 5))
+        advanceUntilIdle()
+
+        assertEquals(
+            setOf(SOURCE_DATE),
+            vm.viewState.value.workoutDays.keys,
+            "a day emptied since the last fetch must lose its dot",
+        )
+    }
+
+    @Test
     fun aThrowingMonthLeavesTheDotsAndThePaneExactlyAsTheyWere() = runTest(dispatcher) {
         records.recordsByMonth[2026 to 5] = listOf(chestRecord(SOURCE_DATE, workoutNumber = 1))
         records.throwingMonths += 2026 to 6
