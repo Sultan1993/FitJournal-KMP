@@ -29,7 +29,6 @@ class RepeatDestinationTest {
         val single = assertIs<RepeatDestinations.Single>(destinations())
         assertEquals(1, single.destination.workoutNumber)
         assertTrue(single.destination.isNewWorkout)
-        assertTrue(single.destination.spendsQuota)
     }
 
     @Test
@@ -43,7 +42,6 @@ class RepeatDestinationTest {
         assertEquals(1, single.destination.workoutNumber)
         assertTrue(single.destination.isRunning)
         assertTrue(!single.destination.isNewWorkout, "it EXISTS — it owns the page and has a timer")
-        assertTrue(single.destination.spendsQuota, "but quota is spent by the first RECORD, not by Start")
     }
 
     @Test
@@ -107,18 +105,14 @@ class RepeatDestinationTest {
             destinations(pages = mapOf(1 to 2, 2 to 5)),
         )
         assertEquals(listOf(false, false, true), choice.options.map { it.isNewWorkout })
-        assertEquals(listOf(false, false, true), choice.options.map { it.spendsQuota })
     }
 
     @Test
     fun aStartedButUnloggedPage_isNotNew_butDoesSpendQuota() {
-        // The two fields disagree here, and that is the point: the row reads as the
-        // running workout, and Add still has to ask the gate before writing to it.
         val choice = assertIs<RepeatDestinations.Choice>(
             destinations(pages = mapOf(1 to 3), sessionPages = setOf(2), running = 2),
         )
         val started = choice.options.single { it.workoutNumber == 2 }
         assertTrue(!started.isNewWorkout)
-        assertTrue(started.spendsQuota)
     }
 }

@@ -22,14 +22,11 @@ data class RepeatDestination(
     /**
      * The trailing "New workout" row — a page that does not exist at all yet.
      *
-     * NOT the same question as [spendsQuota], which is why they are two fields. A
-     * workout that was started but never logged EXISTS (it owns its page, it has a
-     * timer) so it is not "new" and must not be labelled as such — but it still
-     * costs quota, because quota is spent by the first RECORD, never by Start.
+     * A workout that was started but never logged EXISTS (it owns its page, it has a
+     * timer) so it is not "new" and must not be labelled as such. Whether a write is
+     * charged is the quota gate's question, answered at Add time — never derived here.
      */
     val isNewWorkout: Boolean,
-    /** Holds no records yet, so writing here spends one of the free workouts. */
-    val spendsQuota: Boolean,
     /** Sets copied here join this workout's timer, so the row says so. */
     val isRunning: Boolean,
     /** 0 for a started-but-unlogged workout, and for a new page. */
@@ -89,7 +86,6 @@ fun repeatDestinations(
         date = date,
         workoutNumber = number,
         isNewWorkout = number !in allPages,
-        spendsQuota = number !in pagesWithRecords,
         isRunning = number == runningWorkoutNumber,
         exerciseCount = pagesWithRecords[number] ?: 0,
     )
