@@ -61,6 +61,9 @@ import kz.maestrosultan.fitjournal.ui.theme.composeColor
  * @param onDateSelected fired when an in-month day is tapped.
  * @param onMonthChanged fired for the initially-visible month and every time the
  *   settled visible month changes; [month] is 1..12.
+ * @param containerColor the surface the grid paints itself on. Defaults to the app
+ *   background, which is what the full-screen call sites want; a sheet must pass its
+ *   own colour or the grid punches a black rectangle through it in dark mode.
  * @param maxDate when set, days after it render disabled and untappable (e.g. a
  *   "repeat" picker that cannot offer future days). `null` (default) changes nothing.
  */
@@ -71,6 +74,7 @@ fun WorkoutCalendar(
     onDateSelected: (LocalDate) -> Unit,
     onMonthChanged: (year: Int, month: Int) -> Unit,
     maxDate: LocalDate? = null,
+    containerColor: Color = FjTheme.colors.background,
     modifier: Modifier = Modifier,
 ) {
     // Locale-aware week start, shared by header labels and grid so they can't disagree.
@@ -102,7 +106,7 @@ fun WorkoutCalendar(
 
     Column(
         modifier = modifier
-            .background(FjTheme.colors.background)
+            .background(containerColor)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {

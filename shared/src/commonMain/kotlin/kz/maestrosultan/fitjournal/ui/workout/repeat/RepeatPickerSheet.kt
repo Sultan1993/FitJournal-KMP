@@ -208,7 +208,10 @@ private fun CalendarPane(
                 modifier = Modifier
                     .size(30.dp)
                     .clip(CircleShape)
-                    .background(FjTheme.colors.card)
+                    // `surface`, NOT `card`: card and sheet are the same colour in
+                    // dark (0xFF18181F). card is meant to sit on `background`; inside
+                    // a sheet it is invisible.
+                    .background(FjTheme.colors.surface)
                     .clickable { dispatch(RepeatPickerContract.ViewAction.CalendarBackTapped) },
                 contentAlignment = Alignment.Center,
             ) {
@@ -230,6 +233,9 @@ private fun CalendarPane(
                 dispatch(RepeatPickerContract.ViewAction.CalendarMonthChanged(year, month))
             },
             maxDate = today,
+            // The grid paints its own surface; inside a sheet it must be the sheet's,
+            // not the app background (black in dark).
+            containerColor = FjTheme.colors.sheet,
         )
     }
 }
@@ -249,7 +255,7 @@ private fun DayRow(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(FjTheme.colors.card)
+            .background(FjTheme.colors.surface)
             .clickable(onClick = onChangeDay)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -296,7 +302,7 @@ private fun DestinationRow(
                     .background(FjTheme.colors.sheet)
                     .drawDashedBorder(FjTheme.colors.border, radius = 16.dp)
             } else {
-                Modifier.background(FjTheme.colors.card)
+                Modifier.background(FjTheme.colors.surface)
             },
         )
         .clickable(onClick = onClick)
