@@ -209,6 +209,8 @@ private fun WorkoutDetailsScrollBody(
                 onEdit = { dispatch(WorkoutDetailsContract.ViewAction.EditTapped) },
                 onDelete = { dispatch(WorkoutDetailsContract.ViewAction.DeleteTapped) },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                // Not on the workout being done right now — see Loaded.focusedWorkoutIsRunning.
+                showRepeat = !loaded.focusedWorkoutIsRunning,
             )
         }
     }

@@ -276,6 +276,25 @@ class WorkoutDetailsViewModelTest {
     }
 
     @Test
+    fun repeatTapped_onTheWorkoutBeingDoneRightNow_copiesNOTHING(): Unit = runTest(dispatcher) {
+        // Repeating the workout you are CURRENTLY DOING resolves to itself, so the
+        // copy would read its exercises and append blank clones straight back into
+        // it — silently doubling the live workout, and uncharged, because an
+        // existing slot passes rule 3. The screen hides Repeat there; this pins the
+        // invariant in the ViewModel, where a layout change cannot lose it.
+        val records = FakeRecordRepository(listOf(squatRecord(1)))
+        records.repeatTarget = RepeatTarget(DATE, 1, isNewWorkout = false)
+        val vm = viewModel(records, FakeWorkoutSessionRepository(listOf(session("session-1", 1))))
+        awaitLoaded(vm)
+
+        vm.dispatch(WorkoutDetailsContract.ViewAction.RepeatTapped)
+        advanceUntilIdle()
+
+        assertEquals(0, records.repeatCount, "source == target must copy nothing")
+        assertNull(records.repeatedFrom)
+    }
+
+    @Test
     fun repeatTapped_twice_copiesONCE(): Unit = runTest(dispatcher) {
         // Allocation and the write are separate calls with no lock spanning them,
         // and OpenEditWorkout is emitted only AFTER the copy commits — so the button
@@ -305,8 +324,10 @@ class WorkoutDetailsViewModelTest {
         FreeQuotaSettings.setEntitled(false)
 
         val records = FakeRecordRepository(listOf(squatRecord(1)))
-        // Resolves to an EXISTING workout (the one that is running), not a new page.
-        records.repeatTarget = RepeatTarget(DATE, 1, isNewWorkout = false)
+        // Resolves to an EXISTING workout that is NOT the focused one — workout 2 is
+        // running, the screen shows workout 1. (Same-slot is the self-repeat case and
+        // is refused outright; see repeatTapped_onTheWorkoutBeingDoneRightNow.)
+        records.repeatTarget = RepeatTarget(DATE, 2, isNewWorkout = false)
         val vm = viewModel(records, FakeWorkoutSessionRepository(listOf(session("session-1", 1))))
         awaitLoaded(vm)
 

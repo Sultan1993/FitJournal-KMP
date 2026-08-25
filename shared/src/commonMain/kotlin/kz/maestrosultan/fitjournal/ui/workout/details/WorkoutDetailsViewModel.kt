@@ -359,6 +359,16 @@ class WorkoutDetailsViewModel internal constructor(
                     emit(WorkoutDetailsContract.ViewEffect.ShowPaywall)
                     return@launch
                 }
+                // Backstop for the hidden button. Repeating the workout you are
+                // CURRENTLY DOING resolves to itself, so the copy would read that
+                // workout's exercises and append blank clones of them straight back
+                // into it. The screen already hides Repeat there
+                // (Loaded.focusedWorkoutIsRunning); this makes the invariant the
+                // ViewModel's, not the layout's — the Focus finish button taught us
+                // what a UI-only rule is worth.
+                if (target.date == date && target.workoutNumber == sourceWorkoutNumber) {
+                    return@launch
+                }
                 val copied = runCatching {
                     repeatWorkout(id.userId, id.journalId, date, sourceWorkoutNumber, target)
                 }.onFailure { e ->

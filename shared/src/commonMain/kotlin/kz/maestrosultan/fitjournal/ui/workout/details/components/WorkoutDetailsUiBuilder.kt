@@ -133,6 +133,12 @@ internal suspend fun buildWorkoutDetailsUi(
         hero = hero,
         workouts = workouts,
         focusedWorkoutNumber = effectiveFocusedWorkoutNumber,
+        // Exact, not "is today": these sessions are already this date's, so a
+        // session still running from last night matches the workout it belongs to
+        // and nothing else. A session running on a DIFFERENT page of this day is
+        // not this workout, and repeating into it is the rule working as intended.
+        focusedWorkoutIsRunning =
+            sessionsByWorkout[effectiveFocusedWorkoutNumber]?.isRunning == true,
         stack = stack,
     )
 }

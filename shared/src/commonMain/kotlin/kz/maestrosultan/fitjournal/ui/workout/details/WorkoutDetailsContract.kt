@@ -55,6 +55,17 @@ object WorkoutDetailsContract {
             /** Ascending workoutNumber; always >= 1 entry (empty day dismisses instead). */
             val workouts: List<WorkoutUi>,
             val focusedWorkoutNumber: Int,
+            /**
+             * The focused workout is the one currently being done.
+             *
+             * Hides Repeat, because on this workout the action has no destination
+             * that is not itself: a repeat targets the running workout, so
+             * repeating THIS one reads its exercises and appends blank clones of
+             * them back into the same page — silently doubling the workout the
+             * user is standing in the gym doing. Edit and Delete stay; only Repeat
+             * is meaningless here.
+             */
+            val focusedWorkoutIsRunning: Boolean,
             /** Non-empty only when workouts.size > 1 — the WD3 stack rows. */
             val stack: List<StackRow>,
         ) : Content

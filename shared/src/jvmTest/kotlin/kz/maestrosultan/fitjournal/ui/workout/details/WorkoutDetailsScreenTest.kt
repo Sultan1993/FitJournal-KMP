@@ -277,6 +277,7 @@ class WorkoutDetailsScreenTest {
             header = WorkoutDetailsContract.Header("Chest · Biceps", "Wed, 29 July · 09:38–10:42"),
             hero = WorkoutDetailsContract.Hero(WorkoutDetailsContract.HeroStat("10 480", "kg", "Total volume"), null),
             workouts = listOf(workout),
+            focusedWorkoutIsRunning = false,
             focusedWorkoutNumber = workout.workoutNumber,
             stack = emptyList(),
         ),
@@ -295,6 +296,7 @@ class WorkoutDetailsScreenTest {
                 workoutUi(workoutNumber = 1, newBest = null, note = WorkoutDetailsContract.NoteUi(1, null), workload = emptyList(), exerciseGroups = emptyList()),
                 workoutUi(workoutNumber = 2, newBest = null, note = WorkoutDetailsContract.NoteUi(2, null), workload = emptyList(), exerciseGroups = emptyList()),
             ),
+            focusedWorkoutIsRunning = false,
             focusedWorkoutNumber = 1,
             stack = listOf(
                 WorkoutDetailsContract.StackRow(1, "Morning push", "09:38–10:42 · 5 exercises", "10 040 kg"),
