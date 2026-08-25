@@ -15,6 +15,15 @@ import kotlin.test.assertTrue
  * Behavioral gate for [WorkoutCalendar]'s `maxDate` parameter (repeat destination
  * picker: no future days). Proves days after [maxDate] are disabled + untappable,
  * while days on/before it keep selecting normally.
+ *
+ * DAY NUMBERS ARE CHOSEN, NOT ARBITRARY. Cells are located by their rendered
+ * number, and the grid also renders adjacent-month padding cells whose numbers
+ * look identical. August 2026 starts on a Saturday, so the padding is Jul 26-31 +
+ * Sep 1-5 on a Sunday-first locale and Jul 27-31 + Sep 1-6 on a Monday-first one —
+ * and `firstDayOfWeek` resolves from the JVM's default locale at run time. Only
+ * 7..25 is unreachable by padding under BOTH, so both targets live in that band.
+ * Pick a number outside it (26, say) and this test fails with "found 2 nodes" on
+ * some machines and passes on others, testing the locale instead of the feature.
  */
 @OptIn(ExperimentalTestApi::class)
 class WorkoutCalendarTest {
@@ -38,9 +47,9 @@ class WorkoutCalendarTest {
             }
         }
 
-        // Day 26 is after maxDate (20 Aug) — disabled and untappable.
-        onNodeWithText("26").assertIsNotEnabled()
-        onNodeWithText("26").performClick()
+        // Day 24 is after maxDate (20 Aug) — disabled and untappable.
+        onNodeWithText("24").assertIsNotEnabled()
+        onNodeWithText("24").performClick()
 
         assertTrue(selected.isEmpty(), "a day after maxDate must not dispatch a selection")
     }
