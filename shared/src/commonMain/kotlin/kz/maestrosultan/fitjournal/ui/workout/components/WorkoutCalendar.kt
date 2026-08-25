@@ -61,6 +61,8 @@ import kz.maestrosultan.fitjournal.ui.theme.composeColor
  * @param onDateSelected fired when an in-month day is tapped.
  * @param onMonthChanged fired for the initially-visible month and every time the
  *   settled visible month changes; [month] is 1..12.
+ * @param maxDate when set, days after it render disabled and untappable (e.g. a
+ *   "repeat" picker that cannot offer future days). `null` (default) changes nothing.
  */
 @Composable
 fun WorkoutCalendar(
@@ -68,6 +70,7 @@ fun WorkoutCalendar(
     workoutDays: Map<LocalDate, List<CategoryType>>,
     onDateSelected: (LocalDate) -> Unit,
     onMonthChanged: (year: Int, month: Int) -> Unit,
+    maxDate: LocalDate? = null,
     modifier: Modifier = Modifier,
 ) {
     // Locale-aware week start, shared by header labels and grid so they can't disagree.
@@ -132,6 +135,7 @@ fun WorkoutCalendar(
                     day = day,
                     isSelected = day.position == DayPosition.MonthDate && day.date == selectedDate,
                     isToday = day.date == today,
+                    isDisabled = maxDate != null && day.date > maxDate,
                     categories = workoutDays[day.date].orEmpty(),
                     onClick = { onDateSelected(day.date) },
                 )
@@ -148,8 +152,10 @@ private fun DayCell(
     categories: List<CategoryType>,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    isDisabled: Boolean = false,
 ) {
     val isMonthDate = day.position == DayPosition.MonthDate
+    val isTappable = isMonthDate && !isDisabled
 
     val circleColor by animateColorAsState(
         targetValue = if (isSelected) FjTheme.colors.brand else Color.Transparent,
@@ -160,6 +166,7 @@ private fun DayCell(
     val numberColor by animateColorAsState(
         targetValue = when {
             isSelected -> Color.White
+            isDisabled -> FjTheme.colors.textTertiary
             isToday && isMonthDate -> todayTint
             isMonthDate -> FjTheme.colors.textPrimary
             else -> FjTheme.colors.textTertiary
@@ -179,6 +186,7 @@ private fun DayCell(
                     Modifier.clickable(
                         interactionSource = interactionSource,
                         indication = null,
+                        enabled = isTappable,
                         onClick = onClick,
                     )
                 } else {
