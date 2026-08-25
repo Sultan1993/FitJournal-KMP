@@ -150,7 +150,13 @@ private fun DestinationPane(
             modifier = Modifier.padding(horizontal = 20.dp),
         )
 
-        Spacer(Modifier.height(PickerRowGap))
+        // This gap belongs to whatever follows the day row, so it is emitted only when
+        // something actually does. Unconditionally, an empty day (which renders no
+        // list) pushed the button PickerRowGap further down than a day with rows —
+        // the distance to Add must not move as items appear and disappear.
+        if (state.content !is RepeatPickerContract.Content.Single) {
+            Spacer(Modifier.height(PickerRowGap))
+        }
 
         when (val content = state.content) {
             RepeatPickerContract.Content.Loading ->
