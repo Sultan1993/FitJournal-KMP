@@ -238,4 +238,15 @@
     <string name="history_empty_this_week">Цей тиждень · тренувань поки немає</string>
     <string name="history_empty_title">Перший стовпчик — за вами</string>
     <string name="history_empty_body">Ваше перше тренування заповнить стовпчик цього тижня. Далі кожен тиждень матиме свій.</string>
+    <!-- Repeat destination picker -->
+    <string name="repeat_picker_title">Куди додати?</string>
+    <string name="repeat_picker_day_label">ДЕНЬ</string>
+    <string name="repeat_picker_change_day">Змінити</string>
+    <string name="repeat_picker_choose_day">Виберіть день</string>
+    <string name="repeat_picker_in_progress">ТРИВАЄ</string>
+    <string name="repeat_picker_new_workout">Нове тренування</string>
+    <string name="repeat_picker_new_workout_subtitle">Починається порожнім, на окремій сторінці</string>
+    <string name="repeat_picker_load_failed">Не вдалося завантажити цей день</string>
+    <string name="repeat_picker_retry">Повторити</string>
+    <string name="repeat_picker_add">Додати</string>
 </resources>
