@@ -32,14 +32,15 @@ fun FjPrimaryButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     leadingIcon: (@Composable () -> Unit)? = null,
 ) {
     Box(
         modifier = modifier
             .height(54.dp)
             .clip(RoundedCornerShape(14.dp))
-            .background(FjTheme.colors.brand)
-            .clickable(onClick = onClick),
+            .background(if (enabled) FjTheme.colors.brand else FjTheme.colors.brand.copy(alpha = 0.4f))
+            .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Row(
