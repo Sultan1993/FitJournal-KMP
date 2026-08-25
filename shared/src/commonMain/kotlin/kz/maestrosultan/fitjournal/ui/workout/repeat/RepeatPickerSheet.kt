@@ -278,7 +278,9 @@ private fun DayRow(
             )
             Text(
                 text = dayValue,
-                style = FjTheme.typography.body,
+                // cardTitle, not body: this is a row title, and the app titles rows at
+                // 16sp Medium (see ExerciseRowList's exercise name).
+                style = FjTheme.typography.cardTitle,
                 color = FjTheme.colors.textPrimary,
             )
         }
@@ -333,7 +335,7 @@ private fun DestinationRow(
             ) {
                 Text(
                     text = row.title ?: stringResource(Res.string.repeat_picker_new_workout),
-                    style = FjTheme.typography.body,
+                    style = FjTheme.typography.cardTitle,
                     color = FjTheme.colors.textPrimary,
                 )
                 if (destination.isRunning) {
@@ -467,12 +469,14 @@ private fun ChevronGlyph(pointsLeft: Boolean, size: Dp, color: Color, modifier: 
         val w = this.size.width
         val h = this.size.height
         val stroke = w * 0.26f
-        val startX = if (pointsLeft) w * 0.78f else w * 0.22f
-        val midX = if (pointsLeft) w * 0.22f else w * 0.78f
+        // Taller than it is wide, ~1.75:1. Equal-ish spans read as squashed at this
+        // size — a chevron has to be visibly vertical to look like one.
+        val startX = if (pointsLeft) w * 0.74f else w * 0.26f
+        val midX = if (pointsLeft) w * 0.26f else w * 0.74f
         val path = Path().apply {
-            moveTo(startX, h * 0.12f)
+            moveTo(startX, h * 0.08f)
             lineTo(midX, h * 0.5f)
-            lineTo(startX, h * 0.88f)
+            lineTo(startX, h * 0.92f)
         }
         drawPath(
             path,
