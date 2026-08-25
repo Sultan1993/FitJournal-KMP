@@ -104,6 +104,13 @@ private class FakeRecordRepository : RecordRepository {
     ): List<WorkoutRecord> = unsupported()
     override suspend fun getRecordsByMonth(userId: String, journalId: String, month: String, year: String): List<WorkoutRecord> = unsupported()
     override suspend fun getRecentRecords(userId: String, journalId: String): List<WorkoutRecord> = unsupported()
+    override suspend fun replaceExerciseInRecord(
+        userId: String,
+        journalId: String,
+        recordId: String,
+        targetWorkoutExerciseId: String,
+        newExerciseId: String,
+    ): Unit = unsupported()
     override suspend fun getSetsForExercise(userId: String, journalId: String, exerciseId: String): List<WorkoutSet> = unsupported()
     override suspend fun getExerciseOccurrences(userId: String, journalId: String, exerciseId: String): List<WorkoutExercise> = unsupported()
     override suspend fun getWeightedSetHistoryForExercise(
