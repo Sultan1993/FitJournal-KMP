@@ -44,9 +44,9 @@ import org.jetbrains.compose.resources.stringResource
  * button. History stays a place you read; starting a workout belongs to the
  * screen that owns it.
  *
- * Type and geometry mirror [WorkoutListHero] exactly (34sp/Bold/-0.68sp number,
- * 76dp chart, 5dp gaps, 3dp radius) so the ghost and the real hero occupy the
- * same box and the screen does not jump when the first workout lands.
+ * Type and geometry come from [WorkoutListHeroMetrics] — the live hero's own
+ * numbers, not a second copy of them — so the ghost and the real hero occupy the
+ * same box and the number does not jump when the first workout lands.
  */
 @Composable
 fun WorkoutListEmptyState(
@@ -91,13 +91,14 @@ fun WorkoutListEmptyState(
  */
 @Composable
 private fun GhostHero(measurementSystem: MeasurementSystem) {
-    // 9dp, matching WorkoutListHero rather than the design's 8px: the ghost and
-    // the live hero swap in place, so a 1px drift between them would show.
-    Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+    // Every dimension here comes from WorkoutListHeroMetrics, never a literal:
+    // the ghost and the live hero swap in place, so a 1dp drift between them
+    // shows as the number jumping the moment the first workout lands.
+    Row(horizontalArrangement = Arrangement.spacedBy(WorkoutListHeroMetrics.NumberUnitGap)) {
         Text(
             text = WorkoutValueFormatter.groupedTonnageNumber(0.0),
             style = FjTheme.typography.numberLarge.copy(
-                fontSize = 34.sp,
+                fontSize = WorkoutListHeroMetrics.NumberSize,
                 fontWeight = FontWeight.Bold,
             ),
             color = FjTheme.colors.textTertiary,
@@ -107,16 +108,16 @@ private fun GhostHero(measurementSystem: MeasurementSystem) {
             // Never the design's literal "kg" — an lb/mi user must not be shown
             // someone else's unit on the one screen that has no data to disprove it.
             text = WorkoutValueFormatter.unit(ResultType.WEIGHT_REPS, measurementSystem),
-            style = FjTheme.typography.bodyStrong.copy(fontSize = 14.sp),
+            style = FjTheme.typography.bodyStrong.copy(fontSize = WorkoutListHeroMetrics.UnitSize),
             color = FjTheme.colors.textTertiary,
             modifier = Modifier.alignByBaseline(),
         )
     }
     Text(
         text = stringResource(Res.string.history_empty_this_week),
-        style = FjTheme.typography.caption.copy(fontSize = 12.5.sp),
+        style = FjTheme.typography.caption.copy(fontSize = WorkoutListHeroMetrics.SubtitleSize),
         color = FjTheme.colors.textSecondary,
-        modifier = Modifier.padding(top = 7.dp),
+        modifier = Modifier.padding(top = WorkoutListHeroMetrics.SubtitleTopGap),
     )
     GhostChart()
     Box(
@@ -141,9 +142,9 @@ private fun GhostChart() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 16.dp)
-            .height(CHART_HEIGHT),
-        horizontalArrangement = Arrangement.spacedBy(5.dp),
+            .padding(top = WorkoutListHeroMetrics.ChartTopGap)
+            .height(WorkoutListHeroMetrics.ChartHeight),
+        horizontalArrangement = Arrangement.spacedBy(WorkoutListHeroMetrics.BarGap),
     ) {
         GHOST_BAR_HEIGHTS.forEach { barHeight ->
             Box(
@@ -154,16 +155,13 @@ private fun GhostChart() {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(barHeight.dp)
-                        .clip(RoundedCornerShape(3.dp))
+                        .clip(RoundedCornerShape(WorkoutListHeroMetrics.BarRadius))
                         .background(track),
                 )
             }
         }
     }
 }
-
-/** Same 76dp box as `WorkoutListHero`'s live chart. */
-private val CHART_HEIGHT = 76.dp
 
 /**
  * WH1's silhouette, with an eleventh bar PREPENDED: the live hero renders

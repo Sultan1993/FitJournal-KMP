@@ -137,6 +137,26 @@ private fun WorkoutListBody(
  * `WorkoutQuota.toCardContent`). Both call sites go through this so the two
  * content branches cannot drift.
  */
+/**
+ * The chrome above the hero, shared by the loaded and empty branches.
+ *
+ * Both branches render journal row -> quota card -> hero/ghost, but they cannot
+ * share a container: loaded scrolls all three as list items, while empty pins
+ * the first two OUTSIDE the scrollable so a full-viewport placeholder cannot
+ * carry them away. That left the paddings written twice, and they disagreed —
+ * 8/8/20 against 12/8/4/4/12, which put the ghost's number 12dp below the real
+ * one and made it visibly jump when the first workout landed. Same numbers,
+ * one definition, whichever container is in play.
+ */
+private object WorkoutListChrome {
+    val Horizontal = 16.dp
+    val JournalTop = 12.dp
+    val JournalBottom = 8.dp
+    val QuotaVertical = 4.dp
+    /** Above the hero AND above the ghost — this pair is the alignment. */
+    val HeroTop = 12.dp
+}
+
 @Composable
 private fun QuotaCardSlot(
     quota: QuotaCardContent?,
@@ -201,7 +221,11 @@ private fun WorkoutListContentArea(
                             measurementSystem = measurementSystem,
                             modifier = Modifier
                                 .fillParentMaxSize()
-                                .padding(start = 16.dp, end = 16.dp, top = 20.dp),
+                                .padding(
+                                    start = WorkoutListChrome.Horizontal,
+                                    end = WorkoutListChrome.Horizontal,
+                                    top = WorkoutListChrome.HeroTop,
+                                ),
                         )
                     }
                 }
@@ -212,7 +236,12 @@ private fun WorkoutListContentArea(
                         name = row.name,
                         isPersonal = row.isPersonal,
                         onClick = { dispatch(WorkoutListContract.ViewAction.OpenJournalPicker) },
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(
+                            start = WorkoutListChrome.Horizontal,
+                            end = WorkoutListChrome.Horizontal,
+                            top = WorkoutListChrome.JournalTop,
+                            bottom = WorkoutListChrome.JournalBottom,
+                        ),
                     )
                 }
                 // Under the picker, and pinned outside the scrollable for the same
@@ -220,7 +249,14 @@ private fun WorkoutListContentArea(
                 // so an in-list card would be scrollable away on a screen that has
                 // nothing else to scroll. An empty journal is also exactly when the
                 // card reads "10 of 10 left".
-                QuotaCardSlot(quota, dispatch, Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+                QuotaCardSlot(
+                    quota,
+                    dispatch,
+                    Modifier.padding(
+                        horizontal = WorkoutListChrome.Horizontal,
+                        vertical = WorkoutListChrome.QuotaVertical,
+                    ),
+                )
                 if (onRefresh != null) {
                     PullToRefreshBox(
                         isRefreshing = isRefreshing,
@@ -275,7 +311,12 @@ private fun WorkoutListList(
                         name = row.name,
                         isPersonal = row.isPersonal,
                         onClick = { dispatch(WorkoutListContract.ViewAction.OpenJournalPicker) },
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 8.dp),
+                        modifier = Modifier.padding(
+                            start = WorkoutListChrome.Horizontal,
+                            end = WorkoutListChrome.Horizontal,
+                            top = WorkoutListChrome.JournalTop,
+                            bottom = WorkoutListChrome.JournalBottom,
+                        ),
                     )
                 }
             }
@@ -284,7 +325,10 @@ private fun WorkoutListList(
                     QuotaCardSlot(
                         quota = it,
                         dispatch = dispatch,
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp),
+                        modifier = Modifier.padding(
+                            horizontal = WorkoutListChrome.Horizontal,
+                            vertical = WorkoutListChrome.QuotaVertical,
+                        ),
                     )
                 }
             }
@@ -292,7 +336,11 @@ private fun WorkoutListList(
                 WorkoutListHero(
                     hero = loaded.hero,
                     measurementSystem = measurementSystem,
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
+                    modifier = Modifier.padding(
+                        start = WorkoutListChrome.Horizontal,
+                        end = WorkoutListChrome.Horizontal,
+                        top = WorkoutListChrome.HeroTop,
+                    ),
                 )
             }
             loaded.weeks.forEach { week ->

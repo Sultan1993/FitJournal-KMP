@@ -54,6 +54,35 @@ private const val CHART_HEIGHT_DP = 76f
 private const val MAX_BAR_DP = 72f
 
 /**
+ * The geometry the ghost hero in [WorkoutListEmptyState] must reproduce exactly.
+ *
+ * These lived as literals in BOTH files, with a comment in each promising they
+ * matched. They did not: the ghost carried a 7dp gap above its subtitle that the
+ * live hero has never had, so everything below it sat 7dp low, and the number
+ * itself landed elsewhere because the two were placed by different call-site
+ * paddings. A placeholder whose only job is to occupy the real thing's box
+ * cannot afford a second copy of the box's dimensions.
+ */
+internal object WorkoutListHeroMetrics {
+    /** Baseline-aligned gap between the number and its unit. */
+    val NumberUnitGap = 9.dp
+    val NumberSize = 34.sp
+    val UnitSize = 14.sp
+    val SubtitleSize = 12.5.sp
+
+    /**
+     * Nothing between the number row and the subtitle. Named rather than simply
+     * omitted so the ghost states the same intent instead of quietly differing.
+     */
+    val SubtitleTopGap = 0.dp
+
+    val ChartTopGap = 16.dp
+    val ChartHeight = CHART_HEIGHT_DP.dp
+    val BarGap = 5.dp
+    val BarRadius = 3.dp
+}
+
+/**
  * Weekly-volume headline: current week's tonnage/unit/delta pill, subtitle,
  * 11-week bar chart, month-label row. Pure presentation of a pre-computed
  * [WorkoutListContract.Hero] — no aggregation here.
@@ -77,12 +106,12 @@ fun WorkoutListHero(
         val cardioMinutes = selected?.durationMinutes ?: 0
         val hasCardio = cardioMinutes > 0
         val showWeight = hasWeight || !hasCardio
-        Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(WorkoutListHeroMetrics.NumberUnitGap)) {
             if (showWeight) {
                 Text(
                     text = WorkoutValueFormatter.groupedTonnageNumber(selected?.tonnage ?: hero.currentWeekTonnage),
                     style = FjTheme.typography.numberLarge.copy(
-                        fontSize = 34.sp,
+                        fontSize = WorkoutListHeroMetrics.NumberSize,
                         fontWeight = FontWeight.Bold,
                     ),
                     color = FjTheme.colors.textPrimary,
@@ -90,7 +119,7 @@ fun WorkoutListHero(
                 )
                 Text(
                     text = WorkoutValueFormatter.unit(ResultType.WEIGHT_REPS, measurementSystem),
-                    style = FjTheme.typography.bodyStrong.copy(fontSize = 14.sp),
+                    style = FjTheme.typography.bodyStrong.copy(fontSize = WorkoutListHeroMetrics.UnitSize),
                     color = FjTheme.colors.textTertiary,
                     modifier = Modifier.alignByBaseline(),
                 )
@@ -117,11 +146,12 @@ fun WorkoutListHero(
 
         Text(
             text = heroSubtitle(selected, hero.daysLeft),
-            style = FjTheme.typography.caption.copy(fontSize = 12.5.sp),
+            style = FjTheme.typography.caption.copy(fontSize = WorkoutListHeroMetrics.SubtitleSize),
             color = FjTheme.colors.textSecondary,
+            modifier = Modifier.padding(top = WorkoutListHeroMetrics.SubtitleTopGap),
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(WorkoutListHeroMetrics.ChartTopGap))
         WorkoutListHeroChart(
             slots = hero.slots,
             selectedWeekStart = selectedWeekStart,
@@ -189,8 +219,8 @@ private fun WorkoutListHeroChart(
     val trackColor = FjTheme.colors.textPrimary.copy(alpha = if (isDark) 0.09f else 0.08f)
     val maxTonnage = (slots.maxOfOrNull { it.tonnage } ?: 0.0).coerceAtLeast(1.0)
     Row(
-        modifier = modifier.height(CHART_HEIGHT_DP.dp),
-        horizontalArrangement = Arrangement.spacedBy(5.dp),
+        modifier = modifier.height(WorkoutListHeroMetrics.ChartHeight),
+        horizontalArrangement = Arrangement.spacedBy(WorkoutListHeroMetrics.BarGap),
     ) {
         slots.forEach { slot ->
             val empty = slot.tonnage <= 0.0
@@ -221,7 +251,7 @@ private fun WorkoutListHeroChart(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(barHeight)
-                        .clip(RoundedCornerShape(3.dp))
+                        .clip(RoundedCornerShape(WorkoutListHeroMetrics.BarRadius))
                         .background(color),
                 )
             }
