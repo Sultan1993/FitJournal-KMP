@@ -39,9 +39,6 @@ import org.jetbrains.compose.resources.stringResource
 
 /**
  * [onDelete] opens a confirm sheet upstream — it does not delete immediately.
- *
- * [showRepeat] is false on the workout currently being done: a repeat targets the
- * running workout, so repeating THAT one has no destination but itself.
  */
 @Composable
 fun WorkoutActionButtons(
@@ -49,17 +46,14 @@ fun WorkoutActionButtons(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
-    showRepeat: Boolean = true,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        if (showRepeat) {
-            ActionRow(
-                label = stringResource(Res.string.workout_details_repeat),
-                tint = FjTheme.colors.textPrimary,
-                onClick = onRepeat,
-                glyph = { RepeatGlyph(size = 16.dp, color = FjTheme.colors.textPrimary) },
-            )
-        }
+        ActionRow(
+            label = stringResource(Res.string.workout_details_repeat),
+            tint = FjTheme.colors.textPrimary,
+            onClick = onRepeat,
+            glyph = { RepeatGlyph(size = 16.dp, color = FjTheme.colors.textPrimary) },
+        )
         ActionRow(
             label = stringResource(Res.string.workout_details_edit),
             tint = FjTheme.colors.textPrimary,

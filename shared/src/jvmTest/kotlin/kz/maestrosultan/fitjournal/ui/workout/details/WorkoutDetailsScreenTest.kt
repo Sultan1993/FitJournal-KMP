@@ -6,6 +6,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
@@ -15,16 +17,23 @@ import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.domain.exercise.Category
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.exercise.Exercise
+import kz.maestrosultan.fitjournal.domain.workout.RepeatDestination
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
+import kz.maestrosultan.fitjournal.ui.workout.repeat.RepeatPickerContract
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -217,6 +226,153 @@ class WorkoutDetailsScreenTest {
         assertTrue(WorkoutDetailsContract.ViewAction.RepeatTapped in vm.actions)
     }
 
+    @Test
+    fun repeat_isVisibleRegardlessOfFocusedWorkoutRunning() = runComposeUiTest {
+        // The old repeat-visibility flag is gone — self-repeat is a legal explicit
+        // choice offered by the picker, so Repeat always renders, including on the
+        // workout being done right now (WD3's stack focus 1).
+        setScreen(FakeViewModel(loadedWd3()))
+        onNodeWithText("Repeat workout").assertExists()
+    }
+
+    // ------------------------------------------------------------ repeat picker sheet
+
+    @Test
+    fun repeatPicker_single_showsNoList() = runComposeUiTest {
+        val pickerVm = FakeRepeatPickerViewModel(
+            repeatPickerState(content = RepeatPickerContract.Content.Single(destination(1))),
+        )
+        setScreen(FakeViewModel(loadedWd1().copy(repeatPicker = WorkoutDetailsContract.RepeatPicker(pickerVm))))
+
+        onNodeWithText("Where should it go?").assertExists()
+        onNodeWithText("Add").assertExists()
+        onNodeWithText("New workout").assertDoesNotExist()
+    }
+
+    @Test
+    fun repeatPicker_choice_showsRowsAndInProgressPill_andDashedNewRow() = runComposeUiTest {
+        val pickerVm = FakeRepeatPickerViewModel(repeatPickerState(content = threeRowChoice()))
+        setScreen(FakeViewModel(loadedWd1().copy(repeatPicker = WorkoutDetailsContract.RepeatPicker(pickerVm))))
+
+        onNodeWithText("Chest · Shoulders").assertExists()
+        onNodeWithText("Back · Biceps").assertExists()
+        onNodeWithText("New workout").assertExists()
+        onNodeWithText("IN PROGRESS").assertExists()
+        // "Add" is the static button label in BOTH Single and Choice shapes.
+        onNodeWithText("Add").assertExists()
+    }
+
+    @Test
+    fun repeatPicker_change_swapsPanesInOneSheet_noStackedModal() = runComposeUiTest {
+        val pickerVm = FakeRepeatPickerViewModel(repeatPickerState(content = threeRowChoice()))
+        setScreen(FakeViewModel(loadedWd1().copy(repeatPicker = WorkoutDetailsContract.RepeatPicker(pickerVm))))
+
+        onNodeWithText("Change").performClick()
+        assertTrue(RepeatPickerContract.ViewAction.ChangeDayTapped in pickerVm.actions)
+
+        // Drive the pane switch the real picker VM would produce.
+        pickerVm.emit(pickerVm.state.value.copy(pane = RepeatPickerContract.Pane.Calendar))
+        waitForIdle()
+
+        onNodeWithText("Choose a day").assertExists()
+        // The destination pane's own content is gone — one sheet swapping content,
+        // not a second sheet stacked over the first.
+        onNodeWithText("Where should it go?").assertDoesNotExist()
+        onNodeWithText("Chest · Shoulders").assertDoesNotExist()
+        onNodeWithText("Add").assertDoesNotExist()
+    }
+
+    @Test
+    fun repeatPicker_choice_hasNoPageNumberEyebrows() = runComposeUiTest {
+        val pickerVm = FakeRepeatPickerViewModel(repeatPickerState(content = threeRowChoice()))
+        setScreen(FakeViewModel(loadedWd1().copy(repeatPicker = WorkoutDetailsContract.RepeatPicker(pickerVm))))
+
+        for (n in 1..3) {
+            onNodeWithText("Workout $n").assertDoesNotExist()
+            // A bare page-number label, standing alone as a row's text.
+            onNodeWithText("$n").assertDoesNotExist()
+        }
+    }
+
+    @Test
+    fun repeatPicker_loadFailed_rendersRetry_andDisabledAdd() = runComposeUiTest {
+        val pickerVm = FakeRepeatPickerViewModel(
+            repeatPickerState(content = RepeatPickerContract.Content.LoadFailed),
+        )
+        setScreen(FakeViewModel(loadedWd1().copy(repeatPicker = WorkoutDetailsContract.RepeatPicker(pickerVm))))
+
+        onNodeWithText("Retry").assertExists()
+        onNodeWithText("Add").assertIsNotEnabled()
+    }
+
+    @Test
+    fun repeatPicker_addEnabled_whenContentIsLoaded() = runComposeUiTest {
+        val pickerVm = FakeRepeatPickerViewModel(repeatPickerState(content = threeRowChoice()))
+        setScreen(FakeViewModel(loadedWd1().copy(repeatPicker = WorkoutDetailsContract.RepeatPicker(pickerVm))))
+
+        onNodeWithText("Add").assertIsEnabled()
+    }
+
+    // -------------------------------------------------------- awaitSheetHidden race
+
+    @Test
+    fun awaitSheetHidden_interruptedHide_retriesAndAcknowledgesOnce() = runTest {
+        var visible = true
+        var hideCalls = 0
+        var acknowledged = 0
+
+        awaitSheetHidden(
+            isVisible = { visible },
+            hide = {
+                hideCalls++
+                if (hideCalls == 1) {
+                    // The user grabbed the sheet mid-close: the animation is
+                    // interrupted but this coroutine is still alive.
+                    throw CancellationException("animation interrupted")
+                }
+                visible = false
+            },
+        )
+        acknowledged++
+
+        assertEquals(2, hideCalls)
+        assertEquals(1, acknowledged)
+    }
+
+    @Test
+    fun awaitSheetHidden_realCancellation_rethrowsAndNeverAcknowledges() = runTest {
+        var acknowledged = 0
+
+        val job = launch {
+            awaitSheetHidden(
+                isVisible = { true },
+                hide = {
+                    // The composition was disposed: cancel this coroutine for real,
+                    // then throw as hide() itself would.
+                    currentCoroutineContext().cancel()
+                    throw CancellationException("composition disposed")
+                },
+            )
+            acknowledged++
+        }
+        job.join()
+
+        assertTrue(job.isCancelled)
+        assertEquals(0, acknowledged)
+    }
+
+    @Test
+    fun awaitSheetHidden_alreadyHidden_acknowledgesImmediately() = runTest {
+        var hideCalls = 0
+        var acknowledged = 0
+
+        awaitSheetHidden(isVisible = { false }, hide = { hideCalls++ })
+        acknowledged++
+
+        assertEquals(0, hideCalls)
+        assertEquals(1, acknowledged)
+    }
+
     // ------------------------------------------------------------------- skipped
 
     @Test
@@ -277,12 +433,12 @@ class WorkoutDetailsScreenTest {
             header = WorkoutDetailsContract.Header("Chest · Biceps", "Wed, 29 July · 09:38–10:42"),
             hero = WorkoutDetailsContract.Hero(WorkoutDetailsContract.HeroStat("10 480", "kg", "Total volume"), null),
             workouts = listOf(workout),
-            focusedWorkoutIsRunning = false,
             focusedWorkoutNumber = workout.workoutNumber,
             stack = emptyList(),
         ),
         noteEditor = null,
         confirmingDelete = false,
+        repeatPicker = null,
         showActions = true,
     )
 
@@ -296,7 +452,6 @@ class WorkoutDetailsScreenTest {
                 workoutUi(workoutNumber = 1, newBest = null, note = WorkoutDetailsContract.NoteUi(1, null), workload = emptyList(), exerciseGroups = emptyList()),
                 workoutUi(workoutNumber = 2, newBest = null, note = WorkoutDetailsContract.NoteUi(2, null), workload = emptyList(), exerciseGroups = emptyList()),
             ),
-            focusedWorkoutIsRunning = false,
             focusedWorkoutNumber = 1,
             stack = listOf(
                 WorkoutDetailsContract.StackRow(1, "Morning push", "09:38–10:42 · 5 exercises", "10 040 kg"),
@@ -305,6 +460,7 @@ class WorkoutDetailsScreenTest {
         ),
         noteEditor = null,
         confirmingDelete = false,
+        repeatPicker = null,
         showActions = true,
     )
 
@@ -404,6 +560,53 @@ class WorkoutDetailsScreenTest {
         }
 
         fun emit(next: WorkoutDetailsContract.ViewState) {
+            state.value = next
+        }
+    }
+
+    // ------------------------------------------------------------ repeat picker fixtures
+
+    private fun repeatPickerState(
+        content: RepeatPickerContract.Content,
+    ) = RepeatPickerContract.ViewState(
+        selectedDate = LocalDate(2026, 8, 25),
+        content = content,
+    )
+
+    private fun destination(
+        workoutNumber: Int,
+        isNewWorkout: Boolean = false,
+        isRunning: Boolean = false,
+        exerciseCount: Int = 3,
+    ) = RepeatDestination(
+        date = LocalDate(2026, 8, 25),
+        workoutNumber = workoutNumber,
+        isNewWorkout = isNewWorkout,
+        isRunning = isRunning,
+        exerciseCount = exerciseCount,
+    )
+
+    /** 2 existing workouts (one running) + the trailing dashed New-workout row. */
+    private fun threeRowChoice() = RepeatPickerContract.Content.Choice(
+        rows = listOf(
+            RepeatPickerContract.Row(destination(1, isRunning = true), title = "Chest · Shoulders"),
+            RepeatPickerContract.Row(destination(2), title = "Back · Biceps"),
+            RepeatPickerContract.Row(destination(3, isNewWorkout = true, exerciseCount = 0), title = null),
+        ),
+        selectedWorkoutNumber = 1,
+    )
+
+    private class FakeRepeatPickerViewModel(
+        initial: RepeatPickerContract.ViewState,
+    ) : RepeatPickerContract.ViewModel {
+        val state = MutableStateFlow(initial)
+        val actions = mutableListOf<RepeatPickerContract.ViewAction>()
+        override val viewState: StateFlow<RepeatPickerContract.ViewState> = state
+        override fun dispatch(action: RepeatPickerContract.ViewAction) {
+            actions += action
+        }
+
+        fun emit(next: RepeatPickerContract.ViewState) {
             state.value = next
         }
     }

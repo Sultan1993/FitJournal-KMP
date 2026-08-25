@@ -23,8 +23,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -35,10 +38,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.isActive
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_achievements
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_delete
@@ -59,6 +65,7 @@ import kz.maestrosultan.fitjournal.ui.workout.details.components.WorkoutActionBu
 import kz.maestrosultan.fitjournal.ui.workout.details.components.WorkoutDetailsHero
 import kz.maestrosultan.fitjournal.ui.workout.details.components.WorkoutStackCard
 import kz.maestrosultan.fitjournal.ui.workout.details.components.WorkoutStatTiles
+import kz.maestrosultan.fitjournal.ui.workout.repeat.RepeatPickerSheet
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -78,6 +85,7 @@ fun WorkoutDetailsScreen(
     WorkoutDetailsBody(state = state, dispatch = viewModel::dispatch, modifier = modifier)
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WorkoutDetailsBody(
     state: WorkoutDetailsContract.ViewState,
@@ -142,6 +150,44 @@ private fun WorkoutDetailsBody(
                 onSave = { dispatch(WorkoutDetailsContract.ViewAction.NoteSaved(it)) },
                 onDismiss = { dispatch(WorkoutDetailsContract.ViewAction.NoteEditorDismissed) },
             )
+        }
+        state.repeatPicker?.let { picker ->
+            val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            RepeatPickerSheet(
+                viewModel = picker.viewModel,
+                sheetState = sheetState,
+                onDismiss = { dispatch(WorkoutDetailsContract.ViewAction.RepeatPickerDismissed) },
+            )
+            LaunchedEffect(picker.closing) {
+                if (picker.closing) {
+                    awaitSheetHidden(isVisible = { sheetState.isVisible }, hide = { sheetState.hide() })
+                    dispatch(WorkoutDetailsContract.ViewAction.RepeatPickerClosed)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Awaits the sheet being fully hidden, surviving interrupted hide animations.
+ *
+ * Material3's [SheetState.hide] throws [CancellationException] when its ANIMATION
+ * is interrupted (the user grabs the sheet mid-close) — which is not the same
+ * cancellation as this effect leaving composition. After an interruption the
+ * current coroutine is still active, so re-issue the hide until the sheet is
+ * genuinely gone; a real cancellation (isActive == false) is rethrown so a
+ * disposed composition never acknowledges a close it did not finish.
+ */
+internal suspend fun awaitSheetHidden(
+    isVisible: () -> Boolean,
+    hide: suspend () -> Unit,
+) {
+    while (isVisible()) {
+        try {
+            hide()
+        } catch (e: CancellationException) {
+            if (!currentCoroutineContext().isActive) throw e
+            // Animation interrupted while we are still alive — loop and re-hide.
         }
     }
 }
@@ -209,8 +255,6 @@ private fun WorkoutDetailsScrollBody(
                 onEdit = { dispatch(WorkoutDetailsContract.ViewAction.EditTapped) },
                 onDelete = { dispatch(WorkoutDetailsContract.ViewAction.DeleteTapped) },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                // Not on the workout being done right now — see Loaded.focusedWorkoutIsRunning.
-                showRepeat = !loaded.focusedWorkoutIsRunning,
             )
         }
     }
