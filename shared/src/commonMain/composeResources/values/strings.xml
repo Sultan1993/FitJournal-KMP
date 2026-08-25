@@ -218,7 +218,7 @@
     <!-- Workout-history empty state (design WH1/WH2). -->
     <string name="history_empty_this_week">This week · no workouts yet</string>
     <string name="history_empty_title">The first bar is yours to draw</string>
-    <string name="history_empty_body">Your first workout fills this week's bar. After that, every week gets its own.</string>
+    <string name="history_empty_body">Every workout you log shows up here. Nothing to set up — just train.</string>
     <!-- Repeat destination picker -->
     <string name="repeat_picker_title">Where should it go?</string>
     <string name="repeat_picker_day_label">DAY</string>

@@ -237,7 +237,7 @@
     <!-- Workout-history empty state (design WH1/WH2). -->
     <string name="history_empty_this_week">Эта неделя · тренировок пока нет</string>
     <string name="history_empty_title">Первый столбик — за вами</string>
-    <string name="history_empty_body">Ваша первая тренировка заполнит столбик этой недели. Дальше у каждой недели будет свой.</string>
+    <string name="history_empty_body">Всё, что вы записываете, появляется здесь. Настраивать ничего не нужно — просто тренируйтесь.</string>
     <!-- Repeat destination picker -->
     <string name="repeat_picker_title">Куда добавить?</string>
     <string name="repeat_picker_day_label">ДЕНЬ</string>
