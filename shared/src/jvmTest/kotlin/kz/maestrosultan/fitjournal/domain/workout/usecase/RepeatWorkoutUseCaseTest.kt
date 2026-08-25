@@ -21,7 +21,9 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSet
 import kz.maestrosultan.fitjournal.domain.workout.summary.WeightedSetOccurrence
 
-private class FakeSyncTrigger : SyncTrigger {
+// Named for THIS file: DeleteWorkoutUseCaseTest declares its own RepeatFakeSyncTrigger in
+// the same package, and two top-level privates with one name is a redeclaration.
+private class RepeatFakeSyncTrigger : SyncTrigger {
     val reasons = mutableListOf<SyncReason>()
     override fun requestTick(reason: SyncReason) { reasons.add(reason) }
 }
@@ -200,13 +202,13 @@ class RepeatWorkoutUseCaseTest {
         FreeQuotaSettings.setHasEverSubscribed(false)
     }
 
-    private fun newUseCase(repo: FakeRecordRepository, trigger: FakeSyncTrigger) =
+    private fun newUseCase(repo: FakeRecordRepository, trigger: RepeatFakeSyncTrigger) =
         RepeatWorkoutUseCase(repo, trigger, WorkoutQuotaGate(records = repo))
 
     @Test
     fun existingRowDestination_neverRecomputesTheWorkoutNumber(): Unit = runBlocking {
         val repo = FakeRecordRepository()
-        val trigger = FakeSyncTrigger()
+        val trigger = RepeatFakeSyncTrigger()
         val useCase = newUseCase(repo, trigger)
         val destination = RepeatDestination(
             date = LocalDate(2026, 2, 12),
@@ -227,7 +229,7 @@ class RepeatWorkoutUseCaseTest {
     @Test
     fun newRowDestination_recomputesFromAFreshMaxWorkoutNumber(): Unit = runBlocking {
         val repo = FakeRecordRepository().apply { maxWorkoutNumber = 7 }
-        val trigger = FakeSyncTrigger()
+        val trigger = RepeatFakeSyncTrigger()
         val useCase = newUseCase(repo, trigger)
         // The sheet drew this destination as "page 3", but the source has moved on.
         val destination = RepeatDestination(
@@ -254,7 +256,7 @@ class RepeatWorkoutUseCaseTest {
             meteredCount = 1 // exhausted
             hasAnyRecordInWorkoutResult = true
         }
-        val trigger = FakeSyncTrigger()
+        val trigger = RepeatFakeSyncTrigger()
         val useCase = newUseCase(repo, trigger)
         val destination = RepeatDestination(
             date = LocalDate(2026, 2, 12),
@@ -279,7 +281,7 @@ class RepeatWorkoutUseCaseTest {
     fun gateThrows_copyStillProceeds(): Unit = runBlocking {
         meterOn()
         val repo = FakeRecordRepository().apply { countMeteredWorkoutsThrows = RuntimeException("database is locked") }
-        val trigger = FakeSyncTrigger()
+        val trigger = RepeatFakeSyncTrigger()
         val useCase = newUseCase(repo, trigger)
         val destination = RepeatDestination(
             date = LocalDate(2026, 2, 12),
@@ -303,7 +305,7 @@ class RepeatWorkoutUseCaseTest {
             meteredCount = 1 // exhausted
             hasAnyRecordInWorkoutResult = false
         }
-        val trigger = FakeSyncTrigger()
+        val trigger = RepeatFakeSyncTrigger()
         val useCase = newUseCase(repo, trigger)
         val destination = RepeatDestination(
             date = LocalDate(2026, 2, 12),
@@ -323,7 +325,7 @@ class RepeatWorkoutUseCaseTest {
     @Test
     fun copyFalse_isNothingToCopy_andFiresNoTick(): Unit = runBlocking {
         val repo = FakeRecordRepository().apply { copyResult = false }
-        val trigger = FakeSyncTrigger()
+        val trigger = RepeatFakeSyncTrigger()
         val useCase = newUseCase(repo, trigger)
         val destination = RepeatDestination(
             date = LocalDate(2026, 2, 12),
@@ -342,7 +344,7 @@ class RepeatWorkoutUseCaseTest {
     @Test
     fun success_firesExactlyOnePostWriteWorkoutRecordTick(): Unit = runBlocking {
         val repo = FakeRecordRepository()
-        val trigger = FakeSyncTrigger()
+        val trigger = RepeatFakeSyncTrigger()
         val useCase = newUseCase(repo, trigger)
         val destination = RepeatDestination(
             date = LocalDate(2026, 2, 12),

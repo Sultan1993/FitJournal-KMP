@@ -168,19 +168,24 @@ class RecordRepositoryTest {
 
         assertTrue(repo.copyWorkoutTo(userId, journalId, date, 1, target, 1))
 
+        // RE-READ the source. `records` above is the snapshot taken BEFORE the sets
+        // were added, so every row in it still has zero sets — comparing against it
+        // asserts nothing about set counts at all.
+        val source = repo.getRecordsByDate(userId, journalId, date).sortedBy { it.position }
         val copied = repo.getRecordsByDate(userId, journalId, target).sortedBy { it.position }
-        assertEquals(records.size, copied.size, "every source workoutExercise is copied, none dropped")
+        assertEquals(listOf(1, 2), source.map { it.exercises.single().sets.size }, "fixture sanity")
+        assertEquals(source.size, copied.size, "every source workoutExercise is copied, none dropped")
         // Compared POSITION BY POSITION, never as two sorted multisets: a bug that
         // landed exB's sets on exA's row (and vice versa) leaves the multiset of
         // counts identical, so sorting would pass on the very swap this guards.
-        records.forEachIndexed { i, source ->
+        source.forEachIndexed { i, row ->
             assertEquals(
-                source.exercises.single().exercise.uuid,
+                row.exercises.single().exercise.uuid,
                 copied[i].exercises.single().exercise.uuid,
                 "the exercise at position $i is the same one",
             )
             assertEquals(
-                source.exercises.single().sets.size,
+                row.exercises.single().sets.size,
                 copied[i].exercises.single().sets.size,
                 "the set count for the exercise at position $i",
             )

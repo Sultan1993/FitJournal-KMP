@@ -577,7 +577,7 @@ class RepeatPickerViewModelTest {
         assertEquals(SOURCE_DATE, call.targetDate)
         assertEquals(2, call.targetWorkoutNumber, "the row the user picked, existing-page number trusted as-is")
         assertEquals(RepeatPickerContract.Outcome.Copied(SOURCE_DATE, 2), outcomes.single())
-        assertEquals(listOf(SyncReason.PostWrite.WorkoutRecord), syncTrigger.reasons)
+        assertEquals(listOf<SyncReason>(SyncReason.PostWrite.WorkoutRecord), syncTrigger.reasons)
     }
 
     @Test
