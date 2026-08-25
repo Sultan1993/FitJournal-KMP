@@ -20,7 +20,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
-import kz.maestrosultan.fitjournal.shared.generated.resources.history_empty_message
+import kz.maestrosultan.fitjournal.shared.generated.resources.focus_history_empty
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.components.SetDisplay
@@ -52,7 +52,7 @@ private fun FocusHistoryLoading(modifier: Modifier = Modifier) {
 private fun FocusHistoryEmpty(modifier: Modifier = Modifier) {
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text(
-            text = stringResource(Res.string.history_empty_message),
+            text = stringResource(Res.string.focus_history_empty),
             style = FjTheme.typography.body,
             color = FjTheme.colors.textSecondary,
             textAlign = TextAlign.Center,

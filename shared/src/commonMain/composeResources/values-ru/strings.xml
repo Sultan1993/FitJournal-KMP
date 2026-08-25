@@ -284,4 +284,5 @@
     <string name="focus_set_save_error">Произошла ошибка при сохранении подхода</string>
     <string name="focus_set_delete_error">Произошла ошибка при удалении подхода</string>
     <string name="focus_exercise_not_found">Упражнение не найдено</string>
+    <string name="focus_history_empty">Здесь появятся ваши тренировки</string>
 </resources>

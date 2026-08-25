@@ -265,4 +265,5 @@
     <string name="focus_set_save_error">An error occurred while saving the set</string>
     <string name="focus_set_delete_error">An error occurred while deleting the set</string>
     <string name="focus_exercise_not_found">Exercise not found</string>
+    <string name="focus_history_empty">Your workouts will appear here</string>
 </resources>
