@@ -1,7 +1,6 @@
 package kz.maestrosultan.fitjournal.data.record.repository
 
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
-import kz.maestrosultan.fitjournal.domain.workout.RepeatTarget
 
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
@@ -402,34 +401,22 @@ class DefaultRecordRepository(
         insertCopiedRecords(userId, journalId, todayInSystemTz(), source, targetWorkoutNumber = null)
     }
 
-    override suspend fun resolveRepeatTarget(
-        userId: String,
-        journalId: String,
-        today: LocalDate,
-    ): RepeatTarget {
-        val running = workoutsDB.runningWorkoutInJournal(userId, journalId)
-        if (running != null) {
-            val (dateStr, number) = running
-            return RepeatTarget(LocalDate.parse(dateStr), number, isNewWorkout = false)
-        }
-        return RepeatTarget(today, maxWorkoutNumberOnDate(userId, journalId, today) + 1, isNewWorkout = true)
-    }
-
     override suspend fun copyWorkoutTo(
         userId: String,
         journalId: String,
-        date: LocalDate,
-        workoutNumber: Int,
-        target: RepeatTarget,
+        sourceDate: LocalDate,
+        sourceWorkoutNumber: Int,
+        targetDate: LocalDate,
+        targetWorkoutNumber: Int,
     ): Boolean {
-        val source = getRecordsByDate(userId, journalId, date, includeLastOccurrence = false)
-            .filter { it.workoutNumber == workoutNumber }
+        val source = getRecordsByDate(userId, journalId, sourceDate, includeLastOccurrence = false)
+            .filter { it.workoutNumber == sourceWorkoutNumber }
         if (source.isEmpty()) return false
         // Appending to a live workout is safe: insertCopiedRecords seeds each page's
         // position counter from the rows already there, and
         // clearStalePageMetaForNewWorkouts only tombstones a session that has ENDED,
         // so it cannot delete the running session being targeted.
-        insertCopiedRecords(userId, journalId, target.date, source, targetWorkoutNumber = target.workoutNumber)
+        insertCopiedRecords(userId, journalId, targetDate, source, targetWorkoutNumber = targetWorkoutNumber)
         return true
     }
 

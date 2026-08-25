@@ -181,24 +181,6 @@ WHERE userId = ? AND journalId = ? AND date = ? AND workoutNumber = ?;
 -- "one past everything you can currently see". Tombstones are deliberately not
 -- counted — they are invisible, and workoutRecords has no unique page index for a
 -- reused number to collide with.
--- The workout currently being done in this journal — its DATE and page — or no
--- row when none is running.
---
--- Deliberately NOT scoped to today. The 2h inactivity rule bounds how long a
--- session can stay running, so a running session IS the current workout however
--- the calendar has moved under it: start at 23:00, repeat at 01:00, and the sets
--- belong to the 23:00 workout rather than to a fresh page on a new date.
---
--- Journal-scoped, unlike the app-wide `getRunningSession`: a session running in
--- ANOTHER journal is not the workout this journal's Repeat should join.
-runningWorkoutInJournal:
-SELECT date, workoutNumber
-FROM workoutSessions
-WHERE userId = :userId AND journalId = :journalId
-AND endedAt IS NULL AND deletedAt IS NULL
-ORDER BY startedAt DESC
-LIMIT 1;
-
 maxWorkoutNumberOnDate:
 SELECT MAX(n) AS maxNumber FROM (
     SELECT MAX(workoutNumber) AS n

@@ -71,19 +71,6 @@ class WorkoutsDBDataSource(
     }
 
     /**
-     * The workout currently being done in this journal as (date, workoutNumber), or
-     * null when none is running — see `runningWorkoutInJournal`.
-     */
-    suspend fun runningWorkoutInJournal(
-        userId: String,
-        journalId: String,
-    ): Pair<String, Int>? = withContext(Dispatchers.IO) {
-        recordsDao.runningWorkoutInJournal(userId, journalId)
-            .executeAsOneOrNull()
-            ?.let { it.date to it.workoutNumber.toInt() }
-    }
-
-    /**
      * Highest workoutNumber this day already uses across records AND sessions, or
      * 0 when empty — see the note on `maxWorkoutNumberOnDate`.
      */
