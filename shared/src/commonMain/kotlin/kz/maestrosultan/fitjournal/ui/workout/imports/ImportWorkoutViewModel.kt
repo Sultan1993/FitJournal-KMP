@@ -18,6 +18,7 @@ import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.domain.sync.SyncReason
 import kz.maestrosultan.fitjournal.domain.sync.SyncTrigger
 import kz.maestrosultan.fitjournal.domain.user.UserSessionState
+import kz.maestrosultan.fitjournal.domain.quota.WorkoutQuotaGate
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 
@@ -36,6 +37,9 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 class ImportWorkoutViewModel(
     private val recordRepository: RecordRepository,
     private val syncTrigger: SyncTrigger,
+    // Default-constructed from the repository this VM already holds, so neither
+    // host's factory has to change (same trick as RepeatWorkoutUseCase).
+    private val quotaGate: WorkoutQuotaGate = WorkoutQuotaGate(recordRepository),
     private val destinationDate: LocalDate,
     private val destinationWorkoutNumber: Int,
     awaitSession: suspend () -> UserSessionState,
@@ -171,6 +175,23 @@ class ImportWorkoutViewModel(
         if (selected.isEmpty()) return
         _uiState.update { it.copy(importInProgress = true) }
         viewModelScope.launch {
+            // Re-ask AT THE WRITE. Opening this screen was gated, but the user has
+            // been choosing since then; the last free workout can be spent on
+            // another screen or arrive by sync in between. Fails OPEN on a thrown
+            // check (a broken gate must never be what stops someone logging), and
+            // rethrows cancellation rather than reading it as "allowed".
+            val allowed = try {
+                quotaGate.canWriteWorkout(uid, jid, destinationDate, destinationWorkoutNumber)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Throwable) {
+                true
+            }
+            if (!allowed) {
+                _uiState.update { it.copy(importInProgress = false) }
+                _effects.trySend(ImportWorkoutContract.ViewEffect.ShowPaywall)
+                return@launch
+            }
             try {
                 recordRepository.addRecordsToWorkout(uid, jid, destinationDate, destinationWorkoutNumber, selected)
                 syncTrigger.requestTick(SyncReason.PostWrite.WorkoutRecord)

@@ -106,5 +106,15 @@ object ImportWorkoutContract {
     sealed interface ViewEffect {
         /** Import succeeded — the host dismisses the picker. */
         data object Dismiss : ViewEffect
+
+        /**
+         * The free-workout quota refused the destination AT IMPORT TIME.
+         *
+         * Entry into this screen was already gated, but that check and this write
+         * are separated by however long the user spends choosing — long enough for
+         * the last free slot to be spent elsewhere, or for a sync pull to land it.
+         * The host presents the paywall exactly as it does for the workout screen.
+         */
+        data object ShowPaywall : ViewEffect
     }
 }
