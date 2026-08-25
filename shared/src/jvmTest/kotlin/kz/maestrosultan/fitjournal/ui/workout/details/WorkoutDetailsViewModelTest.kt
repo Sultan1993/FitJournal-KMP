@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -141,7 +142,12 @@ class WorkoutDetailsViewModelTest {
         vm.dispatch(WorkoutDetailsContract.ViewAction.RepeatTapped)
         val picker = vm.viewState.first { it.repeatPicker != null }.repeatPicker!!
         assertFalse(picker.closing, "a freshly opened sheet is not closing")
-        picker.viewModel.viewState.first { it.canAdd }
+        // Fail loudly and specifically. Without the timeout a picker that publishes
+        // LoadFailed (canAdd stays false forever) hangs this helper until runTest's
+        // own timeout, reporting a generic stall instead of the real cause.
+        withTimeout(5_000) {
+            picker.viewModel.viewState.first { it.canAdd }
+        }
         return picker.viewModel
     }
 
