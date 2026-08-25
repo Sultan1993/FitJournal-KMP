@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.exercise.Exercise
+import kz.maestrosultan.fitjournal.ui.workout.repeat.RepeatPickerContract
 
 /**
  * MVI contract for the shared WorkoutDetails screen. Public rather than internal
@@ -37,12 +38,20 @@ object WorkoutDetailsContract {
         val noteEditor: NoteEditor?,
         /** Delete confirmation sheet up (ConfirmActionSheet). */
         val confirmingDelete: Boolean,
+        /** Non-null while the Repeat destination picker sheet is up. */
+        val repeatPicker: RepeatPicker?,
         /** Edit/Repeat/Delete row visible — false in the post-workout Summary variant. */
         val showActions: Boolean,
     ) {
         companion object {
-            fun initial(headerNav: HeaderNav, showActions: Boolean = true) =
-                ViewState(headerNav, Content.Loading, null, false, showActions)
+            fun initial(headerNav: HeaderNav, showActions: Boolean = true) = ViewState(
+                headerNav = headerNav,
+                content = Content.Loading,
+                noteEditor = null,
+                confirmingDelete = false,
+                repeatPicker = null,
+                showActions = showActions,
+            )
         }
     }
 
@@ -55,17 +64,6 @@ object WorkoutDetailsContract {
             /** Ascending workoutNumber; always >= 1 entry (empty day dismisses instead). */
             val workouts: List<WorkoutUi>,
             val focusedWorkoutNumber: Int,
-            /**
-             * The focused workout is the one currently being done.
-             *
-             * Hides Repeat, because on this workout the action has no destination
-             * that is not itself: a repeat targets the running workout, so
-             * repeating THIS one reads its exercises and appends blank clones of
-             * them back into the same page — silently doubling the workout the
-             * user is standing in the gym doing. Edit and Delete stay; only Repeat
-             * is meaningless here.
-             */
-            val focusedWorkoutIsRunning: Boolean,
             /** Non-empty only when workouts.size > 1 — the WD3 stack rows. */
             val stack: List<StackRow>,
         ) : Content
@@ -145,11 +143,35 @@ object WorkoutDetailsContract {
 
     data class NoteEditor(val workoutNumber: Int, val initialText: String)
 
+    /**
+     * The Repeat destination sheet, carrying the child [viewModel] the host hands
+     * to `RepeatPickerSheet`. Owned by this screen: created on Repeat, torn down
+     * on [ViewAction.RepeatPickerClosed].
+     *
+     * [closing] means the picker has produced its outcome and the sheet is
+     * animating out. It stays composed (and this stays non-null) until the screen
+     * reports [ViewAction.RepeatPickerClosed], because the outcome — a paywall in
+     * particular — must not appear over a sheet the user can still see.
+     */
+    data class RepeatPicker(
+        val viewModel: RepeatPickerContract.ViewModel,
+        val closing: Boolean = false,
+    )
+
     sealed interface ViewAction {
         data object NavTapped : ViewAction
         data class SelectWorkout(val workoutNumber: Int) : ViewAction
         data object EditTapped : ViewAction
         data object RepeatTapped : ViewAction
+        /** The user swiped the Repeat sheet away / tapped the scrim — no outcome. */
+        data object RepeatPickerDismissed : ViewAction
+        /**
+         * The screen's acknowledgement that the Repeat sheet has finished hiding.
+         * Nothing before this point tears the picker down or emits its outcome —
+         * this is the half of the handshake that keeps a paywall from opening over
+         * a still-visible sheet. Idempotent: a duplicate does nothing.
+         */
+        data object RepeatPickerClosed : ViewAction
         data object DeleteTapped : ViewAction
         data object DeleteConfirmed : ViewAction
         data object DeleteDismissed : ViewAction

@@ -29,13 +29,14 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutSessionRepository
 import kz.maestrosultan.fitjournal.domain.workout.summary.DetectSessionBestUseCase
 import kz.maestrosultan.fitjournal.domain.workout.summary.SessionBest
 import kz.maestrosultan.fitjournal.domain.workout.usecase.DeleteWorkoutUseCase
-import kz.maestrosultan.fitjournal.domain.quota.WorkoutQuotaGate
 import kz.maestrosultan.fitjournal.domain.workout.usecase.RepeatWorkoutUseCase
 import kz.maestrosultan.fitjournal.domain.workout.usecase.SetWorkoutNoteUseCase
 import kz.maestrosultan.fitjournal.ui.workout.MuscleTitleFormatter
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutUserContext
 import kz.maestrosultan.fitjournal.ui.workout.details.components.WorkoutDetailsStrings
 import kz.maestrosultan.fitjournal.ui.workout.details.components.buildWorkoutDetailsUi
+import kz.maestrosultan.fitjournal.ui.workout.repeat.RepeatPickerContract
+import kz.maestrosultan.fitjournal.ui.workout.repeat.RepeatPickerViewModel
 
 /**
  * Shared presentation for the WorkoutDetails screen — the ONE ViewModel both
@@ -48,7 +49,7 @@ import kz.maestrosultan.fitjournal.ui.workout.details.components.buildWorkoutDet
  * **Pipeline**: records + sessions combine into a second `mapLatest` that
  * computes per-workout [SessionBest]s and calls [buildWorkoutDetailsUi] on
  * [Dispatchers.Default] (record-load perf contract), then combines with the
- * [focusedWorkoutNumber]/[noteEditor]/[confirmingDelete] state into
+ * [focusedWorkoutNumber]/[noteEditor]/[confirmingDelete]/[repeatPicker] state into
  * [WorkoutDetailsContract.ViewState] — reactive by construction.
  *
  * **Strand-proofing**: [buildContentOrNull] wraps its body in `runCatching` —
@@ -68,9 +69,6 @@ class WorkoutDetailsViewModel internal constructor(
     private val repeatWorkout: RepeatWorkoutUseCase,
     private val setWorkoutNote: SetWorkoutNoteUseCase,
     private val userContext: WorkoutUserContext,
-    // Constructed from recordRepository so neither the public constructor (Android
-    // builds this VM through Hilt) nor the Swift factory has to carry it.
-    private val quotaGate: WorkoutQuotaGate = WorkoutQuotaGate(recordRepository),
     private val date: LocalDate,
     initialWorkoutNumber: Int?,
     headerNav: WorkoutDetailsContract.HeaderNav,
@@ -123,6 +121,23 @@ class WorkoutDetailsViewModel internal constructor(
     private val noteEditor = MutableStateFlow<WorkoutDetailsContract.NoteEditor?>(null)
     private val confirmingDelete = MutableStateFlow(false)
 
+    /**
+     * The live Repeat picker, held twice on purpose.
+     *
+     * [repeatPickerVm] is the CONCRETE child, and the only handle
+     * [RepeatPickerViewModel.dispose] is ever called on — the contract interface
+     * carried in state exposes no `dispose`, so keeping the concrete type here is
+     * what removes the need to cast the one in [repeatPicker] back down.
+     * [repeatPickerVm] and [repeatPicker] are written together — set on open,
+     * nulled on every teardown path — so "is a picker up" has one answer.
+     * [pendingRepeatOutcome] exists only in the window between [onRepeatOutcome]
+     * and the [WorkoutDetailsContract.ViewAction.RepeatPickerClosed] that
+     * consumes it.
+     */
+    private var repeatPickerVm: RepeatPickerViewModel? = null
+    private val repeatPicker = MutableStateFlow<WorkoutDetailsContract.RepeatPicker?>(null)
+    private var pendingRepeatOutcome: RepeatPickerContract.Outcome? = null
+
     private val _uiState = MutableStateFlow(
         WorkoutDetailsContract.ViewState.initial(
             headerNav,
@@ -160,8 +175,14 @@ class WorkoutDetailsViewModel internal constructor(
                 buildContentOrNull(userId, journalId, measurementSystem, inputs.records, inputs.sessions, inputs.notes)
             }
 
-            combine(content, focusedWorkoutNumber, noteEditor, confirmingDelete) { loaded, focused, editor, confirming ->
-                Snapshot(loaded, focused, editor, confirming)
+            combine(
+                content,
+                focusedWorkoutNumber,
+                noteEditor,
+                confirmingDelete,
+                repeatPicker,
+            ) { loaded, focused, editor, confirming, picker ->
+                Snapshot(loaded, focused, editor, confirming, picker)
             }.collect { applySnapshot(it) }
         }
     }
@@ -174,6 +195,8 @@ class WorkoutDetailsViewModel internal constructor(
             is WorkoutDetailsContract.ViewAction.SelectWorkout -> onSelectWorkout(action.workoutNumber)
             WorkoutDetailsContract.ViewAction.EditTapped -> onEditTapped()
             WorkoutDetailsContract.ViewAction.RepeatTapped -> onRepeatTapped()
+            WorkoutDetailsContract.ViewAction.RepeatPickerDismissed -> onRepeatPickerDismissed()
+            WorkoutDetailsContract.ViewAction.RepeatPickerClosed -> onRepeatPickerClosed()
             WorkoutDetailsContract.ViewAction.DeleteTapped -> confirmingDelete.value = true
             WorkoutDetailsContract.ViewAction.DeleteConfirmed -> onDeleteConfirmed()
             WorkoutDetailsContract.ViewAction.DeleteDismissed -> confirmingDelete.value = false
@@ -267,7 +290,12 @@ class WorkoutDetailsViewModel internal constructor(
                 }
                 loaded.copy(focusedWorkoutNumber = focus)
             } ?: current.content
-            current.copy(content = content, noteEditor = snapshot.noteEditor, confirmingDelete = snapshot.confirmingDelete)
+            current.copy(
+                content = content,
+                noteEditor = snapshot.noteEditor,
+                confirmingDelete = snapshot.confirmingDelete,
+                repeatPicker = snapshot.repeatPicker,
+            )
         }
     }
 
@@ -297,92 +325,92 @@ class WorkoutDetailsViewModel internal constructor(
     }
 
     /**
-     * Copies this workout forward as a template, then opens where it landed —
-     * reusing OpenEditWorkout, which the hosts already map to "open the workout for
-     * this date". A copy failure stays on the details screen (nothing to open).
+     * Opens the Repeat destination picker. WHERE a repeat lands is the user's
+     * pick now, not an inference: the sheet owns the day, the page and the Add,
+     * and this screen owns only the sheet's lifecycle and its outcome.
      *
-     * The destination is the repository's rule: a session running in this journal
-     * means the copy JOINS that workout, on ITS date; otherwise a new page opens on
-     * today. So the effect carries the resolved date, not today's.
+     * Nothing here is asynchronous and nothing here is guarded against a second
+     * tap by a flag — the picker either exists or it does not, and while it does
+     * (including while it is closing) another tap is a no-op, so a second sheet
+     * can never stack on the first.
      *
-     * GATED, against the RESOLVED slot rather than a blanket "new workout". A repeat
-     * that joins the workout you are standing in the gym doing must not be charged
-     * and must not be refused — that is rule 3, the same carve-out that keeps every
-     * other write alive mid-workout. Only a repeat that opens a NEW page spends
-     * quota. Refusal writes nothing and raises the paywall; the screen stays put.
+     * The child is built from fields this ViewModel already holds, so neither
+     * Android's Hilt construction nor the Swift factory grows a parameter.
      */
-    /**
-     * Guards Repeat against a second tap landing inside the first one's work.
-     *
-     * The window is the whole IO round trip — resolve, the quota read, the
-     * whole-day source read, the target-day scan, the insert — and `OpenEditWorkout`
-     * is only emitted AFTER the copy commits, so the button stays live and enabled
-     * throughout. Allocation and the write are separate calls with no lock spanning
-     * them, so two taps can both resolve the same `max + 1` and land two templates
-     * on ONE page; serialized, they instead open two blank pages and navigate to
-     * the second. Both orderings are wrong and both come from this one gap.
-     */
-    private var repeatInFlight = false
-
     private fun onRepeatTapped() {
         val id = identity ?: return
         val loaded = loadedContent() ?: return
-        if (repeatInFlight) return
-        repeatInFlight = true
-        val sourceWorkoutNumber = loaded.focusedWorkoutNumber
-        viewModelScope.launch {
-            try {
-                val today = clock.now().toLocalDateTime(timeZone).date
-                // Default true everywhere below: these read SQLite, so a locked or
-                // corrupt database throws, and letting that decide "exhausted" would
-                // lock a user out of their own log. Matches every other gate call site.
-                val target = try {
-                    repeatWorkout.resolveTarget(id.userId, id.journalId, today)
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Throwable) {
-                    log("resolve repeat target failed", e)
-                    return@launch
-                }
-                val allowed = try {
-                    // A repeat that JOINS the running workout asks about that slot, so
-                    // rule 3 answers it: an existing workout stays writable at
-                    // exhaustion. Only a new page goes through the new-workout rule.
-                    if (target.isNewWorkout) quotaGate.canOpenNewWorkout(id.userId)
-                    else quotaGate.canWriteWorkout(id.userId, id.journalId, target.date, target.workoutNumber)
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Throwable) {
-                    true
-                }
-                if (!allowed) {
-                    emit(WorkoutDetailsContract.ViewEffect.ShowPaywall)
-                    return@launch
-                }
-                // Backstop for the hidden button. Repeating the workout you are
-                // CURRENTLY DOING resolves to itself, so the copy would read that
-                // workout's exercises and append blank clones of them straight back
-                // into it. The screen already hides Repeat there
-                // (Loaded.focusedWorkoutIsRunning); this makes the invariant the
-                // ViewModel's, not the layout's — the Focus finish button taught us
-                // what a UI-only rule is worth.
-                if (target.date == date && target.workoutNumber == sourceWorkoutNumber) {
-                    return@launch
-                }
-                val copied = runCatching {
-                    repeatWorkout(id.userId, id.journalId, date, sourceWorkoutNumber, target)
-                }.onFailure { e ->
-                    if (e is CancellationException) throw e
-                    log("repeat workout failed", e)
-                }.getOrDefault(false)
-                // Open where it landed so the user can fill it in.
-                if (copied) {
-                    emit(WorkoutDetailsContract.ViewEffect.OpenEditWorkout(target.date, target.workoutNumber))
-                }
-            } finally {
-                repeatInFlight = false
-            }
+        if (repeatPickerVm != null) return
+        val vm = RepeatPickerViewModel(
+            recordRepository = recordRepository,
+            sessionRepository = sessionRepository,
+            repeatWorkout = repeatWorkout,
+            userId = id.userId,
+            journalId = id.journalId,
+            sourceDate = date,
+            sourceWorkoutNumber = loaded.focusedWorkoutNumber,
+            initialDate = clock.now().toLocalDateTime(timeZone).date,
+            onOutcome = ::onRepeatOutcome,
+            muscleTitleFormatter = muscleTitleFormatter,
+        )
+        repeatPickerVm = vm
+        repeatPicker.value = WorkoutDetailsContract.RepeatPicker(viewModel = vm)
+    }
+
+    /**
+     * The picker is done. PARK the outcome and start the sheet's exit — do not
+     * act on it, and do not tear the child down: the sheet is still on screen.
+     *
+     * Acting here is exactly the bug this handshake exists to prevent. A refusal
+     * has to raise the paywall, and a paywall thrown up while the Repeat sheet is
+     * still visible (or mid-dismissal) stacks two modals — so the outcome waits
+     * for [onRepeatPickerClosed].
+     */
+    private fun onRepeatOutcome(outcome: RepeatPickerContract.Outcome) {
+        pendingRepeatOutcome = outcome
+        repeatPicker.update { it?.copy(closing = true) }
+    }
+
+    /**
+     * The sheet has finished hiding: tear the child down, then act on whatever it
+     * parked. IDEMPOTENT — a stray or duplicate acknowledgement finds no picker
+     * and consumes nothing, and the pending outcome is cleared BEFORE anything is
+     * emitted, so a duplicate cannot emit a second paywall.
+     */
+    private fun onRepeatPickerClosed() {
+        val vm = repeatPickerVm ?: return
+        vm.dispose()
+        repeatPickerVm = null
+        repeatPicker.value = null
+        val outcome = pendingRepeatOutcome
+        pendingRepeatOutcome = null
+        when (outcome) {
+            is RepeatPickerContract.Outcome.Copied ->
+                // Reuses OpenEditWorkout, which both hosts already map to "open the
+                // workout for this date" — so the copy opens where it actually landed.
+                emit(WorkoutDetailsContract.ViewEffect.OpenEditWorkout(outcome.date, outcome.workoutNumber))
+            RepeatPickerContract.Outcome.Refused ->
+                emit(WorkoutDetailsContract.ViewEffect.ShowPaywall)
+            // Nothing was written and nothing was refused: the sheet just goes away.
+            RepeatPickerContract.Outcome.NothingToCopy, null -> Unit
         }
+    }
+
+    /**
+     * User-driven dismissal (swipe / scrim), which carries no outcome.
+     *
+     * IGNORED once an outcome is pending: from that moment [onRepeatPickerClosed]
+     * owns the teardown, and hosts fire their dismiss callback as part of the very
+     * exit animation [onRepeatOutcome] started. Honouring it there would null the
+     * picker before the acknowledgement arrives, and the pending paywall would be
+     * dropped on the floor.
+     */
+    private fun onRepeatPickerDismissed() {
+        if (repeatPicker.value?.closing == true) return
+        val vm = repeatPickerVm ?: return
+        vm.dispose()
+        repeatPickerVm = null
+        repeatPicker.value = null
     }
 
     /**
@@ -447,6 +475,12 @@ class WorkoutDetailsViewModel internal constructor(
      * teardown. Same contract as WorkoutListViewModel.
      */
     fun dispose() {
+        // The picker is this screen's child and nothing else holds it, so it dies here
+        // however the screen went away — including with an outcome still parked.
+        repeatPickerVm?.dispose()
+        repeatPickerVm = null
+        repeatPicker.value = null
+        pendingRepeatOutcome = null
         viewModelScope.cancel()
     }
 
@@ -468,6 +502,7 @@ class WorkoutDetailsViewModel internal constructor(
         val focusedWorkoutNumber: Int,
         val noteEditor: WorkoutDetailsContract.NoteEditor?,
         val confirmingDelete: Boolean,
+        val repeatPicker: WorkoutDetailsContract.RepeatPicker?,
     )
 
     private companion object {

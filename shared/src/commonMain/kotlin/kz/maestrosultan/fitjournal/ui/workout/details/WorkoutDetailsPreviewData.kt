@@ -220,12 +220,12 @@ internal object WorkoutDetailsPreviewData {
             header = header,
             hero = hero,
             workouts = listOf(workout),
-            focusedWorkoutIsRunning = false,
             focusedWorkoutNumber = 1,
             stack = emptyList(),
         ),
         noteEditor = null,
         confirmingDelete = false,
+        repeatPicker = null,
         showActions = true,
     )
 
@@ -250,12 +250,12 @@ internal object WorkoutDetailsPreviewData {
                     skippedGroups = emptyList(),
                 ),
             ),
-            focusedWorkoutIsRunning = false,
             focusedWorkoutNumber = 2,
             stack = stack,
         ),
         noteEditor = null,
         confirmingDelete = false,
+        repeatPicker = null,
         showActions = true,
     )
 }

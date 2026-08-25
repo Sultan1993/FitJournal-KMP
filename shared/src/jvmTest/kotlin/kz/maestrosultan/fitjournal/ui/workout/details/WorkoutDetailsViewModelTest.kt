@@ -5,9 +5,12 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kz.maestrosultan.fitjournal.domain.quota.FreeQuotaSettings
 import kotlin.test.assertTrue
+import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -22,6 +25,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
 import kz.maestrosultan.fitjournal.domain.exercise.Category
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.exercise.Exercise
@@ -38,12 +42,12 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutSet
 import kz.maestrosultan.fitjournal.domain.workout.summary.DetectSessionBestUseCase
 import kz.maestrosultan.fitjournal.domain.workout.summary.WeightedSetOccurrence
 import kz.maestrosultan.fitjournal.domain.workout.usecase.DeleteWorkoutUseCase
-import kz.maestrosultan.fitjournal.domain.workout.RepeatTarget
 import kz.maestrosultan.fitjournal.domain.workout.usecase.RepeatWorkoutUseCase
 import kz.maestrosultan.fitjournal.domain.workout.usecase.SetWorkoutNoteUseCase
 import kz.maestrosultan.fitjournal.ui.workout.MuscleTitleFormatter
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutUserContext
 import kz.maestrosultan.fitjournal.ui.workout.details.components.WorkoutDetailsStrings
+import kz.maestrosultan.fitjournal.ui.workout.repeat.RepeatPickerContract
 
 /**
  * Pure-Kotlin (no SQLite) coverage of [WorkoutDetailsViewModel]'s ORCHESTRATION —
@@ -64,16 +68,25 @@ class WorkoutDetailsViewModelTest {
     @BeforeTest
     fun installMain() {
         Dispatchers.setMain(dispatcher)
+        // FreeQuotaSettings is a global object and jvmTest runs every class in one
+        // JVM — a leaked metered state would silently refuse a later class's writes.
+        // Reset on BOTH sides so neither this suite's order nor another suite's
+        // leakage can change an answer (same discipline as WorkoutQuotaGateTest).
+        FreeQuotaSettings.reset()
     }
 
     @AfterTest
     fun tearDown() {
         createdViewModels.forEach { it.dispose() }
         createdViewModels.clear()
-        // FreeQuotaSettings is a global object and jvmTest runs every class in one
-        // JVM — a leaked metered state would silently refuse a later class's writes.
         FreeQuotaSettings.reset()
         Dispatchers.resetMain()
+    }
+
+    /** Meter a NEVER-SUBSCRIBER with the shipping limit. */
+    private fun meterOn(limit: Long = FREE_LIMIT) {
+        FreeQuotaSettings.setLimit(limit)
+        FreeQuotaSettings.setHasEverSubscribed(false)
     }
 
     // ─── Fixture ────────────────────────────────────────────────────────
@@ -109,11 +122,38 @@ class WorkoutDetailsViewModelTest {
         variant = variant,
         muscleTitleFormatter = formatter,
         strings = strings,
+        // The Repeat picker opens on TODAY, so today has to be a fixture value: with
+        // the real clock the suite would behave differently on 15 January, the one
+        // day where today IS the day under test and already holds records.
+        clock = object : Clock { override fun now(): Instant = NOW },
+        timeZone = TimeZone.UTC,
     ).also { createdViewModels += it }
 
     private suspend fun awaitLoaded(vm: WorkoutDetailsViewModel): WorkoutDetailsContract.Content.Loaded =
         vm.viewState.first { it.content is WorkoutDetailsContract.Content.Loaded }
             .content as WorkoutDetailsContract.Content.Loaded
+
+    /**
+     * Taps Repeat and waits for the child picker's own day load to resolve — Add is
+     * refused until it has, so `canAdd` IS the "the sheet is ready" signal.
+     */
+    private suspend fun openRepeatPicker(vm: WorkoutDetailsViewModel): RepeatPickerContract.ViewModel {
+        vm.dispatch(WorkoutDetailsContract.ViewAction.RepeatTapped)
+        val picker = vm.viewState.first { it.repeatPicker != null }.repeatPicker!!
+        assertFalse(picker.closing, "a freshly opened sheet is not closing")
+        picker.viewModel.viewState.first { it.canAdd }
+        return picker.viewModel
+    }
+
+    /**
+     * A never-subscriber who has spent the whole free allowance, on a destination
+     * workout that does not exist yet — the one combination the gate refuses (rule 3
+     * keeps an EXISTING workout writable however exhausted the user is).
+     */
+    private fun exhaustedRecords() = FakeRecordRepository(listOf(squatRecord(1))).apply {
+        meteredWorkoutCount = FREE_LIMIT.toInt()
+        slotHoldsRecords = false
+    }
 
     // ─── Happy path ─────────────────────────────────────────────────────
 
@@ -237,121 +277,180 @@ class WorkoutDetailsViewModelTest {
         assertEquals(WorkoutDetailsContract.ViewEffect.OpenShareComposer(DATE, 2), vm.viewEffect.first())
     }
 
-    @Test
-    fun repeatTapped_copiesFocusedPageToToday_thenOpensTheNewPage() = runTest(dispatcher) {
-        val records = FakeRecordRepository(listOf(squatRecord(1)))
-        val sessions = FakeWorkoutSessionRepository(listOf(session("session-1", 1)))
-        val vm = viewModel(records, sessions)
-        awaitLoaded(vm)
-
-        vm.dispatch(WorkoutDetailsContract.ViewAction.RepeatTapped)
-        advanceUntilIdle()
-
-        assertEquals(DATE, records.repeatedFrom)
-        assertEquals(1, records.repeatedWorkoutNumber, "copies the focused page, not the whole day")
-        val effect = vm.viewEffect.first()
-        assertTrue(effect is WorkoutDetailsContract.ViewEffect.OpenEditWorkout)
-        assertEquals(3, (effect as WorkoutDetailsContract.ViewEffect.OpenEditWorkout).workoutNumber, "opens the new page the copy returned")
-    }
+    // ─── Repeat: the close handshake ────────────────────────────────────
+    //
+    // Repeat opens a PICKER; this screen owns only the sheet's lifecycle and the
+    // outcome it hands back. The outcome is never acted on when it arrives — it is
+    // parked until the screen reports the sheet has finished hiding
+    // (RepeatPickerClosed), so a paywall can never appear over a visible sheet.
+    // Every case below therefore runs the REAL picker VM, the REAL
+    // RepeatWorkoutUseCase and the REAL quota gate over the fake repository.
 
     @Test
-    fun repeatTapped_whenTheQuotaRefuses_raisesThePaywall_andCopiesNOTHING() = runTest(dispatcher) {
-        // The gate call site, not the gate: a refusal must write nothing at all.
-        // With nothing running, Repeat opens a NEW page, which is the one arm that
-        // does spend quota — see the sibling test for the running case.
-        FreeQuotaSettings.setLimit(10)
-        FreeQuotaSettings.setHasEverSubscribed(true)
-        FreeQuotaSettings.setEntitled(false)
-
+    fun repeatTapped_opensThePicker_andASecondTapDoesNotStackASecondSheet() = runTest(dispatcher) {
         val records = FakeRecordRepository(listOf(squatRecord(1)))
         val vm = viewModel(records, FakeWorkoutSessionRepository(listOf(session("session-1", 1))))
         awaitLoaded(vm)
 
+        val picker = openRepeatPicker(vm)
+
         vm.dispatch(WorkoutDetailsContract.ViewAction.RepeatTapped)
         advanceUntilIdle()
 
-        assertEquals(WorkoutDetailsContract.ViewEffect.ShowPaywall, vm.viewEffect.first())
-        assertNull(records.repeatedFrom, "refused: nothing may be copied")
-        assertNull(records.repeatedWorkoutNumber)
+        assertSame(picker, vm.viewState.value.repeatPicker?.viewModel, "a second tap must not build a second picker")
     }
 
     @Test
-    fun repeatTapped_onTheWorkoutBeingDoneRightNow_copiesNOTHING(): Unit = runTest(dispatcher) {
-        // Repeating the workout you are CURRENTLY DOING resolves to itself, so the
-        // copy would read its exercises and append blank clones straight back into
-        // it — silently doubling the live workout, and uncharged, because an
-        // existing slot passes rule 3. The screen hides Repeat there; this pins the
-        // invariant in the ViewModel, where a layout change cannot lose it.
+    fun repeatRefused_marksTheSheetClosing_andHOLDSThePaywallUntilItHasHidden() = runTest(dispatcher) {
+        meterOn()
+        val records = exhaustedRecords()
+        val vm = viewModel(records, FakeWorkoutSessionRepository(listOf(session("session-1", 1))))
+        awaitLoaded(vm)
+        val effects = mutableListOf<WorkoutDetailsContract.ViewEffect>()
+        val job = launch { vm.viewEffect.collect { effects += it } }
+
+        val picker = openRepeatPicker(vm)
+        picker.dispatch(RepeatPickerContract.ViewAction.AddTapped)
+        advanceUntilIdle()
+
+        val closing = vm.viewState.value.repeatPicker
+        assertNotNull(closing, "the sheet stays composed so the screen can animate it out")
+        assertTrue(closing.closing, "an outcome arrived, so the sheet is on its way out")
+        assertTrue(effects.isEmpty(), "NO paywall while the sheet is still on screen")
+        assertEquals(0, records.repeatCount, "refused: nothing may be copied")
+
+        vm.dispatch(WorkoutDetailsContract.ViewAction.RepeatPickerClosed)
+        advanceUntilIdle()
+
+        assertNull(vm.viewState.value.repeatPicker, "the acknowledgement tears the picker down")
+        assertEquals(listOf<WorkoutDetailsContract.ViewEffect>(WorkoutDetailsContract.ViewEffect.ShowPaywall), effects)
+        job.cancel()
+    }
+
+    @Test
+    fun repeatPickerClosed_twice_raisesThePaywallEXACTLYonce() = runTest(dispatcher) {
+        // Both the sheet's own onDismiss and the host's animation callback can land,
+        // so the acknowledgement has to be idempotent: the pending outcome is cleared
+        // before anything is emitted, which is what makes the duplicate emit nothing.
+        meterOn()
+        val vm = viewModel(exhaustedRecords(), FakeWorkoutSessionRepository(listOf(session("session-1", 1))))
+        awaitLoaded(vm)
+        val effects = mutableListOf<WorkoutDetailsContract.ViewEffect>()
+        val job = launch { vm.viewEffect.collect { effects += it } }
+
+        openRepeatPicker(vm).dispatch(RepeatPickerContract.ViewAction.AddTapped)
+        advanceUntilIdle()
+        vm.dispatch(WorkoutDetailsContract.ViewAction.RepeatPickerClosed)
+        vm.dispatch(WorkoutDetailsContract.ViewAction.RepeatPickerClosed)
+        advanceUntilIdle()
+
+        assertEquals(listOf<WorkoutDetailsContract.ViewEffect>(WorkoutDetailsContract.ViewEffect.ShowPaywall), effects)
+        job.cancel()
+    }
+
+    @Test
+    fun repeatCopied_opensWhereItLanded_onlyAfterTheSheetHasHidden() = runTest(dispatcher) {
+        // Reset settings mean an unmetered user, so the gate inside the use case allows
+        // it. Nothing is logged on TODAY, so the picker's one destination is a new page.
         val records = FakeRecordRepository(listOf(squatRecord(1)))
-        records.repeatTarget = RepeatTarget(DATE, 1, isNewWorkout = false)
         val vm = viewModel(records, FakeWorkoutSessionRepository(listOf(session("session-1", 1))))
         awaitLoaded(vm)
+        val effects = mutableListOf<WorkoutDetailsContract.ViewEffect>()
+        val job = launch { vm.viewEffect.collect { effects += it } }
 
-        vm.dispatch(WorkoutDetailsContract.ViewAction.RepeatTapped)
+        openRepeatPicker(vm).dispatch(RepeatPickerContract.ViewAction.AddTapped)
         advanceUntilIdle()
 
-        assertEquals(0, records.repeatCount, "source == target must copy nothing")
-        assertNull(records.repeatedFrom)
+        assertEquals(DATE, records.repeatedFrom, "copies the page the screen is showing")
+        assertEquals(1, records.repeatedWorkoutNumber)
+        assertEquals(TODAY, records.copiedToDate, "the picker's only destination is a new page on today")
+        assertEquals(1, records.copiedToWorkoutNumber, "today holds nothing, so the new page is #1")
+        assertEquals(true, vm.viewState.value.repeatPicker?.closing)
+        assertTrue(effects.isEmpty(), "the copy landed, but the sheet is still up")
+
+        vm.dispatch(WorkoutDetailsContract.ViewAction.RepeatPickerClosed)
+        advanceUntilIdle()
+
+        assertNull(vm.viewState.value.repeatPicker)
+        assertEquals(
+            listOf<WorkoutDetailsContract.ViewEffect>(WorkoutDetailsContract.ViewEffect.OpenEditWorkout(TODAY, 1)),
+            effects,
+            "opens the slot the copy actually landed in",
+        )
+        job.cancel()
     }
 
     @Test
-    fun repeatTapped_twice_copiesONCE(): Unit = runTest(dispatcher) {
-        // Allocation and the write are separate calls with no lock spanning them,
-        // and OpenEditWorkout is emitted only AFTER the copy commits — so the button
-        // stays live for the whole IO round trip. Without a guard, two taps either
-        // resolve the same max+1 and land two templates on ONE page, or resolve
-        // max+1 and max+2 and open two blank pages. Both are wrong.
+    fun repeatWithNothingToCopy_closesTheSheet_andEmitsNOTHING() = runTest(dispatcher) {
+        val records = FakeRecordRepository(listOf(squatRecord(1))).apply { copySucceeds = false }
+        val vm = viewModel(records, FakeWorkoutSessionRepository(listOf(session("session-1", 1))))
+        awaitLoaded(vm)
+        val effects = mutableListOf<WorkoutDetailsContract.ViewEffect>()
+        val job = launch { vm.viewEffect.collect { effects += it } }
+
+        openRepeatPicker(vm).dispatch(RepeatPickerContract.ViewAction.AddTapped)
+        advanceUntilIdle()
+        vm.dispatch(WorkoutDetailsContract.ViewAction.RepeatPickerClosed)
+        advanceUntilIdle()
+
+        assertNull(vm.viewState.value.repeatPicker)
+        assertTrue(effects.isEmpty(), "nothing was written and nothing was refused — the sheet just goes away")
+        job.cancel()
+    }
+
+    @Test
+    fun repeatPickerDismissed_whileClosing_isIGNORED_andThePaywallStillArrives() = runTest(dispatcher) {
+        // Hosts fire their dismiss callback as part of the very exit animation the
+        // outcome started. Honouring it would null the picker before the
+        // acknowledgement arrives — and drop the pending paywall on the floor.
+        meterOn()
+        val vm = viewModel(exhaustedRecords(), FakeWorkoutSessionRepository(listOf(session("session-1", 1))))
+        awaitLoaded(vm)
+        val effects = mutableListOf<WorkoutDetailsContract.ViewEffect>()
+        val job = launch { vm.viewEffect.collect { effects += it } }
+
+        openRepeatPicker(vm).dispatch(RepeatPickerContract.ViewAction.AddTapped)
+        advanceUntilIdle()
+        vm.dispatch(WorkoutDetailsContract.ViewAction.RepeatPickerDismissed)
+        advanceUntilIdle()
+
+        val stillThere = vm.viewState.value.repeatPicker
+        assertNotNull(stillThere, "the handshake owns teardown once an outcome is pending")
+        assertTrue(stillThere.closing)
+        assertTrue(effects.isEmpty())
+
+        vm.dispatch(WorkoutDetailsContract.ViewAction.RepeatPickerClosed)
+        advanceUntilIdle()
+
+        assertNull(vm.viewState.value.repeatPicker)
+        assertEquals(
+            listOf<WorkoutDetailsContract.ViewEffect>(WorkoutDetailsContract.ViewEffect.ShowPaywall),
+            effects,
+            "the outcome survived the racing dismiss",
+        )
+        job.cancel()
+    }
+
+    @Test
+    fun repeatPickerDismissed_withNoOutcome_closesIt_andAStrayClosedNoOps() = runTest(dispatcher) {
         val records = FakeRecordRepository(listOf(squatRecord(1)))
         val vm = viewModel(records, FakeWorkoutSessionRepository(listOf(session("session-1", 1))))
         awaitLoaded(vm)
+        val effects = mutableListOf<WorkoutDetailsContract.ViewEffect>()
+        val job = launch { vm.viewEffect.collect { effects += it } }
 
-        vm.dispatch(WorkoutDetailsContract.ViewAction.RepeatTapped)
-        vm.dispatch(WorkoutDetailsContract.ViewAction.RepeatTapped)
+        openRepeatPicker(vm)
+        vm.dispatch(WorkoutDetailsContract.ViewAction.RepeatPickerDismissed)
+        advanceUntilIdle()
+        assertNull(vm.viewState.value.repeatPicker, "the user swiped it away — no outcome to wait for")
+
+        vm.dispatch(WorkoutDetailsContract.ViewAction.RepeatPickerClosed)
         advanceUntilIdle()
 
-        assertEquals(1, records.repeatCount, "the second tap must be swallowed while the first is in flight")
-    }
-
-    @Test
-    fun repeatTapped_intoTheRunningWorkout_isNEVERrefused_evenWhenExhausted() = runTest(dispatcher) {
-        // Rule 3, the mid-workout carve-out: a workout that already exists stays
-        // writable at exhaustion, so nobody is amputated part-way through one. Once
-        // Repeat can JOIN the running workout it has to ask about THAT slot rather
-        // than the blanket "am I allowed a new workout" — otherwise an exhausted
-        // user standing in the gym is refused the exercises they are mid-way doing.
-        FreeQuotaSettings.setLimit(10)
-        FreeQuotaSettings.setHasEverSubscribed(true)
-        FreeQuotaSettings.setEntitled(false)
-
-        val records = FakeRecordRepository(listOf(squatRecord(1)))
-        // Resolves to an EXISTING workout that is NOT the focused one — workout 2 is
-        // running, the screen shows workout 1. (Same-slot is the self-repeat case and
-        // is refused outright; see repeatTapped_onTheWorkoutBeingDoneRightNow.)
-        records.repeatTarget = RepeatTarget(DATE, 2, isNewWorkout = false)
-        val vm = viewModel(records, FakeWorkoutSessionRepository(listOf(session("session-1", 1))))
-        awaitLoaded(vm)
-
-        vm.dispatch(WorkoutDetailsContract.ViewAction.RepeatTapped)
-        advanceUntilIdle()
-
-        assertEquals(DATE, records.repeatedFrom, "joining a live workout is never refused")
-    }
-
-    @Test
-    fun repeatTapped_whenTheGateThrows_isALLOWED() = runTest(dispatcher) {
-        // Fail OPEN. The gate reads SQLite, so a locked or corrupt database throws,
-        // and letting that decide "refused" would lock a user out of their own log.
-        FreeQuotaSettings.setLimit(10)
-        FreeQuotaSettings.setHasEverSubscribed(false)
-
-        val records = FakeRecordRepository(listOf(squatRecord(1)), failQuotaCount = true)
-        val vm = viewModel(records, FakeWorkoutSessionRepository(listOf(session("session-1", 1))))
-        awaitLoaded(vm)
-
-        vm.dispatch(WorkoutDetailsContract.ViewAction.RepeatTapped)
-        advanceUntilIdle()
-
-        assertEquals(DATE, records.repeatedFrom, "a throwing gate must not block the write")
+        assertNull(vm.viewState.value.repeatPicker)
+        assertTrue(effects.isEmpty(), "a stray acknowledgement finds no picker and consumes nothing")
+        assertEquals(0, records.repeatCount)
+        job.cancel()
     }
 
     // ─── Summary vs Details variant ─────────────────────────────────────
@@ -564,14 +663,8 @@ class WorkoutDetailsViewModelTest {
      */
     private class FakeRecordRepository(
         initial: List<WorkoutRecord>,
-        /** Set true to make the quota count throw — proves the gate call site fails OPEN. */
-        private val failQuotaCount: Boolean = false,
     ) : RecordRepository {
 
-        override suspend fun countMeteredWorkouts(userId: String): Int {
-            if (failQuotaCount) throw IllegalStateException("database is locked")
-            return 0
-        }
         private val records = MutableStateFlow(initial)
         private val changeSignal = MutableStateFlow(0)
 
@@ -581,7 +674,7 @@ class WorkoutDetailsViewModelTest {
         /** How many times [getWeightedSetHistoryForExercise] has been entered — proves an attempt actually ran. */
         val historyLookupAttempts = MutableStateFlow(0)
 
-        /** Source date of the last [addRecordsFromDateToToday] (repeat) call. */
+        /** Source date of the last copy. */
         var repeatedFrom: LocalDate? = null
 
         /** Forces a fresh [observeRecordsChanged] emission without mutating [records]. */
@@ -629,7 +722,13 @@ class WorkoutDetailsViewModelTest {
         }
 
         override suspend fun getAllRecords(userId: String, journalId: String): List<WorkoutRecord> = unsupported()
-        override suspend fun getRecordsByMonth(userId: String, journalId: String, month: String, year: String): List<WorkoutRecord> = unsupported()
+
+        // The Repeat picker's calendar reads by month; empty months are normal here.
+        override suspend fun getRecordsByMonth(userId: String, journalId: String, month: String, year: String): List<WorkoutRecord> =
+            records.value.filter {
+                it.userId == userId && it.journalId == journalId &&
+                    it.date.monthNumber == month.toInt() && it.date.year == year.toInt()
+            }
         override suspend fun getRecentRecords(userId: String, journalId: String): List<WorkoutRecord> = unsupported()
         override suspend fun getSetsForExercise(userId: String, journalId: String, exerciseId: String): List<WorkoutSet> = unsupported()
         override suspend fun getExerciseOccurrences(userId: String, journalId: String, exerciseId: String): List<WorkoutExercise> = unsupported()
@@ -647,27 +746,58 @@ class WorkoutDetailsViewModelTest {
             repeatedFrom = date
         }
 
-        /** Records what Repeat copied, and where the VM was told it would land. */
-        var repeatedWorkoutNumber: Int? = null
+        // ─── Quota surface ─────────────────────────────────────────────
+        // The picker VM, RepeatWorkoutUseCase and WorkoutQuotaGate the VM builds are
+        // all REAL, and every question the gate asks lands here.
 
-        /** Overridable so a test can make Repeat JOIN a running workout instead. */
-        var repeatTarget: RepeatTarget? = null
+        /** How many workouts the metered user has already spent. */
+        var meteredWorkoutCount = 0
 
-        override suspend fun resolveRepeatTarget(userId: String, journalId: String, today: LocalDate): RepeatTarget =
-            repeatTarget ?: RepeatTarget(today, 3, isNewWorkout = true)
+        /** Gate rule 3: does the destination workout already exist? False = a new page. */
+        var slotHoldsRecords = true
 
-        /** How many times Repeat actually copied — pins the in-flight guard. */
-        var repeatCount = 0
+        override suspend fun countMeteredWorkouts(userId: String): Int = meteredWorkoutCount
 
-        override suspend fun copyWorkoutTo(
+        override suspend fun hasAnyRecordInWorkout(
             userId: String,
             journalId: String,
             date: LocalDate,
             workoutNumber: Int,
-            target: RepeatTarget,
+        ): Boolean = slotHoldsRecords
+
+        // ─── Repeat surface ────────────────────────────────────────────
+
+        /** Which SOURCE page Repeat copied. */
+        var repeatedWorkoutNumber: Int? = null
+
+        /** False makes the copy report "the source workout holds no records". */
+        var copySucceeds = true
+
+        /** The slot the copy actually landed in — what OpenEditWorkout must name. */
+        var copiedToDate: LocalDate? = null
+        var copiedToWorkoutNumber: Int? = null
+
+        /** How many times Repeat actually copied — proves a refusal writes nothing. */
+        var repeatCount = 0
+
+        override suspend fun maxWorkoutNumberOnDate(userId: String, journalId: String, date: LocalDate): Int =
+            records.value
+                .filter { it.userId == userId && it.journalId == journalId && it.date == date }
+                .maxOfOrNull { it.workoutNumber } ?: 0
+
+        override suspend fun copyWorkoutTo(
+            userId: String,
+            journalId: String,
+            sourceDate: LocalDate,
+            sourceWorkoutNumber: Int,
+            targetDate: LocalDate,
+            targetWorkoutNumber: Int,
         ): Boolean {
-            repeatedFrom = date
-            repeatedWorkoutNumber = workoutNumber
+            if (!copySucceeds) return false
+            repeatedFrom = sourceDate
+            repeatedWorkoutNumber = sourceWorkoutNumber
+            copiedToDate = targetDate
+            copiedToWorkoutNumber = targetWorkoutNumber
             repeatCount++
             return true
         }
@@ -741,8 +871,11 @@ class WorkoutDetailsViewModelTest {
         override fun getSessionsForDayFlow(userId: String, journalId: String, date: LocalDate): Flow<List<WorkoutSession>> =
             sessions.map { list -> list.filter { it.userId == userId && it.journalId == journalId && it.date == date } }
 
+        /** The Repeat picker reads the destination day to build its rows. */
+        override suspend fun getSessionsForDay(userId: String, journalId: String, date: LocalDate): List<WorkoutSession> =
+            sessions.value.filter { it.userId == userId && it.journalId == journalId && it.date == date }
+
         override suspend fun getSessionByWorkoutNumber(userId: String, journalId: String, date: LocalDate, workoutNumber: Int): WorkoutSession? = unsupported()
-        override suspend fun getSessionsForDay(userId: String, journalId: String, date: LocalDate): List<WorkoutSession> = unsupported()
         override suspend fun getRunningSession(userId: String): WorkoutSession? = unsupported()
         override fun getRunningSessionFlow(userId: String): Flow<WorkoutSession?> = unsupported()
 
@@ -765,7 +898,11 @@ class WorkoutDetailsViewModelTest {
     private companion object {
         const val USER_ID = "user-1"
         const val JOURNAL_ID = "journal-1"
+        const val FREE_LIMIT = 10L
         val DATE = LocalDate(2026, 1, 15)
+        /** "Now" for the injected clock, and the day the Repeat picker opens on. */
+        val NOW: Instant = Instant.parse("2026-03-20T12:00:00Z")
+        val TODAY = LocalDate(2026, 3, 20)
         val START: Instant = Instant.parse("2026-01-15T09:38:00Z")
         val END: Instant = Instant.parse("2026-01-15T10:42:00Z")
     }
