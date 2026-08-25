@@ -133,12 +133,6 @@ internal suspend fun buildWorkoutDetailsUi(
         hero = hero,
         workouts = workouts,
         focusedWorkoutNumber = effectiveFocusedWorkoutNumber,
-        // Exact, not "is today": these sessions are already this date's, so a
-        // session still running from last night matches the workout it belongs to
-        // and nothing else. A session running on a DIFFERENT page of this day is
-        // not this workout, and repeating into it is the rule working as intended.
-        focusedWorkoutIsRunning =
-            sessionsByWorkout[effectiveFocusedWorkoutNumber]?.isRunning == true,
         stack = stack,
     )
 }
@@ -440,7 +434,7 @@ private fun loggedSetCount(workoutExercises: List<WorkoutExercise>): Int =
     workoutExercises.sumOf { we -> we.sets.count { it.isLogged } }
 
 /** Logged sets per muscle, ranked desc; ties keep day order (matches `SessionSummary.muscles`). */
-private fun rankedMuscles(workoutExercises: List<WorkoutExercise>): List<MuscleLoad> {
+internal fun rankedMuscles(workoutExercises: List<WorkoutExercise>): List<MuscleLoad> {
     val counts = LinkedHashMap<CategoryType, Int>()
     workoutExercises.forEach { we ->
         val logged = we.sets.count { it.isLogged }
