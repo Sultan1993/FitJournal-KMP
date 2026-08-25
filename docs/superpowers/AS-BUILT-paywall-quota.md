@@ -224,3 +224,36 @@ empty pending the product below.
   (CMP's `Res` is `internal`). Change one, change the other — noted in both files.
 - **Non-workout writes stay open** when exhausted (notes, measurements, profile). Deferred "C3 wave";
   purely additive if you want it.
+
+---
+
+## Audit, 2026-08-26 — the gate's four leaks, and what was done about each
+
+A verification pass against the three shipping claims (a new user can log; at the
+limit they are stopped with no way around it; a purchase unblocks without a
+restart) found four ways past claim 2. Two were closed, two are accepted — do not
+re-derive them as new findings.
+
+**Closed.**
+
+- **TOCTOU between opening a picker and writing.** Every gated surface asked the
+  gate when it opened and then wrote minutes later against that stale answer. Now
+  re-asked immediately before the write, in one place per flow: the shared
+  `ImportWorkoutViewModel` (copy-from-workout) and each platform's
+  `ImportExercisesToWorkoutUseCase` (add-exercise, covering the list AND search
+  pickers). A refusal raises the paywall; a thrown check still fails open.
+- **`ImportDataStore` latched an authorization across sessions** on Android. The
+  browse entry point clears it now (`ExerciseListViewModel.startBrowseSession`).
+
+**Accepted, deliberately.**
+
+- **Multi-device overshoot.** Two devices offline at 9 used workouts can each
+  open a 10th, so the account lands at 11. Bounded by device count, self-corrects
+  on the next pull, and the fix costs a server-side counter — which the "no stored
+  counter" decision above rules out on purpose.
+- **No server-side enforcement at all.** The gate is client-side; a patched build
+  writes freely. Consistent with there being nothing on the server to enforce
+  against, and out of proportion to the revenue at risk.
+
+Both remaining leaks need a schema change plus an `amplify push` to close, and
+that push can clobber the load-bearing `listAWS*` resolver overrides.
