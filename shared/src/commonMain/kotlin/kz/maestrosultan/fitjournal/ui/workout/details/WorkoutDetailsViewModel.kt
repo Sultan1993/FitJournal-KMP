@@ -311,47 +311,66 @@ class WorkoutDetailsViewModel internal constructor(
      * other write alive mid-workout. Only a repeat that opens a NEW page spends
      * quota. Refusal writes nothing and raises the paywall; the screen stays put.
      */
+    /**
+     * Guards Repeat against a second tap landing inside the first one's work.
+     *
+     * The window is the whole IO round trip — resolve, the quota read, the
+     * whole-day source read, the target-day scan, the insert — and `OpenEditWorkout`
+     * is only emitted AFTER the copy commits, so the button stays live and enabled
+     * throughout. Allocation and the write are separate calls with no lock spanning
+     * them, so two taps can both resolve the same `max + 1` and land two templates
+     * on ONE page; serialized, they instead open two blank pages and navigate to
+     * the second. Both orderings are wrong and both come from this one gap.
+     */
+    private var repeatInFlight = false
+
     private fun onRepeatTapped() {
         val id = identity ?: return
         val loaded = loadedContent() ?: return
+        if (repeatInFlight) return
+        repeatInFlight = true
         val sourceWorkoutNumber = loaded.focusedWorkoutNumber
         viewModelScope.launch {
-            val today = clock.now().toLocalDateTime(timeZone).date
-            // Default true everywhere below: these read SQLite, so a locked or
-            // corrupt database throws, and letting that decide "exhausted" would
-            // lock a user out of their own log. Matches every other gate call site.
-            val target = try {
-                repeatWorkout.resolveTarget(id.userId, id.journalId, today)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Throwable) {
-                log("resolve repeat target failed", e)
-                return@launch
-            }
-            val allowed = try {
-                // A repeat that JOINS the running workout asks about that slot, so
-                // rule 3 answers it: an existing workout stays writable at
-                // exhaustion. Only a new page goes through the new-workout rule.
-                if (target.isNewWorkout) quotaGate.canOpenNewWorkout(id.userId)
-                else quotaGate.canWriteWorkout(id.userId, id.journalId, target.date, target.workoutNumber)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Throwable) {
-                true
-            }
-            if (!allowed) {
-                emit(WorkoutDetailsContract.ViewEffect.ShowPaywall)
-                return@launch
-            }
-            val copied = runCatching {
-                repeatWorkout(id.userId, id.journalId, date, sourceWorkoutNumber, target)
-            }.onFailure { e ->
-                if (e is CancellationException) throw e
-                log("repeat workout failed", e)
-            }.getOrDefault(false)
-            // Open where it landed so the user can fill it in.
-            if (copied) {
-                emit(WorkoutDetailsContract.ViewEffect.OpenEditWorkout(target.date, target.workoutNumber))
+            try {
+                val today = clock.now().toLocalDateTime(timeZone).date
+                // Default true everywhere below: these read SQLite, so a locked or
+                // corrupt database throws, and letting that decide "exhausted" would
+                // lock a user out of their own log. Matches every other gate call site.
+                val target = try {
+                    repeatWorkout.resolveTarget(id.userId, id.journalId, today)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Throwable) {
+                    log("resolve repeat target failed", e)
+                    return@launch
+                }
+                val allowed = try {
+                    // A repeat that JOINS the running workout asks about that slot, so
+                    // rule 3 answers it: an existing workout stays writable at
+                    // exhaustion. Only a new page goes through the new-workout rule.
+                    if (target.isNewWorkout) quotaGate.canOpenNewWorkout(id.userId)
+                    else quotaGate.canWriteWorkout(id.userId, id.journalId, target.date, target.workoutNumber)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Throwable) {
+                    true
+                }
+                if (!allowed) {
+                    emit(WorkoutDetailsContract.ViewEffect.ShowPaywall)
+                    return@launch
+                }
+                val copied = runCatching {
+                    repeatWorkout(id.userId, id.journalId, date, sourceWorkoutNumber, target)
+                }.onFailure { e ->
+                    if (e is CancellationException) throw e
+                    log("repeat workout failed", e)
+                }.getOrDefault(false)
+                // Open where it landed so the user can fill it in.
+                if (copied) {
+                    emit(WorkoutDetailsContract.ViewEffect.OpenEditWorkout(target.date, target.workoutNumber))
+                }
+            } finally {
+                repeatInFlight = false
             }
         }
     }

@@ -2,8 +2,10 @@ package kz.maestrosultan.fitjournal.data.session.repository
 
 import kotlin.time.Clock
 import kotlin.time.Instant
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.retryWhen
 import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.data.session.datasource.WorkoutSessionsDBDataSource
 import kz.maestrosultan.fitjournal.data.session.entity.toDomain
@@ -64,9 +66,37 @@ class DefaultWorkoutSessionRepository(
     override suspend fun getRunningSession(userId: String): WorkoutSession? =
         sessionsDB.getRunningSession(userId)?.toDomain()
 
+    /**
+     * The running session, live. Long-lived observers depend on this, so it must
+     * never terminate on a transient read and must NEVER let a throw reach a
+     * collector.
+     *
+     * Both halves are load-bearing:
+     *
+     *  - **A Flow that throws is TERMINATED.** `catch` at the collector does not
+     *    "degrade" it — having neither rethrown nor kept emitting, the flow
+     *    completes, `collect` returns and the coroutine ends, with nothing to
+     *    resubscribe. Every app-scope observer of this flow would silently stop
+     *    following the session for the rest of the process after ONE transient
+     *    SQLite error.
+     *  - **On iOS a throw here is fatal, and uncatchable.** SKIE's generated
+     *    `SkieSwiftFlowIterator.next()` is NON-throwing: anything that is not a
+     *    CancellationException hits `Swift.fatalError("Unexpected error: ...")`.
+     *    A `for await` in Swift cannot catch it, so the only place this can be
+     *    handled at all is HERE, before it crosses the bridge.
+     *
+     * Retry rather than swallow: the collector survives, and a database that
+     * recovers resumes feeding it. Delayed so a permanently failing read cannot
+     * spin. `retryWhen` is cancellation-transparent, so this does not fight
+     * scope cancellation.
+     */
     override fun getRunningSessionFlow(userId: String): Flow<WorkoutSession?> =
         sessionsDB.getRunningSessionFlow(userId)
             .map { row -> row?.toDomain() }
+            .retryWhen { _, _ ->
+                delay(RUNNING_SESSION_RETRY_DELAY_MS)
+                true
+            }
 
     override suspend fun countCompletedSessionsBetween(
         userId: String,
@@ -103,4 +133,9 @@ class DefaultWorkoutSessionRepository(
         sessionsDB.deleteByUuid(sessionUuid, userId, clock.now())
 
     override suspend fun deleteUserSessions(userId: String) = sessionsDB.deleteByUserId(userId)
+    private companion object {
+        /** Long enough that a failing read cannot spin, short enough to be invisible. */
+        const val RUNNING_SESSION_RETRY_DELAY_MS = 1_000L
+    }
+
 }

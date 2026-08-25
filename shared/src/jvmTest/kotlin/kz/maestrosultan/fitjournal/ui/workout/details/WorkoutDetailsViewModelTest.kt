@@ -276,6 +276,24 @@ class WorkoutDetailsViewModelTest {
     }
 
     @Test
+    fun repeatTapped_twice_copiesONCE(): Unit = runTest(dispatcher) {
+        // Allocation and the write are separate calls with no lock spanning them,
+        // and OpenEditWorkout is emitted only AFTER the copy commits — so the button
+        // stays live for the whole IO round trip. Without a guard, two taps either
+        // resolve the same max+1 and land two templates on ONE page, or resolve
+        // max+1 and max+2 and open two blank pages. Both are wrong.
+        val records = FakeRecordRepository(listOf(squatRecord(1)))
+        val vm = viewModel(records, FakeWorkoutSessionRepository(listOf(session("session-1", 1))))
+        awaitLoaded(vm)
+
+        vm.dispatch(WorkoutDetailsContract.ViewAction.RepeatTapped)
+        vm.dispatch(WorkoutDetailsContract.ViewAction.RepeatTapped)
+        advanceUntilIdle()
+
+        assertEquals(1, records.repeatCount, "the second tap must be swallowed while the first is in flight")
+    }
+
+    @Test
     fun repeatTapped_intoTheRunningWorkout_isNEVERrefused_evenWhenExhausted() = runTest(dispatcher) {
         // Rule 3, the mid-workout carve-out: a workout that already exists stays
         // writable at exhaustion, so nobody is amputated part-way through one. Once
@@ -617,6 +635,9 @@ class WorkoutDetailsViewModelTest {
         override suspend fun resolveRepeatTarget(userId: String, journalId: String, today: LocalDate): RepeatTarget =
             repeatTarget ?: RepeatTarget(today, 3, isNewWorkout = true)
 
+        /** How many times Repeat actually copied — pins the in-flight guard. */
+        var repeatCount = 0
+
         override suspend fun copyWorkoutTo(
             userId: String,
             journalId: String,
@@ -626,6 +647,7 @@ class WorkoutDetailsViewModelTest {
         ): Boolean {
             repeatedFrom = date
             repeatedWorkoutNumber = workoutNumber
+            repeatCount++
             return true
         }
 
