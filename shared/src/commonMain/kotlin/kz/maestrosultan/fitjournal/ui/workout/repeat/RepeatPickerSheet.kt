@@ -78,6 +78,14 @@ import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
+ * Every block in the destination list — the day row and each option row — is this
+ * tall, and separated by this much. They were independently padded before, so the
+ * day row sat a little shorter than the options and its gap was wider than theirs.
+ */
+private val PickerRowHeight = 64.dp
+private val PickerRowGap = 10.dp
+
+/**
  * The Repeat destination picker — one sheet, two panes (design frames 1a/1d):
  * "Where should it go?" (day + destinations) and "Choose a day" (calendar).
  * Change swaps the pane in place; there is no second, stacked sheet.
@@ -142,7 +150,7 @@ private fun DestinationPane(
             modifier = Modifier.padding(horizontal = 20.dp),
         )
 
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(PickerRowGap))
 
         when (val content = state.content) {
             RepeatPickerContract.Content.Loading ->
@@ -160,7 +168,7 @@ private fun DestinationPane(
             is RepeatPickerContract.Content.Choice -> {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(PickerRowGap),
                 ) {
                     for (row in content.rows) {
                         DestinationRow(
@@ -257,7 +265,8 @@ private fun DayRow(
             .clip(RoundedCornerShape(14.dp))
             .background(FjTheme.colors.surface)
             .clickable(onClick = onChangeDay)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .height(PickerRowHeight)
+            .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -308,7 +317,7 @@ private fun DestinationRow(
         .clickable(onClick = onClick)
 
     Row(
-        modifier = base.padding(horizontal = 16.dp, vertical = 14.dp),
+        modifier = base.height(PickerRowHeight).padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
