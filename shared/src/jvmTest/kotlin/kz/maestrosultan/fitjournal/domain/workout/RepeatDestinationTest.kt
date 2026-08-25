@@ -97,10 +97,10 @@ class RepeatDestinationTest {
     }
 
     @Test
-    fun onlyAPageThatHoldsNothingIsEverChargeable() {
-        // Quota is spent by the first record in a slot, so an existing workout is free
-        // and a new page is not — which is all the Add button needs to decide whether
-        // to write or raise the paywall.
+    fun onlyAPageThatDoesNotExistYet_isFlaggedNew() {
+        // isNewWorkout labels the row; it does NOT price it. Quota is spent by the
+        // first record in a slot, and WorkoutQuotaGate is the only thing that decides
+        // that — asked once at Add time, against the slot actually resolved there.
         val choice = assertIs<RepeatDestinations.Choice>(
             destinations(pages = mapOf(1 to 2, 2 to 5)),
         )
@@ -108,7 +108,7 @@ class RepeatDestinationTest {
     }
 
     @Test
-    fun aStartedButUnloggedPage_isNotNew_butDoesSpendQuota() {
+    fun aStartedButUnloggedPage_isNotNew() {
         val choice = assertIs<RepeatDestinations.Choice>(
             destinations(pages = mapOf(1 to 3), sessionPages = setOf(2), running = 2),
         )
