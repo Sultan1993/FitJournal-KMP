@@ -1,0 +1,762 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Implementation plan</title>
+<style>
+:root{--bg:#f5f7fa;--sf:#fff;--sf2:#eef1f6;--bd:#d7dde6;--ink:#1a2029;--soft:#54606f;--faint:#8791a0;
+--mech:#1f9d68;--std:#2560c4;--fro:#7c53e6;--bad:#cc4444;--mono:ui-monospace,Menlo,Consolas,monospace}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1117;--sf:#161c25;--sf2:#1c232e;--bd:#2a3441;--ink:#e7ecf3;--soft:#9aa6b6;--faint:#647084;--mech:#43c78c;--std:#5b8cf0;--fro:#a689f7;--bad:#e5706b}}
+:root[data-theme="light"]{--bg:#f5f7fa;--sf:#fff;--sf2:#eef1f6;--bd:#d7dde6;--ink:#1a2029;--soft:#54606f;--faint:#8791a0;--mech:#1f9d68;--std:#2560c4;--fro:#7c53e6;--bad:#cc4444}
+:root[data-theme="dark"]{--bg:#0d1117;--sf:#161c25;--sf2:#1c232e;--bd:#2a3441;--ink:#e7ecf3;--soft:#9aa6b6;--faint:#647084;--mech:#43c78c;--std:#5b8cf0;--fro:#a689f7;--bad:#e5706b}
+*{box-sizing:border-box}
+body{margin:0 auto;max-width:1180px;background:var(--bg);color:var(--ink);font:15px/1.62 system-ui,-apple-system,sans-serif;padding:40px 24px 72px}
+a{color:var(--std)}
+h1{font-size:27px;line-height:1.25;margin:0 0 6px;letter-spacing:-.01em}
+h3{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono);margin:0 0 14px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.wnum{color:var(--ink);font-weight:700}.wmeta{color:var(--faint);text-transform:none;letter-spacing:0}
+.sub{color:var(--soft);font-family:var(--mono);font-size:12.5px;margin-bottom:24px;word-break:break-all}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:30px}
+.stat{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:9px 15px}
+.stat b{font-size:19px;display:block;line-height:1.2}.stat span{font-size:11px;color:var(--faint);font-family:var(--mono)}
+.brief{background:var(--sf);border:1px solid var(--bd);border-left:3px solid var(--std);border-radius:10px;padding:4px 20px;margin-bottom:34px}
+.brief h4{font-size:14px;margin:14px 0 6px}
+.wave{margin-bottom:34px}.wave.bad .wnum{color:var(--bad)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;align-items:start}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:15px 17px 5px}
+.card header{border-bottom:1px solid var(--bd);padding-bottom:10px;margin-bottom:12px}
+.card h4{margin:0 0 7px;font-size:15px;line-height:1.35}
+.meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.after{font-family:var(--mono);font-size:10.5px;color:var(--faint)}.after.free{opacity:.65}
+.blk{margin-bottom:14px}
+.blk h5{margin:0 0 5px;font:600 10.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.07em;color:var(--faint)}
+.blk p{margin:0 0 7px}.blk ul,.blk ol{margin:0 0 7px;padding-left:20px}.blk li{margin:2px 0}
+.blk :last-child{margin-bottom:0}
+.crit li{color:var(--soft)}
+.files code{display:inline-block;margin:0 4px 4px 0}
+pre.code{background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:9px 11px;overflow-x:auto;max-height:260px;overflow-y:auto;margin:0 0 7px}
+pre.code code{background:none;padding:0;font-size:11.5px;line-height:1.5;white-space:pre}
+code{font-family:var(--mono);font-size:.88em;background:color-mix(in srgb,var(--bd) 45%,transparent);padding:1px 5px;border-radius:4px;word-break:break-word}
+.chip{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+.chip.mechanical{color:var(--mech);background:color-mix(in srgb,var(--mech) 14%,transparent)}
+.chip.standard{color:var(--std);background:color-mix(in srgb,var(--std) 14%,transparent)}
+.chip.frontier{color:var(--fro);background:color-mix(in srgb,var(--fro) 14%,transparent)}
+.chip.bad{color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent)}
+details.checks{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:12px 18px;margin-top:10px}
+details.checks summary{cursor:pointer;font:600 11.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--faint)}
+details.checks ul{margin:12px 0 2px;padding-left:20px}
+details.checks li{margin:4px 0;color:var(--soft)}
+details.checks b{color:var(--bad);font-family:var(--mono);font-size:12.5px}
+details.checks .ok{color:var(--mech)}
+</style>
+<h1>Implementation plan</h1>
+<div class="sub">docs/foureyes/plans/2026-08-25-repeat-destination-picker-plan.md &nbsp;·&nbsp; spec: docs/foureyes/specs/2026-08-25-repeat-destination-picker-design.md</div>
+<div class="stats">
+  <div class="stat"><b>15</b><span>tasks</span></div>
+  <div class="stat"><b>6</b><span>waves</span></div>
+  <div class="stat"><b style="color:var(--mech)">6</b><span>mechanical</span></div>
+  <div class="stat"><b style="color:var(--std)">7</b><span>standard</span></div>
+  <div class="stat"><b style="color:var(--fro)">2</b><span>frontier</span></div>
+</div>
+<div class="brief"><p>This plan implements the Repeat Destination Picker entirely inside <code>Multiplatform/shared</code>, with three verification gates at the end. Wave 1 is eight file-disjoint leaf tasks (strings, calendar param, button param, domain field removal, data-layer reshape, use case, picker contract, UiBuilder visibility); integration into <code>WorkoutDetails*</code> comes last, then the gates.</p>
+<h4>Cross-task contracts (pinned — every task writes against these exactly)</h4>
+<p><strong>Compile/test policy.</strong> All tasks share the one <code>:shared</code> build unit, and the module deliberately does NOT compile between waves (deletions in Tasks 5–6 land before their consumers are rewritten in Tasks 11–12). Therefore: implementation tasks (1–12) must NOT run <code>./gradlew</code> — their <code>verifyCommand</code> is structural (greps/file checks). Compilation and the full test suite are proven once, at the Task 13 gate. Tasks author their own tests alongside their code; the gate runs them.</p>
+<p><strong>Dependency-edge policy.</strong> Because every cross-task signature below is pinned byte-for-byte and nothing compiles between waves, <code>blockedBy</code> edges exist ONLY where the later task must read the earlier task's *finished file* (an unpinned implementation detail, or a visibility change it must see to reuse rather than copy). Each retained edge carries a one-line rationale on its task.</p>
+<p><strong>Pinned signatures</strong> (referenced across tasks; a task that creates one must match byte-for-byte, a task that consumes one must not adapt it):</p>
+<pre class="code"><code>// Task 5 creates; Tasks 6, 11 consume. Interface default in RecordRepository:
+suspend fun copyWorkoutTo(
+    userId: String, journalId: String,
+    sourceDate: LocalDate, sourceWorkoutNumber: Int,
+    targetDate: LocalDate, targetWorkoutNumber: Int,
+): Boolean = false
+
+// Task 6 creates; Tasks 10, 11 consume:
+class RepeatWorkoutUseCase(
+    private val recordRepository: RecordRepository,
+    private val syncTrigger: SyncTrigger,
+    private val quotaGate: WorkoutQuotaGate = WorkoutQuotaGate(recordRepository),
+) {
+    sealed interface Result {
+        data class Copied(val date: LocalDate, val workoutNumber: Int) : Result
+        data object Refused : Result
+        data object NothingToCopy : Result
+    }
+    suspend operator fun invoke(
+        userId: String, journalId: String,
+        sourceDate: LocalDate, sourceWorkoutNumber: Int,
+        destination: RepeatDestination,
+    ): Result
+}
+
+// Task 7 creates (full shape in that task); Tasks 8, 10, 11, 12 consume:
+object RepeatPickerContract { ViewModel; Pane; ViewState; Content; Row; ViewAction; Outcome }
+
+// Task 9 creates; Task 10 consumes (top-level in WorkoutDetailsUiBuilder.kt, body byte-identical to today):
+internal fun rankedMuscles(workoutExercises: List&lt;WorkoutExercise&gt;): List&lt;MuscleLoad&gt;
+
+// Task 10 creates; Task 11 constructs AND holds the concrete type for disposal:
+internal class RepeatPickerViewModel(
+    private val recordRepository: RecordRepository,
+    private val sessionRepository: WorkoutSessionRepository,
+    private val repeatWorkout: RepeatWorkoutUseCase,
+    private val userId: String,
+    private val journalId: String,
+    private val sourceDate: LocalDate,
+    private val sourceWorkoutNumber: Int,
+    initialDate: LocalDate,
+    private val onOutcome: (RepeatPickerContract.Outcome) -&gt; Unit,
+    private val muscleTitleFormatter: MuscleTitleFormatter,
+) : ViewModel(), RepeatPickerContract.ViewModel   // host-owned dispose(), Import's pattern
+
+// Task 8 creates; Task 12 composes:
+@Composable fun RepeatPickerSheet(
+    viewModel: RepeatPickerContract.ViewModel,
+    sheetState: SheetState,
+    onDismiss: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+)
+
+// Task 11 creates; Task 12 consumes (in WorkoutDetailsContract):
+data class RepeatPicker(val viewModel: RepeatPickerContract.ViewModel, val closing: Boolean = false)
+// ViewState gains: val repeatPicker: RepeatPicker?  (null = no sheet)
+// ViewAction gains: data object RepeatPickerDismissed; data object RepeatPickerClosed</code></pre>
+<p><strong>Pinned picker-disposal contract</strong> (settles who can call <code>dispose()</code> — the contract interface exposes only <code>viewState</code>/<code>dispatch</code> on purpose): <code>WorkoutDetailsViewModel</code> keeps a <strong>concrete private owner field</strong> alongside the interface-typed state:</p>
+<pre class="code"><code>private var repeatPickerVm: RepeatPickerViewModel? = null          // ONLY handle dispose() is ever called on
+private val repeatPicker = MutableStateFlow&lt;WorkoutDetailsContract.RepeatPicker?&gt;(null)  // exposes the interface</code></pre>
+<p>Both are set together on open and nulled together on every teardown path; no cast anywhere. (The existing <code>noteEditor</code> precedent in this VM is a plain data holder with no lifecycle, so it offers no disposal shape to copy — the concrete-owner-field shape is the chosen one, and <code>WorkoutDetailsViewModel.dispose()</code> already exists to gain the teardown.)</p>
+<p><strong>Pinned additive component params</strong>:</p>
+<pre class="code"><code>// Task 2 changes; Task 8 passes maxDate = today. maxDate sits after onMonthChanged, before modifier:
+@Composable fun WorkoutCalendar(
+    selectedDate: LocalDate,
+    workoutDays: Map&lt;LocalDate, List&lt;CategoryType&gt;&gt;,
+    onDateSelected: (LocalDate) -&gt; Unit,
+    onMonthChanged: (year: Int, month: Int) -&gt; Unit,
+    maxDate: LocalDate? = null,          // NEW
+    modifier: Modifier = Modifier,
+)
+
+// Task 3 changes; Task 8 passes enabled = state.canAdd. enabled sits before leadingIcon
+// (leadingIcon must stay LAST so trailing-lambda call sites keep binding to it):
+@Composable fun FjPrimaryButton(
+    text: String,
+    onClick: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,             // NEW
+    leadingIcon: (@Composable () -&gt; Unit)? = null,
+)</code></pre>
+<p><strong>Pinned string keys</strong> (Task 1 creates; Task 8 consumes): <code>repeat_picker_title</code>, <code>repeat_picker_day_label</code>, <code>repeat_picker_change_day</code>, <code>repeat_picker_choose_day</code>, <code>repeat_picker_in_progress</code>, <code>repeat_picker_new_workout</code>, <code>repeat_picker_new_workout_subtitle</code>, <code>repeat_picker_load_failed</code>, <code>repeat_picker_retry</code>, <code>repeat_picker_add</code>.</p>
+<p><strong>Other pinned facts</strong>: sync tick reason is <code>SyncReason.PostWrite.WorkoutRecord</code>; <code>MuscleTitleFormatter</code> is the existing <code>internal class</code> with <code>suspend fun title(muscles: List&lt;MuscleLoad&gt;): String</code>; <code>WorkoutQuotaGate</code> is a <strong>final class whose only constructor dependency is <code>RecordRepository</code></strong> — tests build the real gate over a fake repository (never a subclass, never an invented quota-source abstraction); in <code>WorkoutDetailsViewModel</code>, userId/journalId come from the VM's <code>identity</code> (resolved from its <code>userContext: WorkoutUserContext</code>), not from bare fields.</p>
+<h4>Global Constraints</h4>
+<ul>
+<li><strong>Zero source changes in <code>Android/</code> and <code>iOS/</code>.</strong> Baselines recorded before work — full SHAs, compared by equality (never prefix): Android <code>1d8d0b74e12beb12bdd98c81fedfba68435f630a</code>, iOS <code>4adccb7fea46cbdca8ccce39cf5a9be023d2bc6a</code>, Multiplatform base <code>3bd3c4c</code>. At the end both native repos must be at exactly those SHAs with <code>git status --porcelain</code> printing nothing.</li>
+<li>Never pass <code>-derivedDataPath</code> to xcodebuild (share Xcode's DerivedData); build iOS <strong>arm64 only</strong> (simulator id <code>B94BD4F5-5FEE-451B-9096-727F6F399706</code>). Never set <code>GRADLE_USER_HOME</code>. If Xcode.app is mid-build, wait — never race its build.db.</li>
+<li>iOS SKIE rule: no unbridged Kotlin throw may cross the bridge (uncatchable SIGABRT). Every ViewModel entry point that touches IO wraps its read in try/catch or <code>runCatching</code>; <code>CancellationException</code> is ALWAYS rethrown, everywhere.</li>
+<li>compose-resources strings: raw apostrophes, never backslash-escaped, in all four locales.</li>
+<li><code>EditorsTest</code> in <code>:shared:jvmTest</code> is a known flake (leaked coroutine from an earlier Compose UI test) — not a regression signal; it never fails a gate on its own.</li>
+<li>Kotlin / KMP / Compose Multiplatform throughout; all source changes live under <code>Multiplatform/shared/src/</code>.</li>
+<li>No new dependencies. No <code>.sqm</code> migration (removing a named query touches no schema).</li>
+<li>Decision 6 structurally: exactly ONE <code>canWriteWorkout</code> call, inside <code>RepeatWorkoutUseCase</code>, at Add time; <code>canOpenNewWorkout</code> appears nowhere in the use case or <code>ui/workout/details/</code>; <code>WorkoutQuotaGate.canOpenNewWorkout</code> itself survives (still used by <code>WorkoutViewModel</code>).</li>
+<li>Logging via the existing <code>println(&quot;[FJ_...]&quot;)</code> convention.</li>
+<li>Shell blocks run under zsh: never use <code>status</code>, <code>path</code>, <code>argv</code>, <code>options</code> as variable names; use <code>rc=$?</code>.</li>
+</ul></div>
+
+<section class="wave">
+  <h3><span class="wnum">Wave 1</span>
+    <span class="wmeta">8 tasks · run in parallel</span></h3>
+  <div class="grid"><article class="card" id="task-0">
+  <header>
+    <h4>Task 1: Add 10 repeat_picker strings in 4 locales</h4>
+    <div class="meta">
+      <span class="chip mechanical">mechanical</span>
+      <span class="after free">no dependencies</span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Add the picker's 10 string keys to en/de/ru/uk <code>strings.xml</code>, raw apostrophes only.</p></div>
+  <div class="blk"><h5>Files</h5><p class="files"><code>shared/src/commonMain/composeResources/values/strings.xml</code> <code>shared/src/commonMain/composeResources/values-de/strings.xml</code> <code>shared/src/commonMain/composeResources/values-ru/strings.xml</code> <code>shared/src/commonMain/composeResources/values-uk/strings.xml</code></p></div>
+  <div class="blk"><h5>Steps</h5><ol>
+<li>In <code>shared/src/commonMain/composeResources/values/strings.xml</code>, add before the closing <code>&lt;/resources&gt;</code>, under a comment, exactly:</li>
+</ol>
+<pre class="code"><code>    &lt;!-- Repeat destination picker --&gt;
+    &lt;string name=&quot;repeat_picker_title&quot;&gt;Where should it go?&lt;/string&gt;
+    &lt;string name=&quot;repeat_picker_day_label&quot;&gt;DAY&lt;/string&gt;
+    &lt;string name=&quot;repeat_picker_change_day&quot;&gt;Change&lt;/string&gt;
+    &lt;string name=&quot;repeat_picker_choose_day&quot;&gt;Choose a day&lt;/string&gt;
+    &lt;string name=&quot;repeat_picker_in_progress&quot;&gt;IN PROGRESS&lt;/string&gt;
+    &lt;string name=&quot;repeat_picker_new_workout&quot;&gt;New workout&lt;/string&gt;
+    &lt;string name=&quot;repeat_picker_new_workout_subtitle&quot;&gt;Starts empty, on its own page&lt;/string&gt;
+    &lt;string name=&quot;repeat_picker_load_failed&quot;&gt;Couldn't load this day&lt;/string&gt;
+    &lt;string name=&quot;repeat_picker_retry&quot;&gt;Retry&lt;/string&gt;
+    &lt;string name=&quot;repeat_picker_add&quot;&gt;Add&lt;/string&gt;</code></pre>
+<p>   Note <code>Couldn't</code> carries a raw apostrophe on purpose — do NOT escape it.</p>
+<ol>
+<li>In <code>values-de/strings.xml</code>, same block with values: <code>Wohin soll es gehen?</code> / <code>TAG</code> / <code>Ändern</code> / <code>Tag wählen</code> / <code>LÄUFT</code> / <code>Neues Workout</code> / <code>Beginnt leer, auf eigener Seite</code> / <code>Dieser Tag konnte nicht geladen werden</code> / <code>Erneut versuchen</code> / <code>Hinzufügen</code>.</li>
+<li>In <code>values-ru/strings.xml</code>: <code>Куда добавить?</code> / <code>ДЕНЬ</code> / <code>Изменить</code> / <code>Выберите день</code> / <code>ИДЁТ СЕЙЧАС</code> / <code>Новая тренировка</code> / <code>Начинается пустой, на отдельной странице</code> / <code>Не удалось загрузить этот день</code> / <code>Повторить</code> / <code>Добавить</code>.</li>
+<li>In <code>values-uk/strings.xml</code>: <code>Куди додати?</code> / <code>ДЕНЬ</code> / <code>Змінити</code> / <code>Виберіть день</code> / <code>ТРИВАЄ</code> / <code>Нове тренування</code> / <code>Починається порожнім, на окремій сторінці</code> / <code>Не вдалося завантажити цей день</code> / <code>Повторити</code> / <code>Додати</code>.</li>
+<li>Match the surrounding file's indentation and comment style; touch nothing else.</li>
+</ol></div>
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>Each of the 4 locale strings.xml files contains exactly the 10 repeat_picker_* keys (rg -c prints 10 for each)</li><li>No backslash-escaped apostrophe exists under shared/src/commonMain/composeResources</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>rg -c 'repeat_picker_' shared/src/commonMain/composeResources/values/strings.xml shared/src/commonMain/composeResources/values-de/strings.xml shared/src/commonMain/composeResources/values-ru/strings.xml shared/src/commonMain/composeResources/values-uk/strings.xml</code></pre></div>
+</article><article class="card" id="task-1">
+  <header>
+    <h4>Task 2: WorkoutCalendar gains optional maxDate (+ test)</h4>
+    <div class="meta">
+      <span class="chip standard">standard</span>
+      <span class="after free">no dependencies</span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Add <code>maxDate: LocalDate? = null</code> to <code>WorkoutCalendar</code> so days after it render disabled and untappable, with all three existing call sites byte-compatible, proven by a runnable Compose test.</p></div>
+  <div class="blk"><h5>Files</h5><p class="files"><code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/components/WorkoutCalendar.kt</code> <code>shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/ui/workout/components/WorkoutCalendarTest.kt</code></p></div>
+  <div class="blk"><h5>Steps</h5><ol>
+<li>Skills to invoke first: <code>compose-slot-api-pattern</code>, <code>compose-modifier-and-layout-style</code>, <code>compose-ui-testing-patterns</code>.</li>
+<li>Read <code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/components/WorkoutCalendar.kt</code> in full.</li>
+<li>Add the <code>maxDate: LocalDate? = null</code> parameter at the pinned position — after <code>onMonthChanged</code>, before <code>modifier</code> (see Cross-task contracts). The default value is what keeps all three existing call sites compiling unchanged.</li>
+<li>In the day-cell rendering: when <code>maxDate != null &amp;&amp; day &gt; maxDate</code>, render the day in the calendar's existing disabled/inactive colour (reuse whatever token out-of-month or otherwise-inactive days already use — do not invent a new token) and make it untappable via <code>clickable(enabled = ...)</code> (or the cell's equivalent click modifier with <code>enabled = false</code>) so the node also <strong>reports disabled semantics</strong> — the test below asserts on them.</li>
+<li><code>maxDate == null</code> must be a byte-identical rendering path to today's behaviour. Do NOT touch the THREE existing call sites: <code>ui/workout/main/WorkoutScreen.kt</code>, <code>ui/workout/list/WorkoutListScreen.kt</code>, <code>ui/workout/imports/ImportWorkoutScreen.kt</code>.</li>
+<li>Create <code>shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/ui/workout/components/WorkoutCalendarTest.kt</code> using the same jvmTest Compose harness as <code>WorkoutDetailsScreenTest</code>. One focused test (plus a control): render <code>WorkoutCalendar</code> with <code>maxDate</code> set mid-month and a recording <code>onDateSelected</code>; assert a day after <code>maxDate</code> has disabled semantics (<code>assertIsNotEnabled</code>) and that <code>performClick</code> on it records nothing; assert a day on/before <code>maxDate</code> still invokes <code>onDateSelected</code> with that date. (This is the independent <code>maxDate</code> proof — Task 10's VM future-date guard is a separate backstop, not this coverage.)</li>
+</ol></div>
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>WorkoutCalendar declares maxDate: LocalDate? = null after onMonthChanged, before modifier</li><li>Days after maxDate render in the existing disabled colour, report disabled semantics, and do not fire the day click handler</li><li>WorkoutCalendarTest proves a future day is disabled and never invokes onDateSelected, and an allowed day still selects</li><li>Existing call sites in ui/workout/main/WorkoutScreen.kt, ui/workout/list/WorkoutListScreen.kt, and ui/workout/imports/ImportWorkoutScreen.kt are untouched and contain no maxDate reference</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>rg -n 'maxDate' shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/components/WorkoutCalendar.kt &amp;&amp; test -f shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/ui/workout/components/WorkoutCalendarTest.kt</code></pre></div>
+</article><article class="card" id="task-2">
+  <header>
+    <h4>Task 3: FjPrimaryButton gains optional enabled param</h4>
+    <div class="meta">
+      <span class="chip mechanical">mechanical</span>
+      <span class="after free">no dependencies</span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Add a backward-compatible <code>enabled: Boolean = true</code> to the shared <code>FjPrimaryButton</code> — disabled visuals, disabled semantics, no click — so the picker's Add button can be disabled without an undeclared edit.</p></div>
+  <div class="blk"><h5>Files</h5><p class="files"><code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/common/FjPrimaryButton.kt</code></p></div>
+  <div class="blk"><h5>Steps</h5><ol>
+<li>Skills to invoke first: <code>compose-slot-api-pattern</code>, <code>compose-modifier-and-layout-style</code>.</li>
+<li>Read <code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/common/FjPrimaryButton.kt</code>. Today it has no <code>enabled</code> parameter and installs <code>.clickable(onClick = onClick)</code> unconditionally on a brand-coloured <code>Box</code>.</li>
+<li>Change the signature to the pinned shape (Cross-task contracts): insert <code>enabled: Boolean = true</code> <strong>after <code>modifier</code>, before <code>leadingIcon</code></strong> — <code>leadingIcon</code> must remain last so any trailing-lambda call site keeps binding to it; the default keeps every existing call site compiling byte-identically. FIRST run <code>rg -n 'FjPrimaryButton\(' shared/src</code> to enumerate the real call sites and confirm none passes <code>leadingIcon</code> as a 4th positional argument.</li>
+<li>Behaviour changes, all additive:</li>
+</ol>
+<ul>
+<li><code>.clickable(onClick = onClick)</code> → <code>.clickable(enabled = enabled, onClick = onClick)</code> — this alone removes the ripple, blocks the click, and makes the node report disabled semantics.</li>
+<li>Disabled visuals: background becomes <code>FjTheme.colors.brand.copy(alpha = 0.4f)</code> when <code>!enabled</code>. Alpha-modulating an existing token is the codebase convention — confirm a nearby precedent with <code>rg -n 'brand.copy\(alpha' shared/src</code> before writing, and do NOT invent a new theme token. Text stays white; everything else unchanged.</li>
+<li><code>enabled = true</code> must be a byte-identical rendering path to today.</li>
+</ul></div>
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>FjPrimaryButton declares enabled: Boolean = true after modifier and before leadingIcon, which stays last</li><li>Click is installed via clickable(enabled = enabled, onClick = onClick); disabled background alpha-modulates the existing FjTheme.colors.brand token; no new theme token</li><li>enabled = true renders byte-identically to today and every pre-existing call site is untouched</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>rg -n 'enabled: Boolean = true' shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/common/FjPrimaryButton.kt &amp;&amp; rg -n 'clickable\(enabled = enabled' shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/common/FjPrimaryButton.kt</code></pre></div>
+</article><article class="card" id="task-3">
+  <header>
+    <h4>Task 4: Drop RepeatDestination.spendsQuota (+ test)</h4>
+    <div class="meta">
+      <span class="chip mechanical">mechanical</span>
+      <span class="after free">no dependencies</span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Delete the <code>spendsQuota</code> field, its derivation, and every test assertion on it; <code>repeatDestinations</code> otherwise byte-identical.</p></div>
+  <div class="blk"><h5>Files</h5><p class="files"><code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/workout/RepeatDestination.kt</code> <code>shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/domain/workout/RepeatDestinationTest.kt</code></p></div>
+  <div class="blk"><h5>Steps</h5><ol>
+<li>In <code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/workout/RepeatDestination.kt</code>:</li>
+</ol>
+<ul>
+<li>Delete the two lines <code>/** Holds no records yet, so writing here spends one of the free workouts. */</code> and <code>val spendsQuota: Boolean,</code> from the data class.</li>
+<li>Replace the <code>isNewWorkout</code> KDoc (it cross-references <code>[spendsQuota]</code>) with exactly:</li>
+</ul>
+<pre class="code"><code>     /**
+      * The trailing &quot;New workout&quot; row — a page that does not exist at all yet.
+      *
+      * A workout that was started but never logged EXISTS (it owns its page, it has a
+      * timer) so it is not &quot;new&quot; and must not be labelled as such. Whether a write is
+      * charged is the quota gate's question, answered at Add time — never derived here.
+      */</code></pre>
+<ul>
+<li>In the local <code>destination(number)</code> helper inside <code>repeatDestinations</code>, delete the line <code>spendsQuota = number !in pagesWithRecords,</code>.</li>
+<li>Change nothing else in the file — <code>RepeatDestinations.Single</code>/<code>Choice</code> and all remaining logic stay byte-identical.</li>
+</ul>
+<ol>
+<li>In <code>shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/domain/workout/RepeatDestinationTest.kt</code>: delete every assertion referencing <code>spendsQuota</code> and every <code>spendsQuota =</code> argument in expected-value constructions. Do not delete any test function — the spec states all 10 tests otherwise stand. Do not weaken any non-<code>spendsQuota</code> assertion.</li>
+</ol></div>
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>rg 'spendsQuota' shared/src prints nothing</li><li>RepeatDestinationTest keeps all 10 @Test functions (rg -c '@Test' prints 10)</li><li>repeatDestinations logic other than the deleted spendsQuota line is byte-identical</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>! rg 'spendsQuota' shared/src &amp;&amp; rg -c '@Test' shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/domain/workout/RepeatDestinationTest.kt</code></pre></div>
+</article><article class="card" id="task-4">
+  <header>
+    <h4>Task 5: Data layer: reshape copyWorkoutTo, delete resolve path</h4>
+    <div class="meta">
+      <span class="chip standard">standard</span>
+      <span class="after free">no dependencies</span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Delete <code>RepeatTarget</code>/<code>resolveRepeatTarget</code>/<code>runningWorkoutInJournal</code>, reshape <code>copyWorkoutTo</code> to explicit target coordinates, and rewrite <code>RecordRepositoryTest</code>'s repeat coverage end-to-end.</p></div>
+  <div class="blk"><h5>Files</h5><p class="files"><code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/workout/RepeatTarget.kt</code> <code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/workout/RecordRepository.kt</code> <code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/data/record/repository/DefaultRecordRepository.kt</code> <code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/data/record/datasource/WorkoutsDBDataSource.kt</code> <code>shared/src/commonMain/sqldelight/kz/maestrosultan/fitjournal/data/db/WorkoutRecords.sq</code> <code>shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/data/RecordRepositoryTest.kt</code></p></div>
+  <div class="blk"><h5>Steps</h5><ol>
+<li>Skills to invoke first: <code>kotlin-coroutines-structured-concurrency</code>.</li>
+<li>Delete the file <code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/workout/RepeatTarget.kt</code>.</li>
+<li>In <code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/workout/RecordRepository.kt</code>: delete <code>resolveRepeatTarget</code> (declaration + default + KDoc + the <code>RepeatTarget</code> import); replace <code>copyWorkoutTo</code> with the pinned signature (interface default returns <code>false</code> exactly as today, so fakes that don't override it stay valid). Carry the method's KDoc forward, reworded for explicit <code>targetDate</code>/<code>targetWorkoutNumber</code> (no &quot;resolve&quot; language).</li>
+<li>In <code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/data/record/repository/DefaultRecordRepository.kt</code>: delete the <code>resolveRepeatTarget</code> override; adapt <code>copyWorkoutTo</code> to the new parameters with unchanged logic — read the source page with <code>includeLastOccurrence = false</code>, empty ⇒ <code>false</code>, else <code>insertCopiedRecords(..., targetDate, source, targetWorkoutNumber = targetWorkoutNumber)</code>, ⇒ <code>true</code>. The existing safety comment (position-counter seeding; <code>clearStalePageMetaForNewWorkouts</code> only tombstoning ENDED sessions) moves with the body verbatim.</li>
+<li>In <code>shared/src/commonMain/sqldelight/kz/maestrosultan/fitjournal/data/db/WorkoutRecords.sq</code>: delete the <code>runningWorkoutInJournal</code> named query AND its comment block. No <code>.sqm</code> — removing a named query touches no schema.</li>
+<li>In <code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/data/record/datasource/WorkoutsDBDataSource.kt</code>: delete the <code>runningWorkoutInJournal</code> function.</li>
+<li>In <code>shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/data/RecordRepositoryTest.kt</code> (real SQLite harness, follow the file's existing fixture style): delete the two <code>resolveRepeatTarget</code> tests and update the test's repository surface for the new signature; add end-to-end <code>copyWorkoutTo</code> tests per spec §8: (a) copy onto an existing page appends after its rows; (b) copy to a fresh number lands blank-template records — sets kept, values cleared; (c) whole-workout parity: the copied page contains exactly the source page's workoutExercise count with matching per-exercise set counts; (d) empty source ⇒ returns <code>false</code>, writes nothing.</li>
+<li>Known breakage until Tasks 6/11 land: <code>RepeatWorkoutUseCase</code> and <code>WorkoutDetailsViewModel</code> still reference the old surface — that is expected and resolved by later tasks; do NOT touch their files.</li>
+</ol></div>
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>RepeatTarget.kt is deleted</li><li>resolveRepeatTarget and runningWorkoutInJournal appear nowhere in RecordRepository.kt, data/, sqldelight/, or jvmTest/data/</li><li>copyWorkoutTo has the pinned (userId, journalId, sourceDate, sourceWorkoutNumber, targetDate, targetWorkoutNumber) signature with interface default false</li><li>RecordRepositoryTest covers: append to existing page, blank-template copy to fresh number, whole-workout exercise/set-count parity, empty source returns false and writes nothing</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>test ! -f shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/workout/RepeatTarget.kt &amp;&amp; rg -n 'targetWorkoutNumber: Int' shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/workout/RecordRepository.kt</code></pre></div>
+</article><article class="card" id="task-5">
+  <header>
+    <h4>Task 6: RepeatWorkoutUseCase becomes the Add-time pipeline</h4>
+    <div class="meta">
+      <span class="chip standard">standard</span>
+      <span class="after free">no dependencies</span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Rewrite <code>RepeatWorkoutUseCase</code> as the resolve → gate-once → copy → tick pipeline, plus its new fake-driven test suite.</p>
+<p>(No <code>blockedBy</code>: <code>copyWorkoutTo</code>'s new signature is pinned byte-for-byte in Cross-task contracts, so this task never needs Task 5's finished file.)</p></div>
+  <div class="blk"><h5>Files</h5><p class="files"><code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/workout/usecase/RepeatWorkoutUseCase.kt</code> <code>shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/domain/workout/usecase/RepeatWorkoutUseCaseTest.kt</code></p></div>
+  <div class="blk"><h5>Steps</h5><ol>
+<li>Skills to invoke first: <code>kotlin-coroutines-structured-concurrency</code>.</li>
+<li>Replace <code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/workout/usecase/RepeatWorkoutUseCase.kt</code> with (keep/write a KDoc explaining the pipeline; keep the no-stored-scope, plain-suspend shape):</li>
+</ol>
+<pre class="code"><code>package kz.maestrosultan.fitjournal.domain.workout.usecase
+
+import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.datetime.LocalDate
+import kz.maestrosultan.fitjournal.domain.quota.WorkoutQuotaGate
+import kz.maestrosultan.fitjournal.domain.sync.SyncReason
+import kz.maestrosultan.fitjournal.domain.sync.SyncTrigger
+import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
+import kz.maestrosultan.fitjournal.domain.workout.RepeatDestination
+
+class RepeatWorkoutUseCase(
+    private val recordRepository: RecordRepository,
+    private val syncTrigger: SyncTrigger,
+    // Default-constructed so Android's existing Hilt provider and the Swift factory
+    // compile unchanged (same trick as WorkoutDetailsViewModel's quotaGate param).
+    private val quotaGate: WorkoutQuotaGate = WorkoutQuotaGate(recordRepository),
+) {
+
+    sealed interface Result {
+        data class Copied(val date: LocalDate, val workoutNumber: Int) : Result
+        data object Refused : Result
+        /** Source workout had no records; nothing was written. */
+        data object NothingToCopy : Result
+    }
+
+    suspend operator fun invoke(
+        userId: String,
+        journalId: String,
+        sourceDate: LocalDate,
+        sourceWorkoutNumber: Int,
+        destination: RepeatDestination,
+    ): Result {
+        // Never trust the number computed when the list was drawn — a sync pull or a
+        // Start elsewhere may have moved it (decision 8).
+        val resolvedNumber =
+            if (destination.isNewWorkout) {
+                recordRepository.maxWorkoutNumberOnDate(userId, journalId, destination.date) + 1
+            } else {
+                destination.workoutNumber
+            }
+        // ONE gate call, against the resolved slot (decision 6). Gate throw =&gt; allow:
+        // the gate's documented fail-open contract, and an unbridged Kotlin throw on
+        // iOS is an uncatchable SIGABRT. The log line below names no gate identifier
+        // ON PURPOSE: spec §9.5 proves the single gate call by counting occurrences
+        // of that identifier in this file, and the count must stay exactly 1.
+        val allowed = try {
+            quotaGate.canWriteWorkout(userId, journalId, destination.date, resolvedNumber)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            println(&quot;[FJ_QUOTA] quota check threw; allowing repeat: $e&quot;)
+            true
+        }
+        if (!allowed) return Result.Refused
+
+        val copied = recordRepository.copyWorkoutTo(
+            userId, journalId, sourceDate, sourceWorkoutNumber, destination.date, resolvedNumber,
+        )
+        if (!copied) return Result.NothingToCopy
+        syncTrigger.requestTick(SyncReason.PostWrite.WorkoutRecord)
+        return Result.Copied(destination.date, resolvedNumber)
+    }
+}</code></pre>
+<ol>
+<li>Create <code>shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/domain/workout/usecase/RepeatWorkoutUseCaseTest.kt</code>. READ <code>shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/domain/quota/WorkoutQuotaGateTest.kt</code> FIRST and reproduce its discipline exactly — three load-bearing facts from that file:</li>
+</ol>
+<ul>
+<li><strong>The gate is a real, final class over the repository</strong>: <code>WorkoutQuotaGate(records = repo)</code> (its line 82; second precedent <code>WorkoutListViewModelQuotaTest.kt:188</code>). Never subclass it, never invent a quota-source abstraction. In THIS suite <code>repo</code> is a hand-rolled fake <code>RecordRepository</code> (unlike <code>WorkoutQuotaGateTest</code>'s real-SQL repo — the SQL counting semantics are already proven there; here the pipeline is under test). Since the use case's <code>quotaGate</code> default arg wraps the same <code>recordRepository</code>, tests simply omit the parameter.</li>
+<li><strong><code>FreeQuotaSettings</code> is a global <code>object</code> and jvmTest runs every class in one JVM</strong>: declare <code>@BeforeTest</code> AND <code>@AfterTest</code> methods that both call <code>FreeQuotaSettings.reset()</code> (copy <code>WorkoutQuotaGateTest</code>'s <code>resetSettings()</code> shape verbatim), plus its helper <code>private fun meterOn(limit: Long = 10) { FreeQuotaSettings.setLimit(limit); FreeQuotaSettings.setHasEverSubscribed(false) }</code>.</li>
+<li><strong>On reset defaults the gate resolves <code>Unlimited</code> before ever reading the repository</strong> (limit 0 is the kill switch; unknown subscription history fails open) — so every scenario that needs a refusal, a gate throw, or an observed slot read MUST call <code>meterOn()</code> first. Pure allow-path scenarios ((a), (b), (f), (g)) may run on reset defaults.</li>
+</ul>
+<p>   Gate internals this suite leans on (confirm by reading <code>WorkoutQuotaGate.kt</code>): the suspend <code>canWriteWorkout</code> path has NO try/catch — a fake-repo throw propagates straight to the use case's catch (only the Flow path has <code>.catch</code>); and <code>hasAnyRecordInWorkout</code> is consulted only when the metered quota is exhausted, so the slot-naming observation must run in the exhausted state. The fake <code>RecordRepository</code> therefore implements the quota surface as settable stubs — <code>countMeteredWorkouts</code> (settable count, or throw) and <code>hasAnyRecordInWorkout</code> (records every <code>(userId, journalId, date, workoutNumber)</code> call, settable return) — alongside recording <code>maxWorkoutNumberOnDate</code> and <code>copyWorkoutTo</code>; the fake <code>SyncTrigger</code> records reasons. Follow <code>DeleteWorkoutUseCaseTest</code>'s style for the fixture shape.</p>
+<ol>
+<li>Cover exactly spec §8, with the settings configuration each scenario needs:</li>
+</ol>
+<ul>
+<li>(a) existing-row destination never recomputes the number: reset defaults; assert zero <code>maxWorkoutNumberOnDate</code> calls and <code>copyWorkoutTo</code> receives <code>destination.workoutNumber</code>.</li>
+<li>(b) new-row destination recomputes from a fresh <code>maxWorkoutNumberOnDate</code> that changed since the list was drawn: reset defaults; assert <code>copyWorkoutTo</code> receives max+1.</li>
+<li>(c) the gate is consulted exactly once and against the resolved slot: <code>meterOn(limit = 1)</code>; fake <code>countMeteredWorkouts</code> returns 1 (exhausted); fake <code>hasAnyRecordInWorkout</code> returns true (slot exists ⇒ rule 3 allows). Assert exactly ONE recorded <code>hasAnyRecordInWorkout</code> call whose <code>(date, workoutNumber)</code> equal the resolved slot, and that the copy proceeded — plus the structural criterion that the gate identifier appears once in the use-case source.</li>
+<li>(d) gate throws ⇒ copy proceeds: <code>meterOn()</code>; fake <code>countMeteredWorkouts</code> throws <code>RuntimeException</code>; assert <code>Copied</code> and that <code>copyWorkoutTo</code> ran.</li>
+<li>(e) refusal ⇒ nothing written, no tick: <code>meterOn()</code>; exhausted count; <code>hasAnyRecordInWorkout</code> returns false; assert <code>Refused</code>, zero <code>copyWorkoutTo</code> calls, zero ticks.</li>
+<li>(f) copy-false ⇒ <code>NothingToCopy</code>, no tick: reset defaults.</li>
+<li>(g) success ⇒ exactly one <code>SyncReason.PostWrite.WorkoutRecord</code> tick: reset defaults.</li>
+</ul></div>
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>RepeatWorkoutUseCase matches the pinned constructor, Result sealed interface, and invoke signature</li><li>rg -c 'canWriteWorkout' on the use case file prints exactly 1 — the log string is worded to avoid the identifier; canOpenNewWorkout/RepeatTarget/resolveTarget appear nowhere in it</li><li>RepeatWorkoutUseCaseTest builds a REAL WorkoutQuotaGate over the hand-rolled fake RecordRepository (WorkoutQuotaGateTest's pattern) — no subclass, no invented quota-source, with @BeforeTest AND @AfterTest both calling FreeQuotaSettings.reset() and a meterOn() helper (setLimit + setHasEverSubscribed(false)) applied before every refusal, throw, or slot-observation scenario</li><li>RepeatWorkoutUseCaseTest covers: no recompute for existing rows, fresh recompute for new rows, exactly one gate consultation against the resolved slot observed via recorded hasAnyRecordInWorkout arguments in the metered-exhausted state, gate-throw (metered, countMeteredWorkouts throws) allows and copies, metered refusal writes nothing and no tick, copy-false yields NothingToCopy with no tick, success ticks PostWrite.WorkoutRecord once</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>test &quot;$(rg -c 'canWriteWorkout' shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/workout/usecase/RepeatWorkoutUseCase.kt)&quot; = &quot;1&quot; &amp;&amp; rg -c 'FreeQuotaSettings.reset' shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/domain/workout/usecase/RepeatWorkoutUseCaseTest.kt</code></pre></div>
+</article><article class="card" id="task-6">
+  <header>
+    <h4>Task 7: New RepeatPickerContract</h4>
+    <div class="meta">
+      <span class="chip mechanical">mechanical</span>
+      <span class="after free">no dependencies</span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Create the picker's public per-screen MVI contract, Import-shaped.</p></div>
+  <div class="blk"><h5>Files</h5><p class="files"><code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/repeat/RepeatPickerContract.kt</code></p></div>
+  <div class="blk"><h5>Steps</h5><ol>
+<li>Create <code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/repeat/RepeatPickerContract.kt</code> with exactly (copy the <code>CategoryType</code> import from <code>ImportWorkoutContract.kt</code> — the type used in its <code>workoutDays</code> map):</li>
+</ol>
+<pre class="code"><code>package kz.maestrosultan.fitjournal.ui.workout.repeat
+
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.datetime.LocalDate
+import kz.maestrosultan.fitjournal.domain.workout.RepeatDestination
+
+/** Contract for the Repeat destination picker sheet (frames 1a/1d). */
+object RepeatPickerContract {
+
+    interface ViewModel {
+        val viewState: StateFlow&lt;ViewState&gt;
+        fun dispatch(action: ViewAction)
+    }
+
+    enum class Pane { Destination, Calendar }
+
+    data class ViewState(
+        val selectedDate: LocalDate,
+        val pane: Pane = Pane.Destination,
+        val workoutDays: Map&lt;LocalDate, List&lt;CategoryType&gt;&gt; = emptyMap(),
+        val content: Content = Content.Loading,
+        val addInProgress: Boolean = false,
+    ) {
+        /** Automatically false for Loading and LoadFailed. */
+        val canAdd: Boolean
+            get() = (content is Content.Single || content is Content.Choice) &amp;&amp; !addInProgress
+    }
+
+    sealed interface Content {
+        data object Loading : Content
+        data object LoadFailed : Content
+        /** Day holds no records: the sheet shows day + Add, no list (decision 2). */
+        data class Single(val destination: RepeatDestination) : Content
+        data class Choice(val rows: List&lt;Row&gt;, val selectedWorkoutNumber: Int) : Content
+    }
+
+    /** [title] is null on the New-workout row — the UI draws its static strings. */
+    data class Row(val destination: RepeatDestination, val title: String?)
+
+    sealed interface ViewAction {
+        data class SelectRow(val workoutNumber: Int) : ViewAction
+        data object ChangeDayTapped : ViewAction
+        data object CalendarBackTapped : ViewAction
+        data class CalendarMonthChanged(val year: Int, val month: Int) : ViewAction
+        data class DateSelected(val date: LocalDate) : ViewAction
+        data object RetryLoadTapped : ViewAction
+        data object AddTapped : ViewAction
+    }
+
+    /** Terminal outcomes, delivered to the parent VM via callback — not a ViewEffect channel. */
+    sealed interface Outcome {
+        data class Copied(val date: LocalDate, val workoutNumber: Int) : Outcome
+        data object Refused : Outcome
+        data object NothingToCopy : Outcome
+    }
+}</code></pre>
+<ol>
+<li><code>CalendarMonthChanged(year, month)</code> mirrors <code>WorkoutCalendar</code>'s real <code>onMonthChanged: (year: Int, month: Int) -&gt; Unit</code>. Add the <code>CategoryType</code> import resolved in step 1. Nothing else in this task.</li>
+</ol></div>
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>RepeatPickerContract.kt exists with the pinned ViewModel interface, Pane enum, ViewState with derived canAdd, Content with Loading/LoadFailed/Single/Choice, Row with nullable title, the 7 ViewActions, and the 3 Outcomes</li><li>CategoryType import matches ImportWorkoutContract's; CalendarMonthChanged carries (year: Int, month: Int) matching WorkoutCalendar's onMonthChanged</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>rg -c 'data object AddTapped|data object Refused|data object LoadFailed|val canAdd' shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/repeat/RepeatPickerContract.kt</code></pre></div>
+</article><article class="card" id="task-8">
+  <header>
+    <h4>Task 9: UiBuilder: rankedMuscles internal, drop running flag</h4>
+    <div class="meta">
+      <span class="chip mechanical">mechanical</span>
+      <span class="after free">no dependencies</span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Make <code>rankedMuscles</code> <code>internal</code> (body byte-identical) and stop computing <code>focusedWorkoutIsRunning</code>, with matching builder-test cleanup.</p></div>
+  <div class="blk"><h5>Files</h5><p class="files"><code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/details/components/WorkoutDetailsUiBuilder.kt</code> <code>shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/ui/workout/details/WorkoutDetailsBuilderTest.kt</code></p></div>
+  <div class="blk"><h5>Steps</h5><ol>
+<li>In <code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/details/components/WorkoutDetailsUiBuilder.kt</code>:</li>
+</ol>
+<ul>
+<li>Change <code>private fun rankedMuscles(...)</code> to <code>internal fun rankedMuscles(...)</code> — ONE word; the body must remain byte-identical (details-header behaviour cannot drift).</li>
+<li>Delete the computation of <code>focusedWorkoutIsRunning</code> and the <code>focusedWorkoutIsRunning = ...</code> argument where the builder constructs <code>Content.Loaded</code>, plus any now-orphaned locals your deletion creates. (The field itself is removed from the contract in Task 11 — do not touch <code>WorkoutDetailsContract.kt</code> here.)</li>
+</ul>
+<ol>
+<li>In <code>shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/ui/workout/details/WorkoutDetailsBuilderTest.kt</code>: remove assertions and fixture arguments referencing <code>focusedWorkoutIsRunning</code>; delete a test entirely only if <code>focusedWorkoutIsRunning</code> was its sole subject. All other assertions untouched.</li>
+</ol></div>
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>rankedMuscles is internal with a byte-identical body</li><li>focusedWorkoutIsRunning appears in neither WorkoutDetailsUiBuilder.kt nor WorkoutDetailsBuilderTest.kt</li><li>No other builder behaviour changed</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>rg -c 'internal fun rankedMuscles' shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/details/components/WorkoutDetailsUiBuilder.kt</code></pre></div>
+</article></div>
+</section>
+<section class="wave">
+  <h3><span class="wnum">Wave 2</span>
+    <span class="wmeta">3 tasks · run in parallel</span></h3>
+  <div class="grid"><article class="card" id="task-7">
+  <header>
+    <h4>Task 8: New RepeatPickerSheet composable + previews</h4>
+    <div class="meta">
+      <span class="chip standard">standard</span>
+      <span class="after">after <a href="#task-2">Task 3: FjPrimaryButton gains optional enabled param</a>, <a href="#task-6">Task 7: New RepeatPickerContract</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Build the two-pane <code>ModalBottomSheet</code> UI (frames 1a/1d) with hoisted <code>SheetState</code> and co-located previews.</p>
+<p><strong>Retained <code>blockedBy</code> rationale</strong> — Task 7 (contract): the contract's <code>CategoryType</code> import is resolved only in the finished file, and the sheet dispatches its actions; Task 3 (button): the sheet binds <code>enabled</code> and its disabled visuals must compose against what Task 3 actually shipped. (Edges on Tasks 1/2 dropped: string keys and <code>maxDate</code> are fully pinned.)</p></div>
+  <div class="blk"><h5>Files</h5><p class="files"><code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/repeat/RepeatPickerSheet.kt</code></p></div>
+  <div class="blk"><h5>Steps</h5><ol>
+<li>Skills to invoke first: <code>compose-slot-api-pattern</code>, <code>compose-modifier-and-layout-style</code>, <code>compose-state-deferred-reads</code>.</li>
+<li>Read the design mock <code>/Users/sultan/Development/FitJournal/design/Repeat Destination Picker.dc.html</code> (frames <code>1a</code>, <code>1d</code>) and the two existing sheets — <code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/common/ConfirmActionSheet.kt</code> and the session-note editor sheet under <code>ui/workout/details/components/</code> — for the <code>ModalBottomSheet</code> pattern, <code>FjTheme.colors.sheet</code>, and typography conventions.</li>
+<li>Create <code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/repeat/RepeatPickerSheet.kt</code> with the pinned signature — <code>sheetState</code> is a PARAMETER (deliberate deviation from the existing sheets: the close handshake needs the screen to await <code>sheetState.hide()</code>). <code>ModalBottomSheet(sheetState = sheetState, onDismissRequest = onDismiss, containerColor = FjTheme.colors.sheet, ...)</code>.</li>
+<li>Inside: <code>AnimatedContent(targetState = state.pane)</code> with a horizontal slide — one sheet, two panes, never a stacked modal.</li>
+<li>Destination pane (frame 1a): title <code>repeat_picker_title</code>; day row — eyebrow <code>repeat_picker_day_label</code>, value <code>listOfNotNull(relativeDayLabel(date), LocaleFormatters.formatShortWeekdayDate(date)).joinToString(&quot; · &quot;)</code> (assumption 1), trailing <code>repeat_picker_change_day</code> → <code>ChangeDayTapped</code>. Content by case: <code>Choice</code> → rows with leading check circle (filled brand when <code>destination.workoutNumber == selectedWorkoutNumber</code>), title (or static <code>repeat_picker_new_workout</code> + <code>repeat_picker_new_workout_subtitle</code> on the dashed New row when <code>row.title == null</code>), <code>repeat_picker_in_progress</code> pill when <code>destination.isRunning</code>, subtitle via the existing <code>history_exercise_count</code> plural; <code>Single</code> → no list at all; <code>LoadFailed</code> → <code>repeat_picker_load_failed</code> text + <code>repeat_picker_retry</code> text button → <code>RetryLoadTapped</code> (day row and Change stay usable); <code>Loading</code> → the app's standard loading placeholder. Footer: <code>FjPrimaryButton(text = &lt;repeat_picker_add&gt;, onClick = { dispatch(AddTapped) }, enabled = state.canAdd)</code> — static &quot;Add&quot; in every case (decision 5), disabled purely via Task 3's <code>enabled</code> parameter. No quota markers or price tags (decision 6). No page-number eyebrows (decision 12).</li>
+<li>Calendar pane (frame 1d): back arrow (→ <code>CalendarBackTapped</code>) where the title was + <code>repeat_picker_choose_day</code>; <code>WorkoutCalendar(selectedDate, workoutDays, onDateSelected = { dispatch(DateSelected(it)) }, onMonthChanged = { y, m -&gt; dispatch(CalendarMonthChanged(y, m)) }, maxDate = today)</code>. NO confirm button — day tap commits (assumption 2).</li>
+<li>Previews co-located in the same file (VibeTrip convention), driven by a fixed-state fake <code>RepeatPickerContract.ViewModel</code> like the details screen's preview fakes: at least <code>Choice</code> (3 rows incl. running pill + dashed New row), <code>Single</code>, and <code>LoadFailed</code>.</li>
+<li>UI-only task: no VM, no dispatch logic beyond forwarding actions.</li>
+</ol></div>
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>RepeatPickerSheet takes sheetState: SheetState as a parameter and creates no SheetState itself</li><li>AnimatedContent swaps Destination/Calendar panes inside ONE ModalBottomSheet</li><li>Destination pane renders Choice rows (check circle, IN PROGRESS pill, dashed New row, history_exercise_count subtitle), Single with no list, LoadFailed with Retry, and a static Add via FjPrimaryButton(enabled = state.canAdd)</li><li>Calendar pane passes maxDate = today and has no confirm button</li><li>Previews for Choice, Single, and LoadFailed are co-located in the file</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>rg -n 'sheetState: SheetState' shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/repeat/RepeatPickerSheet.kt &amp;&amp; rg -c '@Preview' shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/repeat/RepeatPickerSheet.kt</code></pre></div>
+</article><article class="card" id="task-9">
+  <header>
+    <h4>Task 10: New RepeatPickerViewModel + test suite</h4>
+    <div class="meta">
+      <span class="chip frontier">frontier</span>
+      <span class="after">after <a href="#task-6">Task 7: New RepeatPickerContract</a>, <a href="#task-8">Task 9: UiBuilder: rankedMuscles internal, drop running flag</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Implement the picker VM (day load, calendar, selection, Add) per spec §3.4 with its full jvmTest suite.</p>
+<p><strong>Retained <code>blockedBy</code> rationale</strong> — Task 7 (contract): the <code>CategoryType</code> import and action payloads this VM handles are resolved only in the finished contract file; Task 9 (UiBuilder): this VM must CALL the now-<code>internal</code> <code>rankedMuscles</code> — an implementer reading a still-<code>private</code> helper would copy it instead, which is exactly the drift the spec forbids. (Edges on Tasks 6/8 dropped: the use-case signature is pinned; the sheet is not consumed here.)</p></div>
+  <div class="blk"><h5>Files</h5><p class="files"><code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/repeat/RepeatPickerViewModel.kt</code> <code>shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/ui/workout/repeat/RepeatPickerViewModelTest.kt</code></p></div>
+  <div class="blk"><h5>Steps</h5><ol>
+<li>Skills to invoke first: <code>kotlin-coroutines-structured-concurrency</code>, <code>kotlin-flow-state-event-modeling</code>.</li>
+<li>Read <code>ImportWorkoutViewModel.kt</code> first — this VM copies its patterns: androidx <code>ViewModel</code> with host-owned <code>dispose()</code>, generation-guarded one-shot loads, <code>MutableStateFlow&lt;ViewState&gt;</code>.</li>
+<li>Create <code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/repeat/RepeatPickerViewModel.kt</code> with the pinned constructor, implementing <code>RepeatPickerContract.ViewModel</code>. Behaviour, exactly per spec:</li>
+</ol>
+<ul>
+<li><strong>Day load</strong> (on init for <code>initialDate</code>, and on every accepted <code>DateSelected</code>/<code>RetryLoadTapped</code>): one-shot, never a Flow. <code>getRecordsByDate(userId, journalId, date, includeLastOccurrence = false)</code> + <code>sessionRepository.getSessionsForDay(...)</code>; <code>pagesWithRecords = records.groupBy { it.workoutNumber }.mapValues { total workoutExercises }</code> (assumption 8); <code>sessionPages</code> = session workoutNumbers; <code>running</code> = the running session's number. Feed <code>repeatDestinations(date, pagesWithRecords, sessionPages, running)</code>: <code>Single</code> → <code>Content.Single</code>; <code>Choice</code> → rows with <code>selectedWorkoutNumber = preselected.workoutNumber</code> and per-row title = <code>muscleTitleFormatter.title(rankedMuscles(page.workoutExercises).ifEmpty { rankByExerciseCount(page.workoutExercises) })</code>, null title for the new-page row; a page with no exercises at all falls through to the formatter's &quot;Workout&quot; fallback (assumptions 6–7). Generation guard exactly like Import's <code>loadSource</code>: bail if <code>selectedDate</code> moved while in flight; cancel the in-flight job on a new selection. Thrown read (non-cancellation): log <code>[FJ_REPEAT]</code>, publish <code>Content.LoadFailed</code>; a *successful* empty-day read still publishes <code>Single</code> — only a throw degrades.</li>
+<li><code>private fun rankByExerciseCount(workoutExercises: List&lt;WorkoutExercise&gt;): List&lt;MuscleLoad&gt;</code> — same shape as <code>rankedMuscles</code> (per-category count via <code>we.exercise.primaryCategory.type</code>, ranked desc, ties keep day order) but counting one per workoutExercise instead of logged sets.</li>
+<li><code>RetryLoadTapped</code>: only from <code>LoadFailed</code>; set <code>Loading</code>, re-issue for <code>selectedDate</code>.</li>
+<li><code>DateSelected(date)</code>: ignore if <code>date &gt; today</code> (today = current system day) or <code>date == selectedDate</code>; else set <code>selectedDate</code>, <code>content = Loading</code> synchronously, <code>pane = Destination</code>, reload. (This VM guard is the backstop; the calendar's own <code>maxDate</code> disable is proven independently by Task 2's test.)</li>
+<li><code>ChangeDayTapped</code>: <code>pane = Calendar</code>, load <code>workoutDays</code> for the selected month; <code>CalendarMonthChanged</code> loads further months. Both via <code>getRecordsByMonth</code> with Import's grouping but wrapped: <code>CancellationException</code> rethrown, other throws logged, <code>workoutDays</code> left untouched (assumption 13).</li>
+<li><code>SelectRow(n)</code>: only when <code>content is Choice</code> and <code>n</code> names one of its rows → update <code>selectedWorkoutNumber</code>.</li>
+<li><code>AddTapped</code>: return if <code>addInProgress</code> or content is <code>Loading</code>/<code>LoadFailed</code>; set <code>addInProgress = true</code>; resolve the destination (<code>Single.destination</code> or the <code>Choice</code> row matching <code>selectedWorkoutNumber</code>); <code>repeatWorkout(userId, journalId, sourceDate, sourceWorkoutNumber, destination)</code>; map <code>Copied/Refused/NothingToCopy</code> → <code>onOutcome</code>; a thrown call (non-cancellation) resets <code>addInProgress = false</code> and stays open, retryable. All IO entry points try/catch (SKIE SIGABRT rule).</li>
+</ul>
+<ol>
+<li>Create <code>shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/ui/workout/repeat/RepeatPickerViewModelTest.kt</code> (fakes + a deterministic <code>muscleTitleFormatter</code>; runTest dispatcher discipline as in <code>ImportWorkoutViewModelTest</code>). <strong>Collaborator reality check</strong>: <code>repeatWorkout</code> is a final class — the test constructs a REAL <code>RepeatWorkoutUseCase</code> over the suite's fake <code>RecordRepository</code> and a recording fake <code>SyncTrigger</code> (its default <code>quotaGate</code> then wraps the same fake repo), so the fake repository implements the quota surface (<code>countMeteredWorkouts</code>, <code>hasAnyRecordInWorkout</code>) as settable stubs alongside the day-load reads. Because <code>FreeQuotaSettings</code> is a global <code>object</code> shared across the one jvmTest JVM, copy <code>WorkoutQuotaGateTest</code>'s discipline: <code>@BeforeTest</code>/<code>@AfterTest</code> both call <code>FreeQuotaSettings.reset()</code>, plus its <code>meterOn(limit)</code> helper. Outcome scenarios: <code>Copied</code>/<code>NothingToCopy</code> run on reset defaults (unknown history ⇒ the gate resolves <code>Unlimited</code> and allows without reading the repo); the <code>Refused</code> mapping REQUIRES a genuinely refusing gate — <code>meterOn()</code>, fake <code>countMeteredWorkouts</code> returning the limit, <code>hasAnyRecordInWorkout</code> false for the resolved slot. Cover exactly spec §8's list: opens on today (<code>selectedDate == initialDate</code>, <code>pane == Destination</code> on first non-Loading state); records-gate the list (records ⇒ <code>Choice</code> incl. source page + trailing new row; session-only day ⇒ <code>Single</code> on the started page; successfully-read empty day ⇒ <code>Single</code> page 1); blank-template titles via exercise-count ranking, session-only page falls to fallback; preselection (running tagged+selected, else New); date change resets selection and ignores future dates; generation guard (slow old-day read never publishes over a newer selection); pane swap on one <code>viewState</code> stream; load failure explicit (<code>LoadFailed</code>, <code>canAdd == false</code>, <code>AddTapped</code> invokes zero use-case calls, <code>RetryLoadTapped</code> re-issues and a now-successful read publishes the real <code>Choice</code>); month-dot failure silent (dots for month A survive a throwing month B, <code>pane == Calendar</code>, later <code>DateSelected</code> still commits); <code>AddTapped</code> double-tap dispatches one call; outcome mapping incl. failed-copy retry path.</li>
+</ol></div>
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>RepeatPickerViewModel matches the pinned constructor, implements RepeatPickerContract.ViewModel with Import's host-owned dispose() pattern and generation-guarded one-shot day loads</li><li>Day-load throw publishes Content.LoadFailed; successful empty read publishes Single; month-read throw leaves workoutDays untouched; every IO entry point rethrows CancellationException</li><li>rankByExerciseCount is a private helper mirroring rankedMuscles' shape but counting workoutExercises; the normal path CALLS the shared internal rankedMuscles rather than copying it</li><li>AddTapped guards addInProgress/Loading/LoadFailed, calls the use case once, maps all three outcomes to onOutcome, and resets addInProgress on a thrown call</li><li>RepeatPickerViewModelTest builds a REAL RepeatWorkoutUseCase and REAL WorkoutQuotaGate over the fake RecordRepository (settable countMeteredWorkouts/hasAnyRecordInWorkout), with @BeforeTest AND @AfterTest FreeQuotaSettings.reset(); the Refused outcome runs metered-exhausted via meterOn(), Copied/NothingToCopy run on reset defaults</li><li>RepeatPickerViewModelTest covers every bullet of spec section 8 for this VM</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>rg -c 'private fun rankByExerciseCount' shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/repeat/RepeatPickerViewModel.kt &amp;&amp; rg -c 'FreeQuotaSettings.reset' shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/ui/workout/repeat/RepeatPickerViewModelTest.kt</code></pre></div>
+</article><article class="card" id="task-10">
+  <header>
+    <h4>Task 11: WorkoutDetails VM/contract: picker + close handshake</h4>
+    <div class="meta">
+      <span class="chip frontier">frontier</span>
+      <span class="after">after <a href="#task-6">Task 7: New RepeatPickerContract</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Wire the picker into <code>WorkoutDetailsContract</code>/<code>ViewModel</code> with the pending-outcome close handshake, delete the old repeat path, and rewrite the VM tests.</p>
+<p><strong>Retained <code>blockedBy</code> rationale</strong> — Task 7 (contract): this task's test file builds fakes implementing <code>RepeatPickerContract.ViewModel</code> and drives <code>Outcome</code> values; writing them against the finished contract file (with its resolved imports) prevents fixture drift. (Edges on Tasks 6/10 dropped: the use-case and <code>RepeatPickerViewModel</code> constructors are pinned byte-for-byte.)</p></div>
+  <div class="blk"><h5>Files</h5><p class="files"><code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/details/WorkoutDetailsContract.kt</code> <code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/details/WorkoutDetailsViewModel.kt</code> <code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/details/WorkoutDetailsPreviewData.kt</code> <code>shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/ui/workout/details/WorkoutDetailsViewModelTest.kt</code></p></div>
+  <div class="blk"><h5>Steps</h5><ol>
+<li>Skills to invoke first: <code>kotlin-flow-state-event-modeling</code>, <code>kotlin-coroutines-structured-concurrency</code>.</li>
+<li><code>WorkoutDetailsContract.kt</code>: add the pinned nested <code>RepeatPicker</code> data class and <code>ViewState.repeatPicker: RepeatPicker?</code>; remove <code>Content.Loaded.focusedWorkoutIsRunning</code> and its KDoc; add <code>ViewAction.RepeatPickerDismissed</code> and <code>ViewAction.RepeatPickerClosed</code>; <code>RepeatTapped</code> stays. <code>ViewEffect</code> UNCHANGED (<code>ShowPaywall</code>, <code>OpenEditWorkout</code> reused — this is what keeps both hosts commit-free).</li>
+<li><code>WorkoutDetailsViewModel.kt</code>:</li>
+</ol>
+<ul>
+<li>Delete: <code>repeatInFlight</code>, the <code>source == target</code> backstop, the <code>isNewWorkout ? canOpenNewWorkout : canWriteWorkout</code> branch, the <code>resolveTarget</code> call, and the now-unused <code>quotaGate</code> constructor parameter + its import (the gate rides inside <code>RepeatWorkoutUseCase</code> via its default arg — no factory change on either construction path).</li>
+<li>Add the pinned disposal pair (Cross-task contracts): <code>private var repeatPickerVm: RepeatPickerViewModel? = null</code> (concrete owner — the ONLY reference <code>dispose()</code> is called on; no cast anywhere) and <code>private val repeatPicker = MutableStateFlow&lt;WorkoutDetailsContract.RepeatPicker?&gt;(null)</code> folded into the snapshot <code>combine</code> → <code>ViewState.repeatPicker</code>; plus <code>private var pendingRepeatOutcome: RepeatPickerContract.Outcome? = null</code>.</li>
+<li><code>onRepeatTapped</code>: requires <code>identity</code> (userId/journalId come from the VM's <code>userContext</code>-derived identity, not bare fields) + loaded content; no-op if a picker is open (including <code>closing</code>). Construct and store both handles:</li>
+</ul>
+<pre class="code"><code>     val vm = RepeatPickerViewModel(
+         recordRepository = recordRepository,
+         sessionRepository = sessionRepository,
+         repeatWorkout = repeatWorkout,
+         userId = id.userId,
+         journalId = id.journalId,
+         sourceDate = date,
+         sourceWorkoutNumber = loaded.focusedWorkoutNumber,
+         initialDate = today,
+         onOutcome = ::onRepeatOutcome,
+         muscleTitleFormatter = muscleTitleFormatter,
+     )
+     repeatPickerVm = vm
+     repeatPicker.value = WorkoutDetailsContract.RepeatPicker(viewModel = vm)</code></pre>
+<p>     Every dependency is already a VM field (<code>recordRepository</code>, <code>sessionRepository</code>, <code>repeatWorkout</code>, <code>muscleTitleFormatter</code> — this is its real name).</p>
+<ul>
+<li><code>onRepeatOutcome(outcome)</code>: store as <code>pendingRepeatOutcome</code>; set <code>closing = true</code> on the open picker (<code>repeatPicker.value = repeatPicker.value?.copy(closing = true)</code>). Nothing disposed, no effect emitted here.</li>
+<li><code>RepeatPickerClosed</code>: <strong>idempotent by construction — this is the C1 guarantee's VM half.</strong> If <code>repeatPickerVm == null</code> (no open picker: stray or duplicate <code>Closed</code>), no-op and consume nothing. Otherwise: <code>repeatPickerVm?.dispose()</code>; null BOTH fields FIRST; then consume <code>pendingRepeatOutcome</code> (null it before emitting): <code>Refused</code> → <code>ShowPaywall</code>; <code>Copied(date, n)</code> → <code>OpenEditWorkout(date, n)</code>; <code>NothingToCopy</code>/none → nothing. Because both fields and the pending outcome are nulled before any emission, a duplicate <code>RepeatPickerClosed</code> can never double-emit an effect.</li>
+<li><code>RepeatPickerDismissed</code>: IGNORED while <code>closing</code> (a racing dismiss cannot drop a paywall); otherwise <code>repeatPickerVm?.dispose()</code> + null both fields, no pending outcome, no <code>RepeatPickerClosed</code> follows.</li>
+<li><code>dispose()</code>: also <code>repeatPickerVm?.dispose()</code>, null both fields, drop any pending outcome.</li>
+</ul>
+<ol>
+<li><code>WorkoutDetailsPreviewData.kt</code>: drop <code>focusedWorkoutIsRunning</code> arguments; supply <code>repeatPicker = null</code> where <code>ViewState</code> is constructed if required.</li>
+<li><code>WorkoutDetailsViewModelTest.kt</code>: update the private fake <code>RecordRepository</code> to the new <code>copyWorkoutTo</code> surface with no <code>resolveRepeatTarget</code> — and give it the settable quota surface (<code>countMeteredWorkouts</code>, <code>hasAnyRecordInWorkout</code>), because the picker VM, <code>RepeatWorkoutUseCase</code>, and <code>WorkoutQuotaGate</code> this VM constructs are all REAL final classes riding on that fake. Copy <code>WorkoutQuotaGateTest</code>'s global-settings discipline: <code>@BeforeTest</code>/<code>@AfterTest</code> both call <code>FreeQuotaSettings.reset()</code>, plus its <code>meterOn(limit)</code> helper. Outcomes are delivered by driving the real picker VM obtained from <code>viewState.repeatPicker.viewModel</code> (let its day load settle, then dispatch <code>AddTapped</code>): the <code>Refused</code> handshake path runs metered-exhausted (<code>meterOn()</code>, <code>countMeteredWorkouts</code> = limit, <code>hasAnyRecordInWorkout</code> false for the resolved slot); <code>Copied</code>/<code>NothingToCopy</code> paths run on reset defaults (gate resolves <code>Unlimited</code>). Delete the backstop/hidden-button/gate-branch tests; add the handshake tests exactly per spec §8: <code>RepeatTapped</code> opens (non-null, <code>closing == false</code>), second tap doesn't stack; <code>Refused</code> → still non-null, <code>closing == true</code>, NO <code>ShowPaywall</code> yet; following <code>RepeatPickerClosed</code> → null + exactly one <code>ShowPaywall</code>; <strong>a second <code>RepeatPickerClosed</code> immediately after emits nothing further (duplicate-Closed idempotency)</strong>; <code>Copied</code> → <code>OpenEditWorkout(destDate, destNumber)</code> only after <code>RepeatPickerClosed</code>; <code>NothingToCopy</code> → <code>RepeatPickerClosed</code> emits nothing; <code>RepeatPickerDismissed</code> while <code>closing</code> ignored (picker non-null, pending outcome survives, later <code>RepeatPickerClosed</code> still emits); user dismiss with no pending outcome → null, and a stray <code>RepeatPickerClosed</code> after it no-ops.</li>
+</ol></div>
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>Contract gains RepeatPicker(viewModel, closing), ViewState.repeatPicker, RepeatPickerDismissed, RepeatPickerClosed; Content.Loaded loses focusedWorkoutIsRunning; ViewEffect is byte-identical</li><li>ViewModel deletes repeatInFlight, the source==target backstop, the gate branch, resolveTarget, and the quotaGate constructor parameter; picker outcomes flow through pendingRepeatOutcome + closing, effects emitted only on RepeatPickerClosed</li><li>RepeatPickerClosed nulls both handles and the pending outcome BEFORE emitting, and no-ops when no picker is open — a duplicate or stray Closed can never double-emit an effect</li><li>Disposal uses ONLY the concrete private repeatPickerVm: RepeatPickerViewModel? owner field, set/nulled together with the interface-typed state field, with no cast</li><li>onRepeatTapped constructs the picker with userId/journalId from identity and muscleTitleFormatter = muscleTitleFormatter (the VM's actual field); RepeatPickerDismissed is ignored while closing; dispose() tears down any open picker and drops pending outcomes</li><li>WorkoutDetailsViewModelTest covers the full handshake matrix from spec section 8 including duplicate-RepeatPickerClosed idempotency; its fake repo matches the new RecordRepository surface plus settable countMeteredWorkouts/hasAnyRecordInWorkout; @BeforeTest AND @AfterTest call FreeQuotaSettings.reset(), with the Refused path metered-exhausted via meterOn() and Copied/NothingToCopy on reset defaults</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>rg -c 'RepeatPickerClosed' shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/details/WorkoutDetailsContract.kt &amp;&amp; rg -c 'repeatPickerVm' shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/details/WorkoutDetailsViewModel.kt</code></pre></div>
+</article></div>
+</section>
+<section class="wave">
+  <h3><span class="wnum">Wave 3</span>
+    <span class="wmeta">1 task</span></h3>
+  <div class="grid"><article class="card" id="task-11">
+  <header>
+    <h4>Task 12: WorkoutDetailsScreen: compose sheet, drop showRepeat</h4>
+    <div class="meta">
+      <span class="chip standard">standard</span>
+      <span class="after">after <a href="#task-7">Task 8: New RepeatPickerSheet composable + previews</a>, <a href="#task-10">Task 11: WorkoutDetails VM/contract: picker + close handshake</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Compose <code>RepeatPickerSheet</code> with an interruption-safe awaited-hide handshake in <code>WorkoutDetailsScreen</code>, remove <code>showRepeat</code>, and add the screen tests.</p>
+<p><strong>Retained <code>blockedBy</code> rationale</strong> — Task 8 (sheet): the screen tests assert on the sheet's actual rendered content and tags, which only exist in the finished sheet file; Task 11 (details VM/contract): the screen test file constructs <code>ViewState</code>/<code>Content.Loaded</code> fixtures whose final shape (no <code>focusedWorkoutIsRunning</code>, plus <code>repeatPicker</code>) lands in Task 11's finished contract.</p></div>
+  <div class="blk"><h5>Files</h5><p class="files"><code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/details/WorkoutDetailsScreen.kt</code> <code>shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/details/components/WorkoutActionButtons.kt</code> <code>shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/ui/workout/details/WorkoutDetailsScreenTest.kt</code></p></div>
+  <div class="blk"><h5>Steps</h5><ol>
+<li>Skills to invoke first: <code>compose-side-effects</code>, <code>compose-ui-testing-patterns</code>.</li>
+<li><code>WorkoutActionButtons.kt</code>: delete the <code>showRepeat</code> parameter — Repeat is always shown (decision 2 makes self-repeat a legal explicit choice).</li>
+<li><code>WorkoutDetailsScreen.kt</code>: delete the <code>showRepeat</code> argument at the call site (and any <code>focusedWorkoutIsRunning</code> read feeding it). Material3 documents that <code>SheetState.hide()</code> <code>@throws CancellationException if the animation is interrupted</code> — e.g. the user grabs the sheet mid-close. A bare <code>hide()</code> therefore lets an interrupted animation kill the effect coroutine before <code>RepeatPickerClosed</code> is dispatched, permanently stranding the pending paywall/navigation (the VM ignores <code>Dismissed</code> while <code>closing</code>). The fix keeps decision 7's ordering (dispatch strictly after the sheet is visually gone) while guaranteeing exactly one acknowledgement on every path: retry interrupted hides while the effect is still alive, and dispatch only once <code>isVisible</code> is false. The two cancellation sources are distinguished by the effect coroutine's own liveness — after an animation interruption the current coroutine is still active; a cancelled composition is not, and must rethrow so a disposed effect never dispatches (safe: the only composition-exit paths are VM teardowns that already drop the pending outcome). Add as a top-level <code>internal</code> function in this file (lambda-taking so the race is unit-testable without a real <code>SheetState</code>):</li>
+</ol>
+<pre class="code"><code>/**
+ * Awaits the sheet being fully hidden, surviving interrupted hide animations.
+ *
+ * Material3's [SheetState.hide] throws [CancellationException] when its
+ * ANIMATION is interrupted (user grabs the sheet mid-close) — which is not the
+ * same cancellation as this effect leaving composition. After an interruption
+ * the current coroutine is still active, so we re-issue the hide until the
+ * sheet is genuinely gone; a real cancellation (isActive == false) is rethrown
+ * so a disposed composition never acknowledges a close it did not finish.
+ */
+internal suspend fun awaitSheetHidden(
+    isVisible: () -&gt; Boolean,
+    hide: suspend () -&gt; Unit,
+) {
+    while (isVisible()) {
+        try {
+            hide()
+        } catch (e: CancellationException) {
+            if (!currentCoroutineContext().isActive) throw e
+            // Animation interrupted while we are still alive — loop and re-hide.
+        }
+    }
+}</code></pre>
+<p>   (Imports: <code>kotlin.coroutines.cancellation.CancellationException</code>, <code>kotlinx.coroutines.currentCoroutineContext</code>, <code>kotlinx.coroutines.isActive</code>.) Alongside the existing two sheets add exactly:</p>
+<pre class="code"><code>state.repeatPicker?.let { picker -&gt;
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    RepeatPickerSheet(
+        viewModel = picker.viewModel,
+        sheetState = sheetState,
+        onDismiss = { dispatch(WorkoutDetailsContract.ViewAction.RepeatPickerDismissed) },
+    )
+    LaunchedEffect(picker.closing) {
+        if (picker.closing) {
+            awaitSheetHidden(isVisible = { sheetState.isVisible }, hide = { sheetState.hide() })
+            dispatch(WorkoutDetailsContract.ViewAction.RepeatPickerClosed)
+        }
+    }
+}</code></pre>
+<p>   (Adjust action qualification to the file's import style.) <code>SheetState</code> stays in composition — never in the VM. NO <code>DisposableEffect</code>: composition exit is not the close signal; the settled hidden state is.</p>
+<ol>
+<li><code>WorkoutDetailsScreenTest.kt</code>: per spec §8 — Repeat button visible even for a running focused workout; sheet content: <code>Single</code> shows no list, <code>Choice</code> shows rows + IN PROGRESS pill + dashed New row, Add label is &quot;Add&quot; in both shapes; Change swaps panes inside the ONE sheet (after tapping Change the calendar is displayed, the destination list is not, exactly one sheet exists); no page-number eyebrows: for a 3-page <code>Choice</code>, no node's text matches <code>Workout \d+</code> and no row carries a bare page-number label; <code>LoadFailed</code> renders Retry and a disabled Add; close handshake wiring: with the sheet open, flip <code>repeatPicker.closing</code> to true in the driving state and advance the test clock — assert the sheet's nodes leave the tree and recorded dispatches end with exactly one <code>RepeatPickerClosed</code> and contain no <code>RepeatPickerDismissed</code>. Drive with fixed-state fake VMs in the file's existing style. <strong>Plus the interruption-race unit tests for <code>awaitSheetHidden</code></strong> (plain <code>runTest</code>, no composable needed):</li>
+</ol>
+<ul>
+<li>*Interrupted hide retries and acknowledges once*: a <code>visible</code> flag starts true; first <code>hide()</code> call throws <code>CancellationException</code> leaving <code>visible</code> true (the interruption); second call sets <code>visible = false</code>. Assert <code>awaitSheetHidden</code> returns normally, <code>hide</code> was invoked exactly twice, and the caller's follow-on dispatch counter reads exactly 1.</li>
+<li>*Real cancellation rethrows and never acknowledges*: launch <code>awaitSheetHidden</code> in a child job whose <code>hide</code> cancels that job and then throws <code>CancellationException</code>. Assert the job completes cancelled and the dispatch counter reads 0.</li>
+<li>*Already hidden*: <code>visible</code> starts false — <code>hide</code> is never invoked, acknowledgement is immediate and single.</li>
+</ul></div>
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>showRepeat appears nowhere under shared/src (component parameter and call site both removed)</li><li>WorkoutDetailsScreen composes RepeatPickerSheet with screen-hoisted rememberModalBottomSheetState(skipPartiallyExpanded = true) and a LaunchedEffect(picker.closing) that calls awaitSheetHidden then dispatches RepeatPickerClosed exactly once; no DisposableEffect added for the repeat block</li><li>awaitSheetHidden loops while isVisible(), retrying CancellationException from an interrupted hide while currentCoroutineContext().isActive, and rethrowing it when the effect itself is cancelled</li><li>rg -c 'sheetState\.hide' on WorkoutDetailsScreen.kt prints 1</li><li>WorkoutDetailsScreenTest covers: always-visible Repeat, Single/Choice/LoadFailed sheet content with static Add label, one-sheet pane swap, no page-number eyebrows, the closing-to-hidden-to-single-RepeatPickerClosed handshake with no RepeatPickerDismissed recorded, plus the three awaitSheetHidden race tests (interrupted hide retries and acknowledges once; real cancellation rethrows with zero acknowledgements; already-hidden acknowledges immediately without calling hide)</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>rg -c 'sheetState\.hide' shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/details/WorkoutDetailsScreen.kt &amp;&amp; rg -c 'awaitSheetHidden' shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/ui/workout/details/WorkoutDetailsScreenTest.kt</code></pre></div>
+</article></div>
+</section>
+<section class="wave">
+  <h3><span class="wnum">Wave 4</span>
+    <span class="wmeta">1 task</span></h3>
+  <div class="grid"><article class="card" id="task-12">
+  <header>
+    <h4>Task 13: Gate: jvmTest + deletion and structure proofs</h4>
+    <div class="meta">
+      <span class="chip standard">standard</span>
+      <span class="after">after <a href="#task-0">Task 1: Add 10 repeat_picker strings in 4 locales</a>, <a href="#task-1">Task 2: WorkoutCalendar gains optional maxDate (+ test)</a>, <a href="#task-2">Task 3: FjPrimaryButton gains optional enabled param</a>, <a href="#task-3">Task 4: Drop RepeatDestination.spendsQuota (+ test)</a>, <a href="#task-4">Task 5: Data layer: reshape copyWorkoutTo, delete resolve path</a>, <a href="#task-5">Task 6: RepeatWorkoutUseCase becomes the Add-time pipeline</a>, <a href="#task-6">Task 7: New RepeatPickerContract</a>, <a href="#task-7">Task 8: New RepeatPickerSheet composable + previews</a>, <a href="#task-8">Task 9: UiBuilder: rankedMuscles internal, drop running flag</a>, <a href="#task-9">Task 10: New RepeatPickerViewModel + test suite</a>, <a href="#task-10">Task 11: WorkoutDetails VM/contract: picker + close handshake</a>, <a href="#task-11">Task 12: WorkoutDetailsScreen: compose sheet, drop showRepeat</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Prove spec §9.1 and §9.4–9.7: full <code>:shared:jvmTest</code> green plus all deletion/structural proofs, every one via a runnable command.</p></div>
+  
+  <div class="blk"><h5>Steps</h5><ol>
+<li>From <code>Multiplatform/</code>: run <code>./gradlew :shared:jvmTest</code>. If the ONLY failure is <code>EditorsTest</code>, rerun once — it is the known leaked-coroutine flake, not a regression; any other failure fails this gate. Never gate on <code>verifyCommonMainFitJournalDatabaseMigration</code> (known always-red).</li>
+<li>Run every proof below from <code>Multiplatform/</code> and record each command's exact output as evidence. All are zero-safe: <code>rg</code> exits non-zero on zero matches, so &quot;must print nothing&quot; proofs are inverted with <code>!</code>, and the count comparison guards empty output with <code>${var:-0}</code>. (zsh: variable names avoid <code>status</code>/<code>path</code>/<code>argv</code>/<code>options</code>.)</li>
+</ol>
+<pre class="code"><code># §7 proof 1 — the seven deleted symbols are gone (success = no output, ! inverts rg's no-match exit):
+! rg -l 'resolveRepeatTarget|RepeatTarget|runningWorkoutInJournal|focusedWorkoutIsRunning|showRepeat|repeatInFlight|spendsQuota' shared/src
+
+# §7 proof 2 — quotaGate unreferenced under the details UI:
+! rg 'quotaGate' shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/details
+
+# §9.5 — exactly ONE gate call in the use case, and no canOpenNewWorkout there or in details UI:
+test &quot;$(rg -c 'canWriteWorkout' shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/workout/usecase/RepeatWorkoutUseCase.kt)&quot; = &quot;1&quot;
+! rg 'canOpenNewWorkout' shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/workout/usecase/RepeatWorkoutUseCase.kt shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/details
+
+# §9.6 — each of the 4 lines below must print its file with :10; then no backslash-apostrophe:
+rg -c 'repeat_picker_' shared/src/commonMain/composeResources/values/strings.xml shared/src/commonMain/composeResources/values-de/strings.xml shared/src/commonMain/composeResources/values-ru/strings.xml shared/src/commonMain/composeResources/values-uk/strings.xml
+! rg -F &quot;\\'&quot; shared/src/commonMain/composeResources
+
+# §9.7 — exactly one sheetState.hide; DisposableEffect count equals the count at base 3bd3c4c:
+test &quot;$(rg -c 'sheetState\.hide' shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/details/WorkoutDetailsScreen.kt)&quot; = &quot;1&quot;
+rc_now=$(rg -c 'DisposableEffect' shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/details/WorkoutDetailsScreen.kt || true)
+rc_base=$(git show 3bd3c4c:shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/details/WorkoutDetailsScreen.kt | grep -c 'DisposableEffect' || true)
+test &quot;${rc_now:-0}&quot; -eq &quot;${rc_base:-0}&quot; &amp;&amp; echo &quot;DisposableEffect unchanged: ${rc_now:-0}&quot;</code></pre>
+<ol>
+<li>Report: test totals (must include the new <code>RepeatWorkoutUseCaseTest</code>, <code>RepeatPickerViewModelTest</code>, <code>WorkoutCalendarTest</code> suites and the rewritten details/record suites), plus pass/fail per proof with the verbatim output. Write no files.</li>
+</ol></div>
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>./gradlew :shared:jvmTest prints BUILD SUCCESSFUL, with at most one EditorsTest-only flake rerun</li><li>! rg -l over the seven deleted symbols in shared/src exits 0, and ! rg 'quotaGate' under ui/workout/details exits 0</li><li>test on rg -c 'canWriteWorkout' over RepeatWorkoutUseCase.kt equals 1, and ! rg 'canOpenNewWorkout' over the use case and ui/workout/details exits 0</li><li>rg -c 'repeat_picker_' prints :10 for all four locale strings.xml files and the backslash-apostrophe scan over composeResources exits 0</li><li>The sheetState.hide count test exits 0 with count 1, and the DisposableEffect count comparison (rc_now from rg -c with a || true guard vs rc_base from git show 3bd3c4c piped to grep -c, both guarded with the :-0 default) succeeds</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>./gradlew :shared:jvmTest &amp;&amp; ! rg -l 'resolveRepeatTarget|RepeatTarget|runningWorkoutInJournal|focusedWorkoutIsRunning|showRepeat|repeatInFlight|spendsQuota' shared/src &amp;&amp; test &quot;$(rg -c 'canWriteWorkout' shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/workout/usecase/RepeatWorkoutUseCase.kt)&quot; = &quot;1&quot;</code></pre></div>
+</article></div>
+</section>
+<section class="wave">
+  <h3><span class="wnum">Wave 5</span>
+    <span class="wmeta">1 task</span></h3>
+  <div class="grid"><article class="card" id="task-13">
+  <header>
+    <h4>Task 14: Gate: Android build + baseline SHA proof</h4>
+    <div class="meta">
+      <span class="chip mechanical">mechanical</span>
+      <span class="after">after <a href="#task-12">Task 13: Gate: jvmTest + deletion and structure proofs</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Prove spec §9.2: Android debug build green through the composite build, with the Android tree byte-identical to its full baseline SHA.</p></div>
+  
+  <div class="blk"><h5>Steps</h5><ol>
+<li>From <code>Multiplatform/</code>, run: <code>cd ../Android &amp;&amp; ./gradlew assembleDebug</code> (plain gradlew — never set <code>GRADLE_USER_HOME</code>). The composite build compiles <code>:shared</code> for Android, proving the KMP changes on that consumer.</li>
+<li>Then compare the FULL SHA by equality — never a prefix match: <code>test &quot;$(git -C ../Android rev-parse HEAD)&quot; = &quot;1d8d0b74e12beb12bdd98c81fedfba68435f630a&quot;</code> must succeed, and <code>git -C ../Android status --porcelain</code> must print nothing — zero native changes proven for both committed and uncommitted edits.</li>
+<li>Report BUILD SUCCESSFUL/FAILED, the full SHA, and the porcelain output verbatim. Write no files; touch nothing in <code>Android/</code>.</li>
+</ol></div>
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>cd ../Android &amp;&amp; ./gradlew assembleDebug prints BUILD SUCCESSFUL with no GRADLE_USER_HOME set</li><li>git -C ../Android rev-parse HEAD equals the full baseline SHA 1d8d0b74e12beb12bdd98c81fedfba68435f630a by string equality (no prefix match)</li><li>git -C ../Android status --porcelain prints nothing</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>cd ../Android &amp;&amp; ./gradlew assembleDebug &amp;&amp; test &quot;$(git rev-parse HEAD)&quot; = &quot;1d8d0b74e12beb12bdd98c81fedfba68435f630a&quot; &amp;&amp; test -z &quot;$(git status --porcelain)&quot;</code></pre></div>
+</article></div>
+</section>
+<section class="wave">
+  <h3><span class="wnum">Wave 6</span>
+    <span class="wmeta">1 task</span></h3>
+  <div class="grid"><article class="card" id="task-14">
+  <header>
+    <h4>Task 15: Gate: iOS build + baseline SHA proof</h4>
+    <div class="meta">
+      <span class="chip standard">standard</span>
+      <span class="after">after <a href="#task-13">Task 14: Gate: Android build + baseline SHA proof</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Prove spec §9.3: iOS Debug build green (arm64 simulator, shared DerivedData), with the iOS tree byte-identical to its full baseline SHA.</p></div>
+  
+  <div class="blk"><h5>Steps</h5><ol>
+<li>Runs strictly after Task 14 (both builds invoke Gradle on this same <code>Multiplatform/</code> tree — the Xcode &quot;Build KMP framework&quot; phase runs <code>:shared:embedAndSignAppleFrameworkForXcode</code>; running them concurrently races the build dir).</li>
+<li>If Xcode.app is mid-build, wait — never race its build.db.</li>
+<li>From <code>Multiplatform/</code>: <code>cd ../iOS &amp;&amp; xcodebuild -scheme FitJournal -configuration Debug -destination 'platform=iOS Simulator,id=B94BD4F5-5FEE-451B-9096-727F6F399706' build</code> — NO <code>-derivedDataPath</code> (share Xcode's DerivedData), arm64 only. A real full build is required: SourceKit-level &quot;compiles&quot; claims are not evidence here.</li>
+<li>Then compare the FULL SHA by equality — never a prefix match: <code>test &quot;$(git -C ../iOS rev-parse HEAD)&quot; = &quot;4adccb7fea46cbdca8ccce39cf5a9be023d2bc6a&quot;</code> must succeed, and <code>git -C ../iOS status --porcelain</code> must print nothing.</li>
+<li>Report <code><strong> BUILD SUCCEEDED </strong></code>/failure, the full SHA, and porcelain output verbatim. Write no files; touch nothing in <code>iOS/</code>.</li>
+</ol></div>
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>xcodebuild -scheme FitJournal -configuration Debug -destination 'platform=iOS Simulator,id=B94BD4F5-5FEE-451B-9096-727F6F399706' build succeeds with no -derivedDataPath and arm64 only</li><li>git -C ../iOS rev-parse HEAD equals the full baseline SHA 4adccb7fea46cbdca8ccce39cf5a9be023d2bc6a by string equality (no prefix match)</li><li>git -C ../iOS status --porcelain prints nothing</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>cd ../iOS &amp;&amp; xcodebuild -scheme FitJournal -configuration Debug -destination 'platform=iOS Simulator,id=B94BD4F5-5FEE-451B-9096-727F6F399706' build &amp;&amp; test &quot;$(git rev-parse HEAD)&quot; = &quot;4adccb7fea46cbdca8ccce39cf5a9be023d2bc6a&quot; &amp;&amp; test -z &quot;$(git status --porcelain)&quot;</code></pre></div>
+</article></div>
+</section>
+
+<details class="checks">
+  <summary>Structural checks (0)</summary>
+  <ul><li class="ok">none — plan is structurally clean</li></ul>
+</details>
