@@ -764,7 +764,14 @@ private fun FocusEditorField(text: String, unit: String, focused: Boolean, onCli
         label = "editorFieldSize",
     )
     Row(
-        modifier = modifier.clickable(onClick = onClick),
+        // No indication, same as the accordion row itself: neither native
+        // ripples here, and a ripple bounded to the glyph's own box looks like
+        // a stray rectangle behind a number rather than a pressed control.
+        modifier = modifier.clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null,
+            onClick = onClick,
+        ),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(
