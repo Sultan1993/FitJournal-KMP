@@ -19,6 +19,11 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.focus_last_hint
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_minutes
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_reps
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_set_count
+import kz.maestrosultan.fitjournal.shared.generated.resources.measurement_kg
+import kz.maestrosultan.fitjournal.shared.generated.resources.measurement_km
+import kz.maestrosultan.fitjournal.shared.generated.resources.measurement_lbs
+import kz.maestrosultan.fitjournal.shared.generated.resources.measurement_mi
+import kz.maestrosultan.fitjournal.shared.generated.resources.measurement_min
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_superset
 import kz.maestrosultan.fitjournal.ui.theme.assetFolder
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
@@ -31,6 +36,14 @@ import org.jetbrains.compose.resources.getString
  * [kz.maestrosultan.fitjournal.ui.workout.details.components.WorkoutDetailsStrings]
  * pattern) so jvmTest supplies fixed strings instead of depending on the test
  * JVM's locale or on resource loading. Production callers use the defaults.
+ *
+ * The five `measurement_*` labels are here for the same reason
+ * [kz.maestrosultan.fitjournal.ui.workout.focus.history.FocusHistoryStrings]
+ * carries them: [WorkoutValueFormatter]'s `unit()` / `repsLiteral()` return
+ * English literals, so a Russian Focus screen read "80 kg × 10" where both
+ * natives read "80 кг × 10", and the imperial weight said "lb" where both
+ * natives say "lbs". They are ports of the identically named Android
+ * `common/resources` strings — the ones the natives actually resolve.
  *
  * [setCount] reuses the module's existing `history_set_count` plural rather
  * than adding a Focus-only duplicate: it is byte-identical to iOS's
@@ -47,7 +60,13 @@ internal class FocusStrings(
     val finishNext: suspend (String) -> String = { getString(Res.string.focus_finish_next, it) },
     val lastHint: suspend (String) -> String = { getString(Res.string.focus_last_hint, it) },
     val repsUnit: suspend () -> String = { getString(Res.string.focus_reps) },
+    /** The keypad field's own caption, which is not [minutes] — see [FocusUnits]. */
     val minutesUnit: suspend () -> String = { getString(Res.string.focus_minutes) },
+    val kilograms: suspend () -> String = { getString(Res.string.measurement_kg) },
+    val pounds: suspend () -> String = { getString(Res.string.measurement_lbs) },
+    val kilometers: suspend () -> String = { getString(Res.string.measurement_km) },
+    val miles: suspend () -> String = { getString(Res.string.measurement_mi) },
+    val minutes: suspend () -> String = { getString(Res.string.measurement_min) },
     val setCount: suspend (Int) -> String = { getPluralString(Res.plurals.history_set_count, it, it) },
     val categoryName: suspend (CategoryType) -> String = { getString(it.nameRes) },
 )
@@ -96,7 +115,11 @@ internal suspend fun buildFocusUi(
     val isSuperset = activeRecord.exercises.size > 1
     val resultType = activeExercise.resultType
     val isCardio = resultType == ResultType.DISTANCE_DURATION
-    val unit = WorkoutValueFormatter.unit(resultType, measurementSystem)
+    // Resolved ONCE per build, not per row: each label is a compose-resource
+    // read and the set stack rebuilds on every keypress. The measurement system
+    // is a user setting, so it cannot vary within one build.
+    val units = focusUnits(strings, measurementSystem)
+    val unit = units.valueUnit(resultType)
 
     return FocusUi(
         isSuperset = isSuperset,
@@ -109,14 +132,14 @@ internal suspend fun buildFocusUi(
         // isNotBlank, not isNotEmpty: a whitespace-only comment would otherwise
         // render an empty note card. (Android's guard; iOS checks emptiness.)
         note = activeExercise.comment?.takeIf { it.isNotBlank() },
-        stats = buildStats(focusData, isCardio, measurementSystem),
+        stats = buildStats(focusData, isCardio, units),
         coachSegments = coachText
             ?.takeIf { it.isNotBlank() }
             // A raw advice string is one Body segment; the emphasis split is
             // reserved for a future structured coach response.
             ?.let { listOf(FocusCoachSegmentUi(it, FocusCoachSegmentUi.Emphasis.Body)) },
-        editor = buildEditor(activeExercise, editorMode, input, unit, isCardio, measurementSystem, strings),
-        slots = buildSlots(activeExercise, editorMode, input, unit, measurementSystem, strings),
+        editor = buildEditor(activeExercise, editorMode, input, unit, isCardio, units, strings),
+        slots = buildSlots(activeExercise, editorMode, input, unit, units, strings),
         setDots = buildDots(activeExercise, editorMode),
         finishButton = buildFinishButton(dayRecords, activeRecord, sessionRunningHere, strings),
         menu = if (isMenuOpen) {
@@ -156,7 +179,7 @@ private suspend fun buildSlots(
     editorMode: FocusEditorMode,
     input: FocusInputState,
     unit: String,
-    measurementSystem: MeasurementSystem,
+    units: FocusUnits,
     strings: FocusStrings,
 ): List<FocusSetSlotUi> {
     val expandedId = editorMode.expandedSlotId
@@ -183,7 +206,7 @@ private suspend fun buildSlots(
             // `FocusViewStateBuilder.kt:262`), never "× —".
             repsText = "× ${display.reps?.toString() ?: WorkoutValueFormatter.EMPTY}",
             isExpanded = set.id == expandedId,
-            lastHint = lastHintAt(exercise, index, measurementSystem, strings),
+            lastHint = lastHintAt(exercise, index, units, strings),
         )
     }
 
@@ -201,7 +224,7 @@ private suspend fun buildSlots(
         valueUnit = unit,
         repsText = "× ${input.repsText.ifEmpty { WorkoutValueFormatter.EMPTY }}",
         isExpanded = expandedId == FocusEditorMode.NEW_SET_ID,
-        lastHint = lastHintAt(exercise, exercise.sets.size, measurementSystem, strings),
+        lastHint = lastHintAt(exercise, exercise.sets.size, units, strings),
     )
 
     return rows + addAnother
@@ -250,7 +273,7 @@ private suspend fun buildEditor(
     input: FocusInputState,
     unit: String,
     isCardio: Boolean,
-    measurementSystem: MeasurementSystem,
+    units: FocusUnits,
     strings: FocusStrings,
 ): FocusEditorUi {
     val editing = editorMode as? FocusEditorMode.Editing
@@ -271,7 +294,7 @@ private suspend fun buildEditor(
         // through saveSet. The two flags stay split on purpose: an unfilled
         // target titles "Log set n" but must still update in place.
         editsExistingSet = editing != null,
-        lastHint = lastHintAt(exercise, setNumber - 1, measurementSystem, strings),
+        lastHint = lastHintAt(exercise, setNumber - 1, units, strings),
     )
 }
 
@@ -313,20 +336,24 @@ internal fun focusEditorSeedValues(exercise: WorkoutExercise, set: WorkoutSet): 
 private suspend fun lastHintAt(
     exercise: WorkoutExercise,
     position: Int,
-    measurementSystem: MeasurementSystem,
+    units: FocusUnits,
     strings: FocusStrings,
 ): String? {
     val prior = exercise.lastOccurrence?.setAt(position) ?: return null
     // No defining number last time → nothing worth advertising.
     val priorValue = prior.displayValue ?: return null
-    // Composed here rather than through WorkoutValueFormatter.pair, whose reps
-    // helper treats 0 as "unset" and would render the stray "70 kg —". This hint
-    // reports a set the user really logged, so null is the only absence: a prior
-    // set of 70 kg × 0 reads "70 kg × 0", as both natives print it.
-    val body = listOfNotNull(
-        WorkoutValueFormatter.value(priorValue, exercise.resultType, measurementSystem),
-        prior.displayReps?.let { WorkoutValueFormatter.repsLiteral(it, exercise.resultType) },
-    ).joinToString(" ")
+    // The label-taking `pair`, not the MeasurementSystem one: that overload
+    // emits the English "kg"/"min", and its reps helper treats 0 as "unset",
+    // which would render the stray "70 кг —". This hint reports a set the user
+    // really logged, so null is the only absence: a prior set of 70 kg × 0
+    // reads "70 кг × 0", as both natives print it.
+    val body = WorkoutValueFormatter.pair(
+        value = priorValue,
+        reps = prior.displayReps,
+        resultType = exercise.resultType,
+        unitLabel = units.valueUnit(exercise.resultType),
+        minutesLabel = units.minutes,
+    ) ?: return null
     return strings.lastHint(body)
 }
 
@@ -438,12 +465,13 @@ private suspend fun buildFinishButton(
 private fun buildStats(
     focusData: ExerciseFocusData?,
     isCardio: Boolean,
-    measurementSystem: MeasurementSystem,
+    units: FocusUnits,
 ): FocusStatsUi? {
     if (isCardio || focusData == null) return null
     if (focusData.estimatedOneRepMax == null && focusData.maxSet == null) return null
 
-    val weightUnit = WorkoutValueFormatter.unit(ResultType.WEIGHT_REPS, measurementSystem)
+    // Always the weight label — the cardio branch has already returned null.
+    val weightUnit = units.valueUnit(ResultType.WEIGHT_REPS)
     return FocusStatsUi(
         estOneRepMaxText = focusData.estimatedOneRepMax?.toString(),
         estOneRepMaxUnit = weightUnit,
@@ -453,6 +481,43 @@ private fun buildStats(
         isEstOneRepMaxTappable = focusData.estimatedOneRepMax != null,
     )
 }
+
+// ── Units ───────────────────────────────────────────────────────────────
+
+/**
+ * The resolved unit labels a Focus surface prints, picked per result type —
+ * "кг"/"фт" or "км"/"ми" for the value, "мин" for a cardio companion. Built
+ * once per view-state build (or per rest-info build) rather than per row.
+ *
+ * Deliberately NOT [WorkoutValueFormatter.unit]: that returns English literals.
+ * Same shape and same reason as the history page's `HistoryUnits`; the two stay
+ * separate because that one also carries a reps label its rail renders and this
+ * one does not (the editor's reps caption is [FocusStrings.repsUnit]).
+ */
+internal class FocusUnits(
+    val weight: String,
+    val distance: String,
+    /**
+     * `measurement_min`, the duration COMPANION in a composed line ("5 км
+     * 30 мин") — not [FocusStrings.minutesUnit], which is the keypad field's own
+     * caption. The two read alike in every shipped locale but are separate keys,
+     * exactly as both natives resolve them.
+     */
+    val minutes: String,
+) {
+    fun valueUnit(resultType: ResultType): String = when (resultType) {
+        ResultType.WEIGHT_REPS -> weight
+        ResultType.DISTANCE_DURATION -> distance
+    }
+}
+
+/** Resolves [FocusUnits] for [system]; `suspend` because the labels are resource reads. */
+internal suspend fun focusUnits(strings: FocusStrings, system: MeasurementSystem): FocusUnits =
+    FocusUnits(
+        weight = if (system == MeasurementSystem.KG_KM) strings.kilograms() else strings.pounds(),
+        distance = if (system == MeasurementSystem.KG_KM) strings.kilometers() else strings.miles(),
+        minutes = strings.minutes(),
+    )
 
 // ── Shared bits ─────────────────────────────────────────────────────────
 

@@ -1,6 +1,7 @@
 package kz.maestrosultan.fitjournal.ui.workout.focus
 
 import kotlin.test.Test
+import kotlin.test.assertTrue
 import kotlin.test.assertEquals
 import kotlinx.coroutines.test.advanceUntilIdle
 
@@ -122,4 +123,35 @@ class WorkoutFocusRecordActionsTest {
 
         assertEquals<List<WorkoutFocusContract.ViewEffect>>(emptyList(), effects)
     }
+    /**
+     * The position write takes the mutation lane. Neither native does this —
+     * both check `isMutating` and then launch the write outside it — and because
+     * both the position write and a set write read-and-replace the whole record
+     * tree, whichever lands second silently discards the other. A set mutation
+     * arriving while the reorder is still writing must therefore be dropped, the
+     * same way a reorder arriving during a set write already was.
+     */
+    @Test
+    fun reorder_holdsTheMutationLane_soAConcurrentSetWriteCannotInterleave() =
+        focusTest(listOf(bench, row)) { bed ->
+            val vm = bed.viewModel(recordId = "r1", exerciseId = "we-1")
+            vm.awaitLoaded()
+            bed.repository.calls.clear()
+
+            // Reorder, then — before the write can finish — try to log a set.
+            vm.dispatch(WorkoutFocusContract.ViewAction.ReorderRecords(listOf("r2", "r1")))
+            vm.dispatch(WorkoutFocusContract.ViewAction.AddAnotherSet)
+            vm.dispatch(WorkoutFocusContract.ViewAction.LogSet)
+            advanceUntilIdle()
+
+            assertTrue(
+                bed.repository.calls.any { it.startsWith("refreshRecordPositions(") },
+                "the reorder still persisted: ${bed.repository.calls}",
+            )
+            assertTrue(
+                bed.repository.calls.none { it.startsWith("addSet(") },
+                "the set write was dropped rather than interleaved: ${bed.repository.calls}",
+            )
+        }
+
 }

@@ -47,12 +47,51 @@ object WorkoutValueFormatter {
             ResultType.DISTANCE_DURATION -> "$reps min"
         }
 
+    /**
+     * [repsLiteral] with an already-resolved duration label — "30 мин" where the
+     * label-less form can only emit the English " min". The reps side takes no
+     * label: "× 8" is the same glyph in every shipped locale.
+     */
+    fun repsLiteral(
+        reps: Int,
+        resultType: ResultType,
+        minutesLabel: String,
+        spaced: Boolean = true,
+    ): String = when (resultType) {
+        ResultType.WEIGHT_REPS -> repsLiteral(reps, resultType, spaced)
+        ResultType.DISTANCE_DURATION -> "$reps $minutesLabel"
+    }
+
     /** "70 kg × 8" from a prior set's numbers (no "Last:" prefix — the caller
      *  localises that); null when the source set carried nothing. */
     fun pair(value: Double?, reps: Int?, resultType: ResultType, system: MeasurementSystem): String? {
         if (value == null && reps == null) return null
         val v = value?.let { value(it, resultType, system) }
         val r = reps?.let { reps(it, resultType) }
+        return listOfNotNull(v, r).joinToString(" ")
+    }
+
+    /**
+     * [pair] with already-resolved unit labels: "70 кг × 8" where the
+     * [MeasurementSystem] form can only produce the English "70 kg × 8" — [unit]
+     * returns literals, so a caller that has localized labels passes them in
+     * (Focus resolves its own once per build, see `FocusUnits`).
+     *
+     * It also drops [reps]'s zero sentinel, because the two go together: the
+     * callers holding localized labels report a set the user really logged, so
+     * "70 кг × 0" is data and null is the only absence. A caller that does want
+     * the sentinel strips the 0 itself before calling.
+     */
+    fun pair(
+        value: Double?,
+        reps: Int?,
+        resultType: ResultType,
+        unitLabel: String,
+        minutesLabel: String,
+    ): String? {
+        if (value == null && reps == null) return null
+        val v = value?.let { "${trimNumber(it)} $unitLabel" }
+        val r = reps?.let { repsLiteral(it, resultType, minutesLabel) }
         return listOfNotNull(v, r).joinToString(" ")
     }
 

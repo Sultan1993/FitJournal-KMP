@@ -41,6 +41,13 @@ class WorkoutFocusLastOccurrenceTest {
         minutesUnit = { "Min" },
         setCount = { count -> "$count sets" },
         categoryName = { type -> type.identifier },
+        // Russian on purpose — see [focusTestStrings]: an English unit in an
+        // assertion below means a hardcoded literal has crept back in.
+        kilograms = { "кг" },
+        pounds = { "фт" },
+        kilometers = { "км" },
+        miles = { "ми" },
+        minutes = { "мин" },
     )
 
     // ── fixtures ────────────────────────────────────────────────────────
@@ -156,7 +163,7 @@ class WorkoutFocusLastOccurrenceTest {
         val rows = build(exercise).setRows()
 
         assertEquals(
-            listOf("Last: 60 kg × 10", "Last: 70 kg × 8", "Last: 80 kg × 6"),
+            listOf("Last: 60 кг × 10", "Last: 70 кг × 8", "Last: 80 кг × 6"),
             rows.map { it.lastHint },
         )
     }
@@ -186,11 +193,11 @@ class WorkoutFocusLastOccurrenceTest {
 
         val rows = build(exercise).setRows()
 
-        assertEquals("Last: 60 kg × 10", rows[0].lastHint)
-        assertEquals("Last: 70 kg × 8", rows[1].lastHint)
+        assertEquals("Last: 60 кг × 10", rows[0].lastHint)
+        assertEquals("Last: 70 кг × 8", rows[1].lastHint)
         // Slots 3 and 4 have no counterpart — both take the prior LAST set.
-        assertEquals("Last: 70 kg × 8", rows[2].lastHint)
-        assertEquals("Last: 70 kg × 8", rows[3].lastHint)
+        assertEquals("Last: 70 кг × 8", rows[2].lastHint)
+        assertEquals("Last: 70 кг × 8", rows[3].lastHint)
     }
 
     // ── 15 ──────────────────────────────────────────────────────────────
@@ -215,7 +222,7 @@ class WorkoutFocusLastOccurrenceTest {
         val row = build(exercise).setRows().single()
 
         assertEquals("100", row.valueText)
-        assertEquals("kg", row.valueUnit)
+        assertEquals("кг", row.valueUnit)
         // NOT "× 10": the row owns a number, so it renders from itself alone.
         assertEquals("× —", row.repsText)
     }
@@ -245,7 +252,7 @@ class WorkoutFocusLastOccurrenceTest {
         assertEquals("100", row.valueText)
         assertEquals("× 5", row.repsText)
         // … and still advertises last time's, unblended.
-        assertEquals("Last: 60 kg × 10", row.lastHint)
+        assertEquals("Last: 60 кг × 10", row.lastHint)
     }
 
     /** No prior occurrence → no hint anywhere, and no fabricated placeholder. */

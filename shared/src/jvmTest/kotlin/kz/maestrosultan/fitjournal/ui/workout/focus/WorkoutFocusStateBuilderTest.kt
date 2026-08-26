@@ -13,6 +13,7 @@ import kz.maestrosultan.fitjournal.domain.exercise.Category
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.exercise.Exercise
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
+import kz.maestrosultan.fitjournal.domain.workout.LastOccurrence
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
@@ -38,6 +39,13 @@ class WorkoutFocusStateBuilderTest {
         minutesUnit = { "Min" },
         setCount = { count -> if (count == 1) "1 set" else "$count sets" },
         categoryName = { type -> type.identifier },
+        // Russian on purpose — see [focusTestStrings]: an English unit in an
+        // assertion below means a hardcoded literal has crept back in.
+        kilograms = { "кг" },
+        pounds = { "фт" },
+        kilometers = { "км" },
+        miles = { "ми" },
+        minutes = { "мин" },
     )
 
     // ── fixtures ────────────────────────────────────────────────────────
@@ -566,9 +574,9 @@ class WorkoutFocusStateBuilderTest {
         val stats = assertNotNull(build(listOf(record), record, focusData = fullStats).stats)
 
         assertEquals("104", stats.estOneRepMaxText)
-        assertEquals("kg", stats.estOneRepMaxUnit)
+        assertEquals("кг", stats.estOneRepMaxUnit)
         assertEquals("82.5", stats.maxSetText)
-        assertEquals("kg × 6", stats.maxSetUnit)
+        assertEquals("кг × 6", stats.maxSetUnit)
         // An estimate exists, so tapping it can open the calculator.
         assertTrue(stats.isEstOneRepMaxTappable)
     }
@@ -587,8 +595,8 @@ class WorkoutFocusStateBuilderTest {
             ).stats,
         )
 
-        assertEquals("lb", stats.estOneRepMaxUnit)
-        assertEquals("lb × 6", stats.maxSetUnit)
+        assertEquals("фт", stats.estOneRepMaxUnit)
+        assertEquals("фт × 6", stats.maxSetUnit)
         // Relabelled, never converted — the stored figure is already in the
         // user's unit, so the number must not move.
         assertEquals("82.5", stats.maxSetText)
@@ -619,7 +627,7 @@ class WorkoutFocusStateBuilderTest {
         assertFalse(stats.isEstOneRepMaxTappable)
         // Whole weights lose the ".0".
         assertEquals("100", stats.maxSetText)
-        assertEquals("kg × 8", stats.maxSetUnit)
+        assertEquals("кг × 8", stats.maxSetUnit)
     }
 
     /** An estimate with no max set: the max-set half keeps the bare unit. */
@@ -642,7 +650,7 @@ class WorkoutFocusStateBuilderTest {
         assertEquals("96", stats.estOneRepMaxText)
         assertTrue(stats.isEstOneRepMaxTappable)
         assertNull(stats.maxSetText)
-        assertEquals("kg", stats.maxSetUnit)
+        assertEquals("кг", stats.maxSetUnit)
     }
 
     /** No data at all — not loaded yet, or nothing ever logged — hides the row. */
@@ -673,6 +681,67 @@ class WorkoutFocusStateBuilderTest {
         val record = statsRecord(ResultType.DISTANCE_DURATION)
 
         assertNull(build(listOf(record), record, focusData = fullStats).stats)
+    }
+
+    // ── units ───────────────────────────────────────────────────────────
+
+    /**
+     * Every unit the screen prints is the LOCALIZED label, never
+     * `WorkoutValueFormatter`'s English literal. The defect this pins was found
+     * by running the app in Russian: the shared Focus screen read "80 kg × 10"
+     * where both natives read "80 кг × 10". The injected copy above is Russian
+     * for exactly this reason — an English unit reaching an assertion means a
+     * hardcoded literal is back.
+     */
+    @Test
+    fun units_areTheLocalizedLabels_notTheFormattersEnglishLiterals() = runTest {
+        val record = statsRecord()
+
+        val focus = build(listOf(record), record, focusData = fullStats)
+
+        assertEquals("кг", focus.slots.first().valueUnit, "set rows")
+        assertEquals("кг", focus.editor.unit, "the keypad's unit")
+        assertEquals("кг", assertNotNull(focus.stats).estOneRepMaxUnit, "the stats row")
+    }
+
+    /**
+     * Imperial takes the other label — and it is `measurement_lbs`, the key both
+     * natives resolve, where the formatter's own literal was the odd-one-out
+     * "lb".
+     */
+    @Test
+    fun units_followTheMeasurementSystem_throughTheLocalizedLabels() = runTest {
+        val record = statsRecord()
+
+        val focus = build(listOf(record), record, measurementSystem = MeasurementSystem.LB_MI)
+
+        assertEquals("фт", focus.slots.first().valueUnit)
+        assertEquals("фт", focus.editor.unit)
+    }
+
+    /**
+     * Cardio takes the DISTANCE label for the value and the duration one for the
+     * hint's companion — the `" min"` that `repsLiteral` hardcodes, which is the
+     * other half of the same defect.
+     */
+    @Test
+    fun cardioUnits_useTheDistanceLabel_andTheLocalizedDurationInTheHint() = runTest {
+        val exercise = member(
+            id = "we-1",
+            catalog = catalog("Treadmill", resultType = ResultType.DISTANCE_DURATION),
+            sets = listOf(cardioSet("s1", null, null)),
+        ).copy(
+            lastOccurrence = LastOccurrence(
+                date = LocalDate(2026, 3, 7),
+                sets = listOf(cardioSet("p1", 5.0, 30).copy(date = LocalDate(2026, 3, 7))),
+            ),
+        )
+        val record = record("r1", position = 1, members = listOf(exercise))
+
+        val focus = build(listOf(record), record)
+
+        assertEquals("км", focus.slots.first().valueUnit)
+        assertEquals("Last: 5 км 30 мин", focus.slots.first().lastHint)
     }
 
     // ── thumbnails ──────────────────────────────────────────────────────

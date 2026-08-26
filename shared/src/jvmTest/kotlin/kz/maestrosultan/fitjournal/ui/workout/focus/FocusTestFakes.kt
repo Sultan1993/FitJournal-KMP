@@ -167,6 +167,14 @@ internal val focusTestStrings: FocusStrings = FocusStrings(
     minutesUnit = { "Min" },
     setCount = { count -> if (count == 1) "1 set" else "$count sets" },
     categoryName = { type -> type.identifier },
+    // Russian on purpose: these are the labels the localization defect got
+    // wrong, so a regression to WorkoutValueFormatter's English literal shows
+    // up as "kg"/"lb"/" min" in an assertion instead of passing unnoticed.
+    kilograms = { "кг" },
+    pounds = { "фт" },
+    kilometers = { "км" },
+    miles = { "ми" },
+    minutes = { "мин" },
 )
 
 internal val focusTestErrorStrings: FocusErrorStrings = FocusErrorStrings(

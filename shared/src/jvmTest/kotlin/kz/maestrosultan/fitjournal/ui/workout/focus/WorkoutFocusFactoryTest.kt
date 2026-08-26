@@ -63,7 +63,10 @@ class WorkoutFocusFactoryTest {
                 assertNotNull(focus.memberItems).single { it.isActive }.workoutExerciseId,
             )
             assertEquals(
-                "lb",
+                // "lbs", not "lb": this path resolves the real `measurement_lbs`
+                // resource, which is what both natives show — the formatter's own
+                // literal was the odd one out.
+                "lbs",
                 focus.slots.first().valueUnit,
                 "the measurement system handed in reached the formatter",
             )

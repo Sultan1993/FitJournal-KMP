@@ -1047,6 +1047,9 @@ class WorkoutFocusViewModel internal constructor(
      */
     private suspend fun restInfo(record: WorkoutRecord, exercise: WorkoutExercise): RestPresentationInfo {
         val setLabel = errorStrings.restSetLabel()
+        // Resolved before the lambda so the tile's line is localized like every
+        // other Focus surface — see [FocusUnits].
+        val units = focusUnits(strings, measurementSystem)
         return buildRestPresentationInfo(
             record = record,
             exercise = exercise,
@@ -1055,10 +1058,14 @@ class WorkoutFocusViewModel internal constructor(
             nextLineFormat = { value, reps ->
                 val pair = WorkoutValueFormatter.pair(
                     value = value,
-                    // 0 is the unset sentinel — "70 kg", not the stray "70 kg —".
+                    // 0 is the unset sentinel here — "70 кг", not the stray
+                    // "70 кг × 0". The label-taking overload has no sentinel of
+                    // its own (a logged 0 IS data on the set rows), so this line
+                    // strips it, which is the contract that overload documents.
                     reps = reps?.takeIf { it != 0 },
                     resultType = exercise.resultType,
-                    system = measurementSystem,
+                    unitLabel = units.valueUnit(exercise.resultType),
+                    minutesLabel = units.minutes,
                 )
                 // The label carries the whole meaning of the line: without it the
                 // tile's second row is a bare "70 kg × 8" under "Set 3 of 4", which
@@ -1332,12 +1339,25 @@ class WorkoutFocusViewModel internal constructor(
         if (reordered.map { it.id } == dayRecords.map { it.id }) return
         dayRecords = reordered
         republish()
+        // Takes the mutation lane, which NEITHER native does: both check
+        // `isMutating` and then launch the position write outside it (iOS
+        // `:355-368`, Android `:430-441`). Android's comment reasons about the
+        // one direction — a reorder during a set write is dropped — and leaves
+        // the reverse open. Both writes are full-tree read-and-replace, so a set
+        // write starting while this one is in flight silently discards one of
+        // them. Closing it here closes it for both platforms at once, which is
+        // the point of the screen being shared.
+        isMutating = true
         viewModelScope.launch {
-            // Silent on purpose (iOS `try?` `:366`, Android `runCatching` `:436`):
-            // the new order is already on screen, and a dropped position write
-            // re-syncs on the next publish.
-            val id = requireIdentity() ?: return@launch
-            runGuarded { updateRecordPositions(id.userId, id.journalId, reordered) }
+            try {
+                // Silent on purpose (iOS `try?` `:366`, Android `runCatching`
+                // `:436`): the new order is already on screen, and a dropped
+                // position write re-syncs on the next publish.
+                val id = requireIdentity() ?: return@launch
+                runGuarded { updateRecordPositions(id.userId, id.journalId, reordered) }
+            } finally {
+                isMutating = false
+            }
         }
     }
 
