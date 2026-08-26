@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlin.time.Clock
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
@@ -77,6 +78,15 @@ class WorkoutDetailsViewModel internal constructor(
     private val strings: WorkoutDetailsStrings,
     private val clock: Clock = Clock.System,
     private val timeZone: TimeZone = TimeZone.currentSystemDefault(),
+    /**
+     * Where the UI fold runs. Injectable for the same reason
+     * `WorkoutFocusViewModel.buildDispatcher` is: on the JVM test target there is
+     * no platform `Dispatchers.Main`, so a build still unwinding on the REAL
+     * Default pool when a test calls `resetMain()` resumes into a Main that no
+     * longer exists — an uncaught exception that surfaces on whatever suite runs
+     * next. Production keeps Default; tests pass their own scheduler.
+     */
+    private val buildDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel(), WorkoutDetailsContract.ViewModel {
 
     /**
@@ -252,7 +262,7 @@ class WorkoutDetailsViewModel internal constructor(
                         workoutRecords.mapTo(LinkedHashSet()) { it.id },
                     )
                 }
-            withContext(Dispatchers.Default) {
+            withContext(buildDispatcher) {
                 buildWorkoutDetailsUi(
                     date = date,
                     records = scopedRecords,

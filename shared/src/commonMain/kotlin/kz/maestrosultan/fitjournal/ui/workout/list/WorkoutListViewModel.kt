@@ -3,6 +3,7 @@ package kz.maestrosultan.fitjournal.ui.workout.list
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlin.time.Clock
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -61,6 +62,15 @@ class WorkoutListViewModel(
     private val clock: Clock = Clock.System,
     private val timeZone: TimeZone = TimeZone.currentSystemDefault(),
     private val firstDayOfWeek: DayOfWeek = firstDayOfWeekFromLocale(),
+    /**
+     * Where the feed fold runs. Injectable for the same reason
+     * `WorkoutFocusViewModel.buildDispatcher` is: on the JVM test target there is
+     * no platform `Dispatchers.Main`, so a build still unwinding on the REAL
+     * Default pool when a test calls `resetMain()` resumes into a Main that no
+     * longer exists — an uncaught exception that surfaces on whatever suite runs
+     * next. Production keeps Default; tests pass their own scheduler.
+     */
+    private val buildDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel(), WorkoutListContract.ViewModel {
 
     private val session = sessionState.filterNotNull()
@@ -108,7 +118,7 @@ class WorkoutListViewModel(
             ) { records, journals -> Triple(s, records, journals) }
         }.mapLatest { (s, records, journals) ->
             val today = today()
-            val content = withContext(Dispatchers.Default) {
+            val content = withContext(buildDispatcher) {
                 buildWorkoutListFeed(records, journals, s.journalId, today, firstDayOfWeek)
             }
             FeedResult(content, s.measurementSystem, today)

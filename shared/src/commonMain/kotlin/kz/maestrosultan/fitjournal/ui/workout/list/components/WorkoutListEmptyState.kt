@@ -21,7 +21,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
-import kz.maestrosultan.fitjournal.domain.workout.ResultType
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_empty_body
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_empty_this_week
@@ -29,6 +28,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.history_empty_titl
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
+import kz.maestrosultan.fitjournal.ui.workout.rememberWorkoutUnitLabels
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -91,6 +91,7 @@ fun WorkoutListEmptyState(
  */
 @Composable
 private fun GhostHero(measurementSystem: MeasurementSystem) {
+    val units = rememberWorkoutUnitLabels(measurementSystem)
     // Every dimension here comes from WorkoutListHeroMetrics, never a literal:
     // the ghost and the live hero swap in place, so a 1dp drift between them
     // shows as the number jumping the moment the first workout lands.
@@ -105,9 +106,10 @@ private fun GhostHero(measurementSystem: MeasurementSystem) {
             modifier = Modifier.alignByBaseline(),
         )
         Text(
-            // Never the design's literal "kg" — an lb/mi user must not be shown
-            // someone else's unit on the one screen that has no data to disprove it.
-            text = WorkoutValueFormatter.unit(ResultType.WEIGHT_REPS, measurementSystem),
+            // Never the design's literal "kg" — an lbs/mi user must not be shown
+            // someone else's unit on the one screen that has no data to disprove it,
+            // and a Russian user must not be shown someone else's language.
+            text = units.weight,
             style = FjTheme.typography.bodyStrong.copy(fontSize = WorkoutListHeroMetrics.UnitSize),
             color = FjTheme.colors.textTertiary,
             modifier = Modifier.alignByBaseline(),

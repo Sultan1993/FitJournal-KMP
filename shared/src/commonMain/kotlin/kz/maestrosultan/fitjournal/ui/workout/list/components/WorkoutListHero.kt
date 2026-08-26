@@ -33,7 +33,6 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.plus
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
-import kz.maestrosultan.fitjournal.domain.workout.ResultType
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_cardio
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_days_left
@@ -46,6 +45,7 @@ import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
 import kz.maestrosultan.fitjournal.ui.workout.list.WorkoutListContract
 import kz.maestrosultan.fitjournal.ui.workout.list.WorkoutListPreviewData
 import kz.maestrosultan.fitjournal.ui.workout.list.WorkoutListPreviewSurface
+import kz.maestrosultan.fitjournal.ui.workout.rememberWorkoutUnitLabels
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -95,6 +95,7 @@ fun WorkoutListHero(
 ) {
     // Selectable rail: number + subtitle describe the SELECTED week (default =
     // current); tapping a bar re-points them. Resets to current week on feed rebuild.
+    val units = rememberWorkoutUnitLabels(measurementSystem)
     val defaultWeek = hero.slots.firstOrNull { it.isCurrentWeek }?.weekStart
     var selectedWeekStart by remember(hero) { mutableStateOf(defaultWeek) }
     val selected = hero.slots.firstOrNull { it.weekStart == selectedWeekStart } ?: hero.slots.lastOrNull()
@@ -118,7 +119,7 @@ fun WorkoutListHero(
                     modifier = Modifier.alignByBaseline(),
                 )
                 Text(
-                    text = WorkoutValueFormatter.unit(ResultType.WEIGHT_REPS, measurementSystem),
+                    text = units.weight,
                     style = FjTheme.typography.bodyStrong.copy(fontSize = WorkoutListHeroMetrics.UnitSize),
                     color = FjTheme.colors.textTertiary,
                     modifier = Modifier.alignByBaseline(),
@@ -127,7 +128,7 @@ fun WorkoutListHero(
             if (hasCardio) {
                 val durationSize = if (showWeight) 22.sp else 34.sp
                 Text(
-                    text = WorkoutValueFormatter.duration(cardioMinutes),
+                    text = WorkoutValueFormatter.duration(cardioMinutes, units.minutes),
                     style = FjTheme.typography.numberLarge.copy(
                         fontSize = durationSize,
                         fontWeight = FontWeight.Bold,

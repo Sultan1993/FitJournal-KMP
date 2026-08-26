@@ -30,6 +30,7 @@ import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
 import kz.maestrosultan.fitjournal.ui.format.formatDuration
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutUserContext
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
+import kz.maestrosultan.fitjournal.ui.workout.workoutUnitLabels
 
 /**
  * Shared presentation for the workout-finish sheet — constructed at Finish-tap
@@ -100,7 +101,7 @@ class WorkoutFinishViewModel(
                     println("[FJ_WORKOUT_FINISH] summary read failed (${failure.message}) — empty-state fallback")
                 }
                 .getOrNull()
-            _uiState.value = stateOf(running, summary)
+            _uiState.value = stateOf(running, summary, workoutUnitLabels(units).weight)
             if (isVisible) startTicking()
         }
     }
@@ -204,15 +205,19 @@ class WorkoutFinishViewModel(
         _uiState.update { if (it.durationText == text) it else it.copy(durationText = text) }
     }
 
-    private fun stateOf(session: WorkoutSession, summary: SessionSummary?): WorkoutFinishContract.ViewState {
-        // Single source for grouping AND unit choice, split for the sheet's separate value/unit
-        // runs. substringBeforeLast/AfterLast still splits correctly under space-grouping locales.
-        val tonnage = WorkoutValueFormatter.groupedTonnage(summary?.tonnageKg ?: 0.0, units)
+    private fun stateOf(
+        session: WorkoutSession,
+        summary: SessionSummary?,
+        weightLabel: String,
+    ): WorkoutFinishContract.ViewState {
+        // The sheet sizes number and unit separately, so it takes the two halves
+        // WorkoutValueFormatter.groupedTonnage would otherwise glue together —
+        // same grouping, same label, no space-splitting of a grouped number.
         return WorkoutFinishContract.ViewState(
             loading = false,
             dateText = LocaleFormatters.formatFullDate(session.date),
-            tonnageValue = tonnage.substringBeforeLast(' '),
-            tonnageUnit = tonnage.substringAfterLast(' '),
+            tonnageValue = WorkoutValueFormatter.groupedTonnageNumber(summary?.tonnageKg ?: 0.0),
+            tonnageUnit = weightLabel,
             durationText = formatDuration(session.durationSec(clock.now())),
             setsCount = summary?.loggedSets ?: 0,
             exercisesCount = summary?.exerciseCount ?: 0,

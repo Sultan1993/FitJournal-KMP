@@ -1048,7 +1048,7 @@ class WorkoutFocusViewModel internal constructor(
     private suspend fun restInfo(record: WorkoutRecord, exercise: WorkoutExercise): RestPresentationInfo {
         val setLabel = errorStrings.restSetLabel()
         // Resolved before the lambda so the tile's line is localized like every
-        // other Focus surface — see [FocusUnits].
+        // other Focus surface — see [focusUnits].
         val units = focusUnits(strings, measurementSystem)
         return buildRestPresentationInfo(
             record = record,

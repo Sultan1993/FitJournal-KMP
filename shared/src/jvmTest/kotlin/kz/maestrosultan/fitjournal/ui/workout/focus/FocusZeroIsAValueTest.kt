@@ -23,22 +23,23 @@ class FocusZeroIsAValueTest {
 
     @Test
     fun repsLiteral_printsAZeroTheUserLogged() {
-        assertEquals("× 0", WorkoutValueFormatter.repsLiteral(0, ResultType.WEIGHT_REPS))
-        assertEquals("0 min", WorkoutValueFormatter.repsLiteral(0, ResultType.DISTANCE_DURATION))
+        assertEquals("× 0", WorkoutValueFormatter.repsLiteral(0, ResultType.WEIGHT_REPS, MINUTES))
+        // The duration label is the caller's, never a literal: "0 мин", not "0 min".
+        assertEquals("0 мин", WorkoutValueFormatter.repsLiteral(0, ResultType.DISTANCE_DURATION, MINUTES))
     }
 
     @Test
     fun reps_keepsItsUnsetSentinel() {
-        assertEquals(WorkoutValueFormatter.EMPTY, WorkoutValueFormatter.reps(0, ResultType.WEIGHT_REPS))
-        assertEquals(WorkoutValueFormatter.EMPTY, WorkoutValueFormatter.reps(null, ResultType.WEIGHT_REPS))
+        assertEquals(WorkoutValueFormatter.EMPTY, WorkoutValueFormatter.reps(0, ResultType.WEIGHT_REPS, MINUTES))
+        assertEquals(WorkoutValueFormatter.EMPTY, WorkoutValueFormatter.reps(null, ResultType.WEIGHT_REPS, MINUTES))
     }
 
     @Test
     fun repsLiteral_andReps_agreeOnEveryNonZeroValue() {
         listOf(1, 8, 12, 30).forEach { n ->
             assertEquals(
-                WorkoutValueFormatter.reps(n, ResultType.WEIGHT_REPS),
-                WorkoutValueFormatter.repsLiteral(n, ResultType.WEIGHT_REPS),
+                WorkoutValueFormatter.reps(n, ResultType.WEIGHT_REPS, MINUTES),
+                WorkoutValueFormatter.repsLiteral(n, ResultType.WEIGHT_REPS, MINUTES),
                 "the literal formatter must differ from the sentinel one ONLY at 0",
             )
         }
@@ -92,4 +93,9 @@ class FocusZeroIsAValueTest {
         )
 
     private val bench = focusCatalog(name = "Bench Press")
+
+    private companion object {
+        /** Russian on purpose — an English " min" here means a literal crept back in. */
+        const val MINUTES = "мин"
+    }
 }

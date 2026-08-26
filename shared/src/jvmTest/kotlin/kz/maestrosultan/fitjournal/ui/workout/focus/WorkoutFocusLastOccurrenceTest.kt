@@ -15,6 +15,7 @@ import kz.maestrosultan.fitjournal.domain.workout.ResultType
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSet
+import kz.maestrosultan.fitjournal.ui.workout.russianUnitStrings
 
 /**
  * Cases 13-16 (§13) — the three fixed `lastOccurrence` bugs, asserted on the
@@ -43,11 +44,7 @@ class WorkoutFocusLastOccurrenceTest {
         categoryName = { type -> type.identifier },
         // Russian on purpose — see [focusTestStrings]: an English unit in an
         // assertion below means a hardcoded literal has crept back in.
-        kilograms = { "кг" },
-        pounds = { "фт" },
-        kilometers = { "км" },
-        miles = { "ми" },
-        minutes = { "мин" },
+        units = russianUnitStrings,
     )
 
     // ── fixtures ────────────────────────────────────────────────────────

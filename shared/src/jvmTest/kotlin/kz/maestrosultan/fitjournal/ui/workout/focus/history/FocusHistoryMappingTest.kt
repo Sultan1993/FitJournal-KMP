@@ -13,6 +13,7 @@ import kz.maestrosultan.fitjournal.domain.workout.ResultType
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSet
 import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
+import kz.maestrosultan.fitjournal.ui.workout.russianUnitStrings
 
 /**
  * `mapFocusHistory` — the three load-bearing rules ported from
@@ -28,19 +29,14 @@ class FocusHistoryMappingTest {
     private val otherDate = LocalDate(2026, 1, 8)
 
     /**
-     * Fixed labels instead of real resource loading (the
-     * [kz.maestrosultan.fitjournal.ui.workout.focus.focusTestStrings] pattern) —
-     * they happen to match the `values/strings.xml` English values so the
-     * assertions read like the rendered row.
+     * Russian labels instead of real resource loading (the
+     * [kz.maestrosultan.fitjournal.ui.workout.focus.focusTestStrings] pattern).
+     * Russian, not English: the rail's units are exactly what the localization
+     * defect got wrong, so an English literal creeping back into
+     * [kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter] fails an
+     * assertion here rather than passing unnoticed.
      */
-    private val strings = FocusHistoryStrings(
-        kilograms = { "kg" },
-        pounds = { "lbs" },
-        kilometers = { "km" },
-        miles = { "mi" },
-        reps = { "reps" },
-        minutes = { "min" },
-    )
+    private val strings = FocusHistoryStrings(units = russianUnitStrings)
 
     private fun set(
         id: String,
@@ -179,19 +175,19 @@ class FocusHistoryMappingTest {
         val row = mapFocusHistory(listOf(ex), MeasurementSystem.KG_KM, LocaleFormatters, strings)
             .single().exercises.single().sets.single()
 
-        assertEquals("kg", row.unit)
-        assertEquals("reps", row.repsUnit)
+        assertEquals("кг", row.unit)
+        assertEquals("повт.", row.repsUnit)
     }
 
-    // "lbs", the string both natives ship — not the "lb" the shared formatter
-    // hardcoded.
+    // The imperial label is the resource's, not a literal: both natives ship
+    // "lbs" (ru "фт") where the shared formatter used to hardcode "lb".
     @Test
     fun imperialSystem_labelsWeightLbs() = runTest {
         val ex = exercise(id = "we1", sets = listOf(set("s1", weight = 155.0, reps = 8)))
         val row = mapFocusHistory(listOf(ex), MeasurementSystem.LB_MI, LocaleFormatters, strings)
             .single().exercises.single().sets.single()
 
-        assertEquals("lbs", row.unit)
+        assertEquals("фт", row.unit)
     }
 
     // The SET's own result type decides the units, as on both natives: a row
@@ -210,7 +206,7 @@ class FocusHistoryMappingTest {
         val row = mapFocusHistory(listOf(ex), MeasurementSystem.KG_KM, LocaleFormatters, strings)
             .single().exercises.single().sets.single()
 
-        assertEquals("5" to "km", row.number to row.unit)
-        assertEquals("30" to "min", row.repsNumber to row.repsUnit)
+        assertEquals("5" to "км", row.number to row.unit)
+        assertEquals("30" to "мин", row.repsNumber to row.repsUnit)
     }
 }

@@ -60,6 +60,8 @@ import kotlin.time.Instant
 @OptIn(ExperimentalCoroutinesApi::class)
 class WorkoutListViewModelJournalSwitchTest {
 
+    private val mainDispatcher = UnconfinedTestDispatcher()
+
     private val db = newTestDb()
     private val catDs = CategoriesDBDataSource(db.categoryQueries)
     private val exDs = ExercisesDBDataSource(db.exercisesQueries, ExerciseDBMapper(catDs))
@@ -83,7 +85,7 @@ class WorkoutListViewModelJournalSwitchTest {
 
     @BeforeTest
     fun setUp() {
-        Dispatchers.setMain(UnconfinedTestDispatcher())
+        Dispatchers.setMain(mainDispatcher)
     }
 
     @AfterTest
@@ -195,6 +197,10 @@ class WorkoutListViewModelJournalSwitchTest {
     private val createdViewModels = mutableListOf<WorkoutListViewModel>()
 
     private fun vm(recordRepository: RecordRepository = recordRepo) = WorkoutListViewModel(
+        // The test scheduler, not the real Default pool: a build still
+        // unwinding on a pool thread when `resetMain()` runs resumes into a
+        // Main that no longer exists on the JVM target.
+        buildDispatcher = mainDispatcher,
         recordRepository = recordRepository,
         journalRepository = journalRepo,
         sessionState = sessionFlow,

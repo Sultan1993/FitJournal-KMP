@@ -48,6 +48,7 @@ import kz.maestrosultan.fitjournal.domain.workout.usecase.ResetSetUseCase
 import kz.maestrosultan.fitjournal.domain.workout.usecase.SupersetRecordsUseCase
 import kz.maestrosultan.fitjournal.domain.workout.usecase.UpdateRecordPositionsUseCase
 import kz.maestrosultan.fitjournal.domain.workout.usecase.UpdateSetUseCase
+import kz.maestrosultan.fitjournal.ui.workout.russianUnitStrings
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutUserContext
 import kz.maestrosultan.fitjournal.ui.workout.components.SetDisplay
 import kz.maestrosultan.fitjournal.ui.workout.focus.history.FocusHistoryExerciseUi
@@ -167,15 +168,9 @@ internal val focusTestStrings: FocusStrings = FocusStrings(
     minutesUnit = { "Min" },
     setCount = { count -> if (count == 1) "1 set" else "$count sets" },
     categoryName = { type -> type.identifier },
-    // Russian on purpose: these are the labels the localization defect got
-    // wrong, so a regression to WorkoutValueFormatter's English literal shows
-    // up as "kg"/"lb"/" min" in an assertion instead of passing unnoticed.
-    kilograms = { "кг" },
-    pounds = { "фт" },
-    kilometers = { "км" },
-    miles = { "ми" },
-    minutes = { "мин" },
+    units = russianUnitStrings,
 )
+
 
 internal val focusTestErrorStrings: FocusErrorStrings = FocusErrorStrings(
     exerciseNotFound = { "not-found" },

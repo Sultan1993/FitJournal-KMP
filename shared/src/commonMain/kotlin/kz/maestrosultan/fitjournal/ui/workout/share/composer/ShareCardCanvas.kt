@@ -69,7 +69,6 @@ import androidx.compose.ui.unit.sp
 import kotlin.math.roundToLong
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
-import kz.maestrosultan.fitjournal.domain.workout.ResultType
 import kz.maestrosultan.fitjournal.domain.workout.summary.SessionSummary
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.category_code_abs
@@ -108,6 +107,7 @@ import kz.maestrosultan.fitjournal.ui.workout.share.seams.PostWorkoutHaptics
 import kz.maestrosultan.fitjournal.ui.format.formatDuration
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
+import kz.maestrosultan.fitjournal.ui.workout.rememberWorkoutUnitLabels
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
@@ -826,7 +826,7 @@ internal data class ShareCardData(
     val title: String,
     /** Hero number without its unit, thousands-grouped ("12,480"). */
     val tonnageValue: String,
-    /** Its unit label ("kg" / "lb"). */
+    /** Its localized unit label ("kg" / "lbs"). */
     val tonnageUnit: String,
     /** Stats layout columns, in the composer's `statsPick` order. */
     val stats: List<ShareStat> = emptyList(),
@@ -890,7 +890,7 @@ internal data class ShareNewBest(
     val exerciseName: String,
     /** Record weight without its unit ("110"). */
     val value: String,
-    /** Its unit label ("kg" / "lb"). */
+    /** Its localized unit label ("kg" / "lbs"). */
     val unit: String,
     /** null means a weight-only set — the layout omits the "× n" run entirely. */
     val reps: Int?,
@@ -923,7 +923,9 @@ internal fun shareCardData(
     // A finished session always carries endedAt; falling back to startedAt
     // yields 0:00 rather than dragging a clock read into composition.
     val durationText = formatDuration(session.durationSec(session.endedAt ?: session.startedAt))
-    val weightUnit = weightUnitLabel(units)
+    // Resolved once for the whole card, not per exercise row.
+    val labels = rememberWorkoutUnitLabels(units)
+    val weightUnit = labels.weight
     val setsText = pluralStringResource(Res.plurals.postworkout_sets, summary.loggedSets, summary.loggedSets)
     val exercisesText =
         pluralStringResource(Res.plurals.postworkout_exercises, summary.exerciseCount, summary.exerciseCount)
@@ -945,7 +947,7 @@ internal fun shareCardData(
                     StatKind.Sets -> summary.loggedSets.toString()
                     StatKind.Exercises -> summary.exerciseCount.toString()
                     StatKind.BestSet -> summary.best
-                        ?.let { WorkoutValueFormatter.value(it.weightKg, ResultType.WEIGHT_REPS, units) }
+                        ?.let { WorkoutValueFormatter.value(it.weightKg, labels.weight) }
                         ?: WorkoutValueFormatter.EMPTY
                     // Every rep of the session: ExerciseLine.totalReps is now
                     // populated for weighted work too, not bodyweight only.
@@ -968,7 +970,7 @@ internal fun shareCardData(
                 // the fallback chain would pick "0 km" over the real duration.
                 distanceText = line.totalDistance
                     ?.takeIf { it > 0.0 }
-                    ?.let { WorkoutValueFormatter.value(it, ResultType.DISTANCE_DURATION, units) },
+                    ?.let { WorkoutValueFormatter.value(it, labels.distance) },
                 // Guarded like distance above: without this, a row that logged neither
                 // prints "0:00" where the success rail correctly shows nothing.
                 durationText = line.totalDurationSec
@@ -992,18 +994,17 @@ internal fun shareCardData(
             )
         },
         newBest = summary.best?.let { best ->
-            val record = WorkoutValueFormatter.value(best.weightKg, ResultType.WEIGHT_REPS, units)
+            val record = WorkoutValueFormatter.value(best.weightKg, labels.weight)
             ShareNewBest(
                 badge = stringResource(Res.string.postworkout_new_best),
                 exerciseName = best.exerciseName,
                 value = record.substringBeforeLast(' '),
                 unit = record.substringAfterLast(' '),
                 reps = best.reps,
-                previousText = WorkoutValueFormatter.value(best.previousBestKg, ResultType.WEIGHT_REPS, units),
+                previousText = WorkoutValueFormatter.value(best.previousBestKg, labels.weight),
                 deltaText = "+" + WorkoutValueFormatter.value(
                     best.weightKg - best.previousBestKg,
-                    ResultType.WEIGHT_REPS,
-                    units,
+                    labels.weight,
                 ),
                 // MISSING RESOURCE: no relative-time keys yet (see the report).
                 sinceText = null,
@@ -1016,13 +1017,6 @@ internal fun shareCardData(
 // Routed through WorkoutValueFormatter so the card, success screen and confirm
 // sheet can't disagree about the same session's number.
 private fun groupedTonnage(kg: Double): String = WorkoutValueFormatter.groupedTonnageNumber(kg)
-
-/**
- * Single source for the weight unit label, borrowed off [WorkoutValueFormatter]
- * so the card can never disagree with the rest of the app about kg vs lb.
- */
-private fun weightUnitLabel(units: MeasurementSystem): String =
-    WorkoutValueFormatter.value(0.0, ResultType.WEIGHT_REPS, units).substringAfterLast(' ')
 
 /** `postworkout_stat_*` — the composer's own stat-picker labels. */
 private val StatKind.labelRes: StringResource

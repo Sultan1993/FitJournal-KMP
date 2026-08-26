@@ -19,6 +19,7 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSet
 import kz.maestrosultan.fitjournal.domain.workout.usecase.ExerciseFocusData
+import kz.maestrosultan.fitjournal.ui.workout.russianUnitStrings
 
 /**
  * Cases 17-19 (§13) — slot/dot kinds, superset members, and the finish button.
@@ -41,11 +42,7 @@ class WorkoutFocusStateBuilderTest {
         categoryName = { type -> type.identifier },
         // Russian on purpose — see [focusTestStrings]: an English unit in an
         // assertion below means a hardcoded literal has crept back in.
-        kilograms = { "кг" },
-        pounds = { "фт" },
-        kilometers = { "км" },
-        miles = { "ми" },
-        minutes = { "мин" },
+        units = russianUnitStrings,
     )
 
     // ── fixtures ────────────────────────────────────────────────────────
@@ -721,8 +718,8 @@ class WorkoutFocusStateBuilderTest {
 
     /**
      * Cardio takes the DISTANCE label for the value and the duration one for the
-     * hint's companion — the `" min"` that `repsLiteral` hardcodes, which is the
-     * other half of the same defect.
+     * hint's companion — the `" min"` `repsLiteral` used to hardcode, which is
+     * the other half of the same defect.
      */
     @Test
     fun cardioUnits_useTheDistanceLabel_andTheLocalizedDurationInTheHint() = runTest {

@@ -34,7 +34,7 @@ object WorkoutFinishContract {
         val dateText: String,
         /** Tonnage number without its unit, e.g. "1580" — WorkoutValueFormatter-trimmed. */
         val tonnageValue: String,
-        /** Its unit per the user's measurement system: "kg" / "lb". */
+        /** Its localized unit per the user's measurement system: "kg" / "lbs". */
         val tonnageUnit: String,
         /** Elapsed h:mm (design's `duration h:mm`), re-derived every second while visible. */
         val durationText: String,

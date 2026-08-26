@@ -38,6 +38,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_sets
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_exercise_note_label
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
+import kz.maestrosultan.fitjournal.ui.workout.rememberWorkoutUnitLabels
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
@@ -61,15 +62,18 @@ fun WorkoutExerciseItem(
     isSelected: Boolean = false,
 ) {
     val resultType = exercise.exercise.resultType
+    // Resolved once for the whole item, not per set row: each label is a
+    // resource read and an exercise can carry a dozen sets.
+    val units = rememberWorkoutUnitLabels(measurementSystem)
     val note = exercise.comment?.takeIf { it.isNotBlank() }
     val sets = exercise.sets.mapIndexed { index, set ->
         val values = exercise.displayValuesAt(index, fallBackToPreviousSet = false)
         SetDisplay(
             setId = set.id,
             number = WorkoutValueFormatter.number(values.value),
-            unit = WorkoutValueFormatter.unit(resultType, measurementSystem),
+            unit = units.valueUnit(resultType),
             repsNumber = WorkoutValueFormatter.repsNumber(values.reps),
-            repsUnit = WorkoutValueFormatter.repsUnit(resultType),
+            repsUnit = WorkoutValueFormatter.repsUnit(resultType, units.minutes),
             // Styled off the set's OWN logged state, not the displayed (possibly ghost) value.
             isLogged = set.isLogged,
         )

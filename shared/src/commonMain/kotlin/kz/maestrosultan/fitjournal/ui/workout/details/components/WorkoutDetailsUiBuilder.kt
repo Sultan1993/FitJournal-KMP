@@ -25,6 +25,9 @@ import kz.maestrosultan.fitjournal.ui.format.formatDuration
 import kz.maestrosultan.fitjournal.ui.workout.MuscleTitleFormatter
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
 import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsContract
+import kz.maestrosultan.fitjournal.ui.workout.WorkoutUnitLabels
+import kz.maestrosultan.fitjournal.ui.workout.WorkoutUnitStrings
+import kz.maestrosultan.fitjournal.ui.workout.workoutUnitLabels
 import org.jetbrains.compose.resources.getPluralString
 import org.jetbrains.compose.resources.getString
 
@@ -33,6 +36,8 @@ import org.jetbrains.compose.resources.getString
  * can supply fixed strings instead of depending on the test JVM's locale/resources.
  */
 internal class WorkoutDetailsStrings(
+    /** The shared measurement labels — resolved once per build, never per row. */
+    val units: WorkoutUnitStrings = WorkoutUnitStrings(),
     val totalVolumeLabel: suspend () -> String = { getString(Res.string.workout_details_total_volume) },
     val cardioLabel: suspend () -> String = { getString(Res.string.history_cardio) },
     val workoutCount: suspend (Int) -> String = { getPluralString(Res.plurals.history_workout_count, it, it) },
@@ -72,6 +77,11 @@ internal suspend fun buildWorkoutDetailsUi(
 ): WorkoutDetailsContract.Content.Loaded {
     require(records.isNotEmpty()) { "buildWorkoutDetailsUi requires at least one record for $date" }
 
+    // Resolved ONCE per build, not per row: each label is a resource read and a
+    // day can hold hundreds of sets. The measurement system is a user setting,
+    // so it cannot vary within one build.
+    val units = workoutUnitLabels(measurementSystem, strings.units)
+
     val recordsByWorkout: Map<Int, List<WorkoutRecord>> = records
         .groupBy { it.workoutNumber }
         .mapValues { (_, group) -> group.sortedBy { it.position } }
@@ -87,7 +97,7 @@ internal suspend fun buildWorkoutDetailsUi(
             session = sessionsByWorkout[number],
             best = sessionBests[number],
             noteText = notesByWorkout[number],
-            measurementSystem = measurementSystem,
+            units = units,
             now = now,
         )
     }
@@ -99,7 +109,7 @@ internal suspend fun buildWorkoutDetailsUi(
                 workoutNumber = number,
                 workoutRecords = recordsByWorkout.getValue(number),
                 session = sessionsByWorkout[number],
-                measurementSystem = measurementSystem,
+                units = units,
                 timeZone = timeZone,
                 now = now,
                 muscleTitleFormatter = muscleTitleFormatter,
@@ -123,7 +133,7 @@ internal suspend fun buildWorkoutDetailsUi(
 
     // Multi-workout days headline the whole day; a single-workout day is the same sum.
     val heroRecords = if (isMultiWorkoutDay) records else recordsByWorkout.getValue(workoutNumbers.single())
-    val hero = buildHero(scopeRecords = heroRecords, measurementSystem = measurementSystem, strings = strings)
+    val hero = buildHero(scopeRecords = heroRecords, units = units, strings = strings)
 
     val effectiveFocusedWorkoutNumber = if (focusedWorkoutNumber in recordsByWorkout) focusedWorkoutNumber else workoutNumbers.first()
 
@@ -173,7 +183,7 @@ private suspend fun buildDayHeader(
  */
 private suspend fun buildHero(
     scopeRecords: List<WorkoutRecord>,
-    measurementSystem: MeasurementSystem,
+    units: WorkoutUnitLabels,
     strings: WorkoutDetailsStrings,
 ): WorkoutDetailsContract.Hero {
     val tonnage = TonnageCalculator.forRecords(scopeRecords)
@@ -181,12 +191,12 @@ private suspend fun buildHero(
     val cardioDistanceTotal = cardioDistance(scopeRecords)
     val distanceText = cardioDistanceTotal
         .takeIf { it > 0.0 }
-        ?.let { WorkoutValueFormatter.distance(it, measurementSystem) }
+        ?.let { WorkoutValueFormatter.distance(it, units.distance) }
 
     val volume = tonnage.takeIf { it > 0.0 }?.let {
         WorkoutDetailsContract.HeroStat(
             value = WorkoutValueFormatter.groupedTonnageNumber(it),
-            unit = WorkoutValueFormatter.unit(ResultType.WEIGHT_REPS, measurementSystem),
+            unit = units.weight,
             label = strings.totalVolumeLabel(),
         )
     }
@@ -195,7 +205,7 @@ private suspend fun buildHero(
     // distance into the value slot rather than showing an empty stat.
     val cardio = when {
         cardioMinutes > 0 -> {
-            val (value, unit) = WorkoutValueFormatter.durationParts(cardioMinutes)
+            val (value, unit) = WorkoutValueFormatter.durationParts(cardioMinutes, units.minutes)
             WorkoutDetailsContract.HeroStat(
                 value = value,
                 unit = unit,
@@ -218,7 +228,7 @@ private suspend fun buildStackRow(
     workoutNumber: Int,
     workoutRecords: List<WorkoutRecord>,
     session: WorkoutSession?,
-    measurementSystem: MeasurementSystem,
+    units: WorkoutUnitLabels,
     timeZone: TimeZone,
     now: Instant,
     muscleTitleFormatter: MuscleTitleFormatter,
@@ -234,20 +244,20 @@ private suspend fun buildStackRow(
         workoutNumber = workoutNumber,
         title = title,
         subtitle = subtitle,
-        volumeText = workoutVolumeText(workoutRecords, measurementSystem),
+        volumeText = workoutVolumeText(workoutRecords, units),
     )
 }
 
 /** Stack row: cardio-only shows duration; everything else (incl. mixed) shows tonnage —
  *  the day hero already carries the cardio aggregate. */
-private fun workoutVolumeText(workoutRecords: List<WorkoutRecord>, measurementSystem: MeasurementSystem): String {
+private fun workoutVolumeText(workoutRecords: List<WorkoutRecord>, units: WorkoutUnitLabels): String {
     val tonnage = TonnageCalculator.forRecords(workoutRecords)
     val cardioMinutes = workoutRecords.sumOf { TonnageCalculator.cardioDurationSeconds(it) } / SECONDS_PER_MINUTE
     val cardioOnly = cardioMinutes > 0 && tonnage <= 0.0
     return if (cardioOnly) {
-        WorkoutValueFormatter.duration(cardioMinutes)
+        WorkoutValueFormatter.duration(cardioMinutes, units.minutes)
     } else {
-        WorkoutValueFormatter.groupedTonnage(tonnage, measurementSystem)
+        WorkoutValueFormatter.groupedTonnage(tonnage, units.weight)
     }
 }
 
@@ -259,7 +269,7 @@ private fun buildWorkoutUi(
     session: WorkoutSession?,
     best: SessionBest?,
     noteText: String?,
-    measurementSystem: MeasurementSystem,
+    units: WorkoutUnitLabels,
     now: Instant,
 ): WorkoutDetailsContract.WorkoutUi {
     val workoutExercises = workoutRecords.flatMap { it.exercises }
@@ -269,7 +279,7 @@ private fun buildWorkoutUi(
         .map { record ->
             WorkoutDetailsContract.ExerciseGroup(
                 recordId = record.id,
-                members = record.exercises.map { we -> exerciseRow(we, measurementSystem) },
+                members = record.exercises.map { we -> exerciseRow(we, units) },
             )
         }
         .partition { group -> group.members.all { it.sets.isEmpty() } }
@@ -278,11 +288,11 @@ private fun buildWorkoutUi(
         durationText = session?.let { formatDuration(it.durationSec(now)) },
         exerciseCount = performedExerciseCount(workoutExercises),
         setCount = loggedSetCount(workoutExercises),
-        newBest = best?.let { newBestUi(it, measurementSystem) },
+        newBest = best?.let { newBestUi(it, units) },
         // Always present: any workout can carry a note, keyed by its page. Blank/absent
         // text renders the add-note placeholder.
         note = WorkoutDetailsContract.NoteUi(workoutNumber = workoutNumber, text = noteText?.takeIf { it.isNotBlank() }),
-        workload = workloadRows(workoutRecords, measurementSystem),
+        workload = workloadRows(workoutRecords, units),
         exerciseGroups = performed,
         skippedGroups = skipped,
         // The share card is built from records (summary), not the session — a
@@ -292,9 +302,9 @@ private fun buildWorkoutUi(
 }
 
 /** "Machine Bench Press · 100 kg × 10" — value(weightKg) with an optional reps. */
-private fun newBestUi(best: SessionBest, measurementSystem: MeasurementSystem): WorkoutDetailsContract.NewBestUi {
-    val valueText = WorkoutValueFormatter.value(best.weightKg, ResultType.WEIGHT_REPS, measurementSystem)
-    val repsText = best.reps?.let { WorkoutValueFormatter.reps(it, ResultType.WEIGHT_REPS) }
+private fun newBestUi(best: SessionBest, units: WorkoutUnitLabels): WorkoutDetailsContract.NewBestUi {
+    val valueText = WorkoutValueFormatter.value(best.weightKg, units.weight)
+    val repsText = best.reps?.let { WorkoutValueFormatter.reps(it, ResultType.WEIGHT_REPS, units.minutes) }
     val pair = listOfNotNull(valueText, repsText).joinToString(" ")
     return WorkoutDetailsContract.NewBestUi(text = "${best.exerciseName} · $pair")
 }
@@ -308,7 +318,7 @@ private fun newBestUi(best: SessionBest, measurementSystem: MeasurementSystem): 
  */
 private fun workloadRows(
     workoutRecords: List<WorkoutRecord>,
-    measurementSystem: MeasurementSystem,
+    units: WorkoutUnitLabels,
 ): List<WorkoutDetailsContract.WorkloadRow> {
     val entries = WorkloadCalculator.calculate(workoutRecords, showOther = false)
     if (entries.isEmpty()) return emptyList()
@@ -328,8 +338,8 @@ private fun workloadRows(
             category = entry.category,
             percentage = entry.percentage,
             amountText = when {
-                tonnage > 0.0 -> WorkoutValueFormatter.groupedTonnage(tonnage, measurementSystem)
-                minutes > 0 -> WorkoutValueFormatter.duration(minutes)
+                tonnage > 0.0 -> WorkoutValueFormatter.groupedTonnage(tonnage, units.weight)
+                minutes > 0 -> WorkoutValueFormatter.duration(minutes, units.minutes)
                 else -> null
             },
         )
@@ -338,27 +348,27 @@ private fun workloadRows(
 
 // ─── Exercise rows ────────────────────────────────────────────────────────
 
-private fun exerciseRow(we: WorkoutExercise, measurementSystem: MeasurementSystem) = WorkoutDetailsContract.ExerciseRow(
+private fun exerciseRow(we: WorkoutExercise, units: WorkoutUnitLabels) = WorkoutDetailsContract.ExerciseRow(
     workoutExerciseId = we.id,
     exercise = we.exercise,
     name = we.exercise.name,
-    volumeText = exerciseVolumeText(we, measurementSystem),
-    delta = exerciseDelta(we, measurementSystem),
-    sets = setChips(we, measurementSystem),
+    volumeText = exerciseVolumeText(we, units),
+    delta = exerciseDelta(we, units),
+    sets = setChips(we, units),
     comment = we.comment,
 )
 
 /** Tonnage for WEIGHT_REPS, else logged distance (falling back to logged duration
  *  when nothing was covered) — null when nothing was logged. */
-private fun exerciseVolumeText(we: WorkoutExercise, measurementSystem: MeasurementSystem): String? {
+private fun exerciseVolumeText(we: WorkoutExercise, units: WorkoutUnitLabels): String? {
     if (!we.hasLoggedSets) return null
     return when (we.exercise.resultType) {
-        ResultType.WEIGHT_REPS -> WorkoutValueFormatter.groupedTonnage(TonnageCalculator.forExercise(we), measurementSystem)
+        ResultType.WEIGHT_REPS -> WorkoutValueFormatter.groupedTonnage(TonnageCalculator.forExercise(we), units.weight)
         ResultType.DISTANCE_DURATION -> {
             val logged = we.sets.filter { it.isLogged }
             val distance = logged.sumOf { it.distance ?: 0.0 }
             val minutes = logged.sumOf { it.duration ?: 0 }
-            if (distance > 0.0) WorkoutValueFormatter.distance(distance, measurementSystem) else WorkoutValueFormatter.duration(minutes)
+            if (distance > 0.0) WorkoutValueFormatter.distance(distance, units.distance) else WorkoutValueFormatter.duration(minutes, units.minutes)
         }
     }
 }
@@ -369,14 +379,14 @@ private fun exerciseVolumeText(we: WorkoutExercise, measurementSystem: Measureme
  * A change too small to render ("+0 kg") gets no pill either: repeating a workout
  * exactly is not progress, and the pill's whole job is to report change.
  */
-private fun exerciseDelta(we: WorkoutExercise, measurementSystem: MeasurementSystem): WorkoutDetailsContract.DeltaUi? {
+private fun exerciseDelta(we: WorkoutExercise, units: WorkoutUnitLabels): WorkoutDetailsContract.DeltaUi? {
     val prior = we.lastOccurrence ?: return null
     return when (we.exercise.resultType) {
         ResultType.WEIGHT_REPS -> {
             val delta = TonnageCalculator.forExercise(we) - TonnageCalculator.forSets(prior.sets)
-            val magnitude = WorkoutValueFormatter.groupedTonnage(abs(delta), measurementSystem)
+            val magnitude = WorkoutValueFormatter.groupedTonnage(abs(delta), units.weight)
             // Compare formatted, not raw: the pill is suppressed exactly when it would read zero.
-            if (magnitude == WorkoutValueFormatter.groupedTonnage(0.0, measurementSystem)) return null
+            if (magnitude == WorkoutValueFormatter.groupedTonnage(0.0, units.weight)) return null
             val positive = delta >= 0
             WorkoutDetailsContract.DeltaUi(positive = positive, text = "${deltaSign(positive)}$magnitude")
         }
@@ -385,8 +395,8 @@ private fun exerciseDelta(we: WorkoutExercise, measurementSystem: MeasurementSys
             val previous = prior.sets.sumOf { it.distance ?: 0.0 }
             if (current <= 0.0 || previous <= 0.0) return null
             val delta = current - previous
-            val magnitude = WorkoutValueFormatter.distance(abs(delta), measurementSystem)
-            if (magnitude == WorkoutValueFormatter.distance(0.0, measurementSystem)) return null
+            val magnitude = WorkoutValueFormatter.distance(abs(delta), units.distance)
+            if (magnitude == WorkoutValueFormatter.distance(0.0, units.distance)) return null
             val positive = delta >= 0
             WorkoutDetailsContract.DeltaUi(positive = positive, text = "${deltaSign(positive)}$magnitude")
         }
@@ -397,11 +407,11 @@ private fun exerciseDelta(we: WorkoutExercise, measurementSystem: MeasurementSys
 private fun deltaSign(positive: Boolean): String = if (positive) "+" else "−"
 
 /** Own numbers only (Assumption 11) — no [WorkoutExercise.lastOccurrence] ghost values here. */
-private fun setChips(we: WorkoutExercise, measurementSystem: MeasurementSystem): List<WorkoutDetailsContract.SetChip> =
+private fun setChips(we: WorkoutExercise, units: WorkoutUnitLabels): List<WorkoutDetailsContract.SetChip> =
     we.sets.filter { it.hasOwnNumbers }.map { set ->
         WorkoutDetailsContract.SetChip(
-            valueText = WorkoutValueFormatter.value(set.displayValue, we.exercise.resultType, measurementSystem),
-            repsText = WorkoutValueFormatter.reps(set.displayReps, we.exercise.resultType, spaced = false),
+            valueText = WorkoutValueFormatter.value(set.displayValue, units.valueUnit(we.exercise.resultType)),
+            repsText = WorkoutValueFormatter.reps(set.displayReps, we.exercise.resultType, units.minutes, spaced = false),
         )
     }
 

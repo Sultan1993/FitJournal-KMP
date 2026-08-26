@@ -110,6 +110,10 @@ class WorkoutDetailsViewModelTest {
         headerNav: WorkoutDetailsContract.HeaderNav = WorkoutDetailsContract.HeaderNav.Back,
         variant: WorkoutDetailsContract.Variant = WorkoutDetailsContract.Variant.Details,
     ): WorkoutDetailsViewModel = WorkoutDetailsViewModel(
+        // The test scheduler, not the real Default pool: a build still
+        // unwinding on a pool thread when `resetMain()` runs resumes into a
+        // Main that no longer exists on the JVM target.
+        buildDispatcher = dispatcher,
         recordRepository = records,
         sessionRepository = sessions,
         detectSessionBest = DetectSessionBestUseCase(records),

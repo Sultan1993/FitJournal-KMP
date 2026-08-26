@@ -2,40 +2,27 @@ package kz.maestrosultan.fitjournal.ui.workout.focus.history
 
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.domain.workout.DisplaySetValues
-import kz.maestrosultan.fitjournal.domain.workout.ResultType
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSet
-import kz.maestrosultan.fitjournal.shared.generated.resources.Res
-import kz.maestrosultan.fitjournal.shared.generated.resources.measurement_kg
-import kz.maestrosultan.fitjournal.shared.generated.resources.measurement_km
-import kz.maestrosultan.fitjournal.shared.generated.resources.measurement_lbs
-import kz.maestrosultan.fitjournal.shared.generated.resources.measurement_mi
-import kz.maestrosultan.fitjournal.shared.generated.resources.measurement_min
-import kz.maestrosultan.fitjournal.shared.generated.resources.workout_set_reps_unit
 import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
 import kz.maestrosultan.fitjournal.ui.workout.components.SetDisplay
-import org.jetbrains.compose.resources.getString
+import kz.maestrosultan.fitjournal.ui.workout.WorkoutUnitLabels
+import kz.maestrosultan.fitjournal.ui.workout.WorkoutUnitStrings
+import kz.maestrosultan.fitjournal.ui.workout.workoutUnitLabels
 
 /**
  * Compose-resource lookups injected the
  * [kz.maestrosultan.fitjournal.ui.workout.focus.FocusStrings] way, so jvmTest
  * supplies fixed strings instead of loading resources.
  *
- * The unit labels are NOT taken from [WorkoutValueFormatter], whose `unit()` /
- * `repsUnit()` return English literals: a Russian UI rendered "80 kg × 10"
- * instead of "80 кг × 10 повт.", the imperial weight read "lb" where both
- * natives say "lbs", and the reps unit was the empty string, so it never
- * rendered at all. These six keys are ports of the identically named Android
- * `common/resources` strings, which is what both natives resolve.
+ * The unit labels come from the shared [WorkoutUnitStrings] rather than being
+ * restated here: a Russian UI rendered "80 kg × 10" instead of
+ * "80 кг × 10 повт.", the imperial weight read "lb" where both natives say
+ * "lbs", and the reps unit was the empty string, so it never rendered at all.
  */
 internal class FocusHistoryStrings(
-    val kilograms: suspend () -> String = { getString(Res.string.measurement_kg) },
-    val pounds: suspend () -> String = { getString(Res.string.measurement_lbs) },
-    val kilometers: suspend () -> String = { getString(Res.string.measurement_km) },
-    val miles: suspend () -> String = { getString(Res.string.measurement_mi) },
-    val reps: suspend () -> String = { getString(Res.string.workout_set_reps_unit) },
-    val minutes: suspend () -> String = { getString(Res.string.measurement_min) },
+    val units: WorkoutUnitStrings = WorkoutUnitStrings(),
 )
 
 /**
@@ -53,12 +40,7 @@ internal suspend fun mapFocusHistory(
     // Resolved once per load, not per row: each is a resource lookup and a year
     // of history is hundreds of sets. The measurement system is a user setting,
     // so it cannot vary within one mapping; the result type can (per set).
-    val units = HistoryUnits(
-        weight = if (system == MeasurementSystem.KG_KM) strings.kilograms() else strings.pounds(),
-        distance = if (system == MeasurementSystem.KG_KM) strings.kilometers() else strings.miles(),
-        reps = strings.reps(),
-        minutes = strings.minutes(),
-    )
+    val units = workoutUnitLabels(system, strings.units)
     // `hasLoggedSets`, NOT `sets.isNotEmpty()`: a set row exists from the moment
     // it is ADDED, not when it is filled, so filtering on emptiness produced
     // history cards of "— × —" for sessions that never happened (§8 rule 1).
@@ -106,7 +88,7 @@ internal suspend fun mapFocusHistory(
 private fun toSetDisplay(
     set: WorkoutSet,
     display: DisplaySetValues,
-    units: HistoryUnits,
+    units: WorkoutUnitLabels,
 ): SetDisplay {
     // The SET's own result type, as both natives read it — not the catalog
     // exercise's. `displayValue`/`displayReps` on this same set already key off
@@ -121,25 +103,7 @@ private fun toSetDisplay(
         // the user really logged, so a 0 is a 0 — repsNumber's null-OR-zero
         // sentinel would print an em dash over real data.
         repsNumber = display.reps?.toString() ?: WorkoutValueFormatter.EMPTY,
-        repsUnit = units.repsUnit(resultType),
+        repsUnit = units.companionUnit(resultType),
         isLogged = true,
     )
-}
-
-/** The four resolved unit labels a row can need, picked per set's result type. */
-private class HistoryUnits(
-    private val weight: String,
-    private val distance: String,
-    private val reps: String,
-    private val minutes: String,
-) {
-    fun valueUnit(resultType: ResultType): String = when (resultType) {
-        ResultType.WEIGHT_REPS -> weight
-        ResultType.DISTANCE_DURATION -> distance
-    }
-
-    fun repsUnit(resultType: ResultType): String = when (resultType) {
-        ResultType.WEIGHT_REPS -> reps
-        ResultType.DISTANCE_DURATION -> minutes
-    }
 }

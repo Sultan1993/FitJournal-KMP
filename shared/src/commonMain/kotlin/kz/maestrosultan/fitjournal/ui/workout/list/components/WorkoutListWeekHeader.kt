@@ -33,6 +33,7 @@ import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
 import kz.maestrosultan.fitjournal.ui.workout.list.WorkoutListContract
 import kz.maestrosultan.fitjournal.ui.workout.list.WorkoutListPreviewData
 import kz.maestrosultan.fitjournal.ui.workout.list.WorkoutListPreviewSurface
+import kz.maestrosultan.fitjournal.ui.workout.rememberWorkoutUnitLabels
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -43,6 +44,7 @@ fun WorkoutListWeekHeader(
     measurementSystem: MeasurementSystem,
     modifier: Modifier = Modifier,
 ) {
+    val units = rememberWorkoutUnitLabels(measurementSystem)
     val title = when (section.kind) {
         WorkoutListContract.WeekKind.ThisWeek -> stringResource(Res.string.history_this_week)
         WorkoutListContract.WeekKind.LastWeek -> stringResource(Res.string.history_last_week)
@@ -53,8 +55,8 @@ fun WorkoutListWeekHeader(
     val workouts = pluralStringResource(Res.plurals.history_workout_count, section.workoutCount, section.workoutCount)
     val summary = buildList {
         add(workouts)
-        if (section.tonnage > 0.0) add(WorkoutValueFormatter.groupedTonnage(section.tonnage, measurementSystem))
-        if (section.durationMinutes > 0) add(WorkoutValueFormatter.duration(section.durationMinutes))
+        if (section.tonnage > 0.0) add(WorkoutValueFormatter.groupedTonnage(section.tonnage, units.weight))
+        if (section.durationMinutes > 0) add(WorkoutValueFormatter.duration(section.durationMinutes, units.minutes))
     }.joinToString(" · ")
 
     Column(modifier = modifier.fillMaxWidth()) {
@@ -112,12 +114,13 @@ internal fun WorkoutListDeltaPill(
     measurementSystem: MeasurementSystem,
     modifier: Modifier = Modifier,
 ) {
+    val units = rememberWorkoutUnitLabels(measurementSystem)
     val positive = delta >= 0
     // Theme-agnostic tokens: same tone for text and its 16%-alpha wash, in both themes.
     val tone = if (positive) FjTheme.colors.positive else FjTheme.colors.negative
     val sign = if (positive) "+" else "−"
     Text(
-        text = "$sign${WorkoutValueFormatter.groupedTonnage(abs(delta), measurementSystem)}",
+        text = "$sign${WorkoutValueFormatter.groupedTonnage(abs(delta), units.weight)}",
         style = FjTheme.typography.label.copy(fontSize = 11.5.sp, fontWeight = FontWeight.Bold),
         color = tone,
         modifier = modifier

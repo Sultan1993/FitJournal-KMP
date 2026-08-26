@@ -26,6 +26,7 @@ import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
 import kz.maestrosultan.fitjournal.ui.workout.MuscleTitleFormatter
 import kz.maestrosultan.fitjournal.ui.workout.details.components.WorkoutDetailsStrings
 import kz.maestrosultan.fitjournal.ui.workout.details.components.buildWorkoutDetailsUi
+import kz.maestrosultan.fitjournal.ui.workout.russianUnitStrings
 
 /**
  * `buildWorkoutDetailsUi` — the pure WD1/WD2/WD3 aggregation (design spec §6.1,
@@ -42,6 +43,9 @@ class WorkoutDetailsBuilderTest {
     // ── deterministic injected dependencies ─────────────────────────────
     private val titleFormatter = MuscleTitleFormatter(categoryName = { it.identifier }, fallbackTitle = { "Workout" })
     private val strings = WorkoutDetailsStrings(
+        // Russian units on purpose: an English "kg"/"km"/" min" in an assertion
+        // below means a hardcoded literal has crept back into the formatter.
+        units = russianUnitStrings,
         totalVolumeLabel = { "Total volume" },
         cardioLabel = { "Cardio" },
         workoutCount = { "$it workouts" },
@@ -183,7 +187,7 @@ class WorkoutDetailsBuilderTest {
         val content = build(listOf(record(exercises = listOf(workoutExercise(sets = listOf(set(60.0, 8))))))) // 480
         val volume = assertNotNull(content.hero.volume)
         assertEquals("480", volume.value)
-        assertEquals("kg", volume.unit)
+        assertEquals("кг", volume.unit)
         assertEquals("Total volume", volume.label)
         assertNull(content.hero.cardio, "no cardio -> no second stat")
     }
@@ -263,7 +267,7 @@ class WorkoutDetailsBuilderTest {
         val row = build(listOf(record(exercises = listOf(we)))).singleExerciseRow()
         val delta = assertNotNull(row.delta)
         assertTrue(delta.positive)
-        assertEquals("+80 kg", delta.text)
+        assertEquals("+80 кг", delta.text)
     }
 
     @Test
@@ -294,7 +298,7 @@ class WorkoutDetailsBuilderTest {
         val row = build(listOf(record(exercises = listOf(we)))).singleExerciseRow()
         val delta = assertNotNull(row.delta)
         assertTrue(delta.positive)
-        assertEquals("+1 km", delta.text)
+        assertEquals("+1 км", delta.text)
     }
 
     @Test
@@ -323,10 +327,10 @@ class WorkoutDetailsBuilderTest {
         assertEquals(2, workload.size)
         val chestRow = workload.first { it.category == CategoryType.CHEST }
         assertEquals(93.75, chestRow.percentage)
-        assertEquals("750 kg", chestRow.amountText)
+        assertEquals("750 кг", chestRow.amountText)
         val backRow = workload.first { it.category == CategoryType.BACK }
         assertEquals(6.25, backRow.percentage)
-        assertEquals("100 kg", backRow.amountText)
+        assertEquals("100 кг", backRow.amountText)
         assertTrue(workload.none { it.category == CategoryType.OTHER }, "no synthetic OTHER bucket")
     }
 
@@ -344,7 +348,7 @@ class WorkoutDetailsBuilderTest {
 
         val cardioRow = workload.first { it.category == CategoryType.CARDIO }
         assertEquals(25.0, cardioRow.percentage)
-        assertEquals("40 min", cardioRow.amountText, "2 sets x 20 min")
+        assertEquals("40 мин", cardioRow.amountText, "2 sets x 20 min")
     }
 
     @Test
@@ -398,8 +402,8 @@ class WorkoutDetailsBuilderTest {
         assertNull(hero.volume, "nothing lifted -> no volume stat")
         val cardioStat = assertNotNull(hero.cardio)
         assertEquals("27", cardioStat.value)
-        assertEquals("min", cardioStat.unit)
-        assertEquals("Cardio · 5 km", cardioStat.label, "distance rides in the label")
+        assertEquals("мин", cardioStat.unit)
+        assertEquals("Cardio · 5 км", cardioStat.label, "distance rides in the label")
     }
 
     @Test
@@ -414,7 +418,7 @@ class WorkoutDetailsBuilderTest {
         val hero = build(listOf(record(exercises = listOf(cardio)))).hero
         assertNull(hero.volume)
         val cardioStat = assertNotNull(hero.cardio)
-        assertEquals("5 km", cardioStat.value, "no duration -> the distance is the value")
+        assertEquals("5 км", cardioStat.value, "no duration -> the distance is the value")
         assertNull(cardioStat.unit)
         assertEquals("Cardio", cardioStat.label)
     }
@@ -429,7 +433,7 @@ class WorkoutDetailsBuilderTest {
         )
         val hero = build(listOf(record(exercises = listOf(weight, cardio)))).hero
         assertEquals("480", assertNotNull(hero.volume).value)
-        assertEquals("5 km", assertNotNull(hero.cardio).value)
+        assertEquals("5 км", assertNotNull(hero.cardio).value)
     }
 
     // ── mixed workout AND mixed day: tonnage + cardio stats ───────────
@@ -444,10 +448,10 @@ class WorkoutDetailsBuilderTest {
         )
         val hero = build(listOf(record(exercises = listOf(weight, cardio)))).hero
         assertEquals("480", assertNotNull(hero.volume).value)
-        assertEquals("kg", assertNotNull(hero.volume).unit)
+        assertEquals("кг", assertNotNull(hero.volume).unit)
         val cardioStat = assertNotNull(hero.cardio)
         assertEquals("27", cardioStat.value)
-        assertEquals("Cardio · 5 km", cardioStat.label)
+        assertEquals("Cardio · 5 км", cardioStat.label)
     }
 
     @Test
@@ -465,10 +469,10 @@ class WorkoutDetailsBuilderTest {
             ),
         ).hero
         assertEquals("480", assertNotNull(hero.volume).value)
-        assertEquals("kg", assertNotNull(hero.volume).unit)
+        assertEquals("кг", assertNotNull(hero.volume).unit)
         val cardioStat = assertNotNull(hero.cardio)
         assertEquals("27", cardioStat.value)
-        assertEquals("Cardio · 5 km", cardioStat.label)
+        assertEquals("Cardio · 5 км", cardioStat.label)
     }
 
     // ── unmatched session ignored ─────────────────────────────────────────
@@ -499,9 +503,9 @@ class WorkoutDetailsBuilderTest {
         val row = build(listOf(record(exercises = listOf(we)))).singleExerciseRow()
 
         assertEquals(2, row.sets.size)
-        assertEquals("60 kg", row.sets[0].valueText)
+        assertEquals("60 кг", row.sets[0].valueText)
         assertEquals("×8", row.sets[0].repsText, "set strip uses the design's tight form")
-        assertEquals("70 kg", row.sets[1].valueText)
+        assertEquals("70 кг", row.sets[1].valueText)
         assertEquals("—", row.sets[1].repsText)
     }
 
@@ -518,7 +522,7 @@ class WorkoutDetailsBuilderTest {
             previousBestDate = LocalDate(2026, 7, 1),
         )
         val workout = build(listOf(record(exercises = listOf(we))), sessionBests = mapOf(1 to best)).workouts.single()
-        assertEquals("Bench Press · 100 kg × 10", workout.newBest?.text)
+        assertEquals("Bench Press · 100 кг × 10", workout.newBest?.text)
     }
 
     @Test

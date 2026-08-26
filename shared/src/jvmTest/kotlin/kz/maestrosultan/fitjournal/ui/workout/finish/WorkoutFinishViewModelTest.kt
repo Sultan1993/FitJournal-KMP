@@ -352,12 +352,12 @@ class WorkoutFinishViewModelTest {
         val recordRepo = FakeRecordRepo(records)
         val sessionRepo = FakeSessionRepo(session, clock)
 
-        fun vm() = WorkoutFinishViewModel(
+        fun vm(units: MeasurementSystem = MeasurementSystem.KG_KM) = WorkoutFinishViewModel(
             buildSummary = BuildSessionSummaryUseCase(recordRepo, sessionRepo, DetectSessionBestUseCase(recordRepo)),
             endWorkout = EndWorkoutUseCase(sessionRepo, FakeSyncTrigger()),
             sessionRepository = sessionRepo,
             userContext = FakeUserContext(),
-            units = MeasurementSystem.KG_KM,
+            units = units,
             clock = clock,
         ).also { built += it }
     }
@@ -408,6 +408,24 @@ class WorkoutFinishViewModelTest {
         assertEquals("kg", state.tonnageUnit)
         assertEquals(3, state.setsCount)
         assertEquals(2, state.exercisesCount)
+        vm.dispose()
+    }
+
+    /**
+     * The tonnage unit is the resolved `measurement_*` resource, never a Kotlin
+     * literal. Imperial is what proves it: every locale ships `measurement_lbs`
+     * as "lbs" (ru "фт"), while the literal `WorkoutValueFormatter` used to
+     * embed was "lb" — so this fails on a regression even under the test JVM's
+     * English locale, where "kg" alone could not tell the two apart.
+     */
+    @Test
+    fun tonnageUnit_isTheResolvedLabel_notTheFormattersLiteral() = runTest {
+        val bed = TestBed(sampleRecords())
+        bed.clock.instant = T0 + 300.seconds
+        val vm = bed.vm(units = MeasurementSystem.LB_MI)
+        runCurrent()
+
+        assertEquals("lbs", vm.viewState.value.tonnageUnit)
         vm.dispose()
     }
 

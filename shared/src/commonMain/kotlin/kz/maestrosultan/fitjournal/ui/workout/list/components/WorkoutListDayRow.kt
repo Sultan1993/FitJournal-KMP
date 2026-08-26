@@ -32,6 +32,7 @@ import kz.maestrosultan.fitjournal.ui.workout.list.WorkoutListContract
 import kz.maestrosultan.fitjournal.ui.workout.list.WorkoutListPreviewData
 import kz.maestrosultan.fitjournal.ui.workout.list.WorkoutListPreviewSurface
 import kz.maestrosultan.fitjournal.ui.workout.nameRes
+import kz.maestrosultan.fitjournal.ui.workout.rememberWorkoutUnitLabels
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -44,6 +45,7 @@ fun WorkoutListDayRow(
     modifier: Modifier = Modifier,
 ) {
     // Resolve strings in the composable body, not inside a lambda — keeps reads in scope.
+    val units = rememberWorkoutUnitLabels(measurementSystem)
     val categoryNames = ArrayList<String>(day.topCategories.size)
     for (category in day.topCategories) categoryNames.add(stringResource(category.nameRes))
     val categoryTitle = categoryNames.joinToString(" · ")
@@ -61,13 +63,13 @@ fun WorkoutListDayRow(
     // distance when cardio is mixed in.
     val cardioOnly = hasCardio && day.tonnage <= 0.0
     val metaLine = if (cardioOnly) {
-        WorkoutValueFormatter.distance(day.distance, measurementSystem)
+        WorkoutValueFormatter.distance(day.distance, units.distance)
     } else {
         listOfNotNull(
             workoutsPart,
             exercisesPart,
             setsPart,
-            if (hasCardio) WorkoutValueFormatter.distance(day.distance, measurementSystem) else null,
+            if (hasCardio) WorkoutValueFormatter.distance(day.distance, units.distance) else null,
         ).joinToString(" · ")
     }
 
@@ -112,8 +114,8 @@ fun WorkoutListDayRow(
             // "·"-separated only when both tonnage and duration are present.
             Text(
                 text = listOfNotNull(
-                    if (!cardioOnly) WorkoutValueFormatter.groupedTonnage(day.tonnage, measurementSystem) else null,
-                    if (hasCardio) WorkoutValueFormatter.duration(day.durationMinutes) else null,
+                    if (!cardioOnly) WorkoutValueFormatter.groupedTonnage(day.tonnage, units.weight) else null,
+                    if (hasCardio) WorkoutValueFormatter.duration(day.durationMinutes, units.minutes) else null,
                 ).joinToString(" · "),
                 style = FjTheme.typography.bodyStrong.copy(fontSize = 22.sp),
                 color = FjTheme.colors.textPrimary,
