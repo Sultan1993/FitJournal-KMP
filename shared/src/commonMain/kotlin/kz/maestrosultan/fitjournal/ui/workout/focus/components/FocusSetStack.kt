@@ -43,6 +43,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
@@ -127,6 +129,14 @@ fun FocusSetStack(
     onResetSet: (String) -> Unit,
     onCommitTarget: (String) -> Unit,
     modifier: Modifier = Modifier,
+    /**
+     * Reports the expanded row's layout coordinates so the page can CENTER it
+     * rather than scroll the whole stack to the top. The stack is one item in
+     * the page's LazyColumn, so without a per-row anchor the page can only
+     * target the block. Fires on every scroll frame — the receiver must not
+     * write snapshot state from it.
+     */
+    onExpandedRowPositioned: (String, LayoutCoordinates) -> Unit = { _, _ -> },
 ) {
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         FocusSetStackHeader(setDots)
@@ -145,6 +155,7 @@ fun FocusSetStack(
                 onDeleteSet = onDeleteSet,
                 onResetSet = onResetSet,
                 onCommitTarget = onCommitTarget,
+                onExpandedRowPositioned = onExpandedRowPositioned,
             )
         }
     }
@@ -204,6 +215,7 @@ private fun FocusAccordionRow(
     onDeleteSet: (String) -> Unit,
     onResetSet: (String) -> Unit,
     onCommitTarget: (String) -> Unit,
+    onExpandedRowPositioned: (String, LayoutCoordinates) -> Unit,
 ) {
     val expanded = slot.isExpanded
     val swipeable = !expanded && !slot.isAddAnother
@@ -311,6 +323,15 @@ private fun FocusAccordionRow(
                         it
                     }
                 }
+                .then(
+                    // Only the expanded row is anchored — one live callback at a
+                    // time, and collapsed rows keep a bare modifier chain.
+                    if (expanded) {
+                        Modifier.onGloballyPositioned { onExpandedRowPositioned(slot.id, it) }
+                    } else {
+                        Modifier
+                    },
+                )
                 .clip(RoundedCornerShape(if (expanded) ExpandedRadius else CollapsedRadius))
                 // OPAQUE base under the state tint — the swipe red must not
                 // bleed through a translucent (active) or clear (target) row.

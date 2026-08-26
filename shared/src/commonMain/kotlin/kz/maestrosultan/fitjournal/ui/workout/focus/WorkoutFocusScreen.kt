@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -24,11 +25,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -336,6 +339,18 @@ private fun pageOneSectionKeys(focus: FocusUi): List<String> = buildList {
     add(SectionFinish)
 }
 
+/**
+ * A mutable box for layout coordinates, deliberately NOT snapshot state:
+ * `onGloballyPositioned` fires on every scroll frame, so a `mutableStateOf`
+ * here would recompose the whole page at frame rate. Only the centring effect
+ * reads it, and only once per expansion. Ported from Android's
+ * `ExerciseFocusScreen.CoordinatesHolder`.
+ */
+private class CoordinatesHolder {
+    var id: String? = null
+    var value: LayoutCoordinates? = null
+}
+
 /** First open: the expanded editor is already laid out, so barely wait. */
 private const val FirstCenteringDelayMs = 50L
 
@@ -364,24 +379,36 @@ private fun FocusPageOne(
 ) {
     val listState = rememberLazyListState()
     val sectionKeys = pageOneSectionKeys(focus)
-    // Read inside the effect below, so it must stay fresh without restarting it.
-    val setStackIndex by rememberUpdatedState(sectionKeys.indexOf(SectionSetStack))
     val activeSlotId = focus.slots.firstOrNull { it.isExpanded }?.id
     var firstCentering by remember { mutableStateOf(true) }
 
-    // Tapping a row expands it; wait out the grow before scrolling to it. The
-    // effect keying cancels a pending scroll when the expanded row changes —
-    // otherwise a fast row switch scrolls to the stale row first.
+    // Plain holders, NOT snapshot state: onGloballyPositioned fires on every
+    // scroll frame, and writing state there would recompose the page per frame.
+    val viewportCoords = remember { CoordinatesHolder() }
+    val expandedRowCoords = remember { CoordinatesHolder() }
+
+    // Tapping a row expands it; wait out the grow before centring it (a short
+    // list only becomes scrollable once it has grown). The effect keying
+    // cancels a pending scroll when the expanded row changes — otherwise a fast
+    // row switch centres the stale row first.
     LaunchedEffect(activeSlotId) {
         if (activeSlotId == null) return@LaunchedEffect
         delay(if (firstCentering) FirstCenteringDelayMs else RowGrowDelayMs)
         firstCentering = false
-        listState.animateScrollToItem(setStackIndex)
+        val viewport = viewportCoords.value?.takeIf { it.isAttached } ?: return@LaunchedEffect
+        val row = expandedRowCoords
+            .takeIf { it.id == activeSlotId }
+            ?.value
+            ?.takeIf { it.isAttached }
+            ?: return@LaunchedEffect
+        val rowTop = viewport.localPositionOf(row, Offset.Zero).y
+        val rowCenter = rowTop + row.size.height / 2f
+        listState.animateScrollBy(rowCenter - viewport.size.height / 2f)
     }
 
     LazyColumn(
         state = listState,
-        modifier = modifier,
+        modifier = modifier.onGloballyPositioned { viewportCoords.value = it },
         // Content padding, not a modifier padding, so rows scroll up under the
         // page dots' fade instead of stopping short of it. 44dp at the bottom
         // rather than a navigationBars inset: both pages deliberately run under
@@ -460,6 +487,10 @@ private fun FocusPageOne(
                     onResetSet = { dispatch(WorkoutFocusContract.ViewAction.ResetSet(it)) },
                     onCommitTarget = { dispatch(WorkoutFocusContract.ViewAction.CommitTarget(it)) },
                     modifier = sectionModifier,
+                    onExpandedRowPositioned = { id, coordinates ->
+                        expandedRowCoords.id = id
+                        expandedRowCoords.value = coordinates
+                    },
                 )
 
                 // iOS puts a further 4dp above the finish bar, on top of the
