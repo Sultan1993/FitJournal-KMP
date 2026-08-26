@@ -215,23 +215,24 @@ private fun FocusPickerCard(
                         .zIndex(if (isDragged) 1f else 0f)
                         // graphicsLayer, not offset: translation and lift are
                         // deferred reads, so a drag frame never recomposes.
-                        // NO shadowElevation. iOS's `.shadow` shadows the
-                        // rendered content's ALPHA, so on a row whose background
-                        // is transparent unless active it only softly darkens the
-                        // text and thumbnail. Compose's `shadowElevation` shadows
-                        // the LAYER'S SHAPE regardless of what is drawn in it, so
-                        // the same value on an inactive row painted a rounded
-                        // rectangle of shadow around nothing, with the thumbnail
-                        // sitting outside it. Android's native picker has no
-                        // shadow here at all — this now matches it exactly, and
-                        // approximates iOS, whose shadow on a clear row is barely
-                        // perceptible. The scale and zIndex ARE the shipped lift.
+                        // The lift is translation and z-order ONLY — no shadow,
+                        // no scale.
+                        //
+                        // Both natives scale the dragged row by 1.02 and iOS also
+                        // shadows it, but neither reads well here and both were
+                        // dropped deliberately:
+                        //
+                        //  - `shadowElevation` is not SwiftUI's `.shadow`. SwiftUI
+                        //    shadows the rendered content's ALPHA; Compose shadows
+                        //    the LAYER'S SHAPE. Since a row is transparent unless
+                        //    it is the active one, the Compose form painted a
+                        //    rounded rectangle of shadow around nothing, with the
+                        //    thumbnail outside it.
+                        //  - The 1.02 scale makes the row wider than the card that
+                        //    holds it, so the lifted row visibly overhangs the
+                        //    card's rounded edges on both sides.
                         .graphicsLayer {
                             translationY = if (isDragged) dragTranslation else animatedGap
-                            if (isDragged) {
-                                scaleX = 1.02f
-                                scaleY = 1.02f
-                            }
                         }
                         .pointerInputReorder(
                             item.id,
