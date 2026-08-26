@@ -233,6 +233,7 @@
     <string name="focus_ai_coach">AI Coach</string>
     <string name="focus_done">Fertig</string>
     <string name="focus_a11y_pick_exercise">Übung auswählen</string>
+    <string name="focus_a11y_backspace">Rücktaste</string>
     <string name="focus_a11y_close">Schließen</string>
     <string name="focus_a11y_menu">Menü</string>
     <string name="focus_rest_timer">Pausen-Timer</string>

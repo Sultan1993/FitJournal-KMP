@@ -61,7 +61,6 @@ object WorkoutFocusContract {
         data object AddAnotherSet : ViewAction
         data object FinishExercise : ViewAction
         data object OpenOneRepMaxCalculator : ViewAction
-        data object OpenStatsInfo : ViewAction
         data object ToggleRestTimer : ViewAction
         data object OpenTimerSettings : ViewAction
         data object TogglePicker : ViewAction

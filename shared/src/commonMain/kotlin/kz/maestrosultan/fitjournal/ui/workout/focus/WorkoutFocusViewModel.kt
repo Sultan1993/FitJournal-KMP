@@ -348,13 +348,6 @@ class WorkoutFocusViewModel internal constructor(
             is WorkoutFocusContract.ViewAction.OpenTimerSettings ->
                 emitEffect(WorkoutFocusContract.ViewEffect.OpenTimerSettings)
             is WorkoutFocusContract.ViewAction.OpenOneRepMaxCalculator -> handleOpenOneRepMaxCalculator()
-            // The stats explainer is a UI-local sheet with no navigation and no
-            // data of its own (`components.FocusStatsInfoSheet`, opened from
-            // screen-local state), so the contract deliberately has no effect
-            // for it. The action stays on the contract for hosts that still
-            // dispatch it; handling it here would give the sheet a second,
-            // competing source of truth.
-            is WorkoutFocusContract.ViewAction.OpenStatsInfo -> Unit
             is WorkoutFocusContract.ViewAction.ToggleMenu -> handleToggleMenu()
             is WorkoutFocusContract.ViewAction.MenuDismissed -> setMenuOpen(false)
             is WorkoutFocusContract.ViewAction.MenuEditNote -> handleMenuEditNote()
@@ -822,11 +815,17 @@ class WorkoutFocusViewModel internal constructor(
                         topValue = resolved.value,
                         bottomValue = resolved.reps,
                     )
-                    reloadDay(id)
                 }
                 if (written.isFailure) {
                     recoverFromWriteFailure(written.exceptionOrNull(), owner.id, errorStrings.saveSetFailed())
                     return@launch
+                }
+                // Split from the write for the same reason handleLogSet splits it:
+                // the target IS committed by now, so a failed reload is a read
+                // failure with its own copy — and it can never be the
+                // SetNotFoundException that recoverFromWriteFailure exists for.
+                if (runGuarded { reloadDay(id) }.isFailure) {
+                    emitEffect(WorkoutFocusContract.ViewEffect.ShowError(errorStrings.recordFetchFailed()))
                 }
                 // Quiet publish: editorMode is untouched, so an open editor stays
                 // open and the committed row just flips to finished.

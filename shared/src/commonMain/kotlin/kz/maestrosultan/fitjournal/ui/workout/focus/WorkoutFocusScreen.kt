@@ -42,6 +42,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.focus_remove_exerc
 import kz.maestrosultan.fitjournal.ui.common.ConfirmActionSheet
 import kz.maestrosultan.fitjournal.ui.common.PageDots
 import kz.maestrosultan.fitjournal.ui.common.TopFadeScrim
+import kotlinx.coroutines.flow.StateFlow
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.focus.components.FocusCoachCard
 import kz.maestrosultan.fitjournal.ui.workout.focus.components.FocusExercisePicker
@@ -86,11 +87,10 @@ fun WorkoutFocusScreen(
     modifier: Modifier = Modifier,
 ) {
     val viewState by viewModel.viewState.collectAsState()
-    val restTimer by viewModel.restTimer.collectAsState()
     val history by viewModel.history.collectAsState()
     WorkoutFocusBody(
         viewState = viewState,
-        restTimer = restTimer,
+        restTimer = viewModel.restTimer,
         history = history,
         dispatch = viewModel::dispatch,
         modifier = modifier,
@@ -100,7 +100,7 @@ fun WorkoutFocusScreen(
 @Composable
 private fun WorkoutFocusBody(
     viewState: WorkoutFocusContract.ViewState,
-    restTimer: WorkoutFocusContract.RestTimerUi,
+    restTimer: StateFlow<WorkoutFocusContract.RestTimerUi>,
     history: WorkoutFocusContract.HistoryState,
     dispatch: (WorkoutFocusContract.ViewAction) -> Unit,
     modifier: Modifier = Modifier,
@@ -136,7 +136,7 @@ private fun WorkoutFocusBody(
 @Composable
 private fun FocusLoadedContent(
     focus: FocusUi,
-    restTimer: WorkoutFocusContract.RestTimerUi,
+    restTimer: StateFlow<WorkoutFocusContract.RestTimerUi>,
     history: WorkoutFocusContract.HistoryState,
     dispatch: (WorkoutFocusContract.ViewAction) -> Unit,
 ) {
@@ -146,9 +146,10 @@ private fun FocusLoadedContent(
     val coroutineScope = rememberCoroutineScope()
 
     // The stats explainer carries no data and reaches nothing outside the screen,
-    // so it is UI-local state rather than an action (the VM maps `OpenStatsInfo`
-    // to nothing for exactly this reason). Held HERE, not in FocusPageOne: a
-    // page-local sheet is torn down when the pager recycles the page.
+    // so it is UI-local state and never an action — routing it through the VM
+    // would give the sheet a second, competing source of truth. Held HERE, not
+    // in FocusPageOne: a page-local sheet is torn down when the pager recycles
+    // the page.
     var showStatsInfo by remember { mutableStateOf(false) }
 
     // Dispatch on settle only — not currentPage, which fires mid-drag. Page 2's
@@ -209,9 +210,13 @@ private fun FocusLoadedContent(
                             onStatsInfo = { showStatsInfo = true },
                             modifier = Modifier.fillMaxSize(),
                         )
+                        // No top inset here: FocusHistoryPage sets contentPadding
+                        // top = 0 on purpose (its cells carry their own 16dp), and a
+                        // modifier padding would shrink the viewport so rows stop
+                        // short of the fade instead of scrolling under it.
                         else -> FocusHistoryPage(
                             state = history,
-                            modifier = Modifier.fillMaxSize().padding(top = PagerTopInset),
+                            modifier = Modifier.fillMaxSize(),
                         )
                     }
                 }
@@ -372,7 +377,7 @@ private const val RowGrowDelayMs = 340L
 @Composable
 private fun FocusPageOne(
     focus: FocusUi,
-    restTimer: WorkoutFocusContract.RestTimerUi,
+    restTimer: StateFlow<WorkoutFocusContract.RestTimerUi>,
     dispatch: (WorkoutFocusContract.ViewAction) -> Unit,
     onStatsInfo: () -> Unit,
     modifier: Modifier = Modifier,
@@ -460,8 +465,12 @@ private fun FocusPageOne(
                     )
                 }
 
+                // Collected HERE, not at the screen root: the countdown
+                // republishes at 1 Hz, and collecting it further up would restart
+                // the whole page chain — and its key list — every second, right
+                // through an accordion animation.
                 SectionRestTimer -> FocusRestTimerCard(
-                    state = restTimer,
+                    state = restTimer.collectAsState().value,
                     onToggle = { dispatch(WorkoutFocusContract.ViewAction.ToggleRestTimer) },
                     onOpenSettings = { dispatch(WorkoutFocusContract.ViewAction.OpenTimerSettings) },
                     modifier = sectionModifier,

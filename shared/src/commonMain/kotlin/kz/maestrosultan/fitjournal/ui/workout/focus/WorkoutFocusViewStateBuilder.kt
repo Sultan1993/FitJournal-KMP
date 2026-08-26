@@ -319,14 +319,14 @@ private suspend fun lastHintAt(
     val prior = exercise.lastOccurrence?.setAt(position) ?: return null
     // No defining number last time → nothing worth advertising.
     val priorValue = prior.displayValue ?: return null
-    val body = WorkoutValueFormatter.pair(
-        value = priorValue,
-        // 0 is WorkoutValueFormatter's unset sentinel; collapsing it to absent
-        // keeps the hint at "70 kg" instead of the stray "70 kg —".
-        reps = prior.displayReps?.takeIf { it != 0 },
-        resultType = exercise.resultType,
-        system = measurementSystem,
-    ) ?: return null
+    // Composed here rather than through WorkoutValueFormatter.pair, whose reps
+    // helper treats 0 as "unset" and would render the stray "70 kg —". This hint
+    // reports a set the user really logged, so null is the only absence: a prior
+    // set of 70 kg × 0 reads "70 kg × 0", as both natives print it.
+    val body = listOfNotNull(
+        WorkoutValueFormatter.value(priorValue, exercise.resultType, measurementSystem),
+        prior.displayReps?.let { WorkoutValueFormatter.repsLiteral(it, exercise.resultType) },
+    ).joinToString(" ")
     return strings.lastHint(body)
 }
 

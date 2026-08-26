@@ -227,6 +227,12 @@ private fun FocusPickerCard(
                                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                             },
                             onDrag = { deltaY ->
+                                // These lambdas read LIVE state by design (see the
+                                // helper's KDoc), so `order` can empty out under a
+                                // finger — the last record removed by a sync pull
+                                // mid-drag. coerceIn(0, -1) throws, and on iOS an
+                                // unbridged Kotlin throw is an uncatchable SIGABRT.
+                                if (order.isEmpty()) return@pointerInputReorder
                                 dragTranslation += deltaY
                                 val newTarget = (dragOriginIndex + (dragTranslation / rowHeightPx).let {
                                     if (it >= 0) (it + 0.5f).toInt() else (it - 0.5f).toInt()
@@ -256,6 +262,10 @@ private fun FocusPickerCard(
                                 draggingId = null
                                 dragTranslation = 0f
                             },
+                            onDragCancel = {
+                                draggingId = null
+                                dragTranslation = 0f
+                            },
                         ),
                     onClick = { if (draggingId == null) onSelectRecord(item.recordId) },
                 )
@@ -280,11 +290,15 @@ private fun Modifier.pointerInputReorder(
     onDragStart: () -> Unit,
     onDrag: (Float) -> Unit,
     onDragEnd: () -> Unit,
+    onDragCancel: () -> Unit,
 ) = pointerInput(*keys) {
     detectDragGesturesAfterLongPress(
         onDragStart = { onDragStart() },
         onDragEnd = { onDragEnd() },
-        onDragCancel = { onDragEnd() },
+        // A cancel is NOT a drop: it only clears the drag. Android native keeps
+        // these apart for exactly this reason — routing cancel into onDragEnd
+        // persists a reorder the user never released.
+        onDragCancel = { onDragCancel() },
         onDrag = { change, dragAmount ->
             change.consume()
             onDrag(dragAmount.y)

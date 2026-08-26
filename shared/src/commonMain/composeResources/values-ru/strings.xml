@@ -253,6 +253,7 @@
     <string name="focus_ai_coach">AI Coach</string>
     <string name="focus_done">Готово</string>
     <string name="focus_a11y_pick_exercise">Выбрать упражнение</string>
+    <string name="focus_a11y_backspace">Удалить символ</string>
     <string name="focus_a11y_close">Закрыть</string>
     <string name="focus_a11y_menu">Меню</string>
     <string name="focus_rest_timer">Таймер отдыха</string>

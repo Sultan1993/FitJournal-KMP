@@ -23,6 +23,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
+import kz.maestrosultan.fitjournal.shared.generated.resources.focus_a11y_backspace
+import org.jetbrains.compose.resources.stringResource
 import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_backspace
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
@@ -89,7 +91,10 @@ private fun FocusKeypadKey(key: String, onClick: () -> Unit, modifier: Modifier 
         if (key == BACKSPACE_KEY) {
             Icon(
                 painter = painterResource(Res.drawable.ic_common_backspace),
-                contentDescription = null,
+                // Labelled, unlike the digits: this key became an Icon (it was a
+                // "⌫" Text, which a screen reader announced on its own), so a null
+                // description would leave it silent.
+                contentDescription = stringResource(Res.string.focus_a11y_backspace),
                 tint = FjTheme.colors.textSecondary,
                 modifier = Modifier.size(20.dp),
             )

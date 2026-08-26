@@ -8,6 +8,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -48,6 +49,9 @@ import kz.maestrosultan.fitjournal.domain.workout.usecase.SupersetRecordsUseCase
 import kz.maestrosultan.fitjournal.domain.workout.usecase.UpdateRecordPositionsUseCase
 import kz.maestrosultan.fitjournal.domain.workout.usecase.UpdateSetUseCase
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutUserContext
+import kz.maestrosultan.fitjournal.ui.workout.components.SetDisplay
+import kz.maestrosultan.fitjournal.ui.workout.focus.history.FocusHistoryExerciseUi
+import kz.maestrosultan.fitjournal.ui.workout.focus.history.FocusHistoryItemUi
 
 /**
  * Doubles + fixtures shared by every `WorkoutFocus*Test` in this package
@@ -710,3 +714,57 @@ suspend fun WorkoutFocusViewModel.awaitFocus(predicate: (FocusUi) -> Boolean): F
     }
     return (state as WorkoutFocusContract.ViewState.Loaded).focus
 }
+
+// ── Screen doubles ──────────────────────────────────────────────────────
+
+/**
+ * A [WorkoutFocusContract.ViewModel] whose streams are just three
+ * [MutableStateFlow]s, for composing [WorkoutFocusScreen] against a fixed
+ * state. Deliberately dumb — the real VM has its own (extensive) suite; what
+ * these tests exercise is the SCREEN, which no VM test ever composes.
+ *
+ * [actions] records what the screen dispatched, so a test can pin a wiring
+ * claim if it wants to; composing without a throw is the assertion for most.
+ */
+class FakeWorkoutFocusViewModel(
+    initialState: WorkoutFocusContract.ViewState,
+    initialRestTimer: WorkoutFocusContract.RestTimerUi =
+        WorkoutFocusContract.RestTimerUi(display = "2:00", isRunning = false),
+    initialHistory: WorkoutFocusContract.HistoryState = WorkoutFocusContract.HistoryState.Loading,
+) : WorkoutFocusContract.ViewModel {
+
+    override val viewState: MutableStateFlow<WorkoutFocusContract.ViewState> =
+        MutableStateFlow(initialState)
+    override val restTimer: MutableStateFlow<WorkoutFocusContract.RestTimerUi> =
+        MutableStateFlow(initialRestTimer)
+    override val history: MutableStateFlow<WorkoutFocusContract.HistoryState> =
+        MutableStateFlow(initialHistory)
+    override val viewEffect: Flow<WorkoutFocusContract.ViewEffect> = emptyFlow()
+
+    val actions: MutableList<WorkoutFocusContract.ViewAction> = mutableListOf()
+    var disposed: Boolean = false
+        private set
+
+    override fun dispatch(action: WorkoutFocusContract.ViewAction) {
+        actions += action
+    }
+
+    override fun dispose() {
+        disposed = true
+    }
+}
+
+// ── History fixtures ────────────────────────────────────────────────────
+
+/** Two logged sets, enough for a [HistorySetRail] / history cell to render. */
+val FOCUS_HISTORY_SETS: List<SetDisplay> = listOf(
+    SetDisplay(setId = "hs-1", number = "80", unit = "kg", repsNumber = "10", repsUnit = "reps", isLogged = true),
+    SetDisplay(setId = "hs-2", number = "82.5", unit = "kg", repsNumber = "8", repsUnit = "reps", isLogged = true),
+)
+
+/** One day section carrying a single occurrence. The date is the assertable bit. */
+val FOCUS_HISTORY_ITEM: FocusHistoryItemUi = FocusHistoryItemUi(
+    key = "we-1-2026-08-11",
+    dateTitle = "11 August 2026",
+    exercises = listOf(FocusHistoryExerciseUi(workoutExerciseId = "we-1", sets = FOCUS_HISTORY_SETS)),
+)

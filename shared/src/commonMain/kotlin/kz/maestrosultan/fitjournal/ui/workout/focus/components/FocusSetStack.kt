@@ -36,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -257,11 +258,18 @@ private fun FocusAccordionRow(
     val revealWidthPx = with(density) { revealWidthDp.toPx() }
     val commitWidthPx = with(density) { CommitRevealWidth.toPx() }
 
+    // Which bar is showing is a SIGN, not a position. Read through derivedStateOf
+    // so the row recomposes when the sign flips, not on every snapTo of the drag
+    // and every frame of the settle animation — the offset itself is already a
+    // deferred read in `Modifier.offset { }` two dozen lines below.
+    val revealingActions by remember(offsetX) { derivedStateOf { offsetX.value < 0f } }
+    val revealingCommit by remember(offsetX) { derivedStateOf { offsetX.value > 0f } }
+
     Box(modifier = Modifier.fillMaxWidth()) {
         // matchParentSize gives the bars a BOUNDED height to fill — the stack
         // sits in an unbounded (scrolling) parent, where fillMaxHeight alone
         // would collapse them to their icon.
-        if (swipeable && offsetX.value < 0f) {
+        if (swipeable && revealingActions) {
             Box(modifier = Modifier.matchParentSize()) {
                 FocusSwipeActions(
                     canReset = canReset,
@@ -274,7 +282,7 @@ private fun FocusAccordionRow(
                 )
             }
         }
-        if (canCommit && offsetX.value > 0f) {
+        if (canCommit && revealingCommit) {
             Box(modifier = Modifier.matchParentSize()) {
                 FocusSwipeCommit(
                     width = CommitRevealWidth,

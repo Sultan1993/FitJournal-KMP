@@ -234,6 +234,7 @@
     <string name="focus_ai_coach">AI Coach</string>
     <string name="focus_done">Done</string>
     <string name="focus_a11y_pick_exercise">Pick exercise</string>
+    <string name="focus_a11y_backspace">Backspace</string>
     <string name="focus_a11y_close">Close</string>
     <string name="focus_a11y_menu">Menu</string>
     <string name="focus_rest_timer">Rest timer</string>

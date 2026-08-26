@@ -117,7 +117,10 @@ private fun toSetDisplay(
         setId = set.id,
         number = WorkoutValueFormatter.number(display.value),
         unit = units.valueUnit(resultType),
-        repsNumber = WorkoutValueFormatter.repsNumber(display.reps),
+        // Null-only, not WorkoutValueFormatter.repsNumber: every row here is a set
+        // the user really logged, so a 0 is a 0 — repsNumber's null-OR-zero
+        // sentinel would print an em dash over real data.
+        repsNumber = display.reps?.toString() ?: WorkoutValueFormatter.EMPTY,
         repsUnit = units.repsUnit(resultType),
         isLogged = true,
     )

@@ -59,7 +59,11 @@ class GetExerciseFocusDataUseCase(
                 oneRepMaxSource = ExerciseFocusData.SetValues(weight, reps)
             }
 
-            if (weight > (maxSet?.weight ?: Double.MIN_VALUE)) {
+            // Null-first, NOT a numeric floor: Double.MIN_VALUE is the smallest
+            // POSITIVE double, so a legitimately logged 0 kg set could never beat
+            // it and the exercise reported no max set at all.
+            val bestSoFar = maxSet
+            if (bestSoFar == null || weight > bestSoFar.weight) {
                 maxSet = ExerciseFocusData.SetValues(weight, reps)
             }
         }

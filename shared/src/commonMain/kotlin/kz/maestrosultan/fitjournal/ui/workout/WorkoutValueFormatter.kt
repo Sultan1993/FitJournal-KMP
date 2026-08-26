@@ -29,11 +29,23 @@ object WorkoutValueFormatter {
     /** [spaced] false gives the tight "×12" the details set strip uses; prose keeps "× 12". */
     fun reps(reps: Int?, resultType: ResultType, spaced: Boolean = true): String {
         if (reps == null || reps == 0) return EMPTY
-        return when (resultType) {
+        return repsLiteral(reps, resultType, spaced)
+    }
+
+    /**
+     * The same companion with NO zero sentinel: a logged `0` prints as "× 0".
+     *
+     * `WorkoutSet` is explicit that null is not zero — zero is a number the user
+     * entered — and both native Focus screens print it. [reps] keeps the sentinel
+     * for the surfaces that would rather read "70 kg" than "70 kg × 0" when the
+     * companion was simply never filled in; callers that hold REAL logged data
+     * (and have already tested for null themselves) want this one.
+     */
+    fun repsLiteral(reps: Int, resultType: ResultType, spaced: Boolean = true): String =
+        when (resultType) {
             ResultType.WEIGHT_REPS -> if (spaced) "× $reps" else "×$reps"
             ResultType.DISTANCE_DURATION -> "$reps min"
         }
-    }
 
     /** "70 kg × 8" from a prior set's numbers (no "Last:" prefix — the caller
      *  localises that); null when the source set carried nothing. */
