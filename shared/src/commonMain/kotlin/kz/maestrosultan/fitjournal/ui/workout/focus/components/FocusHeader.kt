@@ -144,12 +144,15 @@ private fun FocusHeaderPill(
 @Composable
 private fun FocusHeaderPillThumbnail(pill: FocusPillUi) {
     if (pill.isSuperset) {
-        Row {
-            pill.imageNames.take(2).forEachIndexed { index, name ->
+        // Negative ARRANGEMENT, not negative padding: Compose throws
+        // "Padding must be non-negative" outright, and this crashed the screen
+        // for every superset. Arrangement also shrinks the layout slot, so the
+        // pair occupies the width it actually draws.
+        Row(horizontalArrangement = Arrangement.spacedBy((-10).dp)) {
+            pill.imageNames.take(2).forEach { name ->
                 FocusExerciseThumb(
                     imageName = name,
                     modifier = Modifier
-                        .padding(start = if (index == 0) 0.dp else (-10).dp)
                         .size(30.dp)
                         // A ring in the pill's own fill colour punches the front
                         // circle out of the one it overlaps.
