@@ -20,7 +20,6 @@ import kz.maestrosultan.fitjournal.ui.workout.components.SetDisplay
 import kz.maestrosultan.fitjournal.ui.workout.focus.components.FocusCoachCard
 import kz.maestrosultan.fitjournal.ui.workout.focus.components.FocusExercisePicker
 import kz.maestrosultan.fitjournal.ui.workout.focus.components.FocusFinishButtonBar
-import kz.maestrosultan.fitjournal.ui.workout.focus.components.FocusHeader
 import kz.maestrosultan.fitjournal.ui.workout.focus.components.FocusSetStack
 import kz.maestrosultan.fitjournal.ui.workout.focus.components.FocusStatsRow
 import kz.maestrosultan.fitjournal.ui.workout.focus.components.FocusSupersetMembers
@@ -66,30 +65,6 @@ class FocusEdgeInputCompositionTest {
         onAllNodes(isRoot()).onFirst().assertExists()
     }
 
-    /**
-     * Both overlapping-thumbnail sites at once — the header pill and the picker
-     * row. Both draw the pair with a NEGATIVE `Arrangement.spacedBy`, which is
-     * what replaced the negative padding that crashed the screen.
-     */
-    @Test
-    fun supersetPill_withTwoThumbnails_composes() = runComposeUiTest {
-        composed {
-            FocusHeader(
-                pill = FocusPillUi(
-                    imageNames = listOf("exercise_bench_press", "exercise_incline_press"),
-                    title = "Superset",
-                    position = "3/6",
-                    isSuperset = true,
-                ),
-                isPickerOpen = true,
-                onTogglePicker = {},
-                onMenu = {},
-                onClose = {},
-            )
-        }
-
-        onNodeWithText("Superset").assertExists()
-    }
 
     @Test
     fun pickerRow_forASuperset_composesItsTwoThumbnails() = runComposeUiTest {
@@ -117,26 +92,6 @@ class FocusEdgeInputCompositionTest {
         onAllNodes(hasText("Superset")).onFirst().assertExists()
     }
 
-    /** A pill with no images at all — `imageNames.firstOrNull()` on both branches. */
-    @Test
-    fun pill_withNoThumbnails_composes() = runComposeUiTest {
-        composed {
-            FocusHeader(
-                pill = FocusPillUi(
-                    imageNames = emptyList(),
-                    title = "Superset",
-                    position = "1/1",
-                    isSuperset = true,
-                ),
-                isPickerOpen = false,
-                onTogglePicker = {},
-                onMenu = {},
-                onClose = {},
-            )
-        }
-
-        onNodeWithText("Superset").assertExists()
-    }
 
     /**
      * The Noop coach publishes null, but a coach that returns nothing publishes

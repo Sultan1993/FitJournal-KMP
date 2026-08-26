@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -32,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -48,7 +50,6 @@ import kz.maestrosultan.fitjournal.ui.workout.focus.components.FocusCoachCard
 import kz.maestrosultan.fitjournal.ui.workout.focus.components.FocusExercisePicker
 import kz.maestrosultan.fitjournal.ui.workout.focus.components.FocusStatsInfoSheet
 import kz.maestrosultan.fitjournal.ui.workout.focus.components.FocusFinishButtonBar
-import kz.maestrosultan.fitjournal.ui.workout.focus.components.FocusHeader
 import kz.maestrosultan.fitjournal.ui.workout.focus.components.FocusNote
 import kz.maestrosultan.fitjournal.ui.workout.focus.components.FocusRestTimerCard
 import kz.maestrosultan.fitjournal.ui.workout.focus.components.FocusSetStack
@@ -84,6 +85,21 @@ private val PagerTopInset = 16.dp
 @Composable
 fun WorkoutFocusScreen(
     viewModel: WorkoutFocusContract.ViewModel,
+    /**
+     * How far below this composable's top edge its content should begin.
+     *
+     * The navigation row — close, the exercise pill, ⋯ — is NOT here: it is
+     * rendered natively by each host, because those buttons are iOS 26 Liquid
+     * Glass (`.glassEffect(.regular.interactive())`, the same treatment the
+     * workout screen's nav buttons use) and Compose cannot reproduce it.
+     *
+     * The host floats that row OVER this composable rather than stacking it
+     * above, so the picker's scrim still covers the whole screen the way both
+     * natives do. This inset is what keeps the pager clear of it: pass the top
+     * safe-area inset PLUS the header block (12dp top + a 46dp row + 16dp
+     * bottom = 74dp in both natives).
+     */
+    topContentInset: Dp = 0.dp,
     modifier: Modifier = Modifier,
 ) {
     val viewState by viewModel.viewState.collectAsState()
@@ -93,6 +109,7 @@ fun WorkoutFocusScreen(
         restTimer = viewModel.restTimer,
         history = history,
         dispatch = viewModel::dispatch,
+        topContentInset = topContentInset,
         modifier = modifier,
     )
 }
@@ -103,6 +120,7 @@ private fun WorkoutFocusBody(
     restTimer: StateFlow<WorkoutFocusContract.RestTimerUi>,
     history: WorkoutFocusContract.HistoryState,
     dispatch: (WorkoutFocusContract.ViewAction) -> Unit,
+    topContentInset: Dp,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize().background(FjTheme.colors.background)) {
@@ -126,6 +144,7 @@ private fun WorkoutFocusBody(
                         restTimer = restTimer,
                         history = history,
                         dispatch = dispatch,
+                        topContentInset = topContentInset,
                     )
                 }
             }
@@ -139,6 +158,7 @@ private fun FocusLoadedContent(
     restTimer: StateFlow<WorkoutFocusContract.RestTimerUi>,
     history: WorkoutFocusContract.HistoryState,
     dispatch: (WorkoutFocusContract.ViewAction) -> Unit,
+    topContentInset: Dp,
 ) {
     // iOS TabView(.page) → HorizontalPager + rememberPagerState (§9). Two fixed
     // pages: 0 = the exercise editor, 1 = FocusHistoryPage.
@@ -180,17 +200,11 @@ private fun FocusLoadedContent(
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            FocusHeader(
-                pill = focus.pill,
-                isPickerOpen = focus.isPickerOpen,
-                onTogglePicker = { dispatch(WorkoutFocusContract.ViewAction.TogglePicker) },
-                onMenu = { dispatch(WorkoutFocusContract.ViewAction.ToggleMenu) },
-                onClose = { dispatch(WorkoutFocusContract.ViewAction.Close) },
-                // The 16dp below the header mirrors what PagerTopInset leaves
-                // below the dots, so they read centred between header and
-                // content — change the two together or not at all.
-                modifier = Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 16.dp),
-            )
+            // The native header floats over this space — see [topContentInset].
+            // The 16dp its block leaves below itself mirrors what PagerTopInset
+            // leaves below the dots, so they read centred between header and
+            // content; the host owns that padding now.
+            Spacer(modifier = Modifier.height(topContentInset))
 
             // Same layering as the CMP WorkoutScreen and both natives: an
             // always-on top scrim over both pages, page dots floating on top of
@@ -245,7 +259,12 @@ private fun FocusLoadedContent(
         // caller-side `if` would tear it down before the exit animation could run.
         // For the same reason it takes no modifier — any padding here would double
         // the card's inset and shrink the scrim.
+        // Anchored off the SAME inset the pager clears, minus the 14dp by which
+        // the natives' 60dp card offset undercuts their 74dp header block — so
+        // the card lands exactly where it does on both natives, under a scrim
+        // that still covers the whole screen including the floating header.
         FocusExercisePicker(
+            topAnchor = (topContentInset - HeaderBlockOvershoot).coerceAtLeast(0.dp),
             isOpen = focus.isPickerOpen,
             items = focus.pickerItems,
             onSelectRecord = { dispatch(WorkoutFocusContract.ViewAction.SelectRecord(it)) },
@@ -355,6 +374,14 @@ private class CoordinatesHolder {
     var id: String? = null
     var value: LayoutCoordinates? = null
 }
+
+/**
+ * How far the natives' 60dp picker-card offset sits ABOVE the bottom of their
+ * 74dp header block (12 top + 46 row + 16 bottom). The card is anchored to the
+ * safe-area top, not to the end of the header, so the shared screen subtracts
+ * this from its content inset to land in the same place.
+ */
+private val HeaderBlockOvershoot = 14.dp
 
 /** First open: the expanded editor is already laid out, so barely wait. */
 private const val FirstCenteringDelayMs = 50L

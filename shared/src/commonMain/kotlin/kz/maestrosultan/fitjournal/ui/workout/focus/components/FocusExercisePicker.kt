@@ -52,6 +52,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -89,6 +90,8 @@ private val CardEdgeMargin = 60.dp
  */
 @Composable
 fun FocusExercisePicker(
+    /** Distance from the overlay's top edge to the card. See CardEdgeMargin. */
+    topAnchor: Dp = CardEdgeMargin,
     isOpen: Boolean,
     items: List<FocusStripItemUi>,
     onSelectRecord: (String) -> Unit,
@@ -131,6 +134,7 @@ fun FocusExercisePicker(
             ) + fadeOut(animationSpec = tween(160)),
         ) {
             FocusPickerCard(
+                topAnchor = topAnchor,
                 items = items,
                 onSelectRecord = onSelectRecord,
                 onAddExercise = onAddExercise,
@@ -142,6 +146,7 @@ fun FocusExercisePicker(
 
 @Composable
 private fun FocusPickerCard(
+    topAnchor: Dp,
     items: List<FocusStripItemUi>,
     onSelectRecord: (String) -> Unit,
     onAddExercise: () -> Unit,
@@ -168,7 +173,7 @@ private fun FocusPickerCard(
 
         Column(
             modifier = Modifier
-                .padding(top = CardEdgeMargin, start = 16.dp, end = 16.dp)
+                .padding(top = topAnchor, start = 16.dp, end = 16.dp)
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(FjTheme.colors.surfaceElevated)
