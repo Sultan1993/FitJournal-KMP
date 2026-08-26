@@ -288,6 +288,25 @@ private fun FocusAccordionRow(
         if (expanded) offsetX.snapTo(0f)
     }
 
+    // Hoisted: the tap target moves between the card and its header when the
+    // row opens, and a `remember` inside that branch would shift composition
+    // slots every time it flips.
+    val rowInteraction = remember { MutableInteractionSource() }
+
+    // Card/header tap. An open swipe reveal absorbs the FIRST tap — otherwise
+    // the editor expands onto a swiped-open row and the two animations collide.
+    val onRowTap: () -> Unit = {
+        if (offsetX.value != 0f) {
+            scope.launch { offsetX.animateTo(0f) }
+        } else {
+            when {
+                expanded -> onCollapseEditor()
+                slot.isAddAnother -> onAddAnotherSet()
+                else -> onEditSet(slot.id)
+            }
+        }
+    }
+
     val density = LocalDensity.current
     val revealWidthPx = with(density) { revealWidthDp.toPx() }
     val commitWidthPx = with(density) { CommitRevealWidth.toPx() }
@@ -388,30 +407,45 @@ private fun FocusAccordionRow(
                         base
                     }
                 }
-                // No indication: neither native shows press feedback here, and
-                // the whole card — not just the header — is the tap target.
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                ) {
-                    // An open reveal absorbs the first tap (just closes it) —
-                    // otherwise the editor expands onto a swiped-open row and
-                    // the two animations collide.
-                    if (offsetX.value != 0f) {
-                        scope.launch { offsetX.animateTo(0f) }
-                        return@clickable
-                    }
-                    when {
-                        expanded -> onCollapseEditor()
-                        slot.isAddAnother -> onAddAnotherSet()
-                        else -> onEditSet(slot.id)
-                    }
-                },
+                // Collapsed, the WHOLE card opens the editor — both natives do
+                // that, and a closed row has nothing else to hit. Once it is
+                // OPEN the card stops taking taps and only the header closes
+                // it: the body is a keypad and two number fields, and a tap
+                // landing a few dp beside one of them used to throw the draft
+                // away. No indication either way — neither native shows press
+                // feedback on this row.
+                .then(
+                    if (expanded) {
+                        Modifier
+                    } else {
+                        Modifier.clickable(
+                            interactionSource = rowInteraction,
+                            indication = null,
+                            onClick = onRowTap,
+                        )
+                    },
+                ),
         ) {
             if (slot.isAddAnother && !expanded) {
                 FocusAddAnotherHeader()
             } else {
-                FocusSetHeaderRow(slot = slot, editor = editor, expanded = expanded)
+                FocusSetHeaderRow(
+                    slot = slot,
+                    editor = editor,
+                    expanded = expanded,
+                    // The open row's only way back: its header, chevron
+                    // included. Applied OUTSIDE the row's own padding, so the
+                    // target is the whole strip rather than just the glyphs.
+                    modifier = if (expanded) {
+                        Modifier.clickable(
+                            interactionSource = rowInteraction,
+                            indication = null,
+                            onClick = onRowTap,
+                        )
+                    } else {
+                        Modifier
+                    },
+                )
             }
             // In-layout height animation: siblings reflow in the same
             // animation; NEVER a slide or fade transition (iOS ghosting bug).
@@ -525,9 +559,14 @@ private fun FocusAddAnotherHeader() {
 }
 
 @Composable
-private fun FocusSetHeaderRow(slot: FocusSetSlotUi, editor: FocusEditorUi, expanded: Boolean) {
+private fun FocusSetHeaderRow(
+    slot: FocusSetSlotUi,
+    editor: FocusEditorUi,
+    expanded: Boolean,
+    modifier: Modifier = Modifier,
+) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(
                 start = 16.dp,
