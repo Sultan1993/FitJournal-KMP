@@ -287,6 +287,19 @@ class WorkoutFocusViewModel internal constructor(
     private var measurementSystem: MeasurementSystem = MeasurementSystem.KG_KM
     private var identity: Identity? = null
 
+    /**
+     * Both natives load from their own init (Android `init { load() }`, iOS from
+     * the VC's first appearance), and so do the sibling CMP screens — so the
+     * screen must not depend on a host remembering to dispatch
+     * [WorkoutFocusContract.ViewAction.Load]. Neither host did, which left the
+     * screen on its spinner forever.
+     *
+     * [load] stays idempotent, so a host that dispatches Load anyway is harmless.
+     */
+    init {
+        load()
+    }
+
     // ─── Dispatch ──────────────────────────────────────────────────────
 
     override fun dispatch(action: WorkoutFocusContract.ViewAction) {
