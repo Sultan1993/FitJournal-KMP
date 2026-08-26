@@ -1,5 +1,7 @@
 package kz.maestrosultan.fitjournal.ui.workout.focus.components
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +38,9 @@ import org.jetbrains.compose.resources.stringResource
 
 /** Placeholder for a missing stat value — a dash, not localized copy. */
 private const val VALUE_PLACEHOLDER = "—"
+
+/** How long a stat value takes to cross over. Matches the title's. */
+private const val ValueFadeMillis = 180
 
 /** `eyebrow` size, and iOS's 0.7 minimumScaleFactor of it. */
 private val LabelMaxFontSize = 10.5.sp
@@ -128,27 +133,43 @@ private fun FocusStatCell(
             )
         }
         val valueRowModifier = if (onValueTap != null) Modifier.clickable(onClick = onValueTap) else Modifier
-        Row(modifier = valueRowModifier, verticalAlignment = Alignment.Bottom) {
-            Text(
-                text = value ?: VALUE_PLACEHOLDER,
-                style = FjTheme.typography.numberLarge.copy(fontSize = 26.sp, fontWeight = FontWeight.Bold),
-                color = FjTheme.colors.textPrimary,
-                modifier = Modifier.alignByBaseline(),
-            )
-            Text(
-                text = unit,
-                style = FjTheme.typography.label.copy(fontSize = 12.sp, fontWeight = FontWeight.Medium),
-                color = FjTheme.colors.textTertiary,
-                // Baseline-aligned, not bottom-aligned: Rubik's descenders make
-                // a bottom edge sit off the 26sp value's baseline, and the gap
-                // would drift with any font-size change.
-                modifier = Modifier
-                    .alignByBaseline()
-                    .padding(start = 5.dp),
-            )
+        // Only the VALUE crosses over on an exercise change — the label above
+        // is a fixed string and must sit perfectly still. Crossfade, not
+        // AnimatedContent: this cell is measured for `IntrinsicSize.Min` so the
+        // hairline between the cells has a height to fill, and Crossfade is a
+        // Box, which reports intrinsics. The row's height never changes anyway,
+        // so there is nothing to size-animate.
+        Crossfade(
+            targetState = StatValue(value, unit),
+            animationSpec = tween(ValueFadeMillis),
+            modifier = valueRowModifier,
+            label = "focusStatValue",
+        ) { shown ->
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    text = shown.value ?: VALUE_PLACEHOLDER,
+                    style = FjTheme.typography.numberLarge.copy(fontSize = 26.sp, fontWeight = FontWeight.Bold),
+                    color = FjTheme.colors.textPrimary,
+                    modifier = Modifier.alignByBaseline(),
+                )
+                Text(
+                    text = shown.unit,
+                    style = FjTheme.typography.label.copy(fontSize = 12.sp, fontWeight = FontWeight.Medium),
+                    color = FjTheme.colors.textTertiary,
+                    // Baseline-aligned, not bottom-aligned: Rubik's descenders make
+                    // a bottom edge sit off the 26sp value's baseline, and the gap
+                    // would drift with any font-size change.
+                    modifier = Modifier
+                        .alignByBaseline()
+                        .padding(start = 5.dp),
+                )
+            }
         }
     }
 }
+
+/** The pair that crosses over together — "40" and "kg × 10" are one reading. */
+private data class StatValue(val value: String?, val unit: String)
 
 @Preview(name = "FocusStatsRow Light")
 @Composable

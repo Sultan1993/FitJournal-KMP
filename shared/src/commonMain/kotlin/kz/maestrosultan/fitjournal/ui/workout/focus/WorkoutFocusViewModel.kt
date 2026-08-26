@@ -1331,9 +1331,15 @@ class WorkoutFocusViewModel internal constructor(
         abandonEditDraft()
         activeRecordId = record.id
         activeExerciseId = workoutExerciseId
-        // Open the new exercise's first unfilled set; collapse when there is
-        // none — never speculatively open a new-set editor on a switch.
-        syncActiveExpansion()
+        // Land COLLAPSED, exactly as a cold open does. Arriving at an exercise
+        // is not a decision to edit one of its sets: the user picked it from
+        // the picker, tapped a superset member, or was carried here by "Finish
+        // exercise", and an editor that opens by itself both hides the sets
+        // behind a keypad and drags the page down to centre a row nobody asked
+        // for. The post-WRITE advances are the ones that re-open (handleLogSet
+        // and finishSetMutation both still call expandFirstUnfilled) — there,
+        // the user just logged and is plainly still working.
+        editorMode = FocusEditorMode.Collapsed
         republish()
         viewModelScope.launch {
             hydrateRecordMembers(record)

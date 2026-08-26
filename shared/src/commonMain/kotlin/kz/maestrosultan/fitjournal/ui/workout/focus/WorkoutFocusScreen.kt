@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
@@ -161,12 +162,8 @@ private fun FocusLoadedContent(
         }
     }
 
-    // Switching the active exercise snaps the pager back to the Now page. The
-    // active workout-exercise id is derived here rather than carried on FocusUi:
-    // a superset names its active member, a single-exercise record is named by
-    // its own picker row (FocusStripItemUi.id IS the first member's id).
-    val activeExerciseId = focus.memberItems?.firstOrNull { it.isActive }?.workoutExerciseId
-        ?: focus.pickerItems.firstOrNull { it.isActive }?.id
+    // Switching the active exercise snaps the pager back to the Now page.
+    val activeExerciseId = activeExerciseId(focus)
     // Seeded from the current value so opening Focus does not fire a redundant
     // scroll on first composition.
     var lastExerciseId by remember { mutableStateOf(activeExerciseId) }
@@ -315,6 +312,8 @@ private const val SectionFinish = "finish"
  * analog of iOS's `.transition(.opacity)` / Android's `animateContentSize()`.
  * Deliberately excludes the rest timer (its 1 Hz tick would spring the page)
  * and the set stack (the editor's own text changes must not move anything).
+ *
+ * They fade, they do NOT slide — see [SectionFade].
  */
 private val AnimatedSections = setOf(
     SectionHeader,
@@ -332,6 +331,15 @@ private val AnimatedSections = setOf(
  * straight from it, and the active-set scroll finds the set stack by
  * `indexOf`. Reordering here can no longer desync a hand-counted item index.
  */
+/**
+ * The active workout-exercise id, derived rather than carried on [FocusUi]: a
+ * superset names its active member, a single-exercise record is named by its
+ * own picker row (`FocusStripItemUi.id` IS the first member's id).
+ */
+private fun activeExerciseId(focus: FocusUi): String? =
+    focus.memberItems?.firstOrNull { it.isActive }?.workoutExerciseId
+        ?: focus.pickerItems.firstOrNull { it.isActive }?.id
+
 private fun pageOneSectionKeys(focus: FocusUi): List<String> = buildList {
     add(SectionHeader)
     if (focus.note != null) add(SectionNote)
@@ -344,6 +352,19 @@ private fun pageOneSectionKeys(focus: FocusUi): List<String> = buildList {
     add(SectionSetStack)
     add(SectionFinish)
 }
+
+/**
+ * Appear/disappear fade for [AnimatedSections], with **no placement spec**.
+ *
+ * `animateItem()`'s default placement spring is what made the whole page slide
+ * whenever a section came or went, or the title grew a second line — the thing
+ * that reads as "the labels move". Dropped, the sections still fade in and out
+ * but everything else simply re-places, and the content that changes IN PLACE
+ * (the exercise name, its image, the stat values) crossfades itself.
+ */
+@Composable
+private fun LazyItemScope.SectionFade(): Modifier =
+    Modifier.animateItem(placementSpec = null)
 
 /**
  * A mutable box for layout coordinates, deliberately NOT snapshot state:
@@ -394,6 +415,21 @@ private fun FocusPageOne(
     val activeSlotId = focus.slots.firstOrNull { it.isExpanded }?.id
     var firstCentering by remember { mutableStateOf(true) }
 
+    // A different exercise starts at the top. The list state survives the
+    // switch — it is remembered by the pager page, not by the exercise — so
+    // without this you land wherever the previous exercise was scrolled to.
+    // Instant, not animated: everything on the page has changed anyway, and
+    // the VM lands the new exercise COLLAPSED, so there is no open row for the
+    // centring effect below to chase.
+    val exerciseKey = activeExerciseId(focus)
+    var lastPageExerciseId by remember { mutableStateOf(exerciseKey) }
+    LaunchedEffect(exerciseKey) {
+        if (lastPageExerciseId != exerciseKey) {
+            lastPageExerciseId = exerciseKey
+            listState.scrollToItem(0)
+        }
+    }
+
     // Plain holders, NOT snapshot state: onGloballyPositioned fires on every
     // scroll frame, and writing state there would recompose the page per frame.
     val viewportCoords = remember { CoordinatesHolder() }
@@ -429,7 +465,7 @@ private fun FocusPageOne(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         items(sectionKeys, key = { it }) { key ->
-            val sectionModifier = if (key in AnimatedSections) Modifier.animateItem() else Modifier
+            val sectionModifier = if (key in AnimatedSections) SectionFade() else Modifier
             when (key) {
                 // Members OR title, never both: the members card already names
                 // and pictures the active member, so a 32sp heading above it is

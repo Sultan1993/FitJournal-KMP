@@ -2,6 +2,7 @@ package kz.maestrosultan.fitjournal.ui.workout.focus
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlin.test.assertNotNull
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.datetime.LocalDate
@@ -43,6 +44,95 @@ class WorkoutFocusFinishExerciseTest {
     )
 
     private val threeRecords = listOf(bench, row, squat)
+
+    // ── Arriving at an exercise never opens an editor ────────────────────
+
+    /**
+     * Finishing an exercise lands on the next one COLLAPSED — the same state a
+     * cold open leaves the screen in. Arriving somewhere is not a decision to
+     * edit one of its sets, and an editor that opens by itself buries the set
+     * list under a keypad and drags the page down to centre a row nobody asked
+     * for. (The page's own scroll reset rides on the same rule: with nothing
+     * expanded there is no row for the centring effect to chase.)
+     *
+     * The record advanced onto here has an UNFILLED set, which is exactly the
+     * row `expandFirstUnfilled` used to open.
+     */
+    @Test
+    fun finishExercise_landsOnTheNextExerciseWithNoEditorOpen() {
+        val withTarget = focusRecord(
+            "r2",
+            position = 1,
+            members = listOf(
+                focusMember("we-2", focusCatalog("Barbell Row"), listOf(focusSet("s2"))),
+            ),
+        )
+        focusTest(listOf(bench, withTarget)) { bed ->
+            val vm = bed.viewModel(recordId = "r1", exerciseId = "we-1")
+            assertEquals("Bench Press", vm.awaitLoaded().title)
+
+            vm.dispatch(WorkoutFocusContract.ViewAction.FinishExercise)
+            advanceUntilIdle()
+
+            val focus = focusNow(vm)
+            assertEquals("Barbell Row", focus.title, "it did advance")
+            assertTrue(
+                focus.slots.none { it.isExpanded },
+                "no row opened by itself: ${focus.slots.filter { it.isExpanded }.map { it.id }}",
+            )
+        }
+    }
+
+    /** The same rule for a switch the user makes from the picker. */
+    @Test
+    fun pickingAnotherExercise_opensNoEditorEither() {
+        val withTarget = focusRecord(
+            "r2",
+            position = 1,
+            members = listOf(
+                focusMember("we-2", focusCatalog("Barbell Row"), listOf(focusSet("s2"))),
+            ),
+        )
+        focusTest(listOf(bench, withTarget)) { bed ->
+            val vm = bed.viewModel(recordId = "r1", exerciseId = "we-1")
+            vm.awaitLoaded()
+
+            vm.dispatch(WorkoutFocusContract.ViewAction.SelectRecord("r2"))
+            advanceUntilIdle()
+
+            val focus = focusNow(vm)
+            assertEquals("Barbell Row", focus.title)
+            assertTrue(focus.slots.none { it.isExpanded }, "no row opened by itself")
+        }
+    }
+
+    /**
+     * The counterpart: a post-WRITE advance still re-opens. The user just
+     * logged and is plainly still working, so the next target comes up ready.
+     */
+    @Test
+    fun loggingASet_stillOpensTheNextTarget() {
+        val twoTargets = focusRecord(
+            "r1",
+            position = 0,
+            members = listOf(
+                focusMember("we-1", focusCatalog("Bench Press"), listOf(focusSet("s1"), focusSet("s2"))),
+            ),
+        )
+        focusTest(listOf(twoTargets)) { bed ->
+            val vm = bed.viewModel(recordId = "r1", exerciseId = "we-1", initialSetId = "s1")
+            vm.awaitLoaded()
+
+            vm.dispatch(WorkoutFocusContract.ViewAction.SaveSet)
+            advanceUntilIdle()
+
+            assertEquals(
+                "s2",
+                focusNow(vm).slots.firstOrNull { it.isExpanded }?.id,
+                "the editor moved on to the next unfilled set",
+            )
+        }
+    }
 
     // ── Not the last one: advance ────────────────────────────────────────
 

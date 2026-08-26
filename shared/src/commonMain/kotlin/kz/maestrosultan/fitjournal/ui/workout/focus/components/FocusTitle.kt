@@ -1,5 +1,12 @@
 package kz.maestrosultan.fitjournal.ui.workout.focus.components
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,10 +25,22 @@ import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.focus.FocusPreviewData
 
+/** Everything about this block that changes when the exercise does. */
+private data class FocusTitleContent(val title: String, val muscles: String, val imageName: String?)
+
+/** How long the name and image take to cross over. */
+private const val TitleFadeMillis = 180
+
 /**
  * Active exercise name (h1) + its muscle-group line, with the exercise's own
  * image aspect-fit on the trailing side (no box) when there is one — 1:1
  * with iOS's `FocusTitleView`.
+ *
+ * The content CROSSFADES when the exercise changes; the block's height snaps
+ * in one step (`SizeTransform { snap() }`) rather than animating, because a
+ * one-line name and a two-line name are different heights and animating that
+ * is exactly the sliding this page is meant to be free of. Clipped, so an
+ * outgoing two-line name cannot spill over the section below while it fades.
  */
 @Composable
 fun FocusTitle(
@@ -30,8 +49,24 @@ fun FocusTitle(
     imageName: String?,
     modifier: Modifier = Modifier,
 ) {
+    AnimatedContent(
+        targetState = FocusTitleContent(title, muscles, imageName),
+        transitionSpec = {
+            (fadeIn(tween(TitleFadeMillis)) togetherWith fadeOut(tween(TitleFadeMillis)))
+                .using(SizeTransform(clip = true) { _, _ -> snap() })
+        },
+        modifier = modifier,
+        label = "focusTitle",
+    ) { content ->
+        FocusTitleRow(content)
+    }
+}
+
+@Composable
+private fun FocusTitleRow(content: FocusTitleContent) {
+    val (title, muscles, imageName) = content
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
