@@ -192,12 +192,18 @@ class WorkoutFocusRestWiringTest {
         }
 
     /**
-     * The manual toggle is a deliberate request, so it asks for permission
-     * whatever the config says — auto-start off must not mean "no notification
-     * for the rest I started by hand".
+     * A manual START is a deliberate request, so it asks for permission whatever
+     * the config says — auto-start off must not mean "no notification for the
+     * rest I started by hand".
+     *
+     * A manual STOP asks for nothing: prompting for POST_NOTIFICATIONS as the
+     * user cancels a rest raises a system dialog for a notification that is
+     * being torn down in the same breath. Android emits the request in its start
+     * branch only (`ExerciseFocusViewModel.kt:1065-1074`) and iOS has no
+     * permission concept at all; the unconditional emit was ours.
      */
     @Test
-    fun toggleRestTimer_alwaysAsksPermission() =
+    fun toggleRestTimer_asksOnStart_andNeverOnStop() =
         focusTest(listOf(record), RestTimerConfig(autoStart = false)) { bed ->
             val vm = loaded(bed)
             val effects = recordEffects(vm)
@@ -214,11 +220,16 @@ class WorkoutFocusRestWiringTest {
             assertEquals(1, bed.presenter.lifecycle.size, "${bed.presenter.lifecycle}")
             assertTrue(bed.presenter.lifecycle.single().startsWith("restStarted"))
 
+            effects.clear()
             vm.dispatch(WorkoutFocusContract.ViewAction.ToggleRestTimer)
             runCurrent()
             bed.timer.awaitPending()
 
             assertEquals("restEnded(Stopped)", bed.presenter.lifecycle.last())
+            assertTrue(
+                effects.none { it is WorkoutFocusContract.ViewEffect.EnsureRestNotificationPermission },
+                "the stop asks nothing: $effects",
+            )
         }
 
     /**

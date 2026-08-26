@@ -1,10 +1,10 @@
 package kz.maestrosultan.fitjournal.ui.workout.focus.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.SpanStyle
@@ -43,17 +44,19 @@ fun FocusCoachCard(segments: List<FocusCoachSegmentUi>, modifier: Modifier = Mod
             .clip(RoundedCornerShape(18.dp))
             .background(FjTheme.colors.brandSubtle)
             .padding(18.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Row {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(FjTheme.colors.brand))
+            Text(
+                text = stringResource(Res.string.focus_ai_coach).uppercase(),
+                style = FjTheme.typography.eyebrow.copy(fontSize = 10.5.sp, fontWeight = FontWeight.Bold),
+                color = FjTheme.colors.brand,
+            )
         }
-        Text(
-            text = stringResource(Res.string.focus_ai_coach).uppercase(),
-            style = FjTheme.typography.eyebrow.copy(fontSize = 10.5.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
-            color = FjTheme.colors.brand,
-            modifier = Modifier.padding(top = 2.dp),
-        )
-        Spacer(modifier = Modifier.size(10.dp))
         val bodyColor = FjTheme.colors.textSecondary
         val factColor = FjTheme.colors.textPrimary
         val highlightColor = FjTheme.colors.brand
@@ -72,7 +75,7 @@ fun FocusCoachCard(segments: List<FocusCoachSegmentUi>, modifier: Modifier = Mod
         }
         Text(
             text = annotated,
-            style = FjTheme.typography.body.copy(fontSize = 15.sp, lineHeight = 20.4.sp),
+            style = FjTheme.typography.body.copy(fontSize = 15.sp, lineHeight = 21.sp),
         )
     }
 }

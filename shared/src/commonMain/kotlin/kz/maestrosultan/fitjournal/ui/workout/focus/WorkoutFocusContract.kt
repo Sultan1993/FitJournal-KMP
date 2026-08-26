@@ -253,9 +253,22 @@ data class FocusSetDotUi(val id: Int, val kind: Kind) {
 
 /**
  * Bottom action button. [subtitle] carries "Next • <name>" when there's a next
- * record; null on the last one, where [title] reads "Finish workout".
+ * record; null on the last one.
+ *
+ * [endsWorkout] is what the last record's tap MEANS, and the label follows it:
+ * true → "Finish workout", and the host must route the tap to its finish-confirm
+ * flow; false → "Done", and the tap just leaves the editor. Refusing to offer a
+ * finish is recoverable (the session bar still ends the workout); offering one
+ * that silently dismisses is not — which is the bug both natives shipped a fix
+ * for (iOS `FocusViewStateBuilder.swift:63-73`, Android
+ * `FocusViewStateBuilder.kt:127-143`). Defaults to false so a host that has not
+ * been taught the distinction never claims it can finish something.
  */
-data class FocusFinishButtonUi(val title: String, val subtitle: String?)
+data class FocusFinishButtonUi(
+    val title: String,
+    val subtitle: String?,
+    val endsWorkout: Boolean = false,
+)
 
 /** The ⋯ menu sheet — extends the shared `WorkoutExerciseMenu` (§5.1). */
 data class FocusMenuUi(

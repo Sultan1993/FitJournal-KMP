@@ -239,6 +239,9 @@
     <string name="focus_a11y_timer_settings">Timer-Einstellungen</string>
     <string name="focus_a11y_timer_start">Pausen-Timer starten</string>
     <string name="focus_a11y_timer_stop">Pausen-Timer stoppen</string>
+    <!-- Rest notification / Live Activity copy (mirrors iOS rest_activity.*) -->
+    <string name="rest_activity_set_n_of_m">Satz %1$d von %2$d</string>
+    <string name="rest_activity_next">als Nächstes %1$s</string>
     <string name="focus_sets">Sätze</string>
     <string name="focus_delete_set_title">Satz %1$d löschen?</string>
     <string name="focus_reset_set_title">Satz %1$d zurücksetzen?</string>
@@ -264,5 +267,17 @@
     <string name="focus_set_save_error">Beim Speichern des Satzes ist ein Fehler aufgetreten</string>
     <string name="focus_set_delete_error">Beim Löschen des Satzes ist ein Fehler aufgetreten</string>
     <string name="focus_exercise_not_found">Übung nicht gefunden</string>
-    <string name="focus_history_empty">Deine Workouts erscheinen hier</string>
+    <string name="focus_record_fetch_error">Beim Laden des Workouts ist ein Fehler aufgetreten</string>
+    <string name="focus_record_delete_error">Beim Löschen der Übung ist ein Fehler aufgetreten</string>
+
+    <!-- Set-row units + history placeholder. Ported 1:1 from Android
+         `common/resources` (`measurement_*`, `workout_set_reps_unit`,
+         `history_placeholder_title`), which both natives already resolve. -->
+    <string name="measurement_kg">kg</string>
+    <string name="measurement_lbs">lbs</string>
+    <string name="measurement_km">km</string>
+    <string name="measurement_mi">mi</string>
+    <string name="measurement_min">min</string>
+    <string name="workout_set_reps_unit">Wdh.</string>
+    <string name="history_placeholder_title">Kein Trainingsverlauf verfügbar</string>
 </resources>

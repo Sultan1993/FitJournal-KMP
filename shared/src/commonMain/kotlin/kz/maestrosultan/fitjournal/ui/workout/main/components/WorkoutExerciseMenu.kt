@@ -60,6 +60,13 @@ import org.jetbrains.compose.resources.stringResource
  * UI-projected with no domain types, and its native predecessor's menu was a
  * plain iOS action sheet with no avatar row at all. `null` collapses the
  * header to just the name, rather than inventing a fake `Exercise`.
+ *
+ * The two call sites act on different things, and their native predecessors
+ * differ accordingly — [supersetBeforeReplace], [showDelete] and [deleteLabel]
+ * carry those three differences. All three default to the workout list's
+ * behaviour (its own native menu, `WorkoutExerciseItem`), so that call site
+ * needs no arguments; Focus overrides them to match its action sheet /
+ * dropdown, whose ⋯ acts on the whole record rather than one exercise row.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,6 +76,9 @@ fun WorkoutExerciseMenu(
     hasNote: Boolean,
     isSuperset: Boolean,
     canAddToSuperset: Boolean,
+    supersetBeforeReplace: Boolean = false,
+    showDelete: Boolean = !isSuperset,
+    deleteLabel: String = stringResource(Res.string.workout_menu_delete),
     onAbout: (() -> Unit)? = null,
     onHistory: (() -> Unit)? = null,
     onStats: (() -> Unit)? = null,
@@ -123,20 +133,43 @@ fun WorkoutExerciseMenu(
                 text = stringResource(if (hasNote) Res.string.workout_menu_note_edit else Res.string.workout_menu_note_add),
                 onClick = { close(onNote) },
             )
-            MenuRow(Res.drawable.ic_swap, stringResource(Res.string.workout_menu_replace), onClick = { close(onReplace) })
-            // canAddToSuperset requires a next record to pair with.
-            if (isSuperset) {
-                MenuRow(Res.drawable.ic_workout_superset, stringResource(Res.string.workout_menu_superset_remove), onClick = { close(onRemoveFromSuperset) })
-            } else if (canAddToSuperset) {
-                MenuRow(Res.drawable.ic_workout_superset, stringResource(Res.string.workout_menu_superset_add), onClick = { close(onAddToSuperset) })
+            // The two conditions are independent, not either/or: on both natives a
+            // superset record that still has a following record offers *both* rows.
+            // The workout list never shows both anyway — it passes canAddToSuperset
+            // already ANDed with !isSuperset — so the flag means the same thing at
+            // both call sites instead of being swallowed here.
+            val supersetRows: @Composable () -> Unit = {
+                // canAddToSuperset requires a next record to pair with.
+                if (canAddToSuperset) {
+                    MenuRow(Res.drawable.ic_workout_superset, stringResource(Res.string.workout_menu_superset_add), onClick = { close(onAddToSuperset) })
+                }
+                if (isSuperset) {
+                    MenuRow(Res.drawable.ic_workout_superset, stringResource(Res.string.workout_menu_superset_remove), onClick = { close(onRemoveFromSuperset) })
+                }
+            }
+            val replaceRow: @Composable () -> Unit = {
+                MenuRow(Res.drawable.ic_swap, stringResource(Res.string.workout_menu_replace), onClick = { close(onReplace) })
+            }
+            // Focus's native menus put the superset rows above replace; the workout
+            // list's put replace first. Neither order is "the" order — each matches
+            // the native it replaces.
+            if (supersetBeforeReplace) {
+                supersetRows()
+                replaceRow()
+            } else {
+                replaceRow()
+                supersetRows()
             }
 
-            // A superset member has no standalone delete — it splits out via "Remove from superset".
-            if (!isSuperset) {
+            // In the workout list a superset member has no standalone delete — it
+            // splits out via "Remove from superset" — which is why showDelete
+            // defaults to !isSuperset. Focus's ⋯ acts on the whole record, so it
+            // passes true and the row is always the last one.
+            if (showDelete) {
                 MenuDivider()
                 MenuRow(
                     icon = Res.drawable.ic_common_delete,
-                    text = stringResource(Res.string.workout_menu_delete),
+                    text = deleteLabel,
                     color = FjTheme.colors.negative,
                     onClick = { close(onDelete) },
                 )

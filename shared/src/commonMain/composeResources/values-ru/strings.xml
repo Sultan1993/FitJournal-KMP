@@ -259,6 +259,9 @@
     <string name="focus_a11y_timer_settings">Настройки таймера</string>
     <string name="focus_a11y_timer_start">Запустить таймер отдыха</string>
     <string name="focus_a11y_timer_stop">Остановить таймер отдыха</string>
+    <!-- Rest notification / Live Activity copy (mirrors iOS rest_activity.*) -->
+    <string name="rest_activity_set_n_of_m">Подход %1$d из %2$d</string>
+    <string name="rest_activity_next">далее %1$s</string>
     <string name="focus_sets">Подходы</string>
     <string name="focus_delete_set_title">Удалить подход %1$d?</string>
     <string name="focus_reset_set_title">Сбросить подход %1$d?</string>
@@ -284,5 +287,17 @@
     <string name="focus_set_save_error">Произошла ошибка при сохранении подхода</string>
     <string name="focus_set_delete_error">Произошла ошибка при удалении подхода</string>
     <string name="focus_exercise_not_found">Упражнение не найдено</string>
-    <string name="focus_history_empty">Здесь появятся ваши тренировки</string>
+    <string name="focus_record_fetch_error">Произошла ошибка при загрузке тренировки</string>
+    <string name="focus_record_delete_error">Произошла ошибка при удалении упражнения</string>
+
+    <!-- Set-row units + history placeholder. Ported 1:1 from Android
+         `common/resources` (`measurement_*`, `workout_set_reps_unit`,
+         `history_placeholder_title`), which both natives already resolve. -->
+    <string name="measurement_kg">кг</string>
+    <string name="measurement_lbs">фт</string>
+    <string name="measurement_km">км</string>
+    <string name="measurement_mi">ми</string>
+    <string name="measurement_min">мин</string>
+    <string name="workout_set_reps_unit">повт.</string>
+    <string name="history_placeholder_title">История отсутствует</string>
 </resources>

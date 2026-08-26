@@ -4,6 +4,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.time.Instant
+import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.domain.exercise.Category
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
@@ -20,9 +21,9 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutSet
  */
 class RestPresentationInfoTest {
 
-    private val setOfFormat: (Int, Int) -> String = { filled, total -> "Set $filled of $total" }
-    private val setFormat: (Int) -> String = { filled -> "Set $filled" }
-    private val nextLineFormat: (Double, Int?) -> String = { value, reps ->
+    private val setOfFormat: suspend (Int, Int) -> String = { filled, total -> "Set $filled of $total" }
+    private val setFormat: suspend (Int) -> String = { filled -> "Set $filled" }
+    private val nextLineFormat: suspend (Double, Int?) -> String = { value, reps ->
         if (reps != null) "next $value x $reps" else "next $value"
     }
 
@@ -34,7 +35,12 @@ class RestPresentationInfoTest {
         details = null,
     )
 
-    private fun exerciseCatalog(name: String, image1: String?, resultType: ResultType = ResultType.WEIGHT_REPS) = Exercise(
+    private fun exerciseCatalog(
+        name: String,
+        image1: String?,
+        image2: String? = null,
+        resultType: ResultType = ResultType.WEIGHT_REPS,
+    ) = Exercise(
         uuid = "ex-$name",
         remoteId = "ex-$name",
         name = name,
@@ -42,7 +48,7 @@ class RestPresentationInfoTest {
         primaryCategory = category(CategoryType.CHEST),
         secondaryCategories = emptyList(),
         image1 = image1,
-        image2 = null,
+        image2 = image2,
         resultType = resultType,
         isPersonal = false,
     )
@@ -88,7 +94,7 @@ class RestPresentationInfoTest {
 
     /** Case 33: single exercise, 2 of 4 filled → "Set 2 of 4", nextLine derived from prior set 3 (position 2). */
     @Test
-    fun case33_singleExercise_twoOfFourFilled_setLineAndNextLineFromPriorSetThree() {
+    fun case33_singleExercise_twoOfFourFilled_setLineAndNextLineFromPriorSetThree() = runTest {
         val prior = LastOccurrence(
             date = LocalDate(2025, 12, 25),
             sets = listOf(
@@ -116,13 +122,18 @@ class RestPresentationInfoTest {
         assertEquals("next 70.0 x 6", info.nextLine)
     }
 
-    /** Case 34: superset → joined names, all thumbs, setLine and nextLine both null. */
+    /**
+     * Case 34: superset → joined names and all thumbs, plus the ACTIVE member's
+     * set/next lines. The "identity only" drop is the iOS tile's rule and lives
+     * in `IosRestTimerPresenter`; Android's notification renders no thumbs, so
+     * dropping the lines here left it with a title and nothing else (audit C5).
+     */
     @Test
-    fun case34_superset_identityOnly_noSetOrNextLine() {
-        val prior = LastOccurrence(date = LocalDate(2025, 12, 25), sets = listOf(set(50.0, 10)))
+    fun case34_superset_joinsIdentityAndKeepsActiveMemberLines() = runTest {
+        val prior = LastOccurrence(date = LocalDate(2025, 12, 25), sets = listOf(set(50.0, 10), set(55.0, 8)))
         val bench = workoutExercise(
             exercise = exerciseCatalog("Bench Press", "bench_press"),
-            sets = listOf(set(null, null)),
+            sets = listOf(set(50.0, 10), set(null, null)),
             lastOccurrence = prior,
         )
         val row = workoutExercise(
@@ -134,13 +145,42 @@ class RestPresentationInfoTest {
 
         assertEquals("Bench Press · Cable Row", info.nameLine)
         assertEquals(listOf("bench_press", "cable_row"), info.imageNames)
-        assertNull(info.setLine)
-        assertNull(info.nextLine)
+        assertEquals("Set 1 of 2", info.setLine)
+        assertEquals("next 55.0 x 8", info.nextLine)
+    }
+
+    /**
+     * An exercise with no `image1` still has real artwork under `image2` — the
+     * Focus screen's own thumbs fall back to it, so the tile must too, or the
+     * same exercise shows a photo on screen and a muscle-group icon on the
+     * island (audit C6).
+     */
+    @Test
+    fun thumbName_fallsBackToImage2_beforeTheCategoryIcon() = runTest {
+        val exercise = workoutExercise(
+            exercise = exerciseCatalog("Bench Press", image1 = null, image2 = "bench_press_alt"),
+            sets = listOf(set(60.0, 10)),
+        )
+        val info = buildRestPresentationInfo(record(listOf(exercise)), exercise, setOfFormat, setFormat, nextLineFormat)
+
+        assertEquals(listOf("bench_press_alt"), info.imageNames)
+    }
+
+    /** Neither image → the bare category identifier, which each presenter maps to its own asset name. */
+    @Test
+    fun thumbName_noArtwork_fallsBackToCategoryIdentifier() = runTest {
+        val exercise = workoutExercise(
+            exercise = exerciseCatalog("Bench Press", image1 = null),
+            sets = listOf(set(60.0, 10)),
+        )
+        val info = buildRestPresentationInfo(record(listOf(exercise)), exercise, setOfFormat, setFormat, nextLineFormat)
+
+        assertEquals(listOf(CategoryType.CHEST.identifier), info.imageNames)
     }
 
     /** Case 35: no prior occurrence → nextLine == null. */
     @Test
-    fun case35_noPriorOccurrence_nextLineNull() {
+    fun case35_noPriorOccurrence_nextLineNull() = runTest {
         val exercise = workoutExercise(
             exercise = exerciseCatalog("Bench Press", "bench_press"),
             sets = listOf(set(60.0, 10), set(null, null)),
@@ -154,7 +194,7 @@ class RestPresentationInfoTest {
 
     /** No unfilled targets remain → "Set n" (n = filled), not "Set n of m". */
     @Test
-    fun allSetsFilled_setLineIsSetNWithoutTotal() {
+    fun allSetsFilled_setLineIsSetNWithoutTotal() = runTest {
         val exercise = workoutExercise(
             exercise = exerciseCatalog("Bench Press", "bench_press"),
             sets = listOf(set(60.0, 10), set(65.0, 8)),
@@ -168,7 +208,7 @@ class RestPresentationInfoTest {
 
     /** Nothing filled yet → setLine is null. */
     @Test
-    fun noSetsFilled_setLineNull() {
+    fun noSetsFilled_setLineNull() = runTest {
         val exercise = workoutExercise(
             exercise = exerciseCatalog("Bench Press", "bench_press"),
             sets = listOf(set(null, null), set(null, null)),
@@ -181,7 +221,7 @@ class RestPresentationInfoTest {
 
     /** Overflow: prior occurrence shorter than current targets falls back to its LAST set (LastOccurrence.setAt contract). */
     @Test
-    fun nextLine_overflowPosition_fallsBackToPriorLastSet() {
+    fun nextLine_overflowPosition_fallsBackToPriorLastSet() = runTest {
         val prior = LastOccurrence(date = LocalDate(2025, 12, 25), sets = listOf(set(40.0, 12)))
         val exercise = workoutExercise(
             exercise = exerciseCatalog("Bench Press", "bench_press"),

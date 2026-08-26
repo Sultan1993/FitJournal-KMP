@@ -37,7 +37,7 @@ fun FocusNote(
         )
         Text(
             text = note,
-            style = FjTheme.typography.caption.copy(fontSize = 14.sp, fontWeight = FontWeight.Medium, lineHeight = 20.sp),
+            style = FjTheme.typography.caption.copy(fontSize = 14.sp, fontWeight = FontWeight.Medium),
             color = FjTheme.colors.textSecondary,
         )
     }

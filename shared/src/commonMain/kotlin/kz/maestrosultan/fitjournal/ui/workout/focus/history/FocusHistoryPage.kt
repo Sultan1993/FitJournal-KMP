@@ -19,8 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
-import kz.maestrosultan.fitjournal.shared.generated.resources.focus_history_empty
+import kz.maestrosultan.fitjournal.shared.generated.resources.history_placeholder_title
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.components.SetDisplay
@@ -52,11 +53,15 @@ private fun FocusHistoryLoading(modifier: Modifier = Modifier) {
 private fun FocusHistoryEmpty(modifier: Modifier = Modifier) {
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text(
-            text = stringResource(Res.string.focus_history_empty),
-            style = FjTheme.typography.body,
+            // `history_placeholder_title` — the same four translations both
+            // natives show; the port must not restate the copy.
+            text = stringResource(Res.string.history_placeholder_title),
+            // 16sp Regular: `body` is 15sp and FjTypography has no 16-Regular
+            // role. The 24dp inset is iOS's xib constant (Android has none).
+            style = FjTheme.typography.body.copy(fontSize = 16.sp),
             color = FjTheme.colors.textSecondary,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 44.dp),
+            modifier = Modifier.padding(horizontal = 24.dp),
         )
     }
 }
@@ -91,13 +96,13 @@ internal fun HistoryPreviewSurface(darkTheme: Boolean, content: @Composable () -
 
 private val previewLoaded = listOf(
     FocusHistoryItemUi(
-        key = "2026-08-11",
+        key = "ex-2026-08-11",
         dateTitle = "11 August 2026",
         exercises = listOf(
             FocusHistoryExerciseUi(
                 workoutExerciseId = "we-1",
                 sets = listOf(
-                    SetDisplay(setId = "s1", number = "80", unit = "kg", repsNumber = "10", repsUnit = "", isLogged = true),
+                    SetDisplay(setId = "s1", number = "80", unit = "kg", repsNumber = "10", repsUnit = "reps", isLogged = true),
                 ),
             ),
         ),

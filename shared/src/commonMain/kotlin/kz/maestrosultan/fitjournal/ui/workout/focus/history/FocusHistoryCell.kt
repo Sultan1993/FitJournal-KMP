@@ -52,7 +52,7 @@ fun FocusHistoryCell(item: FocusHistoryItemUi, modifier: Modifier = Modifier) {
             )
             Text(
                 text = item.dateTitle,
-                style = FjTheme.typography.body,
+                style = FjTheme.typography.cardTitle,
                 color = FjTheme.colors.textPrimary,
             )
         }
@@ -62,7 +62,7 @@ fun FocusHistoryCell(item: FocusHistoryItemUi, modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(20.dp))
-                    .background(FjTheme.colors.card),
+                    .background(FjTheme.colors.surface),
             ) {
                 HistorySetRail(
                     sets = occurrence.sets,
@@ -80,14 +80,14 @@ private val previewItem = FocusHistoryItemUi(
         FocusHistoryExerciseUi(
             workoutExerciseId = "we-1",
             sets = listOf(
-                SetDisplay(setId = "s1", number = "80", unit = "kg", repsNumber = "10", repsUnit = "", isLogged = true),
-                SetDisplay(setId = "s2", number = "82.5", unit = "kg", repsNumber = "8", repsUnit = "", isLogged = true),
+                SetDisplay(setId = "s1", number = "80", unit = "kg", repsNumber = "10", repsUnit = "reps", isLogged = true),
+                SetDisplay(setId = "s2", number = "82.5", unit = "kg", repsNumber = "8", repsUnit = "reps", isLogged = true),
             ),
         ),
         FocusHistoryExerciseUi(
             workoutExerciseId = "we-2",
             sets = listOf(
-                SetDisplay(setId = "s3", number = "85", unit = "kg", repsNumber = "6", repsUnit = "", isLogged = true),
+                SetDisplay(setId = "s3", number = "85", unit = "kg", repsNumber = "6", repsUnit = "reps", isLogged = true),
             ),
         ),
     ),

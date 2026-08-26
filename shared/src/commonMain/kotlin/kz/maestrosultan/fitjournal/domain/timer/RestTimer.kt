@@ -197,10 +197,17 @@ class RestTimer(
                 // A passed deadline is a no-op; the caller clears its stale stored value.
                 if (cmd.end <= now) return
                 info = cmd.info ?: info
+                val remaining = ceilSeconds(cmd.end - now)
                 tickJob?.cancel()
-                _state.value = RestTimerState.Running(ceilSeconds(cmd.end - now), cmd.end)
+                _state.value = RestTimerState.Running(remaining, cmd.end)
                 tickJob = startTicking(cmd.end)
-                presenter.restStarted(cmd.end, appliedConfig.durationSeconds, info, appliedConfig.soundAndVibrationOn)
+                // The REMAINING span, not appliedConfig.durationSeconds: the total is
+                // what the platform's progress bar divides by (Android computes
+                // elapsed = total - secondsLeft), and a duration the user changed
+                // between starting this rest and the process dying would skew it, or
+                // clamp it to 0. Resuming at 0% of what is left is the honest reading
+                // — the span already served died with the process.
+                presenter.restStarted(cmd.end, remaining, info, appliedConfig.soundAndVibrationOn)
             }
 
             is Cmd.Apply -> {

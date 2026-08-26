@@ -188,9 +188,11 @@ class RestTimerTest {
         bed.timer.resume(end, info)
         bed.timer.awaitPending()
 
-        // ceil(42_500 / 1000) = 43, and restStarted reports the CONFIGURED total.
+        // ceil(42_500 / 1000) = 43, and restStarted reports THAT as the total, not the
+        // configured 90: the total is the progress bar's denominator, and a duration
+        // changed between the start and the process death would skew it (audit C13).
         assertEquals(RestTimerState.Running(43, end), bed.timer.state.value)
-        assertEquals(listOf("restStarted(total=90,end=$end)"), bed.presenter.log)
+        assertEquals(listOf("restStarted(total=43,end=$end)"), bed.presenter.log)
         assertEquals(info, bed.timer.currentInfo())
 
         bed.clock.nowMillis += 500

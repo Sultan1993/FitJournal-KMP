@@ -1,6 +1,5 @@
 package kz.maestrosultan.fitjournal.ui.workout.focus.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -8,8 +7,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ripple
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,8 +22,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.shared.generated.resources.Res
+import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_backspace
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
+import org.jetbrains.compose.resources.painterResource
 
 private val KEY_ROWS = listOf(
     listOf("1", "2", "3"),
@@ -31,6 +35,7 @@ private val KEY_ROWS = listOf(
     listOf(".", "0", "⌫"),
 )
 
+/** Routing sentinel only — the key itself draws the backspace vector. */
 private const val BACKSPACE_KEY = "⌫"
 
 /**
@@ -69,25 +74,32 @@ fun FocusKeypad(
 
 @Composable
 private fun FocusKeypadKey(key: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val label = if (key == BACKSPACE_KEY) "⌫" else key
     Row(
         modifier = modifier
             .height(46.dp)
             .clip(RoundedCornerShape(14.dp))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(color = FjTheme.colors.brand),
+                indication = ripple(color = FjTheme.colors.brandSubtle),
                 onClick = onClick,
-            )
-            .background(FjTheme.colors.background.copy(alpha = 0f)),
+            ),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = label,
-            style = FjTheme.typography.body.copy(fontSize = 24.sp, fontWeight = FontWeight.Medium),
-            color = if (key == BACKSPACE_KEY) FjTheme.colors.textSecondary else FjTheme.colors.textPrimary,
-        )
+        if (key == BACKSPACE_KEY) {
+            Icon(
+                painter = painterResource(Res.drawable.ic_common_backspace),
+                contentDescription = null,
+                tint = FjTheme.colors.textSecondary,
+                modifier = Modifier.size(20.dp),
+            )
+        } else {
+            Text(
+                text = key,
+                style = FjTheme.typography.body.copy(fontSize = 24.sp, fontWeight = FontWeight.Medium),
+                color = FjTheme.colors.textPrimary,
+            )
+        }
     }
 }
 

@@ -33,6 +33,7 @@ class WorkoutFocusLastOccurrenceTest {
     private val strings = FocusStrings(
         supersetLabel = { "Superset" },
         finishWorkout = { "Finish workout" },
+        done = { "Done" },
         finishExercise = { "Finish exercise" },
         finishNext = { name -> "Next • $name" },
         lastHint = { body -> "Last: $body" },
@@ -123,6 +124,7 @@ class WorkoutFocusLastOccurrenceTest {
             isConfirmingRemove = false,
             measurementSystem = MeasurementSystem.KG_KM,
             historyRevision = 0,
+            sessionRunningHere = false,
             strings = strings,
         )
     }

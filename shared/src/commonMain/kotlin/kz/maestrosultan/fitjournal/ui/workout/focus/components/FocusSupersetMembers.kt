@@ -2,6 +2,7 @@ package kz.maestrosultan.fitjournal.ui.workout.focus.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,7 +63,12 @@ private fun FocusSupersetMemberRow(item: FocusMemberItemUi, onClick: () -> Unit)
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .background(if (item.isActive) FjTheme.colors.surfaceElevated else Color.Transparent)
-            .clickable(onClick = onClick)
+            // No ripple — iOS uses .buttonStyle(.plain), Android noRippleClickable.
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick,
+            )
             .semantics { selected = item.isActive }
             .padding(vertical = 12.dp, horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -73,19 +80,24 @@ private fun FocusSupersetMemberRow(item: FocusMemberItemUi, onClick: () -> Unit)
         ) {
             FocusExerciseThumb(imageName = item.imageName, modifier = Modifier.padding(6.dp))
         }
-        Column(modifier = Modifier.weight(1f)) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 text = item.name,
                 style = FjTheme.typography.body.copy(fontSize = 16.sp, fontWeight = FontWeight.SemiBold),
                 color = if (item.isActive) FjTheme.colors.textPrimary else FjTheme.colors.textSecondary,
                 maxLines = 1,
             )
-            Text(
-                text = item.muscles,
-                style = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Medium),
-                color = FjTheme.colors.textTertiary,
-                maxLines = 1,
-            )
+            // Guarded: an exercise with no categories would otherwise reserve a
+            // blank 12sp line plus the 2dp gap, making its row taller than its
+            // neighbours'.
+            if (item.muscles.isNotEmpty()) {
+                Text(
+                    text = item.muscles,
+                    style = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Medium),
+                    color = FjTheme.colors.textTertiary,
+                    maxLines = 1,
+                )
+            }
         }
         Text(
             text = item.setCountText,

@@ -155,6 +155,7 @@ fun focusRecord(
 internal val focusTestStrings: FocusStrings = FocusStrings(
     supersetLabel = { "Superset" },
     finishWorkout = { "Finish workout" },
+    done = { "Done" },
     finishExercise = { "Finish exercise" },
     finishNext = { name -> "Next • $name" },
     lastHint = { body -> "Last: $body" },
@@ -168,7 +169,11 @@ internal val focusTestErrorStrings: FocusErrorStrings = FocusErrorStrings(
     exerciseNotFound = { "not-found" },
     saveSetFailed = { "save-failed" },
     deleteSetFailed = { "delete-failed" },
+    recordFetchFailed = { "fetch-failed" },
+    recordDeleteFailed = { "record-delete-failed" },
     restSetLabel = { "Set" },
+    restSetOfLine = { filled, total -> "Set $filled of $total" },
+    restNextLine = { pair -> "next $pair" },
 )
 
 // ── Doubles ─────────────────────────────────────────────────────────────
@@ -190,17 +195,64 @@ class TestWorkoutUserContext(
     override suspend fun measurementSystem(): MeasurementSystem = measurementSystem
 }
 
-/** Scoped to what the Focus VM touches: the running-session lookup behind Finish. */
+/**
+ * A workout of [FOCUS_JOURNAL_ID] on [FOCUS_DATE], running unless [endedAt] says
+ * otherwise — the session the finish button is about.
+ */
+fun focusSession(
+    id: String = "session-1",
+    journalId: String = FOCUS_JOURNAL_ID,
+    date: LocalDate = FOCUS_DATE,
+    endedAt: Instant? = null,
+): WorkoutSession = WorkoutSession(
+    id = id,
+    userId = FOCUS_USER_ID,
+    journalId = journalId,
+    date = date,
+    workoutNumber = 1,
+    startedAt = FIXTURE_INSTANT,
+    endedAt = endedAt,
+)
+
+/**
+ * Identity that cannot be resolved. Not a hypothetical: `WorkoutUserContext`'s
+ * three reads are `suspend` and documented as possibly touching storage, so this
+ * is the shape of a bad DataStore/Keychain read — and every write handler has to
+ * SAY something when it happens rather than no-op behind a re-armed button.
+ */
+class FailingWorkoutUserContext : WorkoutUserContext {
+    override suspend fun userId(): String = error("identity unavailable")
+    override suspend fun journalId(): String = error("identity unavailable")
+    override suspend fun measurementSystem(): MeasurementSystem = error("identity unavailable")
+}
+
+/**
+ * Scoped to what the Focus VM touches: the running-session lookup behind Finish,
+ * and the flow it observes for the whole time the screen is open.
+ *
+ * Both come off ONE [MutableStateFlow] on purpose. The VM re-reads
+ * [getRunningSession] on every day reload AND collects [getRunningSessionFlow]
+ * from init, so a double that let the two disagree would let a test assert
+ * against a state production can never be in. Assigning [running] therefore also
+ * emits.
+ */
 class FakeFocusSessionRepository(
-    var running: WorkoutSession? = null,
+    running: WorkoutSession? = null,
 ) : WorkoutSessionRepository {
 
-    override suspend fun getRunningSession(userId: String): WorkoutSession? = running
+    private val runningSession = MutableStateFlow(running)
+
+    var running: WorkoutSession?
+        get() = runningSession.value
+        set(value) { runningSession.value = value }
+
+    override suspend fun getRunningSession(userId: String): WorkoutSession? = runningSession.value
+
+    override fun getRunningSessionFlow(userId: String): Flow<WorkoutSession?> = runningSession
 
     override fun getSessionsForDayFlow(userId: String, journalId: String, date: LocalDate): Flow<List<WorkoutSession>> = unsupported()
     override suspend fun getSessionByWorkoutNumber(userId: String, journalId: String, date: LocalDate, workoutNumber: Int): WorkoutSession? = unsupported()
     override suspend fun getSessionsForDay(userId: String, journalId: String, date: LocalDate): List<WorkoutSession> = unsupported()
-    override fun getRunningSessionFlow(userId: String): Flow<WorkoutSession?> = unsupported()
 
     override suspend fun countCompletedSessionsBetween(
         userId: String,
@@ -246,6 +298,14 @@ class RecordingRecordRepository(
     /** Thrown by the next write (consumed), so a test can drive one failure. */
     var failNextWrite: Throwable? = null
 
+    /**
+     * Thrown by the next day READ (consumed). A read failure is a different
+     * animal from a write failure and has to be drivable on its own: it is what
+     * separates "the write didn't land" from "the write landed and the reload
+     * after it didn't".
+     */
+    var failNextRead: Throwable? = null
+
     /** Thrown by every [deleteRecord] while set — the half-committed split+delete case. */
     var failDeleteRecord: Throwable? = null
 
@@ -283,6 +343,7 @@ class RecordingRecordRepository(
         lastReadUserId = userId
         lastReadJournalId = journalId
         readGate?.await()
+        failNextRead?.let { failNextRead = null; throw it }
         return day.filter { it.date == date }.sortedBy { it.position }
     }
 
@@ -408,6 +469,7 @@ class RecordingRecordRepository(
         secondRecord: WorkoutRecord,
     ): List<WorkoutRecord> {
         calls += "mergeRecords(${firstRecord.id},${secondRecord.id})"
+        failNextWrite?.let { failNextWrite = null; throw it }
         day = day.mapNotNull { record ->
             when (record.id) {
                 firstRecord.id -> record.copy(exercises = record.exercises + secondRecord.exercises)
@@ -525,6 +587,7 @@ class FocusBed(
         exerciseId: String,
         initialSetId: String? = null,
         startAddingSet: Boolean = false,
+        userContext: WorkoutUserContext = TestWorkoutUserContext(),
     ): WorkoutFocusViewModel = WorkoutFocusViewModel(
         recordRepository = repository,
         sessionRepository = sessions,
@@ -539,7 +602,7 @@ class FocusBed(
         updateRecordPositions = UpdateRecordPositionsUseCase(repository, syncTrigger),
         coach = NoopFocusCoachService(),
         restTimerEngine = timer,
-        userContext = TestWorkoutUserContext(),
+        userContext = userContext,
         date = FOCUS_DATE,
         initialRecordId = recordId,
         initialWorkoutExerciseId = exerciseId,

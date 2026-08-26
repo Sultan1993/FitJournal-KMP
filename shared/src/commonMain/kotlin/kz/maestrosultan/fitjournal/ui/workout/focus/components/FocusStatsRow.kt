@@ -2,20 +2,24 @@ package kz.maestrosultan.fitjournal.ui.workout.focus.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -33,6 +37,10 @@ import org.jetbrains.compose.resources.stringResource
 /** Placeholder for a missing stat value — a dash, not localized copy. */
 private const val VALUE_PLACEHOLDER = "—"
 
+/** `eyebrow` size, and iOS's 0.7 minimumScaleFactor of it. */
+private val LabelMaxFontSize = 10.5.sp
+private val LabelMinFontSize = 7.35.sp
+
 /**
  * EST 1RM / MAX SET two-cell row separated by a hairline — 1:1 with iOS's
  * `FocusStatsRowView`. The caller hides the whole row when [FocusUi.stats]
@@ -45,7 +53,15 @@ fun FocusStatsRow(
     onTapEstOneRepMax: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(modifier = modifier.fillMaxWidth()) {
+    // Content-relative height: the hairline below fills the taller cell. Without
+    // it the row sits in a LazyColumn item with an unbounded maxHeight, so the
+    // divider's fillMaxHeight() measures 0 and never draws.
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         FocusStatCell(
             label = stringResource(Res.string.focus_est_1rm),
             value = stats.estOneRepMaxText,
@@ -56,10 +72,14 @@ fun FocusStatsRow(
         )
         Box(
             modifier = Modifier
-                .fillMaxHeight()
+                // The 20dp gutter lives here, not on the cells — cell content
+                // stays flush with the page gutter as on both natives.
+                .padding(horizontal = 20.dp, vertical = 2.dp)
                 .width(1.dp)
-                .padding(vertical = 2.dp)
-                .background(FjTheme.colors.divider),
+                .fillMaxHeight()
+                // Both natives hairline at textPrimary @ 8%, a touch lighter
+                // than the shared 10% `divider` token.
+                .background(FjTheme.colors.textPrimary.copy(alpha = 0.08f)),
         )
         FocusStatCell(
             label = stringResource(Res.string.focus_max_set),
@@ -81,14 +101,19 @@ private fun FocusStatCell(
     onValueTap: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.padding(horizontal = 20.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = label.uppercase(),
                 style = FjTheme.typography.eyebrow,
                 color = FjTheme.colors.textTertiary,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                // ru/de labels plus the inline "i" outgrow an SE-width half-cell.
+                // iOS scales to 0.7 of 10.5sp rather than losing a word ending.
+                autoSize = TextAutoSize.StepBased(
+                    minFontSize = LabelMinFontSize,
+                    maxFontSize = LabelMaxFontSize,
+                ),
             )
             Icon(
                 painter = painterResource(Res.drawable.ic_common_info),
@@ -97,7 +122,9 @@ private fun FocusStatCell(
                 modifier = Modifier
                     .padding(start = 2.dp)
                     .clickable(onClick = onInfo)
-                    .padding(4.dp),
+                    // Padding inside the clickable: a 12dp glyph, a 20dp target.
+                    .padding(4.dp)
+                    .size(12.dp),
             )
         }
         val valueRowModifier = if (onValueTap != null) Modifier.clickable(onClick = onValueTap) else Modifier
@@ -106,12 +133,18 @@ private fun FocusStatCell(
                 text = value ?: VALUE_PLACEHOLDER,
                 style = FjTheme.typography.numberLarge.copy(fontSize = 26.sp, fontWeight = FontWeight.Bold),
                 color = FjTheme.colors.textPrimary,
+                modifier = Modifier.alignByBaseline(),
             )
             Text(
                 text = unit,
-                style = FjTheme.typography.label,
+                style = FjTheme.typography.label.copy(fontSize = 12.sp, fontWeight = FontWeight.Medium),
                 color = FjTheme.colors.textTertiary,
-                modifier = Modifier.padding(start = 5.dp, bottom = 3.dp),
+                // Baseline-aligned, not bottom-aligned: Rubik's descenders make
+                // a bottom edge sit off the 26sp value's baseline, and the gap
+                // would drift with any font-size change.
+                modifier = Modifier
+                    .alignByBaseline()
+                    .padding(start = 5.dp),
             )
         }
     }

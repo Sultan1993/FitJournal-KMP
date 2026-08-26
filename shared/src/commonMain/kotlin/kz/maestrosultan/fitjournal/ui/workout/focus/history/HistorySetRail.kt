@@ -20,7 +20,6 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
@@ -94,12 +93,18 @@ private fun HistorySetRow(position: Int, set: SetDisplay) {
         }
         Text(
             text = "${stringResource(Res.string.workout_set_label).uppercase()} $position",
-            style = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.08.em),
+            style = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp),
             color = FjTheme.colors.textTertiary,
             maxLines = 1,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-            Text(set.number, style = bigStyle, color = FjTheme.colors.textPrimary, modifier = Modifier.alignByBaseline())
+            Text(
+                set.number,
+                style = bigStyle,
+                color = FjTheme.colors.textPrimary,
+                maxLines = 1,
+                modifier = Modifier.alignByBaseline(),
+            )
             // Unconditional, unlike WorkoutSetRail's em-dash-gated unit — matches
             // Android's HistorySetRail, which always shows the unit.
             Text(set.unit, style = smallStyle, color = FjTheme.colors.textTertiary, modifier = Modifier.alignByBaseline())
@@ -109,18 +114,25 @@ private fun HistorySetRow(position: Int, set: SetDisplay) {
                 color = FjTheme.colors.textTertiary,
                 modifier = Modifier.alignByBaseline().padding(horizontal = 4.dp),
             )
-            Text(set.repsNumber, style = bigStyle, color = FjTheme.colors.textPrimary, modifier = Modifier.alignByBaseline())
-            if (set.repsUnit.isNotEmpty()) {
-                Text(set.repsUnit, style = smallStyle, color = FjTheme.colors.textTertiary, modifier = Modifier.alignByBaseline())
-            }
+            Text(
+                set.repsNumber,
+                style = bigStyle,
+                color = FjTheme.colors.textPrimary,
+                maxLines = 1,
+                modifier = Modifier.alignByBaseline(),
+            )
+            // Unconditional for the same reason as the value unit: iOS renders
+            // `Measurement.reps` on every weight×reps row, and the mapper now
+            // resolves a real localized label rather than the empty string.
+            Text(set.repsUnit, style = smallStyle, color = FjTheme.colors.textTertiary, modifier = Modifier.alignByBaseline())
         }
     }
 }
 
 private val previewSets = listOf(
-    SetDisplay(setId = "s1", number = "80", unit = "kg", repsNumber = "10", repsUnit = "", isLogged = true),
-    SetDisplay(setId = "s2", number = "82.5", unit = "kg", repsNumber = "8", repsUnit = "", isLogged = true),
-    SetDisplay(setId = "s3", number = "85", unit = "kg", repsNumber = "6", repsUnit = "", isLogged = true),
+    SetDisplay(setId = "s1", number = "80", unit = "kg", repsNumber = "10", repsUnit = "reps", isLogged = true),
+    SetDisplay(setId = "s2", number = "82.5", unit = "kg", repsNumber = "8", repsUnit = "reps", isLogged = true),
+    SetDisplay(setId = "s3", number = "85", unit = "kg", repsNumber = "6", repsUnit = "reps", isLogged = true),
 )
 
 @Preview(name = "HistorySetRail Light")

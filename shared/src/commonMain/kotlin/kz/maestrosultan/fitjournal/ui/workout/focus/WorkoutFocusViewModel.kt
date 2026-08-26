@@ -16,6 +16,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -50,8 +52,12 @@ import kz.maestrosultan.fitjournal.domain.workout.usecase.UpdateRecordPositionsU
 import kz.maestrosultan.fitjournal.domain.workout.usecase.UpdateSetUseCase
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_exercise_not_found
+import kz.maestrosultan.fitjournal.shared.generated.resources.focus_record_delete_error
+import kz.maestrosultan.fitjournal.shared.generated.resources.focus_record_fetch_error
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_set_delete_error
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_set_save_error
+import kz.maestrosultan.fitjournal.shared.generated.resources.rest_activity_next
+import kz.maestrosultan.fitjournal.shared.generated.resources.rest_activity_set_n_of_m
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_set_label
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutUserContext
 import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
@@ -275,6 +281,21 @@ class WorkoutFocusViewModel internal constructor(
     private var hostReturnJob: Job? = null
 
     /**
+     * Covers the window between a [load] starting and [hasLoaded] latching. The
+     * latch is raised only once identity + the day read have succeeded (so a
+     * transient failure stays retryable), and without this a second Load
+     * arriving inside that window would start a second load.
+     */
+    private var loadJob: Job? = null
+
+    /**
+     * Is a workout of THIS journal + THIS day running right now? Drives the
+     * finish button's label and [FocusFinishButtonUi.endsWorkout]; refreshed on
+     * every [reloadDay] and kept live by [observeRunningSession].
+     */
+    private var sessionRunningHere = false
+
+    /**
      * Timestamp (ms) of the last Finish ADVANCE. Guards ONLY the dismiss, so
      * deliberate fast paging is never debounced.
      */
@@ -298,6 +319,7 @@ class WorkoutFocusViewModel internal constructor(
      */
     init {
         load()
+        observeRunningSession()
     }
 
     // ─── Dispatch ──────────────────────────────────────────────────────
@@ -326,8 +348,12 @@ class WorkoutFocusViewModel internal constructor(
             is WorkoutFocusContract.ViewAction.OpenTimerSettings ->
                 emitEffect(WorkoutFocusContract.ViewEffect.OpenTimerSettings)
             is WorkoutFocusContract.ViewAction.OpenOneRepMaxCalculator -> handleOpenOneRepMaxCalculator()
-            // The stats explainer is a UI-local sheet (no navigation, no data):
-            // the contract deliberately has no effect for it.
+            // The stats explainer is a UI-local sheet with no navigation and no
+            // data of its own (`components.FocusStatsInfoSheet`, opened from
+            // screen-local state), so the contract deliberately has no effect
+            // for it. The action stays on the contract for hosts that still
+            // dispatch it; handling it here would give the sheet a second,
+            // competing source of truth.
             is WorkoutFocusContract.ViewAction.OpenStatsInfo -> Unit
             is WorkoutFocusContract.ViewAction.ToggleMenu -> handleToggleMenu()
             is WorkoutFocusContract.ViewAction.MenuDismissed -> setMenuOpen(false)
@@ -348,15 +374,41 @@ class WorkoutFocusViewModel internal constructor(
 
     // ─── Load ──────────────────────────────────────────────────────────
 
+    /**
+     * Idempotent — the host re-dispatches on every appearance.
+     *
+     * The latch is raised only AFTER identity and the day read succeed. Raising
+     * it first made a transient failure permanent: [requireIdentity] is three
+     * `suspend` reads that may touch storage, and one bad read left the screen
+     * on its spinner with nothing able to retry it. [loadJob] covers the window
+     * in between so two Loads back to back still run one load.
+     */
     private fun load() {
-        if (hasLoaded) return // idempotent — the host re-dispatches on every appearance
-        hasLoaded = true
-        viewModelScope.launch {
-            val id = requireIdentity() ?: return@launch
-            if (runGuarded { reloadDay(id) }.isFailure) {
-                emitNotFound()
+        if (hasLoaded || loadJob?.isActive == true) return
+        loadJob = viewModelScope.launch {
+            val id = requireIdentity()
+            if (id == null) {
+                // Never silent. Neither native has this path (iOS reads a
+                // synchronous singleton, Android resolves inside the use cases),
+                // so there is no native copy to match — the day-read alert is the
+                // honest one: we could not read this workout.
+                emitEffect(
+                    WorkoutFocusContract.ViewEffect.ShowErrorAndDismiss(errorStrings.recordFetchFailed()),
+                )
                 return@launch
             }
+            if (runGuarded { reloadDay(id) }.isFailure) {
+                // NOT emitNotFound(): the DAY read failed, which says nothing
+                // about whether the exercise exists. Both natives alert their
+                // record-fetch error here (iOS `:241`, Android `:298`); telling
+                // the user "exercise not found" because a read failed is the
+                // wrong sentence entirely.
+                emitEffect(
+                    WorkoutFocusContract.ViewEffect.ShowErrorAndDismiss(errorStrings.recordFetchFailed()),
+                )
+                return@launch
+            }
+            hasLoaded = true
 
             // Prefer the record we were launched from, but fall back to whoever
             // owns the exercise: a sync pull can re-parent a member (a superset
@@ -405,6 +457,10 @@ class WorkoutFocusViewModel internal constructor(
             .getRecordsByDate(id.userId, id.journalId, date, includeLastOccurrence = true)
             .sortedBy { it.position }
         dayRevision++
+        // Every reload, exactly as both natives do (iOS `reloadDay` `:1065`,
+        // Android `reloadDay` `:344`): the day just moved under the finish
+        // button, and what that button MEANS is a function of the session.
+        refreshSessionRunningHere()
     }
 
     // ─── Publication ───────────────────────────────────────────────────
@@ -437,6 +493,7 @@ class WorkoutFocusViewModel internal constructor(
             isMenuOpen = isMenuOpen,
             isConfirmingRemove = isConfirmingRemove,
             historyRevision = dayRevision,
+            sessionRunningHere = sessionRunningHere,
         )
         syncHistory()
     }
@@ -458,6 +515,7 @@ class WorkoutFocusViewModel internal constructor(
             isConfirmingRemove = current.isConfirmingRemove,
             measurementSystem = measurementSystem,
             historyRevision = current.historyRevision,
+            sessionRunningHere = current.sessionRunningHere,
             strings = strings,
         )
     }
@@ -585,7 +643,7 @@ class WorkoutFocusViewModel internal constructor(
         isMutating = true
         viewModelScope.launch {
             try {
-                val id = requireIdentity() ?: return@launch
+                val id = identityOrAlert(errorStrings.saveSetFailed) ?: return@launch
                 val written = runGuarded {
                     addSet(
                         userId = id.userId,
@@ -594,11 +652,21 @@ class WorkoutFocusViewModel internal constructor(
                         topValue = input.valueText.toDoubleOrNull(),
                         bottomValue = input.repsText.toIntOrNull(),
                     )
-                    reloadDay(id)
                 }
                 if (written.isFailure) {
                     emitEffect(WorkoutFocusContract.ViewEffect.ShowError(errorStrings.saveSetFailed()))
                     return@launch
+                }
+                // Split from the write ON PURPOSE. The set IS persisted by now, so
+                // a failed reload is a different failure with a different
+                // recovery: alert, then carry on and republish from whatever
+                // [dayRecords] still holds. Folded into one guard it returned
+                // early instead, and the set the user had just logged stayed
+                // invisible until something else happened to republish — iOS's
+                // `reloadDay` swallows its own error into an alert and lets the
+                // flow continue (`:526`, `:1061-1069`).
+                if (runGuarded { reloadDay(id) }.isFailure) {
+                    emitEffect(WorkoutFocusContract.ViewEffect.ShowError(errorStrings.recordFetchFailed()))
                 }
 
                 advanceSupersetMember(loggedRecordId, exercise.id)
@@ -652,7 +720,7 @@ class WorkoutFocusViewModel internal constructor(
         isMutating = true
         viewModelScope.launch {
             try {
-                val id = requireIdentity() ?: return@launch
+                val id = identityOrAlert(errorStrings.saveSetFailed) ?: return@launch
                 runGuarded {
                     updateSet(
                         userId = id.userId,
@@ -684,12 +752,20 @@ class WorkoutFocusViewModel internal constructor(
         isMutating = true
         viewModelScope.launch {
             try {
-                val id = requireIdentity() ?: return@launch
+                val id = identityOrAlert(errorStrings.deleteSetFailed) ?: return@launch
                 // A `false` return means the row was already gone — success
                 // either way (it no longer exists); only a throw alerts.
                 runGuarded { deleteSet(id.userId, id.journalId, owner.id, setId) }.fold(
                     onSuccess = { finishSetMutation(owner.id) },
-                    onFailure = { failure -> recoverFromWriteFailure(failure, owner.id, errorStrings.deleteSetFailed()) },
+                    // Plain alert, no [recoverFromWriteFailure]. That wrapper's
+                    // whole job is the [SetNotFoundException] branch, and
+                    // `DeleteSetUseCase` cannot throw it — an already-gone row
+                    // comes back as `false`, not as a throw — so routing delete
+                    // through it was a branch that could never run. Both natives
+                    // alert and stop here (iOS `:615-617`, Android `:938-943`).
+                    onFailure = {
+                        emitEffect(WorkoutFocusContract.ViewEffect.ShowError(errorStrings.deleteSetFailed()))
+                    },
                 )
             } finally {
                 isMutating = false
@@ -706,7 +782,7 @@ class WorkoutFocusViewModel internal constructor(
         isMutating = true
         viewModelScope.launch {
             try {
-                val id = requireIdentity() ?: return@launch
+                val id = identityOrAlert(errorStrings.saveSetFailed) ?: return@launch
                 runGuarded { resetSet(id.userId, id.journalId, set, owner) }.fold(
                     onSuccess = { finishSetMutation(owner.id) },
                     onFailure = { failure -> recoverFromWriteFailure(failure, owner.id, errorStrings.saveSetFailed()) },
@@ -736,7 +812,7 @@ class WorkoutFocusViewModel internal constructor(
         isMutating = true
         viewModelScope.launch {
             try {
-                val id = requireIdentity() ?: return@launch
+                val id = identityOrAlert(errorStrings.saveSetFailed) ?: return@launch
                 val written = runGuarded {
                     updateSet(
                         userId = id.userId,
@@ -782,7 +858,9 @@ class WorkoutFocusViewModel internal constructor(
         inputByExercise.remove(exerciseId)
         val id = identity
         if (id != null && runGuarded { reloadDay(id) }.isFailure) {
-            emitEffect(WorkoutFocusContract.ViewEffect.ShowError(errorStrings.saveSetFailed()))
+            // The write already landed; what failed is the day READ (Android
+            // alerts RecordFetchError here, `:1036`) — not "couldn't save".
+            emitEffect(WorkoutFocusContract.ViewEffect.ShowError(errorStrings.recordFetchFailed()))
             // Continue anyway — recover the expansion from what we already have.
         }
         val fresh = exerciseById(exerciseId)
@@ -806,15 +884,20 @@ class WorkoutFocusViewModel internal constructor(
      */
     private fun handleEditSet(setId: String) {
         if (isMutating) return
-        if (setId == FocusEditorMode.NEW_SET_ID) {
-            handleAddAnotherSet()
-            return
-        }
-        // Tapping the open row closes it (and abandons its draft).
+        // Tapping the OPEN row closes it (and abandons its draft) — tested
+        // first, so it covers the add-another row too. The other order routed a
+        // second tap on an already-open add-another row into
+        // [handleAddAnotherSet], which re-prefilled the draft the user was
+        // typing into instead of collapsing (iOS `:733-738` tests it first;
+        // Android `:610-613` has the same defect as our old order).
         if (editorMode.expandedSlotId == setId) {
             abandonEditDraft()
             editorMode = FocusEditorMode.Collapsed
             republish()
+            return
+        }
+        if (setId == FocusEditorMode.NEW_SET_ID) {
+            handleAddAnotherSet()
             return
         }
 
@@ -931,9 +1014,19 @@ class WorkoutFocusViewModel internal constructor(
         restTimerEngine.autoStart(freshRestInfo())
     }
 
-    /** A deliberate request, so it always asks — auto-start off is not "no notification". */
+    /**
+     * A deliberate START always asks — auto-start off is not "no notification",
+     * so this branch deliberately does NOT read `config.autoStart`.
+     *
+     * A STOP asks nothing. Prompting for POST_NOTIFICATIONS as the user cancels
+     * a rest is a system dialog for a notification we are about to tear down;
+     * Android emits the request in its start branch only (`:1065-1074`) and iOS
+     * has no permission concept at all.
+     */
     private fun handleToggleRestTimer() {
-        emitEffect(WorkoutFocusContract.ViewEffect.EnsureRestNotificationPermission)
+        if (!restTimerEngine.isRunning) {
+            emitEffect(WorkoutFocusContract.ViewEffect.EnsureRestNotificationPermission)
+        }
         // Launched only to resolve the notification copy; the engine's lane
         // still serializes the toggles in dispatch order.
         viewModelScope.launch { restTimerEngine.toggle(freshRestInfo()) }
@@ -947,25 +1040,28 @@ class WorkoutFocusViewModel internal constructor(
     }
 
     /**
-     * The copy is resolved HERE and handed in as plain lambdas, so
-     * [buildRestPresentationInfo] stays pure (and testable without compose
-     * resources). The "next" line is numbers only, so it needs no key.
+     * The copy is resolved HERE and handed in as lambdas, so
+     * [buildRestPresentationInfo] stays testable without compose resources.
      */
     private suspend fun restInfo(record: WorkoutRecord, exercise: WorkoutExercise): RestPresentationInfo {
         val setLabel = errorStrings.restSetLabel()
         return buildRestPresentationInfo(
             record = record,
             exercise = exercise,
-            setOfFormat = { filled, total -> "$setLabel $filled/$total" },
+            setOfFormat = { filled, total -> errorStrings.restSetOfLine(filled, total) },
             setFormat = { filled -> "$setLabel $filled" },
             nextLineFormat = { value, reps ->
-                WorkoutValueFormatter.pair(
+                val pair = WorkoutValueFormatter.pair(
                     value = value,
                     // 0 is the unset sentinel — "70 kg", not the stray "70 kg —".
                     reps = reps?.takeIf { it != 0 },
                     resultType = exercise.resultType,
                     system = measurementSystem,
-                ).orEmpty()
+                )
+                // The label carries the whole meaning of the line: without it the
+                // tile's second row is a bare "70 kg × 8" under "Set 3 of 4", which
+                // reads as what the user just did rather than what comes next.
+                pair?.let { errorStrings.restNextLine(it) }.orEmpty()
             },
         )
     }
@@ -1008,6 +1104,9 @@ class WorkoutFocusViewModel internal constructor(
         val previous = historyJob
         historyJob = viewModelScope.launch {
             previous?.join()
+            // Silent on purpose, like every other failure on this page: a
+            // history read that cannot run keeps the last good rows rather than
+            // alerting over a list the user may not even be looking at.
             val id = requireIdentity() ?: return@launch
             val items = runGuarded {
                 // `getExerciseOccurrences`, NOT `getWeightedSetHistoryForExercise`:
@@ -1044,35 +1143,75 @@ class WorkoutFocusViewModel internal constructor(
      */
     private fun handleHostReturned() {
         val pending = pendingReturn ?: return
-        pendingReturn = null
+        // ABOVE the consumption, not below it. Consuming first threw the pending
+        // reload away for good when a return landed during an in-flight write —
+        // the note just saved never appeared, the exercises just imported never
+        // loaded, and nothing retried. Focus writes are local SQLite
+        // (milliseconds) and the Android host re-fires this on every ON_RESUME,
+        // so leaving the discriminator armed is enough.
         if (isMutating) return
+        pendingReturn = null
 
         val previous = hostReturnJob
         hostReturnJob = viewModelScope.launch {
             previous?.join()
-            val id = requireIdentity() ?: return@launch
+            val id = identityOrAlert(errorStrings.recordFetchFailed) ?: return@launch
+            val before = daySignature()
             if (runGuarded { reloadDay(id) }.isFailure) {
-                emitEffect(WorkoutFocusContract.ViewEffect.ShowError(errorStrings.saveSetFailed()))
+                // A failed day READ, not a failed write (Android `:500`).
+                emitEffect(WorkoutFocusContract.ViewEffect.ShowError(errorStrings.recordFetchFailed()))
                 return@launch
             }
             if (dayRecords.isEmpty()) {
                 emitEffect(WorkoutFocusContract.ViewEffect.Dismiss)
                 return@launch
             }
+            // Did the flow we opened actually DO anything? IMPORT and REPLACE
+            // both end in [focusOn], which abandons the in-progress editor draft
+            // and moves the user off the exercise they were on — so a plain
+            // back-out of the picker must not reach them. The Android host
+            // dispatches this from every ON_RESUME, which is exactly when a
+            // cancel arrives.
+            //
+            // Both natives gate it on a host flag: iOS dispatches `.dayChanged`
+            // only from `importFlowDidFinishImporting`, Android reloads only
+            // `if (importDataStore.consumeImported())`. Neither flag survived the
+            // merge into one host-agnostic `HostReturned`, so the gate is derived
+            // from the data instead — a cancel changes no record and no member.
+            val changed = daySignature() != before
             when (pending) {
+                // NOTE stays unconditional: it re-points nothing, and the reload
+                // is how the saved comment reaches the screen at all.
                 PendingReturn.NOTE -> Unit
-                PendingReturn.IMPORT -> landOnCurrentRecord()
+                PendingReturn.IMPORT -> if (changed) landOnCurrentRecord()
                 PendingReturn.REPLACE -> {
                     val replacedId = pendingReplaceRecordId
                     val replacedIndex = pendingReplaceMemberIndex
+                    // Cleared either way — a cancelled Replace must not leave a
+                    // target behind for the next return to land on.
                     pendingReplaceRecordId = null
                     pendingReplaceMemberIndex = null
-                    focusOnReplacedRecord(replacedId, replacedIndex)
+                    if (changed) focusOnReplacedRecord(replacedId, replacedIndex)
                 }
             }
             republish()
         }
     }
+
+    /**
+     * The day's SHAPE as one comparable value: record ids in order, each with
+     * its members' ids and the catalog exercise behind them. An import adds a
+     * record, a replace swaps a member's catalog exercise; a cancel changes
+     * neither.
+     *
+     * Comments and sets are deliberately out of it — a note save or a set write
+     * is not what [handleHostReturned]'s gate is about, and folding them in
+     * would make a background sync of somebody's rep count look like an import.
+     */
+    private fun daySignature(): List<Pair<String, List<Pair<String, String>>>> =
+        dayRecords.map { record ->
+            record.id to record.exercises.map { it.id to it.exercise.uuid }
+        }
 
     /**
      * The "current" record: the one after the LAST record holding any LOGGED set
@@ -1192,6 +1331,9 @@ class WorkoutFocusViewModel internal constructor(
         dayRecords = reordered
         republish()
         viewModelScope.launch {
+            // Silent on purpose (iOS `try?` `:366`, Android `runCatching` `:436`):
+            // the new order is already on screen, and a dropped position write
+            // re-syncs on the next publish.
             val id = requireIdentity() ?: return@launch
             runGuarded { updateRecordPositions(id.userId, id.journalId, reordered) }
         }
@@ -1299,13 +1441,16 @@ class WorkoutFocusViewModel internal constructor(
         isMutating = true
         viewModelScope.launch {
             try {
-                val id = requireIdentity() ?: return@launch
+                val id = identityOrAlert(errorStrings.recordFetchFailed) ?: return@launch
                 val merged = runGuarded {
                     supersetRecords(id.userId, id.journalId, record, next)
                     reloadDay(id)
                 }
                 if (merged.isFailure) {
-                    emitEffect(WorkoutFocusContract.ViewEffect.ShowError(errorStrings.saveSetFailed()))
+                    // A record-level write, not a set write — "couldn't save the
+                    // set" is the wrong sentence (both natives carry a distinct
+                    // AddToSupersetError here, iOS `:915`, Android `:1203`).
+                    emitEffect(WorkoutFocusContract.ViewEffect.ShowError(errorStrings.recordFetchFailed()))
                 } else {
                     // The active exercise's uuid survives the merge — re-point
                     // whichever record now owns it.
@@ -1335,13 +1480,16 @@ class WorkoutFocusViewModel internal constructor(
         isMutating = true
         viewModelScope.launch {
             try {
-                val id = requireIdentity() ?: return@launch
+                val id = identityOrAlert(errorStrings.recordFetchFailed) ?: return@launch
                 val split = runGuarded {
                     removeExerciseFromSuperset(id.userId, id.journalId, record, exercise)
                     reloadDay(id)
                 }
                 if (split.isFailure) {
-                    emitEffect(WorkoutFocusContract.ViewEffect.ShowError(errorStrings.saveSetFailed()))
+                    // Same as the merge above: a record-level write
+                    // (RemoveFromSupersetError on both natives, iOS `:941`,
+                    // Android `:1234`), not a failed set save.
+                    emitEffect(WorkoutFocusContract.ViewEffect.ShowError(errorStrings.recordFetchFailed()))
                 } else {
                     // Same exercise, now in its own record.
                     dayRecords.firstOrNull { r -> r.exercises.any { it.id == exercise.id } }?.let {
@@ -1378,7 +1526,7 @@ class WorkoutFocusViewModel internal constructor(
         isMutating = true
         viewModelScope.launch {
             try {
-                val id = requireIdentity() ?: return@launch
+                val id = identityOrAlert(errorStrings.recordDeleteFailed) ?: return@launch
                 val removed = runGuarded {
                     if (record.exercises.size > 1) {
                         val updated = removeExerciseFromSuperset(id.userId, id.journalId, record, exercise)
@@ -1396,7 +1544,10 @@ class WorkoutFocusViewModel internal constructor(
                     // show a pre-mutation snapshot with the orphan still in it.
                     runGuarded { reloadDay(id) }
                     if (activeExercise == null) landOnCurrentRecord()
-                    emitEffect(WorkoutFocusContract.ViewEffect.ShowError(errorStrings.deleteSetFailed()))
+                    // The EXERCISE could not be removed. Saying the set could not
+                    // be deleted names something the user never asked for (both
+                    // natives raise RecordDeleteError, iOS `:1004`, Android `:1311`).
+                    emitEffect(WorkoutFocusContract.ViewEffect.ShowError(errorStrings.recordDeleteFailed()))
                     republish()
                     return@launch
                 }
@@ -1461,6 +1612,72 @@ class WorkoutFocusViewModel internal constructor(
     private fun ownerOf(setId: String): WorkoutExercise? =
         dayRecords.flatMap { it.exercises }.firstOrNull { exercise -> exercise.sets.any { it.id == setId } }
 
+    /**
+     * [requireIdentity] with an alert on failure.
+     *
+     * Identity is three `suspend` reads that may touch storage, so unlike either
+     * native — iOS reads a synchronous singleton, Android resolves inside the
+     * use cases — this VM has a null-identity path on every write. It must never
+     * be silent: the `finally` block re-arms [isMutating], so a handler that
+     * returns without a word leaves a button that is tappable and does nothing,
+     * forever.
+     */
+    private suspend fun identityOrAlert(message: suspend () -> String): Identity? {
+        val id = requireIdentity()
+        if (id == null) emitEffect(WorkoutFocusContract.ViewEffect.ShowError(message()))
+        return id
+    }
+
+    // ─── Running session ───────────────────────────────────────────────
+
+    /**
+     * Re-read on every [reloadDay], exactly as both natives do (iOS
+     * `refreshSessionRunningHere()` `:426-431`, Android `:697-704`).
+     *
+     * Any failure — and "nothing is running" — settles on false. Refusing to
+     * offer a finish is recoverable (the running-session bar still ends the
+     * workout); offering one that silently dismisses the screen is not.
+     */
+    private suspend fun refreshSessionRunningHere() {
+        val id = identity ?: return
+        val running = runGuarded { sessionRepository.getRunningSession(id.userId) }.getOrNull()
+        sessionRunningHere = running != null && running.journalId == id.journalId && running.date == date
+    }
+
+    /**
+     * Keeps the finish button honest for as long as Focus is open, without a
+     * reload: a workout ended from the session bar, from another page, or by the
+     * forgotten-session sweep has to change this label too.
+     *
+     * ONE observer replaces BOTH natives' mechanisms — Android's
+     * `getWorkoutSession.runningFlow()` collector (`:224-241`) and iOS's
+     * `.workoutSessionDidAutoClose` `NotificationCenter` hook (`:411-423`) —
+     * because the shared repository's SQL flow already emits on every session
+     * write, whoever made it.
+     *
+     * `catch { emit(false) }` is a terminal backstop only: a caught flow
+     * COMPLETES, so it does not keep this collector alive. The retry that does
+     * lives upstream in `getRunningSessionFlow`.
+     */
+    private fun observeRunningSession() {
+        viewModelScope.launch {
+            val id = requireIdentity() ?: return@launch
+            sessionRepository.getRunningSessionFlow(id.userId)
+                .map { running ->
+                    running != null && running.journalId == id.journalId && running.date == date
+                }
+                .catch { emit(false) }
+                // On the BOOLEAN, not the row: an ordinary set write bumps the
+                // running session's row and must not republish the screen.
+                .distinctUntilChanged()
+                .collect { runningHere ->
+                    if (sessionRunningHere == runningHere) return@collect
+                    sessionRunningHere = runningHere
+                    republish()
+                }
+        }
+    }
+
     private suspend fun requireIdentity(): Identity? {
         identity?.let { return it }
         val resolved = runGuarded {
@@ -1520,6 +1737,7 @@ class WorkoutFocusViewModel internal constructor(
         val isMenuOpen: Boolean,
         val isConfirmingRemove: Boolean,
         val historyRevision: Int,
+        val sessionRunningHere: Boolean,
     )
 
     private enum class PendingReturn { IMPORT, REPLACE, NOTE }
@@ -1558,18 +1776,31 @@ private suspend inline fun <T> runGuarded(block: () -> T): Result<T> =
  * The VM's own copy, injected like [FocusStrings] so jvmTest asserts against
  * fixed strings instead of loading compose resources.
  *
- * Only THREE alert strings exist in the shared module, deliberately: the Focus
- * screen's failure surface is "the write didn't land, try again", not a
- * taxonomy. [restSetLabel] is the rest notification's only copy — the two set
- * lines are built from it at the call site and handed to
- * [buildRestPresentationInfo] as plain lambdas, so that builder stays pure; its
- * third line is numbers only ([WorkoutValueFormatter]) and needs no key.
+ * FIVE alert strings, deliberately — not the natives' full `WorkoutError`
+ * taxonomy. The Focus screen's failure surface is "it didn't land, try again",
+ * but the sentence still has to name the right thing: a failed day READ told the
+ * user the exercise was not found, and a failed RECORD delete told them the set
+ * could not be deleted. [recordFetchFailed] and [recordDeleteFailed] are those
+ * two, and they also carry the record-level superset merge/split failures, which
+ * are emphatically not set saves.
+ *
+ * The other three are the rest notification / Live Activity copy, resolved at
+ * the call site and handed to [buildRestPresentationInfo] as lambdas so that
+ * builder stays free of Compose Resources. [restSetOfLine] and [restNextLine]
+ * are whole localized sentences, not a label plus punctuation: "of" does not
+ * survive a `"$label $n/$m"` composition in de/ru/uk, and the "next" prefix is
+ * what tells the reader the numbers are last session's target.
  */
 internal class FocusErrorStrings(
     val exerciseNotFound: suspend () -> String = { getString(Res.string.focus_exercise_not_found) },
     val saveSetFailed: suspend () -> String = { getString(Res.string.focus_set_save_error) },
     val deleteSetFailed: suspend () -> String = { getString(Res.string.focus_set_delete_error) },
+    val recordFetchFailed: suspend () -> String = { getString(Res.string.focus_record_fetch_error) },
+    val recordDeleteFailed: suspend () -> String = { getString(Res.string.focus_record_delete_error) },
     val restSetLabel: suspend () -> String = { getString(Res.string.workout_set_label) },
+    val restSetOfLine: suspend (filled: Int, total: Int) -> String =
+        { filled, total -> getString(Res.string.rest_activity_set_n_of_m, filled, total) },
+    val restNextLine: suspend (pair: String) -> String = { getString(Res.string.rest_activity_next, it) },
 )
 
 /**

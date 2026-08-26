@@ -30,6 +30,7 @@ class WorkoutFocusStateBuilderTest {
     private val strings = FocusStrings(
         supersetLabel = { "Superset" },
         finishWorkout = { "Finish workout" },
+        done = { "Done" },
         finishExercise = { "Finish exercise" },
         finishNext = { name -> "Next • $name" },
         lastHint = { body -> "Last: $body" },
@@ -123,6 +124,7 @@ class WorkoutFocusStateBuilderTest {
         editorMode: FocusEditorMode = FocusEditorMode.Collapsed,
         focusData: ExerciseFocusData? = null,
         measurementSystem: MeasurementSystem = MeasurementSystem.KG_KM,
+        sessionRunningHere: Boolean = false,
     ): FocusUi = buildFocusUi(
         dayRecords = dayRecords,
         activeRecord = activeRecord,
@@ -136,6 +138,7 @@ class WorkoutFocusStateBuilderTest {
         isConfirmingRemove = false,
         measurementSystem = measurementSystem,
         historyRevision = 0,
+        sessionRunningHere = sessionRunningHere,
         strings = strings,
     )
 
@@ -191,6 +194,38 @@ class WorkoutFocusStateBuilderTest {
             focus.setDots.map { it.kind },
         )
         assertEquals(listOf(0, 1, 2), focus.setDots.map { it.id })
+    }
+
+    /**
+     * A set really logged with **0 reps** prints `"× 0"`, and only a MISSING rep
+     * count prints the dash.
+     *
+     * The domain's rule, in its own words (`WorkoutSet.kt:60-64`): "Null is not
+     * zero, and the difference is the whole rule … Test for null ONLY."
+     * `WorkoutValueFormatter.repsNumber` collapses `0` to the dash on purpose —
+     * that is the rest NOTIFICATION's sentinel, where a bare "70 kg" beats a
+     * stray "70 kg —" — and reusing it here erased a number the user had
+     * entered. Both natives print the zero (iOS `FocusViewStateBuilder.swift:152`,
+     * Android `FocusViewStateBuilder.kt:262`).
+     */
+    @Test
+    fun repsText_printsAZeroTheUserLogged_andDashesOnlyWhenRepsAreAbsent() = runTest {
+        val exercise = member(
+            id = "we-1",
+            catalog = catalog("Bench Press"),
+            sets = listOf(
+                set("s1", 80.0, 0),
+                set("s2", 80.0, 10),
+                set("s3", null, null),
+            ),
+        )
+        val record = record("r1", position = 1, members = listOf(exercise))
+
+        val rows = build(listOf(record), record).slots.filterNot { it.isAddAnother }
+
+        assertEquals("× 0", rows[0].repsText, "0 reps is a value the user entered")
+        assertEquals("× 10", rows[1].repsText)
+        assertEquals("× —", rows[2].repsText, "no reps anywhere to show — the dash is right here")
     }
 
     /**
@@ -303,8 +338,8 @@ class WorkoutFocusStateBuilderTest {
 
     /**
      * Finish button, both branches: a record follows → "Finish exercise" plus a
-     * "Next • <name>" subtitle; the last record of the day → "Finish workout"
-     * and NO subtitle (there is nothing to go on to).
+     * "Next • <name>" subtitle; the last record of the day → no subtitle (there
+     * is nothing to go on to) and a title that depends on the SESSION.
      */
     @Test
     fun finishButton_namesTheNextRecord_orFinishesTheWorkoutOnTheLast() = runTest {
@@ -320,15 +355,39 @@ class WorkoutFocusStateBuilderTest {
         )
         val day = listOf(first, second)
 
-        val onFirst = build(day, first)
+        val onFirst = build(day, first, sessionRunningHere = true)
         assertEquals("Finish exercise", onFirst.finishButton.title)
         assertEquals("Next • Barbell Row", onFirst.finishButton.subtitle)
         assertEquals("1/2", onFirst.pill.position)
+        assertFalse(onFirst.finishButton.endsWorkout, "an advance never ends the workout")
 
-        val onLast = build(day, second)
+        val onLast = build(day, second, sessionRunningHere = true)
         assertEquals("Finish workout", onLast.finishButton.title)
         assertNull(onLast.finishButton.subtitle)
         assertEquals("2/2", onLast.pill.position)
+        assertTrue(onLast.finishButton.endsWorkout)
+    }
+
+    /**
+     * The last record with NO workout running here: "Done", and
+     * [FocusFinishButtonUi.endsWorkout] false so the host does not raise its
+     * finish-confirm flow. An unconditional "Finish workout" promised a
+     * post-workout summary and silently dismissed instead — the bug both natives
+     * shipped a fix for.
+     */
+    @Test
+    fun finishButton_onTheLastRecord_readsDone_whenNoWorkoutIsRunningHere() = runTest {
+        val only = record(
+            "r1",
+            position = 1,
+            members = listOf(member("we-1", catalog("Bench Press"), listOf(set("s1", 80.0, 10)))),
+        )
+
+        val focus = build(listOf(only), only, sessionRunningHere = false)
+
+        assertEquals("Done", focus.finishButton.title)
+        assertNull(focus.finishButton.subtitle)
+        assertFalse(focus.finishButton.endsWorkout)
     }
 
     /** A superset up next is named by the "Superset" label, not by its first member. */
@@ -413,6 +472,7 @@ class WorkoutFocusStateBuilderTest {
             isConfirmingRemove = false,
             measurementSystem = MeasurementSystem.KG_KM,
             historyRevision = 0,
+            sessionRunningHere = false,
             strings = strings,
         )
         val menu = assertNotNull(open.menu)
@@ -435,6 +495,7 @@ class WorkoutFocusStateBuilderTest {
             isConfirmingRemove = false,
             measurementSystem = MeasurementSystem.KG_KM,
             historyRevision = 0,
+            sessionRunningHere = false,
             strings = strings,
         )
         assertFalse(assertNotNull(onLast.menu).canSupersetWithNext)
@@ -462,6 +523,7 @@ class WorkoutFocusStateBuilderTest {
             isConfirmingRemove = true,
             measurementSystem = MeasurementSystem.KG_KM,
             historyRevision = 0,
+            sessionRunningHere = false,
             strings = strings,
         )
         assertEquals("Bench Press", confirming.confirmRemove)

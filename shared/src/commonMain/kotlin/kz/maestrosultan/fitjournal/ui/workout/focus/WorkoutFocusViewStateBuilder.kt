@@ -11,6 +11,7 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutSet
 import kz.maestrosultan.fitjournal.domain.workout.resultType
 import kz.maestrosultan.fitjournal.domain.workout.usecase.ExerciseFocusData
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
+import kz.maestrosultan.fitjournal.shared.generated.resources.focus_done
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_finish_exercise
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_finish_next
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_finish_workout
@@ -40,6 +41,8 @@ import org.jetbrains.compose.resources.getString
 internal class FocusStrings(
     val supersetLabel: suspend () -> String = { getString(Res.string.workout_superset) },
     val finishWorkout: suspend () -> String = { getString(Res.string.focus_finish_workout) },
+    /** The last record's label when no workout of this day is running — see [buildFinishButton]. */
+    val done: suspend () -> String = { getString(Res.string.focus_done) },
     val finishExercise: suspend () -> String = { getString(Res.string.focus_finish_exercise) },
     val finishNext: suspend (String) -> String = { getString(Res.string.focus_finish_next, it) },
     val lastHint: suspend (String) -> String = { getString(Res.string.focus_last_hint, it) },
@@ -83,6 +86,11 @@ internal suspend fun buildFocusUi(
     isConfirmingRemove: Boolean,
     measurementSystem: MeasurementSystem,
     historyRevision: Int,
+    /**
+     * Is a workout of THIS journal + THIS day currently running? Only then does
+     * the last record's button offer to finish anything — see [buildFinishButton].
+     */
+    sessionRunningHere: Boolean,
     strings: FocusStrings = FocusStrings(),
 ): FocusUi {
     val isSuperset = activeRecord.exercises.size > 1
@@ -110,7 +118,7 @@ internal suspend fun buildFocusUi(
         editor = buildEditor(activeExercise, editorMode, input, unit, isCardio, measurementSystem, strings),
         slots = buildSlots(activeExercise, editorMode, input, unit, measurementSystem, strings),
         setDots = buildDots(activeExercise, editorMode),
-        finishButton = buildFinishButton(dayRecords, activeRecord, strings),
+        finishButton = buildFinishButton(dayRecords, activeRecord, sessionRunningHere, strings),
         menu = if (isMenuOpen) {
             FocusMenuUi(
                 hasNote = !activeExercise.comment.isNullOrBlank(),
@@ -167,7 +175,13 @@ private suspend fun buildSlots(
             isAddAnother = false,
             valueText = WorkoutValueFormatter.number(display.value),
             valueUnit = unit,
-            repsText = "× ${WorkoutValueFormatter.repsNumber(display.reps)}",
+            // Null ONLY — NOT [WorkoutValueFormatter.repsNumber], whose `== 0`
+            // sentinel belongs to the rest notification. "Null is not zero, and
+            // the difference is the whole rule" (`WorkoutSet.kt:60-64`): a set
+            // the user logged with 0 reps must read "× 0", the way both natives
+            // print it (iOS `FocusViewStateBuilder.swift:152`, Android
+            // `FocusViewStateBuilder.kt:262`), never "× —".
+            repsText = "× ${display.reps?.toString() ?: WorkoutValueFormatter.EMPTY}",
             isExpanded = set.id == expandedId,
             lastHint = lastHintAt(exercise, index, measurementSystem, strings),
         )
@@ -381,16 +395,29 @@ private suspend fun buildMemberItems(
 
 /**
  * Bottom button: "Finish exercise" + "Next • <name>" when a record follows the
- * active one in day order; "Finish workout" and NO subtitle on the last one.
+ * active one in day order; no subtitle on the last one.
+ *
+ * On the last record the label follows [sessionRunningHere] and NOT "is this the
+ * last exercise": "Finish workout" only when a workout of this day is actually
+ * running, otherwise "Done", because there is nothing to finish and the tap just
+ * leaves the editor. Both natives ship exactly this branch (iOS
+ * `FocusViewStateBuilder.swift:63-73`, Android `FocusViewStateBuilder.kt:127-143`)
+ * — an unconditional "Finish workout" is a button that promises a post-workout
+ * flow and silently dismisses instead.
  */
 private suspend fun buildFinishButton(
     dayRecords: List<WorkoutRecord>,
     activeRecord: WorkoutRecord,
+    sessionRunningHere: Boolean,
     strings: FocusStrings,
 ): FocusFinishButtonUi {
     val activeIndex = dayRecords.indexOfFirst { it.id == activeRecord.id }
     val next = dayRecords.getOrNull(activeIndex + 1)
-        ?: return FocusFinishButtonUi(title = strings.finishWorkout(), subtitle = null)
+        ?: return FocusFinishButtonUi(
+            title = if (sessionRunningHere) strings.finishWorkout() else strings.done(),
+            subtitle = null,
+            endsWorkout = sessionRunningHere,
+        )
     val name = if (next.exercises.size > 1) {
         strings.supersetLabel()
     } else {

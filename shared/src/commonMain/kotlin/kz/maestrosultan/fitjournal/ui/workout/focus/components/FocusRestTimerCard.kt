@@ -1,11 +1,13 @@
 package kz.maestrosultan.fitjournal.ui.workout.focus.components
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,9 +19,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,10 +42,12 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.focus_a11y_timer_s
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_a11y_timer_start
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_a11y_timer_stop
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_rest_timer
+import kz.maestrosultan.fitjournal.shared.generated.resources.ic_timer_settings
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.focus.FocusPreviewData
 import kz.maestrosultan.fitjournal.ui.workout.focus.WorkoutFocusContract
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -70,6 +77,8 @@ fun FocusRestTimerCard(
         Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Text(
                 text = stringResource(Res.string.focus_rest_timer).uppercase(),
+                // The natives diverge on this eyebrow's tracking (iOS still kerns 1.1,
+                // Android dropped it); CMP follows iOS, the visual reference.
                 style = FjTheme.typography.caption.copy(fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.1.em),
                 color = FjTheme.colors.textTertiary,
                 maxLines = 1,
@@ -81,7 +90,13 @@ fun FocusRestTimerCard(
             )
             Text(
                 text = state.display,
-                style = FjTheme.typography.numberLarge.copy(fontSize = 24.sp, fontWeight = FontWeight.Bold),
+                // tnum: Rubik's default figures are proportional, so without it the
+                // whole m:ss reflows on every 1 Hz tick.
+                style = FjTheme.typography.numberLarge.copy(
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFeatureSettings = "tnum",
+                ),
                 color = countdownColor,
                 maxLines = 1,
             )
@@ -109,17 +124,12 @@ private fun RestTimerSettingsButton(onClick: () -> Unit) {
             .semantics { contentDescription = label },
         contentAlignment = Alignment.Center,
     ) {
-        // Three horizontal sliders — no icon-font dependency in shared code.
-        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            repeat(3) {
-                Box(
-                    modifier = Modifier
-                        .size(width = 15.dp, height = 2.dp)
-                        .clip(RoundedCornerShape(1.dp))
-                        .background(FjTheme.colors.textSecondary),
-                )
-            }
-        }
+        Icon(
+            painter = painterResource(Res.drawable.ic_timer_settings),
+            contentDescription = null,
+            tint = FjTheme.colors.textSecondary,
+            modifier = Modifier.size(17.dp),
+        )
     }
 }
 
@@ -135,21 +145,32 @@ private fun RestTimerToggleButton(isRunning: Boolean, onClick: () -> Unit) {
             .size(44.dp)
             .clip(CircleShape)
             .background(FjTheme.colors.brand)
-            .clickable(onClick = onClick)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                // The default ripple tints from LocalContentColor — a dark smudge on
+                // the brand fill. White is what the press actually needs to read as.
+                indication = ripple(color = Color.White),
+                onClick = onClick,
+            )
             .semantics { contentDescription = label },
         contentAlignment = Alignment.Center,
     ) {
-        if (isRunning) {
-            Box(modifier = Modifier.size(14.dp).clip(RoundedCornerShape(2.dp)).background(Color.White))
-        } else {
-            Canvas(modifier = Modifier.size(14.dp).offset(x = 1.dp)) {
-                val path = Path().apply {
-                    moveTo(0f, 0f)
-                    lineTo(size.width, size.height / 2f)
-                    lineTo(0f, size.height)
-                    close()
+        // The swap is a user action, so it animates — same 300ms as the countdown
+        // colour above. The 1 Hz ticks never reach this state, so nothing here
+        // restarts once a second.
+        Crossfade(targetState = isRunning, animationSpec = tween(durationMillis = 300), label = "restToggleIcon") { running ->
+            if (running) {
+                Box(modifier = Modifier.size(14.dp).clip(RoundedCornerShape(2.dp)).background(Color.White))
+            } else {
+                Canvas(modifier = Modifier.size(14.dp).offset(x = 1.dp)) {
+                    val path = Path().apply {
+                        moveTo(0f, 0f)
+                        lineTo(size.width, size.height / 2f)
+                        lineTo(0f, size.height)
+                        close()
+                    }
+                    drawPath(path = path, color = Color.White)
                 }
-                drawPath(path = path, color = Color.White)
             }
         }
     }

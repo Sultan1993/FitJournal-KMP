@@ -1,5 +1,6 @@
 package kz.maestrosultan.fitjournal.ui.workout.focus.components
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,8 +33,12 @@ fun FocusTitle(
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Column(modifier = Modifier.weight(1f)) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
             Text(
                 text = title,
                 style = FjTheme.typography.screenTitle.copy(fontSize = 32.sp, fontWeight = FontWeight.Bold),

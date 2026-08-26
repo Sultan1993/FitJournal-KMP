@@ -1,22 +1,35 @@
 package kz.maestrosultan.fitjournal.ui.workout.focus.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -30,46 +43,109 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_done
+import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_plus
+import kz.maestrosultan.fitjournal.shared.generated.resources.ic_workout_superset
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_add_exercise
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_superset
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.focus.FocusPreviewData
 import kz.maestrosultan.fitjournal.ui.workout.focus.FocusStripItemUi
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 private val RowHeight = 52.dp
 
-// Non-translatable glyph, kept as a constant instead of an inline literal.
-private const val GlyphPlus = "+"
-private val CardMaxHeight = 360.dp
+/** Gap between the card and each screen edge — the top offset and the height cap share it. */
+private val CardEdgeMargin = 60.dp
 
 /**
- * The exercise-picker overlay strip — one row per record of the day, ported
+ * Full-screen exercise-picker overlay — scrim + elevated card anchored under the
+ * header, one row per record of the day, trailing "+ Add exercise" row. Ported
  * from iOS `FocusExercisePickerView` / Android `FocusExercisePicker`.
+ *
+ * This composable owns its own presentation: it must be the LAST child of the
+ * screen's root `Box` (so the scrim covers the header and the pager) and must
+ * stay mounted while [isOpen] is false, otherwise `AnimatedVisibility` never
+ * gets to play the exit. Gating the call site on `isPickerOpen` would put us
+ * back to an inline column child with no scrim and no animation.
+ *
  * Reordering emits the FULL reordered id list in one shot via [onReorder]
- * (matching `ViewAction.ReorderRecords`), never a per-move action. Rendered
- * by the caller only while `FocusUi.isPickerOpen` is true.
+ * (matching `ViewAction.ReorderRecords`), never a per-move action.
  */
 @Composable
 fun FocusExercisePicker(
+    isOpen: Boolean,
     items: List<FocusStripItemUi>,
     onSelectRecord: (String) -> Unit,
     onAddExercise: () -> Unit,
     onReorder: (List<String>) -> Unit,
+    onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+) {
+    Box(modifier = modifier.fillMaxSize()) {
+        AnimatedVisibility(
+            visible = isOpen,
+            enter = fadeIn(animationSpec = tween(200)),
+            exit = fadeOut(animationSpec = tween(200)),
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.28f))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onDismiss,
+                    ),
+            )
+        }
+
+        // Expand from the pill: scale from 0.94 anchored at the top edge + fade.
+        AnimatedVisibility(
+            visible = isOpen,
+            enter = scaleIn(
+                initialScale = 0.94f,
+                transformOrigin = TransformOrigin(0.5f, 0f),
+                animationSpec = spring(dampingRatio = 0.86f, stiffness = Spring.StiffnessMedium),
+            ) + fadeIn(animationSpec = tween(180)),
+            exit = scaleOut(
+                targetScale = 0.94f,
+                transformOrigin = TransformOrigin(0.5f, 0f),
+                animationSpec = tween(160),
+            ) + fadeOut(animationSpec = tween(160)),
+        ) {
+            FocusPickerCard(
+                items = items,
+                onSelectRecord = onSelectRecord,
+                onAddExercise = onAddExercise,
+                onReorder = onReorder,
+            )
+        }
+    }
+}
+
+@Composable
+private fun FocusPickerCard(
+    items: List<FocusStripItemUi>,
+    onSelectRecord: (String) -> Unit,
+    onAddExercise: () -> Unit,
+    onReorder: (List<String>) -> Unit,
 ) {
     val haptics = LocalHapticFeedback.current
     val density = LocalDensity.current
@@ -81,80 +157,130 @@ fun FocusExercisePicker(
     var dragTargetIndex by remember { mutableStateOf(0) }
     var dragTranslation by remember { mutableStateOf(0f) }
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(FjTheme.colors.surfaceElevated)
-            .border(width = 1.dp, color = FjTheme.colors.textPrimary.copy(alpha = 0.08f), shape = RoundedCornerShape(20.dp))
-            .heightIn(max = CardMaxHeight)
-            .verticalScroll(rememberScrollState())
-            .padding(8.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        order.forEachIndexed { index, item ->
-            val offsetY = when {
-                draggingId == null -> 0f
-                item.id == draggingId -> dragTranslation
-                dragOriginIndex < dragTargetIndex && index > dragOriginIndex && index <= dragTargetIndex -> -rowHeightPx
-                dragOriginIndex > dragTargetIndex && index >= dragTargetIndex && index < dragOriginIndex -> rowHeightPx
-                else -> 0f
+    // Cap the card so its gap from the bottom of the screen equals its 60dp top
+    // gap (equal margins); a long workout scrolls inside the card instead of
+    // running off the bottom edge.
+    BoxWithConstraints {
+        val maxCardHeight = maxHeight - CardEdgeMargin - CardEdgeMargin
+
+        Column(
+            modifier = Modifier
+                .padding(top = CardEdgeMargin, start = 16.dp, end = 16.dp)
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(FjTheme.colors.surfaceElevated)
+                .border(width = 1.dp, color = FjTheme.colors.textPrimary.copy(alpha = 0.08f), shape = RoundedCornerShape(20.dp))
+                .heightIn(max = maxCardHeight)
+                // Inset OUTSIDE the scroll viewport, otherwise the 8dp top gap
+                // scrolls away and the first row touches the rounded edge.
+                .padding(8.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            order.forEachIndexed { index, item ->
+                val isDragged = item.id == draggingId
+                // Insertion-gap model (matches iOS): the list order never changes
+                // mid-drag, so the dragged row's translation is pure finger
+                // movement and the others slide one slot to open a gap at
+                // `dragTargetIndex`.
+                val gap = when {
+                    draggingId == null || isDragged -> 0f
+                    dragOriginIndex < dragTargetIndex ->      // dragging down: rows below shift up
+                        if (index in (dragOriginIndex + 1)..dragTargetIndex) -rowHeightPx else 0f
+                    dragOriginIndex > dragTargetIndex ->      // dragging up: rows above shift down
+                        if (index in dragTargetIndex until dragOriginIndex) rowHeightPx else 0f
+                    else -> 0f
+                }
+                // Snap (not tween) once the drag ends so the gap clears in the
+                // same frame the list reorders — otherwise the row jumps a full
+                // slot and then slides back (the base index change is instant,
+                // the tween is not).
+                val animatedGap by animateFloatAsState(
+                    targetValue = gap,
+                    animationSpec = if (draggingId != null) tween(160) else snap(),
+                    label = "focusPickerGap",
+                )
+                FocusPickerRow(
+                    item = item,
+                    modifier = Modifier
+                        // Without this the lifted row draws UNDER the rows below it.
+                        .zIndex(if (isDragged) 1f else 0f)
+                        // graphicsLayer, not offset: translation and lift are
+                        // deferred reads, so a drag frame never recomposes.
+                        .graphicsLayer {
+                            translationY = if (isDragged) dragTranslation else animatedGap
+                            if (isDragged) {
+                                scaleX = 1.02f
+                                scaleY = 1.02f
+                                shadowElevation = 8.dp.toPx()
+                                shape = RoundedCornerShape(13.dp)
+                            }
+                        }
+                        .pointerInputReorder(
+                            item.id,
+                            items,
+                            onDragStart = {
+                                dragOriginIndex = order.indexOfFirst { it.id == item.id }.coerceAtLeast(0)
+                                dragTargetIndex = dragOriginIndex
+                                draggingId = item.id
+                                dragTranslation = 0f
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            },
+                            onDrag = { deltaY ->
+                                dragTranslation += deltaY
+                                val newTarget = (dragOriginIndex + (dragTranslation / rowHeightPx).let {
+                                    if (it >= 0) (it + 0.5f).toInt() else (it - 0.5f).toInt()
+                                }).coerceIn(0, order.lastIndex)
+                                if (newTarget != dragTargetIndex) {
+                                    dragTargetIndex = newTarget
+                                    // Selection tick as the dragged row crosses a neighbour —
+                                    // fires on the insertion-index CHANGE only, never per
+                                    // pointer move and never again on drop (that's the
+                                    // dragStart impact above / no haptic on end). Compose
+                                    // Multiplatform has no UISelectionFeedbackGenerator
+                                    // equivalent; TextHandleMove is the closest distinct
+                                    // constant from LongPress (the impact used elsewhere),
+                                    // so it stands in for iOS's selectionChanged() here.
+                                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                }
+                            },
+                            onDragEnd = {
+                                val reordered = dragTargetIndex != dragOriginIndex
+                                if (reordered) {
+                                    val newOrder = order.toMutableList()
+                                    val moved = newOrder.removeAt(dragOriginIndex)
+                                    newOrder.add(dragTargetIndex, moved)
+                                    order = newOrder
+                                    onReorder(newOrder.map { it.recordId })
+                                }
+                                draggingId = null
+                                dragTranslation = 0f
+                            },
+                        ),
+                    onClick = { if (draggingId == null) onSelectRecord(item.recordId) },
+                )
             }
-            FocusPickerRow(
-                item = item,
-                modifier = Modifier
-                    .offset { IntOffset(0, offsetY.toInt()) }
-                    .pointerInputReorder(
-                        onDragStart = {
-                            dragOriginIndex = order.indexOfFirst { it.id == item.id }
-                            dragTargetIndex = dragOriginIndex
-                            draggingId = item.id
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        },
-                        onDrag = { deltaY ->
-                            dragTranslation += deltaY
-                            val newTarget = (dragOriginIndex + (dragTranslation / rowHeightPx).let {
-                                if (it >= 0) (it + 0.5f).toInt() else (it - 0.5f).toInt()
-                            }).coerceIn(0, order.lastIndex)
-                            if (newTarget != dragTargetIndex) {
-                                dragTargetIndex = newTarget
-                                // Selection tick as the dragged row crosses a neighbour —
-                                // fires on the insertion-index CHANGE only, never per
-                                // pointer move and never again on drop (that's the
-                                // dragStart impact above / no haptic on end). Compose
-                                // Multiplatform has no UISelectionFeedbackGenerator
-                                // equivalent; TextHandleMove is the closest distinct
-                                // constant from LongPress (the impact used elsewhere),
-                                // so it stands in for iOS's selectionChanged() here.
-                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            }
-                        },
-                        onDragEnd = {
-                            val reordered = dragTargetIndex != dragOriginIndex
-                            if (reordered) {
-                                val newOrder = order.toMutableList()
-                                val moved = newOrder.removeAt(dragOriginIndex)
-                                newOrder.add(dragTargetIndex, moved)
-                                order = newOrder
-                                onReorder(newOrder.map { it.recordId })
-                            }
-                            draggingId = null
-                            dragTranslation = 0f
-                        },
-                    ),
-                onClick = { if (draggingId == null) onSelectRecord(item.recordId) },
-            )
+            FocusAddExerciseRow(onClick = onAddExercise)
         }
-        FocusAddExerciseRow(onClick = onAddExercise)
     }
 }
 
-/** Long-press-then-drag reorder gesture, reporting vertical delta and commit/cancel. */
+/**
+ * Long-press-then-drag reorder gesture, reporting vertical delta and commit/cancel.
+ *
+ * [keys] must name everything the lambdas close over that can change — the row's
+ * id AND the published list. `pointerInput(Unit)` pins the very first
+ * composition's closures: Compose restarts the handler only when a key changes,
+ * so after a reorder republished `items` the lambdas would keep reading the dead
+ * `remember(items)` order state and a stale row id, and every drag after the
+ * first would move the wrong row.
+ */
 private fun Modifier.pointerInputReorder(
+    vararg keys: Any?,
     onDragStart: () -> Unit,
     onDrag: (Float) -> Unit,
     onDragEnd: () -> Unit,
-) = pointerInput(Unit) {
+) = pointerInput(*keys) {
     detectDragGesturesAfterLongPress(
         onDragStart = { onDragStart() },
         onDragEnd = { onDragEnd() },
@@ -173,7 +299,12 @@ private fun FocusPickerRow(item: FocusStripItemUi, onClick: () -> Unit, modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(13.dp))
             .background(if (item.isActive) FjTheme.colors.brandSubtle else Color.Transparent)
-            .clickable(onClick = onClick)
+            // No ripple — iOS uses .buttonStyle(.plain), Android noRippleClickable.
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick,
+            )
             .padding(10.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -199,11 +330,13 @@ private fun FocusPickerRow(item: FocusStripItemUi, onClick: () -> Unit, modifier
 @Composable
 private fun FocusPickerThumbnail(item: FocusStripItemUi) {
     if (item.isSuperset) {
-        Row {
-            item.imageNames.take(2).forEachIndexed { index, name ->
+        // Negative arrangement spacing, not a per-item offset: offset shifts the
+        // drawing but the Row still measures 2 x 30dp, so the name would start
+        // 11dp further right than on either native.
+        Row(horizontalArrangement = Arrangement.spacedBy((-11).dp)) {
+            item.imageNames.take(2).forEach { name ->
                 Box(
                     modifier = Modifier
-                        .offset(x = (-11 * index).dp)
                         .size(30.dp)
                         .clip(CircleShape)
                         .background(FjTheme.colors.background)
@@ -232,6 +365,12 @@ private fun FocusSupersetCountBadge(count: Int) {
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        Icon(
+            painter = painterResource(Res.drawable.ic_workout_superset),
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(12.dp),
+        )
         Text(count.toString(), style = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold), color = Color.White)
     }
 }
@@ -253,7 +392,12 @@ private fun FocusAddExerciseRow(onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clip(RoundedCornerShape(13.dp))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick,
+            )
             .padding(horizontal = 10.dp, vertical = 9.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -262,7 +406,12 @@ private fun FocusAddExerciseRow(onClick: () -> Unit) {
             modifier = Modifier.size(30.dp).pickerDashedBorder(FjTheme.colors.border),
             contentAlignment = Alignment.Center,
         ) {
-            Text(GlyphPlus, style = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold), color = FjTheme.colors.brand)
+            Icon(
+                painter = painterResource(Res.drawable.ic_common_plus),
+                contentDescription = null,
+                tint = FjTheme.colors.brand,
+                modifier = Modifier.size(12.dp),
+            )
         }
         Text(
             text = stringResource(Res.string.workout_add_exercise),
@@ -286,12 +435,16 @@ private fun Modifier.pickerDashedBorder(color: Color): Modifier = drawBehind {
 @Composable
 private fun FocusExercisePickerPreviewLight() {
     FitJournalTheme(darkTheme = false) {
-        FocusExercisePicker(
-            items = FocusPreviewData.superset.pickerItems + FocusPreviewData.cardio.pickerItems,
-            onSelectRecord = {},
-            onAddExercise = {},
-            onReorder = {},
-        )
+        Box(modifier = Modifier.fillMaxSize().background(FjTheme.colors.background)) {
+            FocusExercisePicker(
+                isOpen = true,
+                items = FocusPreviewData.superset.pickerItems + FocusPreviewData.cardio.pickerItems,
+                onSelectRecord = {},
+                onAddExercise = {},
+                onReorder = {},
+                onDismiss = {},
+            )
+        }
     }
 }
 
@@ -299,11 +452,15 @@ private fun FocusExercisePickerPreviewLight() {
 @Composable
 private fun FocusExercisePickerPreviewDark() {
     FitJournalTheme(darkTheme = true) {
-        FocusExercisePicker(
-            items = FocusPreviewData.singleExercise.pickerItems,
-            onSelectRecord = {},
-            onAddExercise = {},
-            onReorder = {},
-        )
+        Box(modifier = Modifier.fillMaxSize().background(FjTheme.colors.background)) {
+            FocusExercisePicker(
+                isOpen = true,
+                items = FocusPreviewData.singleExercise.pickerItems,
+                onSelectRecord = {},
+                onAddExercise = {},
+                onReorder = {},
+                onDismiss = {},
+            )
+        }
     }
 }

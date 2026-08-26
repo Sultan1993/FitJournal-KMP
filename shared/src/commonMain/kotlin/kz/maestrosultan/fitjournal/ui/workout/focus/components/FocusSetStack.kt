@@ -2,12 +2,17 @@ package kz.maestrosultan.fitjournal.ui.workout.focus.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,12 +25,13 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -39,15 +45,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -64,6 +71,10 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.focus_reset_set_ti
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_save_changes
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_sets
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_target
+import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_arrow_down
+import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_check
+import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_delete
+import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_reset
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_menu_delete
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_set_label
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
@@ -73,6 +84,7 @@ import kz.maestrosultan.fitjournal.ui.workout.focus.FocusInputField
 import kz.maestrosultan.fitjournal.ui.workout.focus.FocusPreviewData
 import kz.maestrosultan.fitjournal.ui.workout.focus.FocusSetDotUi
 import kz.maestrosultan.fitjournal.ui.workout.focus.FocusSetSlotUi
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 private val CollapsedRadius = 16.dp
@@ -81,15 +93,13 @@ private val RevealWidthWithReset = 120.dp
 private val RevealWidthDeleteOnly = 64.dp
 private val CommitRevealWidth = 80.dp
 
-// Non-translatable glyphs (multiplication sign, checkmark, etc.) — kept as
-// named constants instead of inline string literals passed to Text.
+// Non-translatable glyphs (multiplication sign, plus) — kept as named
+// constants instead of inline string literals passed to Text. Everything the
+// natives draw as a vector (check / reset / delete / chevron / backspace) is
+// an Icon, not a glyph: a glyph can't be tinted, scaled or rotated the way
+// those need to be (see the chevron in FocusSetHeaderRow).
 private const val GlyphTimes = "×"
 private const val GlyphPlus = "+"
-private const val GlyphCheck = "✓"
-private const val GlyphReset = "↺"
-private const val GlyphClose = "✕"
-private const val GlyphChevronDown = "⌄"
-private const val GlyphChevronUp = "⌃"
 
 /**
  * The set stack accordion (spec 3e port of iOS `FocusSetStackView` / Android's
@@ -143,12 +153,20 @@ fun FocusSetStack(
 @Composable
 private fun FocusSetStackHeader(setDots: List<FocusSetDotUi>) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = stringResource(Res.string.focus_sets).uppercase(),
-            style = FjTheme.typography.caption.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold),
+            // The two natives disagree on tracking here: Android dropped every
+            // letter-spacing override in cb6d76dc, iOS kept its kerning. This screen
+            // follows iOS, its stated visual reference — and follows it everywhere,
+            // so the eyebrows on one page can't track differently from each other.
+            style = FjTheme.typography.caption.copy(
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.1.sp,
+            ),
             color = FjTheme.colors.textTertiary,
         )
         Spacer(modifier = Modifier.weight(1f))
@@ -208,6 +226,15 @@ private fun FocusAccordionRow(
     var confirmDelete by remember(slot.id) { mutableStateOf(false) }
     var confirmReset by remember(slot.id) { mutableStateOf(false) }
 
+    // Keep the last editor the row was opened with so the body stays rendered
+    // through the shrink animation: the shared editor recomputes the moment
+    // the row collapses, and an un-latched body visibly flips its commit title
+    // from "Save changes" to "Log set N+1" while it animates out.
+    var lastEditor by remember(slot.id) { mutableStateOf(editor) }
+    if (expanded) {
+        lastEditor = editor
+    }
+
     // A row the VM expands mid-swipe (e.g. post-log advance) must not keep a
     // stale reveal once it collapses back.
     LaunchedEffect(expanded) {
@@ -218,35 +245,39 @@ private fun FocusAccordionRow(
     val revealWidthPx = with(density) { revealWidthDp.toPx() }
     val commitWidthPx = with(density) { CommitRevealWidth.toPx() }
 
-    Box(
-        modifier = Modifier.fillMaxWidth(),
-        contentAlignment = Alignment.CenterEnd,
-    ) {
+    Box(modifier = Modifier.fillMaxWidth()) {
+        // matchParentSize gives the bars a BOUNDED height to fill — the stack
+        // sits in an unbounded (scrolling) parent, where fillMaxHeight alone
+        // would collapse them to their icon.
         if (swipeable && offsetX.value < 0f) {
-            FocusSwipeActions(
-                canReset = canReset,
-                width = revealWidthDp,
-                // Swipe alone never mutates a set — it only arms the confirm
-                // dialog below; DeleteSet/ResetSet dispatch from there.
-                onReset = { confirmReset = true },
-                onDelete = { confirmDelete = true },
-                modifier = Modifier.align(Alignment.CenterEnd),
-            )
+            Box(modifier = Modifier.matchParentSize()) {
+                FocusSwipeActions(
+                    canReset = canReset,
+                    width = revealWidthDp,
+                    // Swipe alone never mutates a set — it only arms the confirm
+                    // dialog below; DeleteSet/ResetSet dispatch from there.
+                    onReset = { confirmReset = true },
+                    onDelete = { confirmDelete = true },
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                )
+            }
         }
         if (canCommit && offsetX.value > 0f) {
-            FocusSwipeCommit(
-                width = CommitRevealWidth,
-                onCommit = {
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onCommitTarget(slot.id)
-                    scope.launch { offsetX.animateTo(0f) }
-                },
-                modifier = Modifier.align(Alignment.CenterStart),
-            )
+            Box(modifier = Modifier.matchParentSize()) {
+                FocusSwipeCommit(
+                    width = CommitRevealWidth,
+                    modifier = Modifier.align(Alignment.CenterStart),
+                )
+            }
         }
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .testTag("focus_set_row")
+                // offset BEFORE draggable: the drag hit region is the row's
+                // presented position, so a revealed row's exposed action strip
+                // is outside it (1:1 with Android / UIKit hit-testing).
+                .offset { IntOffset(offsetX.value.roundToInt(), 0) }
                 .let {
                     if (swipeable) {
                         it.draggable(
@@ -259,20 +290,31 @@ private fun FocusAccordionRow(
                                 }
                             },
                             onDragStopped = {
-                                val target = when {
-                                    offsetX.value <= -revealWidthPx / 2f -> -revealWidthPx
-                                    offsetX.value >= commitWidthPx / 2f && canCommit -> commitWidthPx
-                                    else -> 0f
+                                when {
+                                    // Past the commit threshold the GESTURE fills
+                                    // the target — the bar behind is a pure
+                                    // affordance, never a tap target.
+                                    canCommit && offsetX.value >= commitWidthPx / 2f -> {
+                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        onCommitTarget(slot.id)
+                                        scope.launch { offsetX.animateTo(0f) }
+                                    }
+                                    // Trailing actions: past half → settle open.
+                                    offsetX.value <= -revealWidthPx / 2f ->
+                                        scope.launch { offsetX.animateTo(-revealWidthPx) }
+
+                                    else -> scope.launch { offsetX.animateTo(0f) }
                                 }
-                                scope.launch { offsetX.animateTo(target) }
                             },
                         )
                     } else {
                         it
                     }
                 }
-                .offset { IntOffset(offsetX.value.roundToInt(), 0) }
                 .clip(RoundedCornerShape(if (expanded) ExpandedRadius else CollapsedRadius))
+                // OPAQUE base under the state tint — the swipe red must not
+                // bleed through a translucent (active) or clear (target) row.
+                .background(FjTheme.colors.background)
                 .background(rowBackground(slot, expanded))
                 .let { base ->
                     if (expanded) {
@@ -282,31 +324,47 @@ private fun FocusAccordionRow(
                     } else {
                         base
                     }
+                }
+                // No indication: neither native shows press feedback here, and
+                // the whole card — not just the header — is the tap target.
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                ) {
+                    // An open reveal absorbs the first tap (just closes it) —
+                    // otherwise the editor expands onto a swiped-open row and
+                    // the two animations collide.
+                    if (offsetX.value != 0f) {
+                        scope.launch { offsetX.animateTo(0f) }
+                        return@clickable
+                    }
+                    when {
+                        expanded -> onCollapseEditor()
+                        slot.isAddAnother -> onAddAnotherSet()
+                        else -> onEditSet(slot.id)
+                    }
                 },
         ) {
             if (slot.isAddAnother && !expanded) {
-                FocusAddAnotherHeader(onClick = onAddAnotherSet)
+                FocusAddAnotherHeader()
             } else {
-                FocusSetHeaderRow(
-                    slot = slot,
-                    editor = editor,
-                    expanded = expanded,
-                    onClick = {
-                        when {
-                            expanded -> onCollapseEditor()
-                            slot.isAddAnother -> onAddAnotherSet()
-                            else -> onEditSet(slot.id)
-                        }
-                    },
-                )
+                FocusSetHeaderRow(slot = slot, editor = editor, expanded = expanded)
             }
-            AnimatedVisibility(visible = expanded) {
+            // In-layout height animation: siblings reflow in the same
+            // animation; NEVER a slide or fade transition (iOS ghosting bug).
+            // The asymmetry is load-bearing — the outgoing row clears ahead of
+            // the incoming one when the user taps a different set.
+            AnimatedVisibility(
+                visible = expanded,
+                enter = expandVertically(animationSpec = tween(durationMillis = 300)),
+                exit = shrinkVertically(animationSpec = tween(durationMillis = 150)),
+            ) {
                 FocusEditorBody(
-                    editor = editor,
+                    editor = lastEditor,
                     onFocusField = onFocusField,
                     onKeypadDigit = onKeypadDigit,
                     onKeypadBackspace = onKeypadBackspace,
-                    onCommit = { if (editor.editsExistingSet) onSaveSet() else onLogSet() },
+                    onCommit = { if (lastEditor.editsExistingSet) onSaveSet() else onLogSet() },
                 )
             }
         }
@@ -316,6 +374,7 @@ private fun FocusAccordionRow(
         FocusSwipeConfirmDialog(
             title = stringResource(Res.string.focus_delete_set_title, slot.number),
             confirmLabel = stringResource(Res.string.workout_menu_delete),
+            confirmColor = FjTheme.colors.negative,
             onConfirm = {
                 confirmDelete = false
                 onDeleteSet(slot.id)
@@ -344,13 +403,24 @@ private fun FocusAccordionRow(
     }
 }
 
-/** Shared shape for the two swipe-action confirmations (delete / reset). */
+/**
+ * Shared shape for the two swipe-action confirmations (delete / reset).
+ * [confirmColor] is the destructive tint — passed only by delete; reset keeps
+ * the default button color, exactly as both natives do.
+ */
 @Composable
-private fun FocusSwipeConfirmDialog(title: String, confirmLabel: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+private fun FocusSwipeConfirmDialog(
+    title: String,
+    confirmLabel: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    confirmColor: Color = Color.Unspecified,
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = FjTheme.colors.surfaceElevated,
         title = { Text(title) },
-        confirmButton = { TextButton(onClick = onConfirm) { Text(confirmLabel) } },
+        confirmButton = { TextButton(onClick = onConfirm) { Text(confirmLabel, color = confirmColor) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(Res.string.common_cancel)) } },
     )
 }
@@ -360,25 +430,28 @@ private fun rowBackground(slot: FocusSetSlotUi, expanded: Boolean): Color = when
     expanded -> FjTheme.colors.surface
     slot.isAddAnother -> Color.Transparent
     slot.kind == FocusSetSlotUi.Kind.Finished -> FjTheme.colors.surface
-    slot.kind == FocusSetSlotUi.Kind.Active -> FjTheme.colors.brandSubtle
+    slot.kind == FocusSetSlotUi.Kind.Active -> FjTheme.colors.brandSubtle.copy(alpha = 0.5f)
     else -> Color.Transparent
 }
 
 @Composable
-private fun FocusAddAnotherHeader(onClick: () -> Unit) {
+private fun FocusAddAnotherHeader() {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 18.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 18.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            modifier = Modifier.size(36.dp).dashedRoundedBorder(FjTheme.colors.border, 18.dp, isCircle = true),
+            modifier = Modifier
+                .size(36.dp)
+                .dashedRoundedBorder(FjTheme.colors.border, 18.dp, isCircle = true, dash = 3.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Text(GlyphPlus, style = FjTheme.typography.body.copy(fontWeight = FontWeight.Bold), color = FjTheme.colors.textTertiary)
+            Text(
+                text = GlyphPlus,
+                style = FjTheme.typography.caption.copy(fontSize = 13.sp, fontWeight = FontWeight.Bold),
+                color = FjTheme.colors.textTertiary,
+            )
         }
         Text(
             text = stringResource(Res.string.focus_add_another_set),
@@ -389,16 +462,10 @@ private fun FocusAddAnotherHeader(onClick: () -> Unit) {
 }
 
 @Composable
-private fun FocusSetHeaderRow(
-    slot: FocusSetSlotUi,
-    editor: FocusEditorUi,
-    expanded: Boolean,
-    onClick: () -> Unit,
-) {
+private fun FocusSetHeaderRow(slot: FocusSetSlotUi, editor: FocusEditorUi, expanded: Boolean) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
             .padding(
                 start = 16.dp,
                 end = 16.dp,
@@ -411,35 +478,60 @@ private fun FocusSetHeaderRow(
         FocusSetStatusIndicator(kind = slot.kind, size = if (expanded) 30.dp else 36.dp)
         Text(
             text = "${stringResource(Res.string.workout_set_label).uppercase()} ${slot.number}",
-            style = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold),
-            color = if (expanded) FjTheme.colors.brand else FjTheme.colors.textTertiary,
+            style = FjTheme.typography.caption.copy(
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.8.sp,
+            ),
+            color = if (expanded || slot.kind == FocusSetSlotUi.Kind.Active) {
+                FjTheme.colors.brand
+            } else {
+                FjTheme.colors.textTertiary
+            },
             maxLines = 1,
         )
         if (expanded) {
             Spacer(modifier = Modifier.weight(1f))
             editor.lastHint?.let {
-                Text(it, style = FjTheme.typography.caption.copy(fontSize = 12.sp), color = FjTheme.colors.textTertiary)
+                Text(
+                    text = it,
+                    style = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Medium),
+                    color = FjTheme.colors.textTertiary,
+                    maxLines = 1,
+                )
             }
         } else {
             FocusInlineValues(slot = slot, modifier = Modifier.weight(1f))
             if (slot.kind == FocusSetSlotUi.Kind.Target) {
                 Text(
                     text = stringResource(Res.string.focus_target).uppercase(),
-                    style = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold),
+                    style = FjTheme.typography.caption.copy(
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
+                    ),
                     color = FjTheme.colors.textTertiary,
                 )
             }
         }
-        Text(
-            text = if (expanded) GlyphChevronUp else GlyphChevronDown,
-            style = FjTheme.typography.body.copy(fontSize = 14.sp, fontWeight = FontWeight.SemiBold),
-            color = FjTheme.colors.textTertiary,
+        // ONE chevron rotated in place — a name swap (up/down glyph) can never
+        // animate; rotation can.
+        val chevronRotation by animateFloatAsState(
+            targetValue = if (expanded) -180f else 0f,
+            label = "rowChevron",
+        )
+        Icon(
+            painter = painterResource(Res.drawable.ic_common_arrow_down),
+            contentDescription = null,
+            tint = FjTheme.colors.textTertiary,
+            modifier = Modifier.size(16.dp).rotate(chevronRotation),
         )
     }
 }
 
 @Composable
 private fun FocusInlineValues(slot: FocusSetSlotUi, modifier: Modifier = Modifier) {
+    val valueSize = if (slot.kind == FocusSetSlotUi.Kind.Finished) 21.sp else 20.sp
     val valueColor = when (slot.kind) {
         FocusSetSlotUi.Kind.Finished -> FjTheme.colors.textPrimary
         FocusSetSlotUi.Kind.Active -> FjTheme.colors.textSecondary
@@ -447,11 +539,33 @@ private fun FocusInlineValues(slot: FocusSetSlotUi, modifier: Modifier = Modifie
     }
     val repsColor = if (slot.kind == FocusSetSlotUi.Kind.Target) FjTheme.colors.textTertiary else FjTheme.colors.textSecondary
     val repsNumber = slot.repsText.removePrefix("× ")
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.Bottom) {
-        Text(slot.valueText, style = FjTheme.typography.body.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold), color = valueColor)
-        Text(slot.valueUnit, style = FjTheme.typography.caption.copy(fontSize = 12.sp), color = FjTheme.colors.textTertiary)
-        Text(GlyphTimes, style = FjTheme.typography.caption.copy(fontSize = 12.sp), color = FjTheme.colors.textTertiary)
-        Text(repsNumber, style = FjTheme.typography.body.copy(fontSize = 20.sp, fontWeight = FontWeight.SemiBold), color = repsColor)
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = slot.valueText,
+            style = FjTheme.typography.body.copy(fontSize = valueSize, fontWeight = FontWeight.Bold),
+            color = valueColor,
+            maxLines = 1,
+            modifier = Modifier.alignByBaseline(),
+        )
+        Text(
+            text = slot.valueUnit,
+            style = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Medium),
+            color = FjTheme.colors.textTertiary,
+            modifier = Modifier.alignByBaseline(),
+        )
+        Text(
+            text = GlyphTimes,
+            style = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Medium),
+            color = FjTheme.colors.textTertiary,
+            modifier = Modifier.alignByBaseline(),
+        )
+        Text(
+            text = repsNumber,
+            style = FjTheme.typography.body.copy(fontSize = valueSize, fontWeight = FontWeight.SemiBold),
+            color = repsColor,
+            maxLines = 1,
+            modifier = Modifier.alignByBaseline(),
+        )
     }
 }
 
@@ -462,15 +576,24 @@ private fun FocusSetStatusIndicator(kind: FocusSetSlotUi.Kind, size: Dp) {
             modifier = Modifier.size(size).clip(CircleShape).background(FjTheme.colors.brand),
             contentAlignment = Alignment.Center,
         ) {
-            Text(GlyphCheck, color = Color.White, style = FjTheme.typography.caption.copy(fontSize = 14.sp, fontWeight = FontWeight.Bold))
+            Icon(
+                painter = painterResource(Res.drawable.ic_common_check),
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(size * 0.44f),
+            )
         }
         FocusSetSlotUi.Kind.Active -> Box(
             modifier = Modifier.size(size).clip(CircleShape).background(FjTheme.colors.brandSubtle),
             contentAlignment = Alignment.Center,
         ) {
-            Box(modifier = Modifier.size(size / 3).clip(CircleShape).background(FjTheme.colors.brand))
+            Box(modifier = Modifier.size(size * 0.36f).clip(CircleShape).background(FjTheme.colors.brand))
         }
-        FocusSetSlotUi.Kind.Target -> Box(modifier = Modifier.size(size).dashedRoundedBorder(FjTheme.colors.border, size / 2, isCircle = true))
+        FocusSetSlotUi.Kind.Target -> Box(
+            modifier = Modifier
+                .size(size)
+                .dashedRoundedBorder(FjTheme.colors.border, size / 2, isCircle = true, dash = 3.dp),
+        )
     }
 }
 
@@ -486,25 +609,31 @@ private fun FocusEditorBody(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 6.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        // The two fields take their natural width and the whole group centers —
+        // weighted halves would pin the × off the optical centre.
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.Bottom,
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
         ) {
             FocusEditorField(
                 text = editor.valueText,
                 unit = editor.unit,
                 focused = editor.focusedField == FocusInputField.Value,
                 onClick = { onFocusField(FocusInputField.Value) },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.alignByBaseline(),
             )
-            Text(GlyphTimes, style = FjTheme.typography.body.copy(fontSize = 22.sp), color = FjTheme.colors.border)
+            Text(
+                text = GlyphTimes,
+                style = FjTheme.typography.body.copy(fontSize = 22.sp, fontWeight = FontWeight.Medium),
+                color = FjTheme.colors.border,
+                modifier = Modifier.alignByBaseline(),
+            )
             FocusEditorField(
                 text = editor.repsText,
                 unit = editor.repsUnit,
                 focused = editor.focusedField == FocusInputField.Reps,
                 onClick = { onFocusField(FocusInputField.Reps) },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.alignByBaseline(),
             )
         }
         FocusKeypad(onDigit = onKeypadDigit, onBackspace = onKeypadBackspace)
@@ -526,25 +655,44 @@ private fun FocusEditorBody(
 
 @Composable
 private fun FocusEditorField(text: String, unit: String, focused: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    // The focus swap is a size ANIMATION, not a one-frame jump.
+    val fontSize by animateFloatAsState(
+        targetValue = if (focused) 46f else 28f,
+        animationSpec = tween(durationMillis = 220),
+        label = "editorFieldSize",
+    )
     Row(
-        modifier = modifier.clickable(onClick = onClick).wrapContentWidth(),
+        modifier = modifier.clickable(onClick = onClick),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.Bottom,
     ) {
         Text(
             text = text.ifEmpty { "0" },
-            style = FjTheme.typography.body.copy(fontSize = if (focused) 46.sp else 28.sp, fontWeight = FontWeight.Bold),
+            // autoSize caps at the animated size and shrinks a 6-digit entry
+            // rather than clipping it (iOS's minimumScaleFactor).
+            autoSize = TextAutoSize.StepBased(minFontSize = 23.sp, maxFontSize = fontSize.sp),
+            style = FjTheme.typography.body.copy(fontWeight = FontWeight.Bold),
             color = if (focused) FjTheme.colors.brand else FjTheme.colors.textSecondary,
             maxLines = 1,
-            textAlign = TextAlign.Center,
+            modifier = Modifier.alignByBaseline(),
         )
-        Text(unit, style = FjTheme.typography.caption.copy(fontSize = 14.sp, fontWeight = FontWeight.SemiBold), color = FjTheme.colors.textTertiary)
+        Text(
+            text = unit,
+            style = FjTheme.typography.caption.copy(fontSize = 14.sp, fontWeight = FontWeight.SemiBold),
+            color = FjTheme.colors.textTertiary,
+            modifier = Modifier.alignByBaseline(),
+        )
     }
 }
 
 @Composable
 private fun FocusSwipeActions(canReset: Boolean, width: Dp, onReset: () -> Unit, onDelete: () -> Unit, modifier: Modifier = Modifier) {
-    Row(modifier = modifier.width(width).fillMaxHeight().clip(RoundedCornerShape(topEnd = 12.dp, bottomEnd = 12.dp))) {
+    Row(
+        modifier = modifier
+            .width(width)
+            .fillMaxHeight()
+            .padding(vertical = 8.dp)
+            .clip(RoundedCornerShape(topEnd = 12.dp, bottomEnd = 12.dp)),
+    ) {
         if (canReset) {
             Box(
                 modifier = Modifier.weight(1f).fillMaxHeight()
@@ -552,7 +700,12 @@ private fun FocusSwipeActions(canReset: Boolean, width: Dp, onReset: () -> Unit,
                     .clickable(onClick = onReset),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(GlyphReset, color = Color.White, style = FjTheme.typography.body.copy(fontSize = 18.sp))
+                Icon(
+                    painter = painterResource(Res.drawable.ic_common_reset),
+                    contentDescription = stringResource(Res.string.focus_reset),
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp),
+                )
             }
         }
         Box(
@@ -561,30 +714,47 @@ private fun FocusSwipeActions(canReset: Boolean, width: Dp, onReset: () -> Unit,
                 .clickable(onClick = onDelete),
             contentAlignment = Alignment.Center,
         ) {
-            Text(GlyphClose, color = Color.White, style = FjTheme.typography.body.copy(fontSize = 18.sp))
+            Icon(
+                painter = painterResource(Res.drawable.ic_common_delete),
+                contentDescription = stringResource(Res.string.workout_menu_delete),
+                tint = Color.White,
+                modifier = Modifier.size(18.dp),
+            )
         }
     }
 }
 
+/** Pure affordance — the commit fires from the gesture, so this never takes a tap. */
 @Composable
-private fun FocusSwipeCommit(width: Dp, onCommit: () -> Unit, modifier: Modifier = Modifier) {
+private fun FocusSwipeCommit(width: Dp, modifier: Modifier = Modifier) {
     Box(
-        modifier = modifier.width(width).fillMaxHeight()
+        modifier = modifier
+            .width(width)
+            .fillMaxHeight()
+            .padding(vertical = 8.dp)
             .clip(RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp))
-            .background(FjTheme.colors.brand)
-            .clickable(onClick = onCommit),
+            .background(FjTheme.colors.brand),
         contentAlignment = Alignment.Center,
     ) {
-        Text(GlyphCheck, color = Color.White, style = FjTheme.typography.body.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold))
+        Icon(
+            painter = painterResource(Res.drawable.ic_common_check),
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(18.dp),
+        )
     }
 }
 
 /** One-off orange for the reset swipe action — no design token yet (matches native). */
 private val FocusResetActionColor = Color(0xFFF5A623)
 
-/** Dashed border, rounded-rect or circle — Compose's `border()` has no dash support. */
-private fun Modifier.dashedRoundedBorder(color: Color, radius: Dp, isCircle: Boolean = false): Modifier = drawBehind {
-    val stroke = Stroke(width = 1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx())))
+/**
+ * Dashed border, rounded-rect or circle — Compose's `border()` has no dash
+ * support. Both natives dash circles at 3/3 and the row outline at 4/4, hence
+ * [dash].
+ */
+private fun Modifier.dashedRoundedBorder(color: Color, radius: Dp, isCircle: Boolean = false, dash: Dp = 4.dp): Modifier = drawBehind {
+    val stroke = Stroke(width = 1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(dash.toPx(), dash.toPx())))
     if (isCircle) {
         drawCircle(color = color, radius = (size.minDimension - stroke.width) / 2f, style = stroke)
     } else {
