@@ -5,7 +5,7 @@ package kz.maestrosultan.fitjournal.ui.workout.focus
  * themselves are co-located with the composable they preview (REFERENCE =
  * VibeTrip convention) — this file provides data only, no `@Preview`s.
  */
-object FocusPreviewData {
+internal object FocusPreviewData {
 
     private val slot1 = FocusSetSlotUi(
         id = "set-1",

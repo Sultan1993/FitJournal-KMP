@@ -240,7 +240,23 @@ data class FocusSetSlotUi(
     /** Reps display including the leading ×, e.g. "× 10" / "× —". */
     val repsText: String,
     val isExpanded: Boolean,
-    /** "Last: 62.5 kg × 10" — shown in the expanded header when available. */
+    /**
+     * "Last: 62.5 kg × 10" for THIS row's position.
+     *
+     * The screen does not render it — the expanded header renders
+     * [FocusEditorUi.lastHint], because the two natives disagree here and iOS is
+     * this migration's visual reference: iOS reads the editor's
+     * (`FocusSetStackView.swift:269`), Android reads the row's
+     * (`component/FocusSetStack.kt:564`). They agree except when the set list
+     * changes without re-deriving `editorMode`, since the editor's keys off the
+     * stored ordinal and this one off the row's live index.
+     *
+     * Kept because it is the per-position truth the "what you did last time"
+     * regression tests assert directly, and per-position alignment is the rule
+     * that has been broken three separate times (see the root CLAUDE.md). If the
+     * screen ever moves to Android's source, render this and delete the editor's
+     * — do not leave both being read.
+     */
     val lastHint: String?,
 ) {
     enum class Kind { Finished, Active, Target }
