@@ -95,9 +95,16 @@ fun WorkoutFocusScreen(
      *
      * The host floats that row OVER this composable rather than stacking it
      * above, so the picker's scrim still covers the whole screen the way both
-     * natives do. This inset is what keeps the pager clear of it: pass the top
-     * safe-area inset PLUS the header block (12dp top + a 46dp row + 16dp
-     * bottom = 74dp in both natives).
+     * natives do.
+     *
+     * Pass the top safe-area inset PLUS the header row's own block — its top
+     * padding and its height, 12 + 46 = 58 in both natives. Do NOT add the 16dp
+     * that sits between the row and the page dots: that gap is [PagerTopInset],
+     * which this screen already applies below this inset. Android's native
+     * screen splits them exactly this way (its header has no bottom padding and
+     * its pager Box carries `padding(top = 16.dp)`); iOS's puts the same 16 on
+     * the header's bottom instead. Counting both is how the dots ended up 16dp
+     * low.
      */
     topContentInset: Dp = 0.dp,
     modifier: Modifier = Modifier,
@@ -259,12 +266,12 @@ private fun FocusLoadedContent(
         // caller-side `if` would tear it down before the exit animation could run.
         // For the same reason it takes no modifier — any padding here would double
         // the card's inset and shrink the scrim.
-        // Anchored off the SAME inset the pager clears, minus the 14dp by which
-        // the natives' 60dp card offset undercuts their 74dp header block — so
-        // the card lands exactly where it does on both natives, under a scrim
-        // that still covers the whole screen including the floating header.
+        // Anchored off the SAME inset the pager clears. Both natives drop the
+        // card 60dp from the safe-area top while the header row ends at 58 — so
+        // it hangs 2dp below the row, under a scrim that still covers the whole
+        // screen including the floating header.
         FocusExercisePicker(
-            topAnchor = (topContentInset - HeaderBlockOvershoot).coerceAtLeast(0.dp),
+            topAnchor = topContentInset + PickerCardDrop,
             isOpen = focus.isPickerOpen,
             items = focus.pickerItems,
             onSelectRecord = { dispatch(WorkoutFocusContract.ViewAction.SelectRecord(it)) },
@@ -376,12 +383,10 @@ private class CoordinatesHolder {
 }
 
 /**
- * How far the natives' 60dp picker-card offset sits ABOVE the bottom of their
- * 74dp header block (12 top + 46 row + 16 bottom). The card is anchored to the
- * safe-area top, not to the end of the header, so the shared screen subtracts
- * this from its content inset to land in the same place.
+ * How far the picker card hangs below the header row: both natives anchor it
+ * 60dp from the safe-area top, and the row's bottom edge is at 58.
  */
-private val HeaderBlockOvershoot = 14.dp
+private val PickerCardDrop = 2.dp
 
 /** First open: the expanded editor is already laid out, so barely wait. */
 private const val FirstCenteringDelayMs = 50L
