@@ -153,8 +153,11 @@ private fun FocusPickerCard(
 
     var order by remember(items) { mutableStateOf(items) }
     var draggingId by remember { mutableStateOf<String?>(null) }
-    var dragOriginIndex by remember { mutableStateOf(0) }
-    var dragTargetIndex by remember { mutableStateOf(0) }
+    // Keyed on `items`, exactly as `order` is: unkeyed, a republished (shorter)
+    // list re-keyed `order` while these kept their pre-shrink values, so they
+    // pointed into a list that no longer existed.
+    var dragOriginIndex by remember(items) { mutableStateOf(0) }
+    var dragTargetIndex by remember(items) { mutableStateOf(0) }
     var dragTranslation by remember { mutableStateOf(0f) }
 
     // Cap the card so its gap from the bottom of the screen equals its 60dp top
@@ -251,11 +254,22 @@ private fun FocusPickerCard(
                                 }
                             },
                             onDragEnd = {
-                                val reordered = dragTargetIndex != dragOriginIndex
+                                // Same premise as onDrag's guard, on the path that
+                                // actually mutates: a list that shrank under the
+                                // finger makes removeAt/add throw outright, and an
+                                // unbridged Kotlin throw is a SIGABRT on iOS.
+                                val from = dragOriginIndex
+                                val to = dragTargetIndex
+                                if (from !in order.indices || to !in order.indices) {
+                                    draggingId = null
+                                    dragTranslation = 0f
+                                    return@pointerInputReorder
+                                }
+                                val reordered = to != from
                                 if (reordered) {
                                     val newOrder = order.toMutableList()
-                                    val moved = newOrder.removeAt(dragOriginIndex)
-                                    newOrder.add(dragTargetIndex, moved)
+                                    val moved = newOrder.removeAt(from)
+                                    newOrder.add(to, moved)
                                     order = newOrder
                                     onReorder(newOrder.map { it.recordId })
                                 }

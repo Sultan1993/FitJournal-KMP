@@ -255,13 +255,22 @@ class WorkoutFocusParityTest {
     // ── The set survives a failed reload (G10) ───────────────────────────
 
     /**
-     * The write LANDED; only the reload after it failed. The row must still
-     * appear — folding write and reload into one guard returned early instead,
-     * and the set the user had just logged stayed invisible until something else
-     * happened to republish.
+     * The write LANDED; only the reload after it failed.
+     *
+     * What the split buys is the RIGHT FAILURE, and the rest of the post-log
+     * chain: the user is told the day could not be read rather than that the set
+     * could not be saved, and auto-rest / stats / coach still run. Folding the
+     * two into one guard returned early instead, so the save copy was shown for a
+     * saved set and nothing after the write happened at all.
+     *
+     * What it does NOT buy is the new row appearing: `dayRecords` still holds the
+     * pre-write tree, so the republish renders one slot. Both natives behave the
+     * same way (iOS's `reloadDay` swallows its error into an alert and continues
+     * over the same stale tree), and the row appears on the next successful
+     * reload. Asserted below so a future change to that has to be deliberate.
      */
     @Test
-    fun logSet_whenOnlyTheReloadFails_stillShowsTheSet() = focusTest(listOf(benchRecord)) { bed ->
+    fun logSet_whenOnlyTheReloadFails_reportsTheReadFailureAndKeepsGoing() = focusTest(listOf(benchRecord)) { bed ->
         val vm = bed.viewModel(recordId = "r1", exerciseId = "we-1")
         vm.awaitLoaded()
 
@@ -286,6 +295,11 @@ class WorkoutFocusParityTest {
         assertTrue(
             vm.viewState.value is WorkoutFocusContract.ViewState.Loaded,
             "the screen still renders rather than freezing on the pre-write state",
+        )
+        assertEquals(
+            1,
+            focusNow(vm).realSlots().size,
+            "the published tree is the pre-write one — the row lands on the next successful reload",
         )
     }
 

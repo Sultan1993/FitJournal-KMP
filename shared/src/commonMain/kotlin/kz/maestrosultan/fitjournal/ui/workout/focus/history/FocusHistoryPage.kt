@@ -3,11 +3,8 @@ package kz.maestrosultan.fitjournal.ui.workout.focus.history
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -68,7 +65,6 @@ private fun FocusHistoryEmpty(modifier: Modifier = Modifier) {
 
 @Composable
 private fun FocusHistoryLoaded(items: List<FocusHistoryItemUi>, modifier: Modifier = Modifier) {
-    val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         // Top inset 0 ON PURPOSE — each day section brings its own 16dp
@@ -76,7 +72,13 @@ private fun FocusHistoryLoaded(items: List<FocusHistoryItemUi>, modifier: Modifi
         // nonzero page inset on top of that section margin is the "triple
         // top padding" fix ported from Android's ExerciseHistoryScreen; do
         // not "fix" this back to a nonzero top value.
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 16.dp + bottomInset),
+        //
+        // Bottom is a fixed 44dp, matching page one, NOT a navigationBars inset:
+        // both pages of this pager deliberately run under the home indicator
+        // (iOS `ignoresSafeArea(.container, edges: .bottom)`), and the screen
+        // takes no window insets of its own — the host owns them. Reading the
+        // inset here made the two pages of one pager end at different heights.
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 44.dp),
     ) {
         items(items, key = { it.key }) { item ->
             FocusHistoryCell(item = item, modifier = Modifier.fillMaxWidth())

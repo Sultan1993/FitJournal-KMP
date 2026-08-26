@@ -651,13 +651,16 @@ class WorkoutFocusViewModel internal constructor(
                     return@launch
                 }
                 // Split from the write ON PURPOSE. The set IS persisted by now, so
-                // a failed reload is a different failure with a different
-                // recovery: alert, then carry on and republish from whatever
+                // a failed reload is a different failure with a different copy:
+                // say the day could not be READ, then carry on — auto-rest, stats
+                // and coach all still run, and the republish uses whatever
                 // [dayRecords] still holds. Folded into one guard it returned
-                // early instead, and the set the user had just logged stayed
-                // invisible until something else happened to republish — iOS's
-                // `reloadDay` swallows its own error into an alert and lets the
-                // flow continue (`:526`, `:1061-1069`).
+                // early instead, showing the save error for a saved set and
+                // skipping everything after the write. iOS does the same: its
+                // `reloadDay` swallows the error into an alert and lets the flow
+                // continue (`:526`, `:1061-1069`). Note the just-logged row does
+                // NOT appear until a reload succeeds — the tree here is stale on
+                // both platforms.
                 if (runGuarded { reloadDay(id) }.isFailure) {
                     emitEffect(WorkoutFocusContract.ViewEffect.ShowError(errorStrings.recordFetchFailed()))
                 }
@@ -1569,9 +1572,15 @@ class WorkoutFocusViewModel internal constructor(
     }
 
     /**
-     * Waits out an in-flight local write (milliseconds) so the parent list's
-     * refresh cannot race the commit. Deliberately does NOT stop the rest — it
-     * is shared, and the workout list's bar picks it up.
+     * DROPS a Close that arrives during an in-flight local write, so the parent
+     * list's refresh cannot race the commit. It does not queue it: the writes are
+     * local SQLite and finish in milliseconds, so the user's second tap lands.
+     * (Said plainly because the guard reads like a wait and is not one — if a
+     * dropped tap ever becomes visible, queue a pendingClose off the writes'
+     * `finally` rather than widening this.)
+     *
+     * Deliberately does NOT stop the rest — it is shared, and the workout list's
+     * bar picks it up.
      */
     private fun handleClose() {
         if (isMutating) return
