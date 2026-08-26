@@ -215,13 +215,22 @@ private fun FocusPickerCard(
                         .zIndex(if (isDragged) 1f else 0f)
                         // graphicsLayer, not offset: translation and lift are
                         // deferred reads, so a drag frame never recomposes.
+                        // NO shadowElevation. iOS's `.shadow` shadows the
+                        // rendered content's ALPHA, so on a row whose background
+                        // is transparent unless active it only softly darkens the
+                        // text and thumbnail. Compose's `shadowElevation` shadows
+                        // the LAYER'S SHAPE regardless of what is drawn in it, so
+                        // the same value on an inactive row painted a rounded
+                        // rectangle of shadow around nothing, with the thumbnail
+                        // sitting outside it. Android's native picker has no
+                        // shadow here at all — this now matches it exactly, and
+                        // approximates iOS, whose shadow on a clear row is barely
+                        // perceptible. The scale and zIndex ARE the shipped lift.
                         .graphicsLayer {
                             translationY = if (isDragged) dragTranslation else animatedGap
                             if (isDragged) {
                                 scaleX = 1.02f
                                 scaleY = 1.02f
-                                shadowElevation = 8.dp.toPx()
-                                shape = RoundedCornerShape(13.dp)
                             }
                         }
                         .pointerInputReorder(
