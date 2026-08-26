@@ -38,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -56,6 +57,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -89,6 +91,20 @@ import kz.maestrosultan.fitjournal.ui.workout.focus.FocusSetDotUi
 import kz.maestrosultan.fitjournal.ui.workout.focus.FocusSetSlotUi
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+
+/**
+ * The editor's two number fields: focused and idle glyph size. Named because
+ * [FocusEditorBody]'s invisible height pin has to render at exactly the
+ * focused one.
+ */
+private const val EditorFocusedFontSize = 46f
+private const val EditorIdleFontSize = 28f
+
+/** autoSize floor — a six-digit entry shrinks to this rather than clipping. */
+private const val MinEditorFontSize = 23f
+
+/** Non-snapshot latch — see [FocusAccordionRow]. */
+private class EditorLatch(var value: FocusEditorUi)
 
 private val CollapsedRadius = 16.dp
 private val ExpandedRadius = 22.dp
@@ -141,23 +157,35 @@ fun FocusSetStack(
 ) {
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         FocusSetStackHeader(setDots)
+        // KEYED. A Column matches children by POSITION, and this list changes
+        // shape underneath itself: logging from the add-another row turns the
+        // last position into a real set, and deleting one shifts every row
+        // below it up by one. Unkeyed, the AnimatedVisibility (and the chevron
+        // rotation, and the editor's field-size animations) at a given position
+        // carried over to whichever slot inherited that position — so deleting
+        // a row above the open editor made one row animate CLOSED and its
+        // neighbour animate OPEN, neither of which the user touched.
+        // `remember(slot.id)` inside the row never covered this: it re-keys the
+        // row's OWN state, not the animation state of the composables it emits.
         slots.forEach { slot ->
-            FocusAccordionRow(
-                slot = slot,
-                editor = editor,
-                onEditSet = onEditSet,
-                onCollapseEditor = onCollapseEditor,
-                onAddAnotherSet = onAddAnotherSet,
-                onFocusField = onFocusField,
-                onKeypadDigit = onKeypadDigit,
-                onKeypadBackspace = onKeypadBackspace,
-                onLogSet = onLogSet,
-                onSaveSet = onSaveSet,
-                onDeleteSet = onDeleteSet,
-                onResetSet = onResetSet,
-                onCommitTarget = onCommitTarget,
-                onExpandedRowPositioned = onExpandedRowPositioned,
-            )
+            key(slot.id) {
+                FocusAccordionRow(
+                    slot = slot,
+                    editor = editor,
+                    onEditSet = onEditSet,
+                    onCollapseEditor = onCollapseEditor,
+                    onAddAnotherSet = onAddAnotherSet,
+                    onFocusField = onFocusField,
+                    onKeypadDigit = onKeypadDigit,
+                    onKeypadBackspace = onKeypadBackspace,
+                    onLogSet = onLogSet,
+                    onSaveSet = onSaveSet,
+                    onDeleteSet = onDeleteSet,
+                    onResetSet = onResetSet,
+                    onCommitTarget = onCommitTarget,
+                    onExpandedRowPositioned = onExpandedRowPositioned,
+                )
+            }
         }
     }
 }
@@ -243,10 +271,16 @@ private fun FocusAccordionRow(
     // through the shrink animation: the shared editor recomputes the moment
     // the row collapses, and an un-latched body visibly flips its commit title
     // from "Save changes" to "Log set N+1" while it animates out.
-    var lastEditor by remember(slot.id) { mutableStateOf(editor) }
+    //
+    // A PLAIN holder, not snapshot state (same reason as the screen's
+    // CoordinatesHolder): the latch is written during composition, and writing
+    // a MutableState you also read in the same scope invalidates that scope —
+    // so every keypress recomposed this row, and the keypad inside it, TWICE.
+    val editorLatch = remember(slot.id) { EditorLatch(editor) }
     if (expanded) {
-        lastEditor = editor
+        editorLatch.value = editor
     }
+    val lastEditor = editorLatch.value
 
     // A row the VM expands mid-swipe (e.g. post-log advance) must not keep a
     // stale reveal once it collapses back.
@@ -640,10 +674,47 @@ private fun FocusEditorBody(
     ) {
         // The two fields take their natural width and the whole group centers —
         // weighted halves would pin the × off the optical centre.
+        //
+        // Explicit Spacers rather than Arrangement.spacedBy, so the invisible
+        // height pin below can join the baseline group without earning a gap
+        // of its own.
         Row(
             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+            horizontalArrangement = Arrangement.Center,
         ) {
+            // HEIGHT + BASELINE PIN. The two fields cross on a focus swap —
+            // one animates 46→28 while the other goes 28→46 — so their max,
+            // which is what a baseline-aligned Row measures to, dips at the
+            // midpoint and springs back. MEASURED on the preview fixture: the
+            // accordion row is 406dp at rest and 395dp with both fields at
+            // 37sp, so eleven dp of editor, keypad and Log button jumped up
+            // and back on every field tap.
+            //
+            // This glyph is transparent and zero-width and always renders at
+            // the focused size, so the row's height and the group's baseline
+            // are whatever a 46sp line actually measures — no ratio to guess
+            // at, and nothing to clip. Cleared from semantics: it is a
+            // measuring stick, not a "0" for a screen reader to announce.
+            //
+            // Not covered by a test on purpose. The effect only exists MID-
+            // tween, and the skiko harness does not advance
+            // `animateFloatAsState` under `advanceTimeBy` /
+            // `advanceTimeByFrame` — a height assertion across the animation
+            // passes with this deleted, which is worse than no test at all.
+            Text(
+                text = "0",
+                style = FjTheme.typography.body.copy(
+                    fontSize = EditorFocusedFontSize.sp,
+                    fontWeight = FontWeight.Bold,
+                ),
+                color = Color.Transparent,
+                maxLines = 1,
+                softWrap = false,
+                modifier = Modifier
+                    .width(0.dp)
+                    .alignByBaseline()
+                    .clearAndSetSemantics { },
+            )
             FocusEditorField(
                 text = editor.valueText,
                 unit = editor.unit,
@@ -651,12 +722,14 @@ private fun FocusEditorBody(
                 onClick = { onFocusField(FocusInputField.Value) },
                 modifier = Modifier.alignByBaseline(),
             )
+            Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = GlyphTimes,
                 style = FjTheme.typography.body.copy(fontSize = 22.sp, fontWeight = FontWeight.Medium),
                 color = FjTheme.colors.border,
                 modifier = Modifier.alignByBaseline(),
             )
+            Spacer(modifier = Modifier.width(12.dp))
             FocusEditorField(
                 text = editor.repsText,
                 unit = editor.repsUnit,
@@ -686,7 +759,7 @@ private fun FocusEditorBody(
 private fun FocusEditorField(text: String, unit: String, focused: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     // The focus swap is a size ANIMATION, not a one-frame jump.
     val fontSize by animateFloatAsState(
-        targetValue = if (focused) 46f else 28f,
+        targetValue = if (focused) EditorFocusedFontSize else EditorIdleFontSize,
         animationSpec = tween(durationMillis = 220),
         label = "editorFieldSize",
     )
@@ -697,9 +770,28 @@ private fun FocusEditorField(text: String, unit: String, focused: Boolean, onCli
         Text(
             text = text.ifEmpty { "0" },
             // autoSize caps at the animated size and shrinks a 6-digit entry
-            // rather than clipping it (iOS's minimumScaleFactor).
-            autoSize = TextAutoSize.StepBased(minFontSize = 23.sp, maxFontSize = fontSize.sp),
-            style = FjTheme.typography.body.copy(fontWeight = FontWeight.Bold),
+            // rather than clipping it (iOS's minimumScaleFactor). It OVERRIDES
+            // `style.fontSize` — `MultiParagraphLayoutCache` does
+            // `style.copy(fontSize = optimalFontSize)` once the search lands —
+            // so the size below is not what gets drawn.
+            //
+            // It is here because `TextAnnotatedStringElement.equals` does not
+            // compare `autoSize` (foundation 1.11.1; `hashCode` omits it too).
+            // An element that compares equal is never handed to the node, so a
+            // frame where ONLY `autoSize` changed is dropped and the text keeps
+            // the size it last measured at. Animating `maxFontSize` therefore
+            // did nothing by itself: the only updates that got through were the
+            // ones where `color` ALSO changed — i.e. the single frame the focus
+            // flipped, when the tween had not yet moved. So the two fields
+            // rendered one interaction behind forever: tap reps and it took the
+            // brand colour but stayed small; tap weight and it went small
+            // because that is where the PREVIOUS tween had ended.
+            //
+            // Putting the animated size in the style as well makes the element
+            // genuinely unequal each frame, so the node updates and reads the
+            // new autoSize. DO NOT "tidy" this away as redundant.
+            autoSize = TextAutoSize.StepBased(minFontSize = MinEditorFontSize.sp, maxFontSize = fontSize.sp),
+            style = FjTheme.typography.body.copy(fontSize = fontSize.sp, fontWeight = FontWeight.Bold),
             color = if (focused) FjTheme.colors.brand else FjTheme.colors.textSecondary,
             maxLines = 1,
             modifier = Modifier.alignByBaseline(),

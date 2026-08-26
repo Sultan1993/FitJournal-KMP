@@ -85,28 +85,6 @@ private val PagerTopInset = 16.dp
 @Composable
 fun WorkoutFocusScreen(
     viewModel: WorkoutFocusContract.ViewModel,
-    /**
-     * How far below this composable's top edge its content should begin.
-     *
-     * The navigation row — close, the exercise pill, ⋯ — is NOT here: it is
-     * rendered natively by each host, because those buttons are iOS 26 Liquid
-     * Glass (`.glassEffect(.regular.interactive())`, the same treatment the
-     * workout screen's nav buttons use) and Compose cannot reproduce it.
-     *
-     * The host floats that row OVER this composable rather than stacking it
-     * above, so the picker's scrim still covers the whole screen the way both
-     * natives do.
-     *
-     * Pass the top safe-area inset PLUS the header row's own block — its top
-     * padding and its height, 12 + 46 = 58 in both natives. Do NOT add the 16dp
-     * that sits between the row and the page dots: that gap is [PagerTopInset],
-     * which this screen already applies below this inset. Android's native
-     * screen splits them exactly this way (its header has no bottom padding and
-     * its pager Box carries `padding(top = 16.dp)`); iOS's puts the same 16 on
-     * the header's bottom instead. Counting both is how the dots ended up 16dp
-     * low.
-     */
-    topContentInset: Dp = 0.dp,
     modifier: Modifier = Modifier,
 ) {
     val viewState by viewModel.viewState.collectAsState()
@@ -116,7 +94,6 @@ fun WorkoutFocusScreen(
         restTimer = viewModel.restTimer,
         history = history,
         dispatch = viewModel::dispatch,
-        topContentInset = topContentInset,
         modifier = modifier,
     )
 }
@@ -127,7 +104,6 @@ private fun WorkoutFocusBody(
     restTimer: StateFlow<WorkoutFocusContract.RestTimerUi>,
     history: WorkoutFocusContract.HistoryState,
     dispatch: (WorkoutFocusContract.ViewAction) -> Unit,
-    topContentInset: Dp,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize().background(FjTheme.colors.background)) {
@@ -151,7 +127,6 @@ private fun WorkoutFocusBody(
                         restTimer = restTimer,
                         history = history,
                         dispatch = dispatch,
-                        topContentInset = topContentInset,
                     )
                 }
             }
@@ -165,7 +140,6 @@ private fun FocusLoadedContent(
     restTimer: StateFlow<WorkoutFocusContract.RestTimerUi>,
     history: WorkoutFocusContract.HistoryState,
     dispatch: (WorkoutFocusContract.ViewAction) -> Unit,
-    topContentInset: Dp,
 ) {
     // iOS TabView(.page) → HorizontalPager + rememberPagerState (§9). Two fixed
     // pages: 0 = the exercise editor, 1 = FocusHistoryPage.
@@ -206,56 +180,53 @@ private fun FocusLoadedContent(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            // The native header floats over this space — see [topContentInset].
-            // The 16dp its block leaves below itself mirrors what PagerTopInset
-            // leaves below the dots, so they read centred between header and
-            // content; the host owns that padding now.
-            Spacer(modifier = Modifier.height(topContentInset))
-
-            // Same layering as the CMP WorkoutScreen and both natives: an
-            // always-on top scrim over both pages, page dots floating on top of
-            // it at the pager's top edge. Each page insets its own content by
-            // PagerTopInset so it rests below the dots but scrolls up under
-            // them and dissolves into the fade.
-            Box(modifier = Modifier.padding(top = PagerTopInset).fillMaxSize()) {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxSize(),
-                ) { page ->
-                    when (page) {
-                        0 -> FocusPageOne(
-                            focus = focus,
-                            restTimer = restTimer,
-                            dispatch = dispatch,
-                            onStatsInfo = { showStatsInfo = true },
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                        // No top inset here: FocusHistoryPage sets contentPadding
-                        // top = 0 on purpose (its cells carry their own 16dp), and a
-                        // modifier padding would shrink the viewport so rows stop
-                        // short of the fade instead of scrolling under it.
-                        else -> FocusHistoryPage(
-                            state = history,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    }
+        // This composable starts AT the header row's bottom edge — the host
+        // stacks the native row above it rather than floating it over, so there
+        // is no inset to reserve here. Only the 16dp between the row and the
+        // page dots is ours (PagerTopInset), which is why the header carries no
+        // bottom padding on either platform.
+        //
+        // Same layering as the CMP WorkoutScreen and both natives: an always-on
+        // top scrim over both pages, page dots floating on top of it at the
+        // pager's top edge. Each page insets its own content by PagerTopInset so
+        // it rests below the dots but scrolls up under them into the fade.
+        Box(modifier = Modifier.padding(top = PagerTopInset).fillMaxSize()) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+            ) { page ->
+                when (page) {
+                    0 -> FocusPageOne(
+                        focus = focus,
+                        restTimer = restTimer,
+                        dispatch = dispatch,
+                        onStatsInfo = { showStatsInfo = true },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    // No top inset here: FocusHistoryPage sets contentPadding
+                    // top = 0 on purpose (its cells carry their own 16dp), and a
+                    // modifier padding would shrink the viewport so rows stop
+                    // short of the fade instead of scrolling under it.
+                    else -> FocusHistoryPage(
+                        state = history,
+                        modifier = Modifier.fillMaxSize(),
+                    )
                 }
-
-                // Draw-only, so pager drags and dot taps still land.
-                TopFadeScrim(
-                    color = FjTheme.colors.background,
-                    height = PagerTopInset,
-                    modifier = Modifier.align(Alignment.TopCenter),
-                )
-
-                PageDots(
-                    count = 2,
-                    currentPage = pagerState.currentPage,
-                    onDotClick = { page -> coroutineScope.launch { pagerState.animateScrollToPage(page) } },
-                    modifier = Modifier.align(Alignment.TopCenter),
-                )
             }
+
+            // Draw-only, so pager drags and dot taps still land.
+            TopFadeScrim(
+                color = FjTheme.colors.background,
+                height = PagerTopInset,
+                modifier = Modifier.align(Alignment.TopCenter),
+            )
+
+            PageDots(
+                count = 2,
+                currentPage = pagerState.currentPage,
+                onDotClick = { page -> coroutineScope.launch { pagerState.animateScrollToPage(page) } },
+                modifier = Modifier.align(Alignment.TopCenter),
+            )
         }
 
         // Overlay, not a column child: opening the picker must float over the
@@ -266,12 +237,13 @@ private fun FocusLoadedContent(
         // caller-side `if` would tear it down before the exit animation could run.
         // For the same reason it takes no modifier — any padding here would double
         // the card's inset and shrink the scrim.
-        // Anchored off the SAME inset the pager clears. Both natives drop the
-        // card 60dp from the safe-area top while the header row ends at 58 — so
-        // it hangs 2dp below the row, under a scrim that still covers the whole
-        // screen including the floating header.
+        // Anchored 2dp below this composable's top edge, which IS the header
+        // row's bottom: both natives drop the card 60dp from the safe-area top
+        // while the row ends at 58. Its scrim covers this composable; the strip
+        // above — status bar and header row — is dimmed by the host, which is
+        // the one thing the old float-over-everything arrangement bought.
         FocusExercisePicker(
-            topAnchor = topContentInset + PickerCardDrop,
+            topAnchor = PickerCardDrop,
             isOpen = focus.isPickerOpen,
             items = focus.pickerItems,
             onSelectRecord = { dispatch(WorkoutFocusContract.ViewAction.SelectRecord(it)) },
@@ -288,8 +260,11 @@ private fun FocusLoadedContent(
         // not effects (§3.7) — both close on their own dismiss route.
         focus.menu?.let { menu ->
             WorkoutExerciseMenu(
+                // No header: Focus is already inside this exercise and its
+                // title is on screen behind the sheet, so naming it again in
+                // the sheet is a row of nothing.
                 exercise = null,
-                exerciseName = focus.title,
+                exerciseName = null,
                 hasNote = menu.hasNote,
                 isSuperset = menu.isSuperset,
                 canAddToSuperset = menu.canSupersetWithNext,
@@ -547,13 +522,15 @@ private fun FocusPageOne(
     }
 }
 
-// WorkoutExerciseMenu's `exercise` param is optional and left null here on
-// purpose, not a gap: FocusUi is deliberately stripped of domain types (the
-// 1 Hz rest-timer tick must not recompose anything heavy), and Focus's
-// native predecessors never had an avatar in this menu to begin with — it
-// was a plain iOS action sheet (ExerciseFocusScreen.swift's `.showMenu`)
-// with no avatar row at all. `null` collapses the header to just the name,
-// matching that shipped behaviour exactly, rather than inventing one.
+// WorkoutExerciseMenu's `exercise` and `exerciseName` params are optional and
+// both left null here on purpose, not a gap. Focus's native predecessors never
+// had an avatar in this menu — it was a plain iOS action sheet
+// (ExerciseFocusScreen.swift's `.showMenu`) with no avatar row at all — and
+// FocusUi is deliberately stripped of domain types anyway (the 1 Hz rest-timer
+// tick must not recompose anything heavy), so there is no `Exercise` to pass.
+// The name goes too: unlike the workout list, whose sheet has to say which of
+// many rows you opened, Focus has exactly one exercise and its title is
+// already on screen behind the sheet.
 
 // No @Preview here, deliberately: a preview needs a fake WorkoutFocusContract.ViewModel,
 // and implementing that interface means overriding its effect-stream member, which would

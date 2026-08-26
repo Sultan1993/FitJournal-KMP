@@ -53,13 +53,15 @@ import org.jetbrains.compose.resources.stringResource
  * caller closes this sheet and raises a [ConfirmActionSheet]. Rows the caller
  * wires to "close then act", so the sheet dismisses on selection.
  *
- * [exercise] is optional — same shape as [onAbout]/[onHistory]/[onStats]
- * below, nullable for the same Focus-reuse reason. `WorkoutPageContent` (the
- * original caller) always has a real domain `Exercise` and keeps its avatar.
- * The shared Focus screen does not: its view state is deliberately
- * UI-projected with no domain types, and its native predecessor's menu was a
- * plain iOS action sheet with no avatar row at all. `null` collapses the
- * header to just the name, rather than inventing a fake `Exercise`.
+ * [exerciseName] and [exercise] are both optional — same shape as
+ * [onAbout]/[onHistory]/[onStats] below, nullable for the same Focus-reuse
+ * reason. `WorkoutPageContent` (the original caller) is a list of exercises, so
+ * its sheet has to say which row you opened: it passes both and gets the avatar
+ * + name header. Focus is already *inside* one exercise — its title is on
+ * screen behind the sheet — so it passes `null` for the name and the header
+ * (and its trailing divider) is not rendered at all. A null name with a
+ * non-null [exercise] would be an avatar with nothing to label it, so the name
+ * alone gates the whole row.
  *
  * The two call sites act on different things, and their native predecessors
  * differ accordingly — [supersetBeforeReplace], [showDelete] and [deleteLabel]
@@ -72,7 +74,7 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun WorkoutExerciseMenu(
     exercise: Exercise? = null,
-    exerciseName: String,
+    exerciseName: String? = null,
     hasNote: Boolean,
     isSuperset: Boolean,
     canAddToSuperset: Boolean,
@@ -99,25 +101,27 @@ fun WorkoutExerciseMenu(
         containerColor = FjTheme.colors.sheet,
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (exercise != null) {
-                    ExerciseAvatar(exercise = exercise, size = 40.dp)
-                    Spacer(Modifier.width(14.dp))
+            if (exerciseName != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (exercise != null) {
+                        ExerciseAvatar(exercise = exercise, size = 40.dp)
+                        Spacer(Modifier.width(14.dp))
+                    }
+                    Text(
+                        text = exerciseName,
+                        style = FjTheme.typography.cardTitle,
+                        color = FjTheme.colors.textPrimary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
-                Text(
-                    text = exerciseName,
-                    style = FjTheme.typography.cardTitle,
-                    color = FjTheme.colors.textPrimary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                MenuDivider()
             }
-            MenuDivider()
 
             // Group 1 — read-only exercise info.
             onAbout?.let { cb -> MenuRow(Res.drawable.ic_common_info, stringResource(Res.string.workout_menu_about), onClick = { close(cb) }) }

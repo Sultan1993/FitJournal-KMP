@@ -4,50 +4,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.ComposeUIViewController
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import platform.UIKit.UIViewController
-
-/**
- * The live top inset the Swift host reserves for its floating native header.
- *
- * The navigation row (close / exercise pill / ⋯) is NOT part of
- * [WorkoutFocusScreen]: it is iOS 26 Liquid Glass, which Compose cannot draw,
- * so `FocusHeaderView` floats it over this controller's view. The Compose view
- * itself is pinned to all four edges of the host (ignoring the safe area) so
- * the picker's full-screen scrim still covers the header the way both natives
- * do — this inset is what keeps the pager's own content clear of it.
- *
- * A plain constructor parameter would be wrong: `safeAreaInsets.top` is 0 in
- * `viewDidLoad`, where the host embeds this controller, and only becomes real
- * at layout. So the host creates one of these, hands it over, and pushes the
- * measured value (`safeAreaInsets.top` + the 74pt header block) from
- * `viewDidLayoutSubviews`; the Compose side collects it as state and reflows.
- *
- * Points, not dp — the two are the same unit on iOS.
- */
-class WorkoutFocusTopContentInset {
-
-    private val points = MutableStateFlow(0f)
-
-    internal val state: StateFlow<Float> = points.asStateFlow()
-
-    /** Called from Swift on every layout pass; a no-op when unchanged. */
-    fun update(points: Float) {
-        this.points.value = points
-    }
-}
 
 /**
  * iOS entry point for the shared WorkoutFocus screen (design spec §4.3/§9),
@@ -57,19 +22,17 @@ class WorkoutFocusTopContentInset {
  * `viewModel.dispose()` when that chrome is torn down.
  *
  * Content-only — the background is applied here rather than inside the screen.
- * The navigation row is drawn NATIVELY by the host and floats over this
- * controller (see [WorkoutFocusTopContentInset]). No
- * `safeDrawingPadding` is applied here either, matching
- * `WorkoutDetailsScreenController`'s note about double-insetting under a
- * native nav bar / modal chrome — the Swift host is responsible for its own
+ * The navigation row is drawn NATIVELY by the host and STACKED ABOVE this
+ * controller, whose view is pinned below it, so this composable's top edge is
+ * the row's bottom edge. No `safeDrawingPadding` is applied here either,
+ * matching `WorkoutDetailsScreenController`'s note about double-insetting under
+ * a native nav bar / modal chrome — the Swift host is responsible for its own
  * presentation insets.
  *
  * [viewModel]'s effect stream is a buffered single-consumer `Channel` (never
  * dropped even if emitted before this collector attaches, per the VM's own
  * class doc) — routed to ten closures, one per `WorkoutFocusContract.ViewEffect`
  * case, rather than left for Swift to collect itself:
- * - [topContentInset] — the live inset the host's floating native header
- *   occupies; see [WorkoutFocusTopContentInset].
  * - [onDismiss] — tear down this screen.
  * - [onShowError] — a non-fatal error banner/alert; Focus stays presented.
  * - [onShowErrorAndDismiss] — the same alert, then tear down this screen.
@@ -98,7 +61,7 @@ class WorkoutFocusTopContentInset {
  * `reference_ios_build_verification` memory):**
  * - This top-level factory bridges as a BARE global Swift function — Swift
  *   calls
- *   `WorkoutFocusScreenController(viewModel:topContentInset:onDismiss:onShowError:onShowErrorAndDismiss:onOpenEditNote:onOpenTimerSettings:onOpenWorkoutFinish:onOpenOneRepMaxCalculator:onOpenAddExercise:onOpenReplaceExercise:onEnsureRestNotificationPermission:)`
+ *   `WorkoutFocusScreenController(viewModel:onDismiss:onShowError:onShowErrorAndDismiss:onOpenEditNote:onOpenTimerSettings:onOpenWorkoutFinish:onOpenOneRepMaxCalculator:onOpenAddExercise:onOpenReplaceExercise:onEnsureRestNotificationPermission:)`
  *   directly, with NO `WorkoutFocusScreenControllerKt.` prefix — same
  *   precedent as `WorkoutDetailsScreenController(...)` /
  *   `createWorkoutFocusViewModel(...)` (zero `*Kt.` call sites anywhere in
@@ -129,7 +92,6 @@ class WorkoutFocusTopContentInset {
  */
 fun WorkoutFocusScreenController(
     viewModel: WorkoutFocusViewModel,
-    topContentInset: WorkoutFocusTopContentInset,
     onDismiss: () -> Unit,
     onShowError: (String) -> Unit,
     onShowErrorAndDismiss: (String) -> Unit,
@@ -162,9 +124,8 @@ fun WorkoutFocusScreenController(
                 }
             }
         }
-        val topInset by topContentInset.state.collectAsState()
         Box(Modifier.fillMaxSize().background(FjTheme.colors.background)) {
-            WorkoutFocusScreen(viewModel = viewModel, topContentInset = topInset.dp)
+            WorkoutFocusScreen(viewModel = viewModel)
         }
     }
 }

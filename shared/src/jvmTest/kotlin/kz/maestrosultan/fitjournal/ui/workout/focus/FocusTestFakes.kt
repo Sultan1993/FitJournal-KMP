@@ -19,6 +19,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.datetime.LocalDate
+import kz.maestrosultan.fitjournal.domain.coach.FocusCoachService
 import kz.maestrosultan.fitjournal.domain.coach.NoopFocusCoachService
 import kz.maestrosultan.fitjournal.domain.exercise.Category
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
@@ -555,6 +556,40 @@ class RecordingRecordRepository(
     private fun unsupported(): Nothing = throw UnsupportedOperationException("not used by the Focus VM tests")
 }
 
+/**
+ * A coach whose LATER answers arrive only when the test says so — the stand-in
+ * for the real Gemini round trip behind [FocusCoachService].
+ *
+ * The first call answers straight away, so a test starts from a screen that
+ * already has advice on it; every call after that parks on the current gate,
+ * and [release] lets whoever is waiting through and re-arms for the next one.
+ * That makes "a set was logged and the fresh advice has NOT come back yet" a
+ * state a test can hold still and poke at — the window that used to freeze the
+ * set editor.
+ *
+ * The first answer is deliberately NOT gated: a test that parks the load has
+ * no published screen to assert against, and its failure mode is a hang rather
+ * than a message.
+ */
+class GatedFocusCoachService(private val answers: List<String>) : FocusCoachService {
+
+    private var gate = CompletableDeferred<Unit>()
+
+    var calls = 0
+        private set
+
+    override suspend fun getAdvice(exercise: WorkoutExercise): String? {
+        val index = calls++
+        if (index > 0) gate.await()
+        return answers.getOrNull(index)
+    }
+
+    fun release() {
+        gate.complete(Unit)
+        gate = CompletableDeferred()
+    }
+}
+
 // ── Bed ─────────────────────────────────────────────────────────────────
 
 /**
@@ -571,6 +606,7 @@ class FocusBed(
     scheduler: TestCoroutineScheduler,
     records: List<WorkoutRecord>,
     timerConfig: RestTimerConfig,
+    private val coach: FocusCoachService = NoopFocusCoachService(),
 ) {
     val repository = RecordingRecordRepository(records)
     val sessions = FakeFocusSessionRepository()
@@ -607,7 +643,7 @@ class FocusBed(
         removeExerciseFromSuperset = RemoveExerciseFromSupersetUseCase(repository, syncTrigger),
         deleteRecord = DeleteRecordUseCase(repository, syncTrigger),
         updateRecordPositions = UpdateRecordPositionsUseCase(repository, syncTrigger),
-        coach = NoopFocusCoachService(),
+        coach = coach,
         restTimerEngine = timer,
         userContext = userContext,
         date = FOCUS_DATE,
@@ -641,10 +677,11 @@ class FocusBed(
 fun focusTest(
     records: List<WorkoutRecord>,
     timerConfig: RestTimerConfig = RestTimerConfig(),
+    coach: FocusCoachService = NoopFocusCoachService(),
     body: suspend TestScope.(FocusBed) -> Unit,
 ) = runTest {
     Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-    val bed = FocusBed(testScheduler, records, timerConfig)
+    val bed = FocusBed(testScheduler, records, timerConfig, coach)
     try {
         body(this, bed)
     } finally {

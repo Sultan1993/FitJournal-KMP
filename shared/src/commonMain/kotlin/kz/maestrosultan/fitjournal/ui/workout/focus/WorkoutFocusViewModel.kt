@@ -258,6 +258,9 @@ class WorkoutFocusViewModel internal constructor(
     /** Cached per workoutExerciseId; absent = not fetched, or the coach had nothing. */
     private val coachTextByExercise = mutableMapOf<String, String>()
 
+    /** The one in-flight [refreshCoachInBackground] request, if any. */
+    private var coachJob: Job? = null
+
     private var isPickerOpen = false
     private var isMenuOpen = false
     private var isConfirmingRemove = false
@@ -435,8 +438,12 @@ class WorkoutFocusViewModel internal constructor(
             }
 
             hydrateRecordMembers(record)
-            ensureCoach(member)
+            // Publish FIRST. Awaiting the coach here left the whole screen on
+            // its spinner for the length of a Gemini round trip on every cold
+            // open — the sets are already loaded by this point and have nothing
+            // to do with the advice.
             republish()
+            refreshCoachInBackground(member, force = false)
 
             // Opened from the list's "Add set": jump straight into a fresh
             // appended-set editor, exactly as tapping Add-another would.
@@ -537,9 +544,37 @@ class WorkoutFocusViewModel internal constructor(
         runGuarded { coach.getAdvice(exercise) }.getOrNull()?.let { coachTextByExercise[exercise.id] = it }
     }
 
-    private suspend fun refreshCoach(exercise: WorkoutExercise) {
-        coachTextByExercise.remove(exercise.id)
-        ensureCoach(exercise)
+    /**
+     * Re-ask the coach BESIDE a mutation rather than inside it.
+     *
+     * [FocusCoachService.getAdvice] is a network round trip (Gemini). Awaited
+     * inside a write, it holds [isMutating] up for its whole duration — and
+     * that guard heads every editor handler, so focusing a field, a keypad
+     * digit, opening another row and logging the next set were ALL silently
+     * dropped for a second or more after every logged set. Worse, when the
+     * call finally landed, `expandFirstUnfilled` republished with the focus
+     * reset to [FocusInputField.Value]: the user tapped REPS, nothing moved,
+     * and then the WEIGHT field grew. Advice has no bearing on whether the
+     * write landed, so it does not belong in the window that blocks input.
+     *
+     * Both shipped natives awaited it inline (iOS `:677`, Android `:858`) —
+     * this is a deliberate divergence, and being shared it fixes both.
+     *
+     * Replaces in place instead of clearing first: the coach card is one of
+     * the page's ANIMATED sections, so removing the old text collapsed and
+     * re-expanded it directly above the set editor for the length of the
+     * call. On failure the previous advice simply stays.
+     */
+    private fun refreshCoachInBackground(exercise: WorkoutExercise, force: Boolean = true) {
+        if (!force && coachTextByExercise.containsKey(exercise.id)) return
+        // One request in flight: logging three sets quickly must not stack
+        // three round trips whose answers land out of order.
+        coachJob?.cancel()
+        coachJob = viewModelScope.launch {
+            val advice = runGuarded { coach.getAdvice(exercise) }.getOrNull() ?: return@launch
+            coachTextByExercise[exercise.id] = advice
+            republish()
+        }
     }
 
     // ─── Editor prefills ───────────────────────────────────────────────
@@ -667,7 +702,7 @@ class WorkoutFocusViewModel internal constructor(
 
                 advanceSupersetMember(loggedRecordId, exercise.id)
                 exerciseById(exercise.id)?.let { ensureFocusData(it, force = true) }
-                activeExercise?.let { refreshCoach(it) }
+                activeExercise?.let { refreshCoachInBackground(it) }
                 startRestAfterLoggedSet(exercise.id)
 
                 // Keep the just-logged numbers as the next prefill, but re-armed
@@ -834,7 +869,7 @@ class WorkoutFocusViewModel internal constructor(
                 // open and the committed row just flips to finished.
                 exerciseById(owner.id)?.let {
                     ensureFocusData(it, force = true)
-                    refreshCoach(it)
+                    refreshCoachInBackground(it)
                 }
                 republish()
             } finally {
@@ -871,7 +906,7 @@ class WorkoutFocusViewModel internal constructor(
         } else {
             expandFirstUnfilled(fresh)
             ensureFocusData(fresh, force = true)
-            refreshCoach(fresh)
+            refreshCoachInBackground(fresh)
         }
         republish()
     }
@@ -1261,7 +1296,9 @@ class WorkoutFocusViewModel internal constructor(
         activeExerciseId = member.id
         syncActiveExpansion()
         hydrateRecordMembers(record)
-        ensureCoach(member)
+        // Same rule as load: the caller republishes right after this, and it
+        // must not wait on the network to do it.
+        refreshCoachInBackground(member, force = false)
     }
 
     // ─── Picker / selection ────────────────────────────────────────────
@@ -1482,7 +1519,10 @@ class WorkoutFocusViewModel internal constructor(
                     }
                     activeExercise?.let {
                         ensureFocusData(it, force = true)
-                        ensureCoach(it)
+                        // Same rule as the log/save paths: a first-time advice
+                        // fetch for the merged exercise is a network call, and
+                        // it must not extend the window that eats editor taps.
+                        refreshCoachInBackground(it, force = false)
                     }
                 }
                 republish()

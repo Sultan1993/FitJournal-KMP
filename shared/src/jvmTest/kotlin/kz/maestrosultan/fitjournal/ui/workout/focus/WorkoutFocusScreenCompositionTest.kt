@@ -4,6 +4,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isRoot
@@ -88,6 +90,28 @@ class WorkoutFocusScreenCompositionTest {
         showFocus(loaded(FocusPreviewData.superset))
 
         onAllNodes(isRoot()).onFirst().assertExists()
+    }
+
+    /**
+     * Focus's ⋯ sheet has no exercise-name header — the screen behind it is
+     * already that one exercise, so naming it again in the sheet is a row of
+     * nothing. (The open sheet is modal, so the title behind it leaves the
+     * semantics tree entirely; the name being absent means the header is gone,
+     * and the two menu rows prove the sheet itself did compose.)
+     */
+    @Test
+    fun menuOpen_doesNotNameTheExerciseInTheSheet() = runComposeUiTest {
+        showFocus(
+            loaded(
+                FocusPreviewData.singleExercise.copy(
+                    menu = FocusMenuUi(hasNote = false, isSuperset = false, canSupersetWithNext = false),
+                ),
+            ),
+        )
+
+        onNodeWithText("Add note").assertExists()
+        onNodeWithText("Remove exercise").assertExists()
+        onAllNodesWithText("Bench Press").assertCountEquals(0)
     }
 
     @Test
