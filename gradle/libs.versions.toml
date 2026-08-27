@@ -1,17 +1,17 @@
 [versions]
 minSDK = "28"
 compileSDK = "37"
-androidGradlePlugin = "9.3.0"
-kotlin = "2.3.21"
+androidGradlePlugin = "9.3.2"
+kotlin = "2.4.10"
 sqldelight = "2.3.2"
 coroutines = "1.11.0"
-skie = "0.10.13"
-compose = "1.11.1"
+skie = "0.10.14"
+compose = "1.12.0"
 # org.jetbrains.compose.material3:material3 tracks its OWN version line, not the
 # composeMultiplatform version (there is no material3:1.11.1). This is the version
-# the CMP 1.11.1 release notes bundle — https://github.com/JetBrains/compose-multiplatform/releases/tag/v1.11.1
-# (Material / Runtime / UI / Foundation are all :1.11.1; Material3 is :1.11.0-alpha07).
-material3 = "1.11.0-alpha07"
+# the CMP 1.12.0 release notes bundle — https://github.com/JetBrains/compose-multiplatform/releases/tag/v1.12.0
+# (Material / Runtime / UI / Foundation are all :1.12.0; Material3 is :1.12.0-alpha03).
+material3 = "1.12.0-alpha03"
 lifecycle = "2.11.0"
 calendar = "2.10.1"
 reorderable = "3.1.0"
