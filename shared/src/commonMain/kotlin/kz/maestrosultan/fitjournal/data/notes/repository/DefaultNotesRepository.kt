@@ -58,7 +58,9 @@ class DefaultNotesRepository(
     }
 
     override suspend fun deleteUserNotes(userId: String) {
-        localDataSource.deleteUserNotes(userId)
+        // Tombstone, not hard purge — the drain in DeleteAccountUseCase needs a
+        // pendingUpload row to push or the AWSNote survives the account.
+        localDataSource.softDeleteNotesByUserId(userId)
     }
 }
 

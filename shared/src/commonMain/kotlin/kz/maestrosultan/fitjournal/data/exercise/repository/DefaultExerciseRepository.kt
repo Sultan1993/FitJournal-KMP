@@ -96,11 +96,10 @@ class DefaultExerciseRepository(
     }
 
     override suspend fun deleteUserExercises(userId: String) {
-        // Hard-purge for delete-account; server handles the bulk remote
-        // delete, so tombstoning would just burden the SyncWorker.
-        localDataSource.getUserCustomExercises(userId).forEach { row ->
-            localDataSource.deleteExercise(row.uuid)
-        }
+        // Tombstone in one UPDATE. The old code hard-purged each row on the
+        // theory that "server handles the bulk remote delete" — there is no
+        // such server job, so every AWSExercise simply outlived the account.
+        localDataSource.softDeleteCustomExercisesByUserId(userId)
     }
 }
 

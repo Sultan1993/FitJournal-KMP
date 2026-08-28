@@ -161,7 +161,19 @@ class NotesDBDataSource(private val dao: NotesQueries) {
         )
     }
 
-    suspend fun deleteUserNotes(userId: String) = withContext(Dispatchers.IO) {
-        dao.deleteUserNotes(userId)
+    /**
+     * Account deletion — bulk tombstone so the blocking drain has something to
+     * push. See the query comment in Notes.sq for why this is not a hard purge.
+     */
+    suspend fun softDeleteNotesByUserId(
+        userId: String,
+        deletedAt: Instant = Clock.System.now(),
+        updatedDate: Instant = deletedAt,
+    ) = withContext(Dispatchers.IO) {
+        dao.softDeleteNotesByUserId(
+            deletedAt = deletedAt.toStoredString(),
+            updatedDate = updatedDate.toStoredString(),
+            userId = userId,
+        )
     }
 }

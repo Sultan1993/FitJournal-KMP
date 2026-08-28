@@ -272,10 +272,16 @@ WHERE userId = ?
 AND journalId = ?
 AND deletedAt IS NULL;
 
--- Hard purge by user. Only used by the delete-account flow.
-deleteWorkoutRecordsByUserId:
-DELETE FROM workoutRecords
-WHERE userId = ?;
+-- Account deletion. Tombstone rather than hard purge: a DELETEd row leaves no
+-- `pendingUpload=1` behind, so the blocking drain in DeleteAccountUseCase has
+-- nothing to push and the AWS row outlives the account forever. Mirrors
+-- softDeleteJournalsByUserId, which always got this right. The local rows are
+-- dropped by LocalDbWiper once the drain confirms the tombstones landed.
+softDeleteWorkoutRecordsByUserId:
+UPDATE workoutRecords
+SET deletedAt = ?, updatedDate = ?, pendingUpload = 1
+WHERE userId = ?
+AND deletedAt IS NULL;
 
 -- Full wipe. Used once on FJ1.x → FJ2.0 upgrade to drop legacy
 -- parseUserId-keyed rows before hydration repopulates with awsUserId.
