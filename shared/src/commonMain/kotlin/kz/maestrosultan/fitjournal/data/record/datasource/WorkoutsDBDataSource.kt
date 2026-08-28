@@ -468,9 +468,21 @@ class WorkoutsDBDataSource(
         }
     }
 
-    suspend fun deleteAllForUser(userId: String) = withContext(Dispatchers.IO) {
+    /**
+     * Account deletion — bulk tombstone so the blocking drain has something to
+     * push. See the query comment in WorkoutRecords.sq for why this is not a hard purge.
+     */
+    suspend fun softDeleteAllForUser(
+        userId: String,
+        deletedAt: Instant = Clock.System.now(),
+        updatedDate: Instant = deletedAt,
+    ) = withContext(Dispatchers.IO) {
         recordsDao.transaction {
-            recordsDao.deleteWorkoutRecordsByUserId(userId)
+            recordsDao.softDeleteWorkoutRecordsByUserId(
+                deletedAt = deletedAt.toStoredString(),
+                updatedDate = updatedDate.toStoredString(),
+                userId = userId,
+            )
         }
     }
 

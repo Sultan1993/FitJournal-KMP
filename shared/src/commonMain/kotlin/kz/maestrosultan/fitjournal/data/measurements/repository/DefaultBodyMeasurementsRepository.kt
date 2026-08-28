@@ -80,7 +80,8 @@ class DefaultBodyMeasurementsRepository(
     }
 
     override suspend fun deleteUserBodyMeasurements(userId: String) {
-        localDataSource.deleteBodyMeasurementsByUserId(userId)
+        // Tombstone, not hard purge — see DefaultNotesRepository.deleteUserNotes.
+        localDataSource.softDeleteBodyMeasurementsByUserId(userId)
     }
 }
 

@@ -134,9 +134,16 @@ WHERE userId = ?
 AND journalId = ?
 AND deletedAt IS NULL;
 
--- Hard purge, delete-account flow (mirrors deleteWorkoutRecordsByUserId).
-deleteWorkoutSessionsByUserId:
-DELETE FROM workoutSessions WHERE userId = ?;
+-- Account deletion. Tombstone rather than hard purge: a DELETEd row leaves no
+-- `pendingUpload=1` behind, so the blocking drain in DeleteAccountUseCase has
+-- nothing to push and the AWS row outlives the account forever. Mirrors
+-- softDeleteJournalsByUserId, which always got this right. The local rows are
+-- dropped by LocalDbWiper once the drain confirms the tombstones landed.
+softDeleteWorkoutSessionsByUserId:
+UPDATE workoutSessions
+SET deletedAt = ?, pendingUpload = 1
+WHERE userId = ?
+AND deletedAt IS NULL;
 
 -- ─── Sync ─────────────────────────────────────────────────────────────────
 

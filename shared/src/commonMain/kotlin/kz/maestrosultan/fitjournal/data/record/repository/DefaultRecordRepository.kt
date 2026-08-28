@@ -30,6 +30,7 @@ import kz.maestrosultan.fitjournal.data.exercise.datasource.ExercisesDBDataSourc
 import kz.maestrosultan.fitjournal.domain.identifier.randomUuid
 import kz.maestrosultan.fitjournal.data.exercise.entity.DBExerciseObject
 import kz.maestrosultan.fitjournal.data.record.datasource.WorkoutsDBDataSource
+import kz.maestrosultan.fitjournal.data.time.toStoredString
 import kz.maestrosultan.fitjournal.data.record.entity.DBLastOccurrence
 import kz.maestrosultan.fitjournal.data.record.entity.DBWorkoutExerciseObject
 import kz.maestrosultan.fitjournal.data.record.entity.DBWorkoutExerciseWithSets
@@ -757,9 +758,18 @@ class DefaultRecordRepository(
     }
 
     override suspend fun deleteUserRecords(userId: String) {
-        workoutsDB.deleteAllForUser(userId)
-        // Workout notes are owned here now — purge them in the same account-delete.
-        database?.let { db -> withContext(Dispatchers.IO) { db.workoutNotesQueries.deleteNotesByUserId(userId) } }
+        // Tombstone, not hard purge — see DefaultNotesRepository.deleteUserNotes.
+        val now = Clock.System.now()
+        workoutsDB.softDeleteAllForUser(userId, deletedAt = now)
+        // Workout notes are owned here now — tombstone them in the same account-delete.
+        database?.let { db ->
+            withContext(Dispatchers.IO) {
+                db.workoutNotesQueries.softDeleteWorkoutNotesByUserId(
+                    deletedAt = now.toStoredString(),
+                    userId = userId,
+                )
+            }
+        }
     }
 
     /**

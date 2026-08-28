@@ -3,6 +3,7 @@ package kz.maestrosultan.fitjournal.data.session.datasource
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import app.cash.sqldelight.coroutines.mapToOneOrNull
+import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -184,9 +185,18 @@ class WorkoutSessionsDBDataSource(
             Unit
         }
 
-    /** Hard purge for the delete-account flow. */
-    suspend fun deleteByUserId(userId: String) = withContext(Dispatchers.IO) {
-        dao.deleteWorkoutSessionsByUserId(userId)
+    /**
+     * Account deletion — bulk tombstone so the blocking drain has something to
+     * push. See the query comment in WorkoutSessions.sq for why this is not a hard purge.
+     */
+    suspend fun softDeleteByUserId(
+        userId: String,
+        deletedAt: Instant = Clock.System.now(),
+    ) = withContext(Dispatchers.IO) {
+        dao.softDeleteWorkoutSessionsByUserId(
+            deletedAt = deletedAt.toStoredString(),
+            userId = userId,
+        )
         Unit
     }
 

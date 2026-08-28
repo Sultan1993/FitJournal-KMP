@@ -216,7 +216,19 @@ class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
         )
     }
 
-    suspend fun deleteBodyMeasurementsByUserId(userId: String) = withContext(Dispatchers.IO) {
-        dao.deleteBodyMeasurementsByUserId(userId)
+    /**
+     * Account deletion — bulk tombstone so the blocking drain has something to
+     * push. See the query comment in BodyMeasurements.sq for why this is not a hard purge.
+     */
+    suspend fun softDeleteBodyMeasurementsByUserId(
+        userId: String,
+        deletedAt: Instant = Clock.System.now(),
+        updatedDate: Instant = deletedAt,
+    ) = withContext(Dispatchers.IO) {
+        dao.softDeleteBodyMeasurementsByUserId(
+            deletedAt = deletedAt.toStoredString(),
+            updatedDate = updatedDate.toStoredString(),
+            userId = userId,
+        )
     }
 }

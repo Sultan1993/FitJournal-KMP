@@ -319,6 +319,22 @@ class ExercisesDBDataSource(
     }
 
     /**
+     * Account deletion — bulk tombstone so the blocking drain has something to
+     * push. See the query comment in Exercises.sq for why this is not a hard purge.
+     */
+    suspend fun softDeleteCustomExercisesByUserId(
+        userId: String,
+        deletedAt: Instant = Clock.System.now(),
+        updatedDate: Instant = deletedAt,
+    ) = withContext(Dispatchers.IO) {
+        dao.softDeleteCustomExercisesByUserId(
+            deletedAt = deletedAt.toStoredString(),
+            updatedDate = updatedDate.toStoredString(),
+            userId = userId,
+        )
+    }
+
+    /**
      * Hot-read-path: every live exercise the user can see (catalog + this
      * user's customs) with categories resolved, in 2 SQL calls — categories
      * loaded into one map, exercises read once and joined in code. User-scoped

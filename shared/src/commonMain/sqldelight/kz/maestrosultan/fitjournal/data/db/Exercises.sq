@@ -165,6 +165,20 @@ SET deletedAt = ?, updatedDate = ?, pendingUpload = 1
 WHERE uuid = ?
 AND deletedAt IS NULL;
 
+-- Account deletion. Tombstone rather than hard purge: a DELETEd row leaves no
+-- `pendingUpload=1` behind, so the blocking drain in DeleteAccountUseCase has
+-- nothing to push and the AWS row outlives the account forever. Mirrors
+-- softDeleteJournalsByUserId, which always got this right. The local rows are
+-- dropped by LocalDbWiper once the drain confirms the tombstones landed.
+-- Scoped to the user's OWN exercises: `global = 0` keeps the seeded catalog,
+-- which is shared and must survive one account leaving.
+softDeleteCustomExercisesByUserId:
+UPDATE exercises
+SET deletedAt = ?, updatedDate = ?, pendingUpload = 1
+WHERE userId = ?
+AND global = 0
+AND deletedAt IS NULL;
+
 deleteExercise:
 DELETE FROM exercises
 WHERE uuid = ?;

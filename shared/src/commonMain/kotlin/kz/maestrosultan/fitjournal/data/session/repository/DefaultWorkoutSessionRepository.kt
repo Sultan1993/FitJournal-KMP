@@ -132,7 +132,8 @@ class DefaultWorkoutSessionRepository(
     override suspend fun deleteSession(userId: String, sessionUuid: String) =
         sessionsDB.deleteByUuid(sessionUuid, userId, clock.now())
 
-    override suspend fun deleteUserSessions(userId: String) = sessionsDB.deleteByUserId(userId)
+    // Tombstone, not hard purge — see DefaultNotesRepository.deleteUserNotes.
+    override suspend fun deleteUserSessions(userId: String) = sessionsDB.softDeleteByUserId(userId)
     private companion object {
         /** Long enough that a failing read cannot spin, short enough to be invisible. */
         const val RUNNING_SESSION_RETRY_DELAY_MS = 1_000L
