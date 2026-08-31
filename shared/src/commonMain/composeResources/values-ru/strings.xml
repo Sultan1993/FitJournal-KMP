@@ -265,8 +265,6 @@
     <string name="rest_activity_next">далее %1$s</string>
     <string name="focus_sets">Подходы</string>
     <string name="focus_delete_set_title">Удалить подход %1$d?</string>
-    <string name="focus_reset_set_title">Сбросить подход %1$d?</string>
-    <string name="focus_reset">Сбросить</string>
     <string name="focus_add_another_set">Добавить подход</string>
     <string name="focus_target">Цель</string>
     <string name="focus_save_changes">Сохранить изменения</string>
@@ -301,4 +299,12 @@
     <string name="measurement_min">мин</string>
     <string name="workout_set_reps_unit">повт.</string>
     <string name="history_placeholder_title">История отсутствует</string>
+    <string name="focus_set_options">Действия с подходом</string>
+    <string name="focus_menu_log_set">Записать подход</string>
+    <string name="focus_menu_clear_set">Очистить подход</string>
+    <string name="focus_menu_delete_set">Удалить подход</string>
+    <string name="focus_clear_set_title">Очистить подход %1$d?</string>
+    <string name="focus_clear_set_message">Записанные значения будут удалены. Подход останется на месте — его можно записать заново.</string>
+    <string name="focus_clear">Очистить</string>
+    <string name="focus_delete_set_message">Подход будет удалён из тренировки. Следующие подходы сдвинутся вверх.</string>
 </resources>

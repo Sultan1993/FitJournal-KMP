@@ -1,7 +1,6 @@
 package kz.maestrosultan.fitjournal.ui.workout.focus.components
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -9,9 +8,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,20 +24,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.TextAutoSize
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,26 +45,17 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
-import kz.maestrosultan.fitjournal.shared.generated.resources.common_cancel
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_add_another_set
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_delete_set_title
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_log_set_n
-import kz.maestrosultan.fitjournal.shared.generated.resources.focus_reset
-import kz.maestrosultan.fitjournal.shared.generated.resources.focus_reset_set_title
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_save_changes
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_sets
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_target
@@ -83,6 +66,26 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_reset
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_menu_delete
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_set_label
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
+import androidx.compose.material3.ripple
+import kz.maestrosultan.fitjournal.shared.generated.resources.focus_clear
+import kz.maestrosultan.fitjournal.shared.generated.resources.focus_clear_set_message
+import kz.maestrosultan.fitjournal.shared.generated.resources.focus_clear_set_title
+import kz.maestrosultan.fitjournal.shared.generated.resources.focus_delete_set_message
+import kz.maestrosultan.fitjournal.shared.generated.resources.focus_set_options
+import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_options
+import kz.maestrosultan.fitjournal.ui.common.ConfirmActionSheet
+import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.focus.FocusEditorUi
 import kz.maestrosultan.fitjournal.ui.workout.focus.FocusInputField
@@ -108,13 +111,11 @@ private class EditorLatch(var value: FocusEditorUi)
 
 private val CollapsedRadius = 16.dp
 private val ExpandedRadius = 22.dp
-private val RevealWidthWithReset = 120.dp
-private val RevealWidthDeleteOnly = 64.dp
 private val CommitRevealWidth = 80.dp
 
 // Non-translatable glyphs (multiplication sign, plus) — kept as named
 // constants instead of inline string literals passed to Text. Everything the
-// natives draw as a vector (check / reset / delete / chevron / backspace) is
+// natives draw as a vector (check / reset / delete / chevron / options / backspace) is
 // an Icon, not a glyph: a glyph can't be tinted, scaled or rotated the way
 // those need to be (see the chevron in FocusSetHeaderRow).
 private const val GlyphTimes = "×"
@@ -126,8 +127,8 @@ private const val GlyphPlus = "+"
  * trailing synthetic "Add another set" row when present — with a single
  * expanded editor row. `slots`/`editor` (from [FocusEditorUi]) are the ONLY
  * source of truth for which row is open (invariant 3): this composable holds
- * no expanded-row state of its own, only per-row swipe-reveal offsets, which
- * are pure UI animation state.
+ * no expanded-row state of its own, only which of a row's action sheets is up
+ * and its commit-swipe offset, both transient widget state.
  */
 @Composable
 fun FocusSetStack(
@@ -247,25 +248,39 @@ private fun FocusAccordionRow(
     onExpandedRowPositioned: (String, LayoutCoordinates) -> Unit,
 ) {
     val expanded = slot.isExpanded
-    val swipeable = !expanded && !slot.isAddAnother
-    val canReset = swipeable && slot.kind == FocusSetSlotUi.Kind.Finished
-    val canCommit = swipeable && slot.kind != FocusSetSlotUi.Kind.Finished && slot.valueText != "—"
-    val revealWidthDp = if (canReset) RevealWidthWithReset else RevealWidthDeleteOnly
+    // Every REAL set row carries the ⋮, open or closed, so it never moves or
+    // vanishes under the thumb as rows expand. Only the synthetic add-another
+    // row is excluded — it has no set to act on yet.
+    val canOpenMenu = !slot.isAddAnother
+    // Nothing to clear until something is logged.
+    val canClear = canOpenMenu && slot.kind == FocusSetSlotUi.Kind.Finished
+    // ...and nothing to log once it is. Withheld from an OPEN row on top of
+    // that: its editor's own commit button, two rows below the menu, already
+    // does exactly this — offering it twice in one glance is just confusing.
+    val canLogSet = canOpenMenu && !expanded &&
+        slot.kind != FocusSetSlotUi.Kind.Finished && slot.valueText != "—"
+    // The swipe is the gesture route to the same CommitTarget, so it carries
+    // the same predicate. The sheet keeps its copy because a swipe is
+    // unreachable with a screen reader.
+    val canCommit = canLogSet
 
-    // Swipe-reveal offset — pure UI animation state, NOT the accordion's
+    // ONE sealed value, not three booleans: the menu and the two confirmations
+    // are mutually exclusive, and as separate flags nothing stopped a confirm
+    // sheet opening over the menu. Transient widget-only state — it carries no
+    // accordion meaning, which still comes only from slot.isExpanded / editor.
+    var rowSheet: FocusRowSheet by remember(slot.id) { mutableStateOf(FocusRowSheet.None) }
+
+    // Commit-swipe offset — pure UI animation state, NOT the accordion's
     // expanded-row state (that lives entirely in slot.isExpanded / editor).
+    // RIGHT ONLY. The trailing reset/delete reveal that used to share this
+    // Animatable is gone: it settled OPEN and stayed there, so a row inside the
+    // exercise pager held a drag the pager wanted, and then absorbed the next
+    // tap. This one never rests off zero — past the threshold it acts and
+    // returns, under it it springs back — so it borrows the gesture for the
+    // length of one fling instead of holding it.
     val offsetX = remember(slot.id) { Animatable(0f) }
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
-
-    // Swipe-action confirmations — scoped against the "zero mutableStateOf
-    // for expanded/editor state" criterion, not against it: these two flags
-    // carry no accordion meaning (the open row still comes only from
-    // slot.isExpanded / editor), they are transient widget-only state that
-    // exists purely so a mis-tap while scrolling can't mutate a set (1:1
-    // with iOS FocusSetStackView's confirmDelete/confirmReset, :122-124).
-    var confirmDelete by remember(slot.id) { mutableStateOf(false) }
-    var confirmReset by remember(slot.id) { mutableStateOf(false) }
 
     // Keep the last editor the row was opened with so the body stays rendered
     // through the shrink animation: the shared editor recomputes the moment
@@ -282,8 +297,6 @@ private fun FocusAccordionRow(
     }
     val lastEditor = editorLatch.value
 
-    // A row the VM expands mid-swipe (e.g. post-log advance) must not keep a
-    // stale reveal once it collapses back.
     LaunchedEffect(expanded) {
         if (expanded) offsetX.snapTo(0f)
     }
@@ -293,48 +306,27 @@ private fun FocusAccordionRow(
     // slots every time it flips.
     val rowInteraction = remember { MutableInteractionSource() }
 
-    // Card/header tap. An open swipe reveal absorbs the FIRST tap — otherwise
-    // the editor expands onto a swiped-open row and the two animations collide.
     val onRowTap: () -> Unit = {
-        if (offsetX.value != 0f) {
-            scope.launch { offsetX.animateTo(0f) }
-        } else {
-            when {
-                expanded -> onCollapseEditor()
-                slot.isAddAnother -> onAddAnotherSet()
-                else -> onEditSet(slot.id)
-            }
+        when {
+            expanded -> onCollapseEditor()
+            slot.isAddAnother -> onAddAnotherSet()
+            else -> onEditSet(slot.id)
         }
     }
 
     val density = LocalDensity.current
-    val revealWidthPx = with(density) { revealWidthDp.toPx() }
     val commitWidthPx = with(density) { CommitRevealWidth.toPx() }
 
-    // Which bar is showing is a SIGN, not a position. Read through derivedStateOf
-    // so the row recomposes when the sign flips, not on every snapTo of the drag
-    // and every frame of the settle animation — the offset itself is already a
-    // deferred read in `Modifier.offset { }` two dozen lines below.
-    val revealingActions by remember(offsetX) { derivedStateOf { offsetX.value < 0f } }
+    // Whether the bar is showing is a SIGN, not a position. Read through
+    // derivedStateOf so the row recomposes when the sign flips, not on every
+    // snapTo of the drag and every frame of the settle — the offset itself is
+    // already a deferred read in `Modifier.offset { }` below.
     val revealingCommit by remember(offsetX) { derivedStateOf { offsetX.value > 0f } }
 
     Box(modifier = Modifier.fillMaxWidth()) {
-        // matchParentSize gives the bars a BOUNDED height to fill — the stack
+        // matchParentSize gives the bar a BOUNDED height to fill — the stack
         // sits in an unbounded (scrolling) parent, where fillMaxHeight alone
-        // would collapse them to their icon.
-        if (swipeable && revealingActions) {
-            Box(modifier = Modifier.matchParentSize()) {
-                FocusSwipeActions(
-                    canReset = canReset,
-                    width = revealWidthDp,
-                    // Swipe alone never mutates a set — it only arms the confirm
-                    // dialog below; DeleteSet/ResetSet dispatch from there.
-                    onReset = { confirmReset = true },
-                    onDelete = { confirmDelete = true },
-                    modifier = Modifier.align(Alignment.CenterEnd),
-                )
-            }
-        }
+        // would collapse it to its icon.
         if (canCommit && revealingCommit) {
             Box(modifier = Modifier.matchParentSize()) {
                 FocusSwipeCommit(
@@ -347,37 +339,28 @@ private fun FocusAccordionRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("focus_set_row")
-                // offset BEFORE draggable: the drag hit region is the row's
-                // presented position, so a revealed row's exposed action strip
-                // is outside it (1:1 with Android / UIKit hit-testing).
                 .offset { IntOffset(offsetX.value.roundToInt(), 0) }
                 .let {
-                    if (swipeable) {
+                    if (canCommit) {
                         it.draggable(
                             orientation = Orientation.Horizontal,
                             state = rememberDraggableState { delta ->
+                                // Clamped at 0: there is no trailing reveal any
+                                // more, so a leftward drag does nothing here and
+                                // the pager gets it.
                                 scope.launch {
-                                    val min = -revealWidthPx
-                                    val max = if (canCommit) commitWidthPx else 0f
-                                    offsetX.snapTo((offsetX.value + delta).coerceIn(min, max))
+                                    offsetX.snapTo((offsetX.value + delta).coerceIn(0f, commitWidthPx))
                                 }
                             },
                             onDragStopped = {
-                                when {
-                                    // Past the commit threshold the GESTURE fills
-                                    // the target — the bar behind is a pure
-                                    // affordance, never a tap target.
-                                    canCommit && offsetX.value >= commitWidthPx / 2f -> {
-                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        onCommitTarget(slot.id)
-                                        scope.launch { offsetX.animateTo(0f) }
-                                    }
-                                    // Trailing actions: past half → settle open.
-                                    offsetX.value <= -revealWidthPx / 2f ->
-                                        scope.launch { offsetX.animateTo(-revealWidthPx) }
-
-                                    else -> scope.launch { offsetX.animateTo(0f) }
+                                // Past the threshold the GESTURE fills the target
+                                // — the bar behind is a pure affordance, never a
+                                // tap target. Either way the row returns to rest.
+                                if (offsetX.value >= commitWidthPx / 2f) {
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onCommitTarget(slot.id)
                                 }
+                                scope.launch { offsetX.animateTo(0f) }
                             },
                         )
                     } else {
@@ -433,6 +416,12 @@ private fun FocusAccordionRow(
                     slot = slot,
                     editor = editor,
                     expanded = expanded,
+                    onMenu = if (canOpenMenu) {
+                        { rowSheet = FocusRowSheet.Menu }
+                    } else {
+                        // Add-another only, and only while open — it has no set.
+                        null
+                    },
                     // The open row's only way back: its header, chevron
                     // included. Applied OUTSIDE the row's own padding, so the
                     // target is the whole strip rather than just the glyphs.
@@ -467,59 +456,61 @@ private fun FocusAccordionRow(
         }
     }
 
-    if (confirmDelete) {
-        FocusSwipeConfirmDialog(
-            title = stringResource(Res.string.focus_delete_set_title, slot.number),
-            confirmLabel = stringResource(Res.string.workout_menu_delete),
-            confirmColor = FjTheme.colors.negative,
-            onConfirm = {
-                confirmDelete = false
-                onDeleteSet(slot.id)
-                scope.launch { offsetX.animateTo(0f) }
+    when (rowSheet) {
+        FocusRowSheet.None -> Unit
+
+        FocusRowSheet.Menu -> FocusSetMenuSheet(
+            setNumber = slot.number,
+            canLogSet = canLogSet,
+            canClear = canClear,
+            // Logging from the menu writes immediately, like the swipe-right it
+            // replaces: the values are already on the row, so there is nothing
+            // to confirm and nothing to type.
+            onLogSet = {
+                rowSheet = FocusRowSheet.None
+                onCommitTarget(slot.id)
             },
-            onDismiss = {
-                confirmDelete = false
-                scope.launch { offsetX.animateTo(0f) }
-            },
+            // The two destructive ones only ARM a confirmation; DeleteSet /
+            // ResetSet dispatch from there, never from the menu row itself.
+            onClear = { rowSheet = FocusRowSheet.ConfirmClear },
+            onDelete = { rowSheet = FocusRowSheet.ConfirmDelete },
+            onDismiss = { rowSheet = FocusRowSheet.None },
         )
-    }
-    if (confirmReset) {
-        FocusSwipeConfirmDialog(
-            title = stringResource(Res.string.focus_reset_set_title, slot.number),
-            confirmLabel = stringResource(Res.string.focus_reset),
+
+        FocusRowSheet.ConfirmClear -> ConfirmActionSheet(
+            title = stringResource(Res.string.focus_clear_set_title, slot.number),
+            message = stringResource(Res.string.focus_clear_set_message),
+            confirmLabel = stringResource(Res.string.focus_clear),
             onConfirm = {
-                confirmReset = false
+                rowSheet = FocusRowSheet.None
                 onResetSet(slot.id)
-                scope.launch { offsetX.animateTo(0f) }
             },
-            onDismiss = {
-                confirmReset = false
-                scope.launch { offsetX.animateTo(0f) }
+            onDismiss = { rowSheet = FocusRowSheet.None },
+        )
+
+        FocusRowSheet.ConfirmDelete -> ConfirmActionSheet(
+            title = stringResource(Res.string.focus_delete_set_title, slot.number),
+            message = stringResource(Res.string.focus_delete_set_message),
+            confirmLabel = stringResource(Res.string.workout_menu_delete),
+            onConfirm = {
+                rowSheet = FocusRowSheet.None
+                onDeleteSet(slot.id)
             },
+            onDismiss = { rowSheet = FocusRowSheet.None },
         )
     }
 }
 
 /**
- * Shared shape for the two swipe-action confirmations (delete / reset).
- * [confirmColor] is the destructive tint — passed only by delete; reset keeps
- * the default button color, exactly as both natives do.
+ * Which of the row's sheets is up. Sealed rather than a boolean each, because
+ * exactly one can be open: the menu arms a confirmation, and the confirmation
+ * replaces it.
  */
-@Composable
-private fun FocusSwipeConfirmDialog(
-    title: String,
-    confirmLabel: String,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-    confirmColor: Color = Color.Unspecified,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = FjTheme.colors.surfaceElevated,
-        title = { Text(title) },
-        confirmButton = { TextButton(onClick = onConfirm) { Text(confirmLabel, color = confirmColor) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(Res.string.common_cancel)) } },
-    )
+private sealed interface FocusRowSheet {
+    data object None : FocusRowSheet
+    data object Menu : FocusRowSheet
+    data object ConfirmClear : FocusRowSheet
+    data object ConfirmDelete : FocusRowSheet
 }
 
 @Composable
@@ -564,13 +555,17 @@ private fun FocusSetHeaderRow(
     editor: FocusEditorUi,
     expanded: Boolean,
     modifier: Modifier = Modifier,
+    onMenu: (() -> Unit)? = null,
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
             .padding(
                 start = 16.dp,
-                end = 16.dp,
+                // The ⋮ carries its own padding as tap target, so the row gives
+                // up most of its end inset to keep the glyph on the same
+                // vertical as the chevron it replaced.
+                end = if (onMenu != null) 6.dp else 16.dp,
                 top = if (expanded) 12.dp else 18.dp,
                 bottom = if (expanded) 4.dp else 18.dp,
             ),
@@ -616,18 +611,41 @@ private fun FocusSetHeaderRow(
                 )
             }
         }
-        // ONE chevron rotated in place — a name swap (up/down glyph) can never
-        // animate; rotation can.
-        val chevronRotation by animateFloatAsState(
-            targetValue = if (expanded) -180f else 0f,
-            label = "rowChevron",
-        )
-        Icon(
-            painter = painterResource(Res.drawable.ic_common_arrow_down),
-            contentDescription = null,
-            tint = FjTheme.colors.textTertiary,
-            modifier = Modifier.size(16.dp).rotate(chevronRotation),
-        )
+        // The ⋮ holds this slot in BOTH states, so it never jumps position or
+        // disappears as a row opens. That costs the open row its chevron, and
+        // with it the only glyph that said "tap to close" — the header strip
+        // around the ⋮ still collapses the row, and the open row is already
+        // unmistakable from its brand border and editor body. The chevron
+        // branch below survives for the add-another row, which has no menu.
+        if (onMenu != null) {
+            Box(
+                // Clickable first so the padding is part of the tap target;
+                // unbounded ripple gives a bare Box the icon-button feel.
+                // Matches WorkoutExerciseItem's ⋮, which this one sits under.
+                modifier = Modifier
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = ripple(bounded = false, radius = 20.dp),
+                        onClick = onMenu,
+                    )
+                    .padding(10.dp)
+                    .testTag("focus_set_options"),
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_common_options),
+                    contentDescription = stringResource(Res.string.focus_set_options),
+                    tint = FjTheme.colors.textTertiary,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        } else {
+            Icon(
+                painter = painterResource(Res.drawable.ic_common_arrow_down),
+                contentDescription = null,
+                tint = FjTheme.colors.textTertiary,
+                modifier = Modifier.size(16.dp).rotate(180f),
+            )
+        }
     }
 }
 
@@ -851,46 +869,6 @@ private fun FocusEditorField(text: String, unit: String, focused: Boolean, onCli
     }
 }
 
-@Composable
-private fun FocusSwipeActions(canReset: Boolean, width: Dp, onReset: () -> Unit, onDelete: () -> Unit, modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier
-            .width(width)
-            .fillMaxHeight()
-            .padding(vertical = 8.dp)
-            .clip(RoundedCornerShape(topEnd = 12.dp, bottomEnd = 12.dp)),
-    ) {
-        if (canReset) {
-            Box(
-                modifier = Modifier.weight(1f).fillMaxHeight()
-                    .background(FocusResetActionColor)
-                    .clickable(onClick = onReset),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_common_reset),
-                    contentDescription = stringResource(Res.string.focus_reset),
-                    tint = Color.White,
-                    modifier = Modifier.size(18.dp),
-                )
-            }
-        }
-        Box(
-            modifier = Modifier.weight(1f).fillMaxHeight()
-                .background(FjTheme.colors.negative)
-                .clickable(onClick = onDelete),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                painter = painterResource(Res.drawable.ic_common_delete),
-                contentDescription = stringResource(Res.string.workout_menu_delete),
-                tint = Color.White,
-                modifier = Modifier.size(18.dp),
-            )
-        }
-    }
-}
-
 /** Pure affordance — the commit fires from the gesture, so this never takes a tap. */
 @Composable
 private fun FocusSwipeCommit(width: Dp, modifier: Modifier = Modifier) {
@@ -911,9 +889,6 @@ private fun FocusSwipeCommit(width: Dp, modifier: Modifier = Modifier) {
         )
     }
 }
-
-/** One-off orange for the reset swipe action — no design token yet (matches native). */
-private val FocusResetActionColor = Color(0xFFF5A623)
 
 /**
  * Dashed border, rounded-rect or circle — Compose's `border()` has no dash

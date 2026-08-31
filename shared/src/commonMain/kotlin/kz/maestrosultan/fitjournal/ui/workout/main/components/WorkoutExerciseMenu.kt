@@ -1,23 +1,18 @@
 package kz.maestrosultan.fitjournal.ui.workout.main.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kz.maestrosultan.fitjournal.domain.exercise.Exercise
@@ -38,11 +33,11 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.workout_menu_repla
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_menu_stats
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_menu_superset_add
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_menu_superset_remove
+import kz.maestrosultan.fitjournal.ui.common.MenuDivider
+import kz.maestrosultan.fitjournal.ui.common.MenuRow
 import kz.maestrosultan.fitjournal.ui.common.rememberSheetCloser
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.components.ExerciseAvatar
-import org.jetbrains.compose.resources.DrawableResource
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -179,50 +174,5 @@ fun WorkoutExerciseMenu(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun MenuDivider() {
-    HorizontalDivider(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        thickness = 1.dp,
-        // Same faint hairline as the cards / session bar — subtler than the solid border token.
-        color = FjTheme.colors.textPrimary.copy(alpha = 0.08f),
-    )
-}
-
-/**
- * One icon + label row. [color] tints both the glyph and the label — default is
- * the normal text pair; the destructive row passes the negative color.
- */
-@Composable
-private fun MenuRow(
-    icon: DrawableResource,
-    text: String,
-    color: Color = Color.Unspecified,
-    onClick: () -> Unit,
-) {
-    val resolved = if (color == Color.Unspecified) FjTheme.colors.textPrimary else color
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            painter = painterResource(icon),
-            contentDescription = null,
-            tint = resolved,
-            modifier = Modifier.size(20.dp),
-        )
-        Spacer(Modifier.width(16.dp))
-        Text(
-            text = text,
-            style = FjTheme.typography.body,
-            color = resolved,
-            maxLines = 1,
-        )
     }
 }

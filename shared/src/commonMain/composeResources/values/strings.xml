@@ -246,8 +246,6 @@
     <string name="rest_activity_next">next %1$s</string>
     <string name="focus_sets">Sets</string>
     <string name="focus_delete_set_title">Delete set %1$d?</string>
-    <string name="focus_reset_set_title">Reset set %1$d?</string>
-    <string name="focus_reset">Reset</string>
     <string name="focus_add_another_set">Add another set</string>
     <string name="focus_target">Target</string>
     <string name="focus_save_changes">Save changes</string>
@@ -282,4 +280,12 @@
     <string name="measurement_min">min</string>
     <string name="workout_set_reps_unit">reps</string>
     <string name="history_placeholder_title">No history available</string>
+    <string name="focus_set_options">Set options</string>
+    <string name="focus_menu_log_set">Log this set</string>
+    <string name="focus_menu_clear_set">Clear set</string>
+    <string name="focus_menu_delete_set">Delete set</string>
+    <string name="focus_clear_set_title">Clear set %1$d?</string>
+    <string name="focus_clear_set_message">The values you logged are removed. The set stays in place, ready to log again.</string>
+    <string name="focus_clear">Clear</string>
+    <string name="focus_delete_set_message">This set is removed from the workout. The sets after it move up.</string>
 </resources>

@@ -5,36 +5,61 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.runComposeUiTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.workout.focus.components.FocusSetStack
 
 /**
- * Gesture parity for the set-stack row (audit B1 / B4). Both natives treat the
- * swipe as ONE gesture — releasing past the threshold acts, and the revealed
- * bar is never a tap target — and both let an open reveal absorb the next tap
- * instead of expanding the editor onto a swiped-open row.
+ * Row affordances for the set stack.
+ *
+ * The row carried two horizontal swipes. The LEFT one — revealing reset/delete
+ * — is gone: it settled OPEN and stayed there, so a row inside the exercise
+ * pager held a drag the pager wanted and then swallowed the next tap. Its two
+ * actions moved to the ⋮.
+ *
+ * The RIGHT one survives. It commits the target and springs straight back, so
+ * it borrows the gesture for one fling rather than holding it. Both directions
+ * are pinned below, because "left does nothing now" is the whole point of the
+ * change and is invisible from the diff alone.
  */
 @OptIn(ExperimentalTestApi::class)
 class FocusSetStackTest {
 
-    /** B1 — releasing past the commit threshold fills the target from the gesture itself. */
+    /**
+     * The ⋮ must swallow its own tap. It sits inside a card whose whole surface
+     * opens the editor, so a fall-through would expand the row behind the sheet.
+     */
+    @Test
+    fun tappingTheOptions_opensTheMenu_andNeverEditsTheRow() = runComposeUiTest {
+        val edited = mutableListOf<String>()
+        setContent {
+            FitJournalTheme(darkTheme = false) {
+                stack(slot = finishedSlot, onEditSet = { edited += it })
+            }
+        }
+
+        onNodeWithTag("focus_set_options").performClick()
+        waitForIdle()
+
+        onNodeWithText("Delete set").assertIsDisplayed()
+        assertEquals(emptyList<String>(), edited, "the card underneath must not have opened")
+    }
+
+    /** The surviving gesture: releasing past the threshold fills the target. */
     @Test
     fun swipingRightPastTheThreshold_commitsTheTarget() = runComposeUiTest {
         val committed = mutableListOf<String>()
         setContent {
             FitJournalTheme(darkTheme = false) {
-                stack(
-                    slot = targetSlot,
-                    onCommitTarget = { committed += it },
-                )
+                stack(slot = targetSlot, onCommitTarget = { committed += it })
             }
         }
 
@@ -44,29 +69,131 @@ class FocusSetStackTest {
         assertEquals(listOf("s1"), committed)
     }
 
-    /** B4 — the first tap on a revealed row only closes the reveal; the second edits. */
+    /**
+     * The removed one. A left drag must pass straight through this row, or
+     * swiping to the previous exercise breaks and the row is left sitting open.
+     *
+     * Asserts on what the drag PRODUCED, not on a follow-up tap: with no pager
+     * above it in this harness nothing consumes the gesture, so the release
+     * lands inside the row's bounds and Compose scores it as a tap. That is an
+     * artefact of testing the row alone — in the app the pager consumes the
+     * drag and cancels the tap.
+     */
     @Test
-    fun tappingARevealedRow_closesTheReveal_beforeItEverEdits() = runComposeUiTest {
-        val edited = mutableListOf<String>()
+    fun swipingLeft_doesNothing_soThePagerGetsIt() = runComposeUiTest {
+        val committed = mutableListOf<String>()
         setContent {
             FitJournalTheme(darkTheme = false) {
-                stack(
-                    slot = finishedSlot,
-                    onEditSet = { edited += it },
-                )
+                stack(slot = finishedSlot, onCommitTarget = { committed += it })
             }
         }
 
         onNodeWithTag("focus_set_row").performTouchInput { swipeLeft() }
         waitForIdle()
 
-        onNodeWithTag("focus_set_row").performClick()
-        waitForIdle()
-        assertEquals(emptyList<String>(), edited)
+        assertEquals(emptyList<String>(), committed)
+        // No reveal, no bar, no actions — the row offers the drag nothing.
+        onNodeWithText("Delete set").assertDoesNotExist()
+    }
 
-        onNodeWithTag("focus_set_row").performClick()
+    /**
+     * The ⋮ is on the OPEN row too, and must not double as its close button.
+     * The header strip around it collapses the row, so a menu tap that fell
+     * through would both open the sheet and shut the editor underneath it.
+     */
+    @Test
+    fun theOpenRowHasTheMenuToo_andTappingItDoesNotCollapse() = runComposeUiTest {
+        var collapses = 0
+        setContent {
+            FitJournalTheme(darkTheme = false) {
+                stack(slot = expandedSlot, onCollapseEditor = { collapses++ })
+            }
+        }
+
+        onNodeWithTag("focus_set_options").performClick()
         waitForIdle()
-        assertEquals(listOf("s1"), edited)
+
+        onNodeWithText("Delete set").assertIsDisplayed()
+        assertEquals(0, collapses, "the header underneath must not have fired")
+    }
+
+    /**
+     * An open row withholds "Log this set" — its editor's commit button is
+     * already on screen doing exactly that.
+     */
+    @Test
+    fun theOpenRowsMenu_omitsLogThisSet() = runComposeUiTest {
+        setContent {
+            FitJournalTheme(darkTheme = false) {
+                stack(slot = expandedSlot)
+            }
+        }
+
+        onNodeWithTag("focus_set_options").performClick()
+        waitForIdle()
+
+        onNodeWithText("Log this set").assertDoesNotExist()
+        onNodeWithText("Delete set").assertIsDisplayed()
+    }
+
+    /** The same action from the sheet — the route a screen reader can take. */
+    @Test
+    fun logThisSet_commitsTheTarget() = runComposeUiTest {
+        val committed = mutableListOf<String>()
+        setContent {
+            FitJournalTheme(darkTheme = false) {
+                stack(slot = targetSlot, onCommitTarget = { committed += it })
+            }
+        }
+
+        onNodeWithTag("focus_set_options").performClick()
+        waitForIdle()
+        onNodeWithText("Log this set").performClick()
+        waitForIdle()
+
+        assertEquals(listOf("s1"), committed)
+    }
+
+    /**
+     * The two edit rows are mutually exclusive by state — an unlogged set has
+     * nothing to clear, a logged one has nothing left to log. Getting this wrong
+     * is how you end up offering "Clear" on an empty row.
+     */
+    @Test
+    fun theMenuOffersClearOrLog_neverBoth() = runComposeUiTest {
+        setContent {
+            FitJournalTheme(darkTheme = false) {
+                stack(slot = finishedSlot)
+            }
+        }
+
+        onNodeWithTag("focus_set_options").performClick()
+        waitForIdle()
+
+        onNodeWithText("Clear set").assertIsDisplayed()
+        onNodeWithText("Log this set").assertDoesNotExist()
+    }
+
+    /** Delete is never one tap: the menu row only arms the confirmation. */
+    @Test
+    fun deleteFromTheMenu_confirmsFirst() = runComposeUiTest {
+        val deleted = mutableListOf<String>()
+        setContent {
+            FitJournalTheme(darkTheme = false) {
+                stack(slot = finishedSlot, onDeleteSet = { deleted += it })
+            }
+        }
+
+        onNodeWithTag("focus_set_options").performClick()
+        waitForIdle()
+        onNodeWithText("Delete set").performClick()
+        waitForIdle()
+        assertEquals(emptyList<String>(), deleted, "the menu row only arms the confirm")
+
+        onNodeWithText("Delete set 1?").assertIsDisplayed()
+        onNodeWithText("Delete").performClick()
+        waitForIdle()
+        assertEquals(listOf("s1"), deleted)
     }
 
     /**
@@ -147,6 +274,7 @@ class FocusSetStackTest {
         onEditSet: (String) -> Unit = {},
         onCommitTarget: (String) -> Unit = {},
         onCollapseEditor: () -> Unit = {},
+        onDeleteSet: (String) -> Unit = {},
     ) {
         FocusSetStack(
             slots = listOf(slot),
@@ -160,7 +288,7 @@ class FocusSetStackTest {
             onKeypadBackspace = {},
             onLogSet = {},
             onSaveSet = {},
-            onDeleteSet = {},
+            onDeleteSet = onDeleteSet,
             onResetSet = {},
             onCommitTarget = onCommitTarget,
         )

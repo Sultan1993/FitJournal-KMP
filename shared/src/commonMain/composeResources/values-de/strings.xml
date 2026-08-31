@@ -245,8 +245,6 @@
     <string name="rest_activity_next">als Nächstes %1$s</string>
     <string name="focus_sets">Sätze</string>
     <string name="focus_delete_set_title">Satz %1$d löschen?</string>
-    <string name="focus_reset_set_title">Satz %1$d zurücksetzen?</string>
-    <string name="focus_reset">Zurücksetzen</string>
     <string name="focus_add_another_set">Weiteren Satz hinzufügen</string>
     <string name="focus_target">Ziel</string>
     <string name="focus_save_changes">Änderungen speichern</string>
@@ -281,4 +279,12 @@
     <string name="measurement_min">min</string>
     <string name="workout_set_reps_unit">Wdh.</string>
     <string name="history_placeholder_title">Kein Trainingsverlauf verfügbar</string>
+    <string name="focus_set_options">Satz-Optionen</string>
+    <string name="focus_menu_log_set">Diesen Satz eintragen</string>
+    <string name="focus_menu_clear_set">Satz leeren</string>
+    <string name="focus_menu_delete_set">Satz löschen</string>
+    <string name="focus_clear_set_title">Satz %1$d leeren?</string>
+    <string name="focus_clear_set_message">Die eingetragenen Werte werden entfernt. Der Satz bleibt bestehen und kann neu eingetragen werden.</string>
+    <string name="focus_clear">Leeren</string>
+    <string name="focus_delete_set_message">Dieser Satz wird aus dem Training entfernt. Die nachfolgenden Sätze rücken auf.</string>
 </resources>
