@@ -28,7 +28,12 @@ kotlin {
 
     android {
         namespace = "kz.maestrosultan.fitjournal.multiplatform"
-        compileSdk = libs.versions.compileSDK.get().toInt()
+        // Compose 1.13 (CMP 1.13.0-alpha02) AARs require compiling against 37.1+.
+        compileSdk {
+            version = release(libs.versions.compileSDK.get().toInt()) {
+                minorApiLevel = libs.versions.compileSDKMinor.get().toInt()
+            }
+        }
         minSdk = libs.versions.minSDK.get().toInt()
         androidResources.enable = true
     }
