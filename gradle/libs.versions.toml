@@ -6,12 +6,12 @@ kotlin = "2.4.20"
 sqldelight = "2.4.1"
 coroutines = "1.11.0"
 skie = "0.10.15"
-compose = "1.12.2"
+compose = "1.13.0-alpha02"
 # org.jetbrains.compose.material3:material3 tracks its OWN version line, not the
 # composeMultiplatform version (there is no material3:1.11.1). This is the version
-# the CMP 1.12.0 release notes bundle — https://github.com/JetBrains/compose-multiplatform/releases/tag/v1.12.0
-# (Material / Runtime / UI / Foundation are all :1.12.0; Material3 is :1.12.0-alpha03).
-material3 = "1.12.0-alpha03"
+# the CMP 1.13.0-alpha02 release notes bundle — https://github.com/JetBrains/compose-multiplatform/releases/tag/v1.13.0-alpha02
+# (Runtime / UI / Foundation are all :1.13.0-alpha02, and so is Material3 this time).
+material3 = "1.13.0-alpha02"
 lifecycle = "2.11.0"
 calendar = "2.10.1"
 reorderable = "3.1.0"
