@@ -99,3 +99,27 @@ Spec: 2026-10-17-workout-tracking-analytics-design.md (approaches, critique alon
 - Sol: 22 raised, 21 fixed, 1 intentional, 0 rejected, 0 open.
 - Heads: Multiplatform 2d8bd4b+docs, iOS b8a095c7, Android 198886bd.
 - UG-2 (the signed-in device checklist, README) is PENDING and needs you.
+
+# Whole-branch foureyes-review, 2 rounds (2026-10-17)
+Claude (opus) and Codex (gpt-6.1-sol) reviewed each repo's full feature/analytics range, with the sibling repos readable. Each model's one-model findings were cross-checked by the other model. Reports are in each repo's .git/foureyes-review/local-r{1,2}-*/report.md.
+
+**Round 1: 14 confirmed, 3 refuted**
+- Refuted: UIKit foreground re-emit (the spec prescribes viewDidAppear); cookbook 13 mixing two devices; equal timestamps.
+- Fixed (1dbf649 / 02ea2f9c / 68497247):
+  - iOS skip reason was Superwall's English sentence; now explicit case names.
+  - `sign_in` is emitted before the AWS fetch, so `is_new_user` survives a failed provisioning.
+  - `sign_out` fires on user actions only; identity is cleared on every teardown (both platforms).
+  - iOS could SIGABRT on the analytics read; it now uses the shared `hadLiveRecordForAnalytics`.
+  - An auto-discarded empty session had no end event; added.
+  - Copy `count` counted records, not exercises.
+  - Cookbook 13 paired late iOS ends incorrectly.
+  - Android UserSession was populated only by workout screens; now app-wide.
+  - Android debug builds dropped user properties.
+
+**Round 2: 3 confirmed (each raised by both models), 4 refuted or below the bar**
+- Fixed (01e8a50 / 8eedb42f / bfe45808):
+  - Both discard paths now emit only when the delete really tombstoned a row (racing triggers had double-emitted).
+  - The shared sync clears account properties when the session ends, and iOS clears the analytics user after logout.
+  - Android same-account re-sign-in now republishes UserSession.
+
+**After round 2:** gates all green (jvmTest, iOS, Android, 19/19 cookbook, iOS + Android delivery smoke). The round-2 fixes have NOT been through a third review round.
