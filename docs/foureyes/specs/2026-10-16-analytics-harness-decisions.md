@@ -34,3 +34,7 @@ Nothing is pushed or merged; all work is on `feature/analytics` in iOS / Android
 - Deviation from the foureyes procedure: each implementer reads a per-task brief file (task + Global Constraints + Contracts + Assumptions + Design, verbatim, ~60KB) instead of getting it pasted in the prompt. Same content, but it keeps the coordinator's context small enough to run all night.
 - No native task tracker in this session, so tasks.json status plus this log are the record.
 - Wave 1: Task 1 (KMP catalog, harness, events.json) runs on the frontier tier (opus).
+- Task 1 committed as 0c1822c (12 analytics tests, all 76 jvmTest suites green, iOS KMP compile green). Implementer judgment calls I accepted:
+  - `workouts_used` is unset when unlimited.
+  - `sub_tier` mapping: entitled / lapsed (ever subscribed, not entitled) / free (never subscribed) / unknown (entitlement not resolved yet).
+  - `ResultType` comes from `domain.workout`, not `domain.exercise` as the spec said; Task 2 is told.
