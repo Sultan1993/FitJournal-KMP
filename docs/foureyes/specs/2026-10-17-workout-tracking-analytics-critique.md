@@ -27,3 +27,6 @@
 ## code · round 1 · 2026-10-17 · 500s
 - [Critical] fixed — discard-empty used the on-screen journal (jid) instead of the running session's journal for the records check, the event and the note cleanup
 - [Critical] fixed — README UG-2 evidence template said RESULT: PASS but the Task 10 verifier matches ^UG-2: PASS$
+
+## code · round 2 · 2026-10-17 · 200s
+- (none)

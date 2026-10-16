@@ -79,3 +79,23 @@ Nothing is pushed or merged; all work is on `feature/analytics` in iOS / Android
 4. **Decide on GDPR/EEA consent.** None is built yet; collection is on, as it was before.
 5. **Branching:** `feature/analytics` is stacked on `chore/deps-latest`. Rebase onto develop if the deps PRs don't merge first.
 6. **Throwaway dataset:** `fit-journal-pro.analytics_fixture` (EU) holds only fake events; its tables expire after 30 days. Delete it any time; `run_cookbook.py --load` recreates it.
+
+# Run 2 — workout tracking + exercise logging (2026-10-17)
+Spec: 2026-10-17-workout-tracking-analytics-design.md (approaches, critique alongside). Approach: thread provenance explicitly (user pick); a calendar hop inside the workout screen emits `workout_opened{entry=calendar}` (user pick).
+
+**Decisions**
+- `exercise_info` was dropped from the vocabulary. Each platform has exactly one side door, the exercise info screen opening the calendar sheet (one construction site per platform), so the flow emits `exercise_calendar`.
+- Rest timers resumed after the process died emit no `rest_timer_ended`. This is a scoped exclusion; cookbook 13 measures the orphan rate with proper start/end pairing.
+- Repository writes now report what they did: `replaceExerciseInRecord`, `deleteRecord` and the KMP `DeleteRecordUseCase` return Boolean, so `exercise_replaced` and `exercise_removed` fire only on a real write. The `DeleteRecordUseCase` change was my extension of Task 3's file list.
+- `EndWorkoutUseCase` now takes a records repository (explicit 3-arg constructor), and `createWorkoutViewModel` now requires an `entry`. Both were deliberately breaking changes, so a forgotten call site fails to compile.
+- In Focus, removing one member of a superset reports the ORIGINAL `record_id`, matching that exercise's `set_logged`; the README says to join on record_id + exercise_id.
+
+**Bugs found by reviews**
+- Discard-empty used the on-screen journal instead of the running session's journal. This affected the emptiness check, the event, and note cleanup, so a pre-existing app path could clear the wrong journal's note. Fixed in 2d8bd4b.
+- The UG-2 evidence marker didn't match its checker. Fixed.
+
+**Result**
+- Gates: jvmTest, iOS, Android, iOS/Android consistency greps and cookbook 19/19 all pass, re-run after the last fix. Delivery checks on the simulator and emulator pass.
+- Sol: 22 raised, 21 fixed, 1 intentional, 0 rejected, 0 open.
+- Heads: Multiplatform 2d8bd4b+docs, iOS b8a095c7, Android 198886bd.
+- UG-2 (the signed-in device checklist, README) is PENDING and needs you.
