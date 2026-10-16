@@ -4,6 +4,7 @@ log a first workout, and log a second DISTINCT workout slot within 7 days.
 Params: @start_date/@end_date (entry window, YYYYMMDD), @observed_through (last fully exported day, >= @end_date).
 Cohort = new-user sign_in inside the window; follow-ups are read from `events` (through @observed_through).
 Maturity rule: step 4 counts a user only when first-workout date + 7 days <= @observed_through (eligible_users).
+eligible_users = users who reached the previous step (step 1: itself; step 4: mature only) — the conversion denominator.
 Output: step STRING, users INT64, eligible_users INT64.
 */
 WITH events AS (
@@ -60,7 +61,7 @@ second_workout AS (
 )
 SELECT step, users, eligible_users FROM (
   SELECT 1 AS ord, 'signed_in' AS step, (SELECT COUNT(*) FROM signups) AS users, (SELECT COUNT(*) FROM signups) AS eligible_users
-  UNION ALL SELECT 2, 'viewed_workout', (SELECT COUNT(*) FROM viewed), (SELECT COUNT(*) FROM viewed)
+  UNION ALL SELECT 2, 'viewed_workout', (SELECT COUNT(*) FROM viewed), (SELECT COUNT(*) FROM signups)
   UNION ALL SELECT 3, 'logged_first_workout', (SELECT COUNT(*) FROM first_workout), (SELECT COUNT(*) FROM viewed)
   UNION ALL SELECT 4, 'second_workout_7d', (SELECT COUNT(*) FROM second_workout), (SELECT COUNT(*) FROM eligible)
 )
