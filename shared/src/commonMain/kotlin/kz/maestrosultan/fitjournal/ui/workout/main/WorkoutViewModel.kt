@@ -420,14 +420,18 @@ class WorkoutViewModel(
     private fun onRequestEndSession() {
         if (endRequestInFlight) return
         val uid = userId ?: return
-        val jid = journalId ?: return
+        if (journalId == null) return
         val running = _uiState.value.runningSession ?: return
         endRequestInFlight = true
         viewModelScope.launch {
             try {
                 // ponytail: getRecordsByDate over-reads (builds lastOccurrence) but
                 // End is a rare user tap — swap for a COUNT query if it ever profiles hot.
-                val hasRecords = recordRepository.getRecordsByDate(uid, jid, running.date)
+                // The running session is user-wide and End stays reachable after a
+                // journal switch, so every read/write/event here uses the SESSION's
+                // journal, not the one currently on screen.
+                val sessionJid = running.journalId
+                val hasRecords = recordRepository.getRecordsByDate(uid, sessionJid, running.date)
                     .any { it.workoutNumber == running.workoutNumber }
                 if (hasRecords) {
                     emit(WorkoutContract.ViewEffect.RequestEndSession)
@@ -436,7 +440,7 @@ class WorkoutViewModel(
                     // Nothing to count: a discarded-empty workout's counts are literal zeros.
                     tracker.track(
                         AnalyticsEvent.WorkoutSessionEnd(
-                            journalId = jid,
+                            journalId = sessionJid,
                             workoutDate = running.date,
                             workoutNumber = running.workoutNumber,
                             durationSec = running.durationSec(clock.now()),
@@ -447,7 +451,7 @@ class WorkoutViewModel(
                         ),
                     )
                     // Nothing was logged → the page is not a workout; drop any note with it.
-                    recordRepository.clearWorkoutNote(uid, jid, running.date, running.workoutNumber)
+                    recordRepository.clearWorkoutNote(uid, sessionJid, running.date, running.workoutNumber)
                     // Both writes are tombstones that have to reach AWS; without this
                     // they'd sit until the next cold start / foreground / periodic tick.
                     syncTrigger.requestTick(SyncReason.PostWrite.WorkoutSession)

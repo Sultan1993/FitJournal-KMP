@@ -196,7 +196,7 @@ PLATFORM: ios|android
 - [x] <item 1 text>
 - [ ] <item 2 text>
 ... one line per checklist item, in order (eighteen lines) ...
-RESULT: PASS
+UG-2: PASS
 ```
 
-The last line is `RESULT: PASS` (every item `[x]`) or `RESULT: FAIL`.
+The last line is `UG-2: PASS` (every item `[x]`) or `UG-2: FAIL` — the Task 10 verifier matches `^UG-2: PASS$` exactly.
