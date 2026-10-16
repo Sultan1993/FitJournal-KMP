@@ -29,3 +29,8 @@ Nothing is pushed or merged; all work is on `feature/analytics` in iOS / Android
 - Drafter's "unresolved" item, AVD on the M2: `vibetrip_api36` exists, so Task 10's "first AVD" rule works and nothing needs creating. (It's the VibeTrip AVD; it's only booted to install a debug build.)
 - Sol spec review round 2 (493s, the final round): 5 Critical, 4 Important, all checked and found true. Most important: "new user" was decided by whether an AWS row exists rather than Firebase's real isNewUser flag, which would have polluted the activation funnel. Also: GA4 custom dimensions can't filter integer params; `screen_name` is exported as `firebase_screen`; a ScreenView event was missing; a Clock constructor seam was dropped.
 - UG-1 (the signed-in checks: identity, Focus → return, sets, paywall) becomes an explicit user-gate task. It **can't run while you sleep**, so it'll be reported as PENDING for you, not claimed done.
+- Spec finalized (revision 2, 11 tasks) and committed to Multiplatform as 4635054. Sol on the spec: 21 raised, 21 fixed, 0 rejected, 0 open.
+- Build stage started. Bases: iOS fd19d762, Android 78658134, KMP 4635054 (parent branch: chore/deps-latest). Run artifacts are in Multiplatform/.git/foureyes-build/4635054/.
+- Deviation from the foureyes procedure: each implementer reads a per-task brief file (task + Global Constraints + Contracts + Assumptions + Design, verbatim, ~60KB) instead of getting it pasted in the prompt. Same content, but it keeps the coordinator's context small enough to run all night.
+- No native task tracker in this session, so tasks.json status plus this log are the record.
+- Wave 1: Task 1 (KMP catalog, harness, events.json) runs on the frontier tier (opus).
