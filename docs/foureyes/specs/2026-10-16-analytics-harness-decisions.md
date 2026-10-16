@@ -68,3 +68,14 @@ Nothing is pushed or merged; all work is on `feature/analytics` in iOS / Android
   - The Android finish sheet logged its screen view twice.
   - `set_logged` fired on a write the repository silently skipped. Fix: `addSet` now returns whether a row was inserted.
   - `workout_session_start` fired on an idempotent re-start. Fix: emit only on create/revive.
+- The round-1 fixes are committed: KMP 46d6f44, Android 24289313. Full barrier re-run after them: jvmTest, iOS, Android, legacy grep and cookbook 12/12 all green.
+- Sol code review round 2 (424s): **pass**, no findings.
+- Final heads: Multiplatform 46d6f44+docs, iOS f359c43d, Android 24289313. All on `feature/analytics`. Nothing pushed or merged.
+
+## Waiting on you (morning)
+1. **Enable the BigQuery export:** Firebase console → Project settings → Integrations → BigQuery → Link, with daily export and location **EU** (steps in `docs/analytics/README.md`). Until this is on, there is no raw data to analyze. The export does not backfill history.
+2. **Register the custom definitions** listed in the README if you want to use GA4 Explore. BigQuery doesn't need them.
+3. **Task 11 / UG-1:** the signed-in check on a device or simulator. It's an 11-item checklist in the README; record the evidence in `docs/analytics/verification/ug1-evidence.md`. Still PENDING; only you can do it.
+4. **Decide on GDPR/EEA consent.** None is built yet; collection is on, as it was before.
+5. **Branching:** `feature/analytics` is stacked on `chore/deps-latest`. Rebase onto develop if the deps PRs don't merge first.
+6. **Throwaway dataset:** `fit-journal-pro.analytics_fixture` (EU) holds only fake events; its tables expire after 30 days. Delete it any time; `run_cookbook.py --load` recreates it.

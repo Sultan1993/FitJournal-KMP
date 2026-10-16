@@ -30,3 +30,6 @@
 - [Important] fixed — Android finish sheet: two WorkoutFinishSheet call sites (loading vs loaded) → duplicate workout_finish screen_view
 - [Critical] fixed — set_logged emitted when DefaultRecordRepository.addSet silently skipped a missing exercise
 - [Important] fixed — workout_session_start emitted when startSession returned an existing/running session (double tap)
+
+## code · round 2 · 2026-10-16 · 424s
+- (none)
