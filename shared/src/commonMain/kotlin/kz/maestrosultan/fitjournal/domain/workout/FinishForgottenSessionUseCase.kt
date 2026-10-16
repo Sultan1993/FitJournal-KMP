@@ -88,23 +88,26 @@ class FinishForgottenSessionUseCase(
             workoutNumber = running.workoutNumber,
         )
         if (!hasLiveRecords) {
-            sessions.deleteSession(userId, running.id)
-            // Close the workout_session_start StartWorkoutUseCase emitted. Same
-            // duration basis as the FINISHED branch: the last activity, not `now`.
-            tracker.track(
-                AnalyticsEvent.WorkoutSessionEnd(
-                    journalId = running.journalId,
-                    workoutDate = running.date,
-                    workoutNumber = running.workoutNumber,
-                    durationSec = running
-                        .copy(endedAt = WorkoutSessionActivity.endedAtFor(running, since, now))
-                        .durationSec(now),
-                    via = SessionEndVia.AUTO,
-                    day = dayContextOf(running.date, clock.todayIn(TimeZone.currentSystemDefault())),
-                    exerciseCount = 0,
-                    setCount = 0,
-                ),
-            )
+            // Emit only if THIS call tombstoned the row: concurrent triggers (app start +
+            // background sync) can both read the stale session, and only one delete changes a row.
+            if (sessions.deleteSession(userId, running.id)) {
+                // Close the workout_session_start StartWorkoutUseCase emitted. Same
+                // duration basis as the FINISHED branch: the last activity, not `now`.
+                tracker.track(
+                    AnalyticsEvent.WorkoutSessionEnd(
+                        journalId = running.journalId,
+                        workoutDate = running.date,
+                        workoutNumber = running.workoutNumber,
+                        durationSec = running
+                            .copy(endedAt = WorkoutSessionActivity.endedAtFor(running, since, now))
+                            .durationSec(now),
+                        via = SessionEndVia.AUTO,
+                        day = dayContextOf(running.date, clock.todayIn(TimeZone.currentSystemDefault())),
+                        exerciseCount = 0,
+                        setCount = 0,
+                    ),
+                )
+            }
             return Outcome.DISCARDED_EMPTY
         }
 

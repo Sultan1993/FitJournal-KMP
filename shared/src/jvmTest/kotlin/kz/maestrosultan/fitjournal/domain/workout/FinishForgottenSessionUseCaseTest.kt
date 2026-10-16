@@ -157,6 +157,27 @@ class FinishForgottenSessionUseCaseTest {
         assertEquals(emptyList(), sessionsDB.getSessionsForDay(USER, JOURNAL, DATE.toString()))
     }
 
+    @Test
+    fun twoTriggersRacingOnOneStaleEmptySession_emitExactlyOneAutoDiscard(): Unit = runBlocking {
+        val now = NOW
+        start(now - 20.hours)
+        val real = repo(now)
+        // Both triggers read the running session BEFORE either deletes it.
+        val stale = real.getRunningSession(USER)
+        val racing = object : WorkoutSessionRepository by real {
+            override suspend fun getRunningSession(userId: String) = stale
+        }
+        val tracker = kz.maestrosultan.fitjournal.analytics.RecordingTracker()
+        val useCase = FinishForgottenSessionUseCase(racing, recordRepo, fixedClock(now), tracker)
+
+        assertEquals(FinishForgottenSessionUseCase.Outcome.DISCARDED_EMPTY, useCase(USER))
+        assertEquals(FinishForgottenSessionUseCase.Outcome.DISCARDED_EMPTY, useCase(USER))
+
+        val ends = tracker.events.filterIsInstance<kz.maestrosultan.fitjournal.analytics.AnalyticsEvent.WorkoutSessionEnd>()
+        assertEquals(1, ends.size)
+        assertEquals(kz.maestrosultan.fitjournal.analytics.SessionEndVia.AUTO, ends.single().via)
+    }
+
     // ── harness ─────────────────────────────────────────────────────────
 
     private fun repo(now: Instant) =

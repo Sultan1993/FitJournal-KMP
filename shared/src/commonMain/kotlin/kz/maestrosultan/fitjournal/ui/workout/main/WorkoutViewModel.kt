@@ -436,20 +436,23 @@ class WorkoutViewModel(
                 if (hasRecords) {
                     emit(WorkoutContract.ViewEffect.RequestEndSession)
                 } else {
-                    sessionRepository.deleteSession(uid, running.id)
-                    // Nothing to count: a discarded-empty workout's counts are literal zeros.
-                    tracker.track(
-                        AnalyticsEvent.WorkoutSessionEnd(
-                            journalId = sessionJid,
-                            workoutDate = running.date,
-                            workoutNumber = running.workoutNumber,
-                            durationSec = running.durationSec(clock.now()),
-                            via = SessionEndVia.DISCARD_EMPTY,
-                            day = dayContextOf(running.date, today()),
-                            exerciseCount = 0,
-                            setCount = 0,
-                        ),
-                    )
+                    // Emit only if THIS call tombstoned the session: a concurrent discard
+                    // (another trigger / double tap) deleted nothing and must not emit twice.
+                    if (sessionRepository.deleteSession(uid, running.id)) {
+                        // Nothing to count: a discarded-empty workout's counts are literal zeros.
+                        tracker.track(
+                            AnalyticsEvent.WorkoutSessionEnd(
+                                journalId = sessionJid,
+                                workoutDate = running.date,
+                                workoutNumber = running.workoutNumber,
+                                durationSec = running.durationSec(clock.now()),
+                                via = SessionEndVia.DISCARD_EMPTY,
+                                day = dayContextOf(running.date, today()),
+                                exerciseCount = 0,
+                                setCount = 0,
+                            ),
+                        )
+                    }
                     // Nothing was logged → the page is not a workout; drop any note with it.
                     recordRepository.clearWorkoutNote(uid, sessionJid, running.date, running.workoutNumber)
                     // Both writes are tombstones that have to reach AWS; without this

@@ -158,6 +158,21 @@ class AnalyticsHarnessTest {
             FreeQuotaSettings.setHasEverSubscribed(true)
             recorder.awaitProperties("lapsed", "lapsed", "10")
 
+            // Logout: a late emission from the outgoing session, then the session clears.
+            // Whatever the order, the last write for every ACCOUNT property is null.
+            FreeQuotaSettings.setEntitled(true)
+            UserSession.clear()
+            Analytics.clearUser()
+            recorder.awaitProperties(null, null, null)
+            // Settings changes after logout must not re-populate them.
+            FreeQuotaSettings.reset()
+            FreeQuotaSettings.setEntitled(true)
+            delay(100)
+            assertEquals(
+                mapOf(UserProperty.SUB_TIER to null, UserProperty.QUOTA_STATE to null, UserProperty.WORKOUTS_USED to null),
+                synchronized(recorder.properties) { recorder.properties.toMap() },
+            )
+
             assertTrue(second.properties.isEmpty(), "a second start must not start a second sync")
             val vocab = AnalyticsCatalog.userProperties.associate { it.property to it.vocab }
             assertTrue(vocab.getValue(UserProperty.SUB_TIER)!!.containsAll(listOf("entitled", "lapsed", "free", "unknown")))
@@ -281,7 +296,7 @@ class AnalyticsHarnessTest {
         Analytics.clearUser()
     }
 
-    private suspend fun RecordingTracker.awaitProperties(subTier: String, quotaState: String, workoutsUsed: String?) {
+    private suspend fun RecordingTracker.awaitProperties(subTier: String?, quotaState: String?, workoutsUsed: String?) {
         val expected = mapOf(
             UserProperty.SUB_TIER to subTier,
             UserProperty.QUOTA_STATE to quotaState,

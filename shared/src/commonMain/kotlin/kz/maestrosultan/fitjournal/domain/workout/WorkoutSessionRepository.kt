@@ -96,8 +96,12 @@ interface WorkoutSessionRepository {
      * no records is not a workout, so its session (started then ended with
      * nothing logged, or emptied by deleting every record) is discarded rather
      * than kept. [userId]-scoped defensively. No-op if the row is already gone.
+     *
+     * Returns `true` only when THIS call tombstoned a live row; `false` when it was
+     * already gone (a concurrent caller won). Callers that emit analytics for the
+     * discard must gate on it, or racing callers each emit.
      */
-    suspend fun deleteSession(userId: String, sessionUuid: String)
+    suspend fun deleteSession(userId: String, sessionUuid: String): Boolean
 
     /** Delete-account purge (mirrors RecordRepository.deleteUserRecords). */
     suspend fun deleteUserSessions(userId: String)

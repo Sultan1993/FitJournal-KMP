@@ -675,9 +675,11 @@ class WorkoutAnalyticsEmissionTest {
 
         override suspend fun endSession(userId: String, endedAt: Instant?): WorkoutSession? = unsupported()
 
-        override suspend fun deleteSession(userId: String, sessionUuid: String) {
+        override suspend fun deleteSession(userId: String, sessionUuid: String): Boolean {
             calls += "deleteSession($sessionUuid)"
+            val existed = all.value.any { it.id == sessionUuid }
             all.value = all.value.filterNot { it.id == sessionUuid }
+            return existed
         }
 
         override suspend fun deleteUserSessions(userId: String): Unit = unsupported()

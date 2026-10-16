@@ -75,6 +75,9 @@ The event catalog lives in code (`Multiplatform/shared/.../analytics/AnalyticsCa
   removals to sets on `record_id` + `exercise_id`, not on the tombstoned row's id.
 - **Discard-empty rule.** `workout_session_end` with `via = discard_empty` always carries `exercise_count = 0` and `set_count = 0`
   (literal zeros). For other `via` values the counts are absent when the post-end read failed or the client predates them.
+  `workout_session_end{via = auto, exercise_count = 0, set_count = 0}` means a forgotten EMPTY session was auto-discarded
+  (no workout was saved). Both discard paths (manual `discard_empty` and the auto-discard) emit only when the delete really
+  happened: a concurrent caller that finds the session already tombstoned emits nothing, so each discarded session yields exactly one end event.
 - **`created_custom` ledger rule.** `found_via = created_custom` iff at least one committed exercise id is in the picker
   session's created-id ledger (fed only by the create flow); it takes precedence over `browse` / `search`. An exercise that
   appears through sync during the session is never `created_custom`. `found_via` is absent for `copy`, `repeat`,

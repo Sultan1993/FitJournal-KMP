@@ -192,10 +192,20 @@ class WorkoutSessionsDBDataSource(
      * defensively. Tombstone, not DELETE — the removal has to reach AWS, and a
      * hard-deleted row would be resurrected by the next pull.
      */
-    suspend fun deleteByUuid(uuid: String, userId: String, now: Instant) =
+    suspend fun deleteByUuid(uuid: String, userId: String, now: Instant): Boolean =
         withContext(Dispatchers.IO) {
-            dao.softDeleteWorkoutSessionByUuid(now.toStoredString(), uuid, userId)
-            Unit
+            // Returns true only for the call that tombstoned a LIVE row: the check and
+            // the write share one transaction, so of two racing callers exactly one
+            // sees the row live (getSessionById filters deletedAt IS NULL).
+            dao.transactionWithResult {
+                val live = dao.getSessionById(uuid).executeAsOneOrNull()
+                if (live == null || live.userId != userId) {
+                    false
+                } else {
+                    dao.softDeleteWorkoutSessionByUuid(now.toStoredString(), uuid, userId)
+                    true
+                }
+            }
         }
 
     /**

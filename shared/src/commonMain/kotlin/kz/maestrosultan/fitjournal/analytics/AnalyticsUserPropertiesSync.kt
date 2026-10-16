@@ -12,8 +12,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kz.maestrosultan.fitjournal.domain.quota.FreeQuotaSettings
 import kz.maestrosultan.fitjournal.domain.quota.WorkoutQuota
@@ -26,9 +26,12 @@ import kz.maestrosultan.fitjournal.domain.user.UserSession
  *
  * Follows [UserSession]: for each signed-in user it combines the reactive quota
  * with the raw [FreeQuotaSettings] inputs and sets the properties on every
- * distinct change. Signed out, it sets nothing (logout clears them through
- * [Analytics.clearUser]); the next sign-in sets them afresh even when the values
+ * distinct change. Signed out, it clears them (see below); the next sign-in sets them afresh even when the values
  * equal the previous account's, because the de-duplication is per session.
+ *
+ * Signed out, it WRITES null to all three: logout order isn't ours to control
+ * (an outgoing session's [FreeQuotaSettings] reset can land after
+ * [Analytics.clearUser]), so the sync itself guarantees the final state is cleared.
  */
 @OptIn(ExperimentalAtomicApi::class, ExperimentalCoroutinesApi::class)
 object AnalyticsUserPropertiesSync {
@@ -50,18 +53,18 @@ object AnalyticsUserPropertiesSync {
                 // Cancellation-transparent, so stopping the scope still stops this.
                 .catch { }
                 .collect { values ->
-                    tracker.setUserProperty(UserProperty.SUB_TIER, values.subTier)
-                    tracker.setUserProperty(UserProperty.QUOTA_STATE, values.quotaState)
-                    tracker.setUserProperty(UserProperty.WORKOUTS_USED, values.workoutsUsed)
+                    tracker.setUserProperty(UserProperty.SUB_TIER, values?.subTier)
+                    tracker.setUserProperty(UserProperty.QUOTA_STATE, values?.quotaState)
+                    tracker.setUserProperty(UserProperty.WORKOUTS_USED, values?.workoutsUsed)
                 }
         }
         if (running.compareAndSet(current, job)) job.start() else job.cancel()
     }
 
-    private fun properties(quotaGate: WorkoutQuotaGate): Flow<QuotaProperties> =
+    private fun properties(quotaGate: WorkoutQuotaGate): Flow<QuotaProperties?> =
         UserSession.state.flatMapLatest { session ->
             if (session == null) {
-                emptyFlow()
+                flowOf(null)
             } else {
                 combine(
                     quotaGate.getQuotaFlow(session.userId),
@@ -71,7 +74,8 @@ object AnalyticsUserPropertiesSync {
                     QuotaProperties.of(quota, config.hasEverSubscribed, isEntitled)
                 }.distinctUntilChanged()
             }
-        }
+            // null = signed out → cleared. Consecutive nulls (re-emitted logout) collapse.
+        }.distinctUntilChanged()
 }
 
 /** The derived property values; `internal` so the harness test can assert the mapping directly. */

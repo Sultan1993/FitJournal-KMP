@@ -147,7 +147,7 @@ class DefaultWorkoutSessionRepository(
     override suspend fun endSession(userId: String, endedAt: Instant?): WorkoutSession? =
         sessionsDB.endRunningSession(userId, endedAt ?: clock.now())?.toDomain()
 
-    override suspend fun deleteSession(userId: String, sessionUuid: String) =
+    override suspend fun deleteSession(userId: String, sessionUuid: String): Boolean =
         sessionsDB.deleteByUuid(sessionUuid, userId, clock.now())
 
     // Tombstone, not hard purge — see DefaultNotesRepository.deleteUserNotes.
