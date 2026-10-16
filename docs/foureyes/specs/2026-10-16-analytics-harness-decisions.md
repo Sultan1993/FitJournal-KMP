@@ -38,3 +38,10 @@ Nothing is pushed or merged; all work is on `feature/analytics` in iOS / Android
   - `workouts_used` is unset when unlimited.
   - `sub_tier` mapping: entitled / lapsed (ever subscribed, not entitled) / free (never subscribed) / unknown (entitlement not resolved yet).
   - `ResultType` comes from `domain.workout`, not `domain.exercise` as the spec said; Task 2 is told.
+- Wave 2 committed and reviewed (all spec ✅ and Approved): Task 2 bfacbbdf, Task 5 99786080, Task 6 db4e89c4. Accepted deviations:
+  - `WorkoutFinishViewModel` takes no tracker; it logs nothing itself.
+  - `AddSetUseCase`/`UpdateSetUseCase.invoke` gained trailing `recordId`/`workoutNumber`. These are needed for join keys, and only the shared Focus VM calls them.
+  - REPEAT `exercise_added` does one extra local read of the source day.
+  - `feature_used(repeat_workout)` fires when the picker opens, as the spec's Design table says, not when the copy commits. Funnel readers should know it counts opens.
+  - The cookbook SQL files open with `/* */` comments because `bq` treats a leading `--` as a flag.
+- Wave 3 dispatched: Task 3 (iOS) and Task 4 (Android) in parallel, with native builds serialized by an mkdir lock. Task 7 (the live BigQuery fixture run) follows.
