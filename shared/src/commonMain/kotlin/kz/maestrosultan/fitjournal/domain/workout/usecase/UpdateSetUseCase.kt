@@ -4,6 +4,11 @@ import kz.maestrosultan.fitjournal.analytics.Analytics
 import kz.maestrosultan.fitjournal.analytics.AnalyticsEvent
 import kz.maestrosultan.fitjournal.analytics.AnalyticsTracker
 import kz.maestrosultan.fitjournal.analytics.SetAction
+import kz.maestrosultan.fitjournal.analytics.SetInput
+import kz.maestrosultan.fitjournal.analytics.dayContextOf
+import kz.maestrosultan.fitjournal.analytics.systemToday
+import kz.maestrosultan.fitjournal.analytics.vsLastTime
+import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.domain.sync.SyncReason
 import kz.maestrosultan.fitjournal.domain.sync.SyncTrigger
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
@@ -27,6 +32,7 @@ class UpdateSetUseCase(
     private val recordRepository: RecordRepository,
     private val syncTrigger: SyncTrigger,
     private val tracker: AnalyticsTracker = Analytics,
+    private val today: () -> LocalDate = ::systemToday,
 ) {
     suspend operator fun invoke(
         userId: String,
@@ -37,6 +43,9 @@ class UpdateSetUseCase(
         bottomValue: Int?,
         recordId: String,
         workoutNumber: Int,
+        action: SetAction,
+        input: SetInput,
+        inSession: Boolean,
     ): Boolean {
         val fields = setFieldsFor(
             resultType = exercise.resultType,
@@ -57,6 +66,7 @@ class UpdateSetUseCase(
             throw SetNotFoundException()
         }
         syncTrigger.requestTick(SyncReason.PostWrite.WorkoutRecord)
+        val setIndex = exercise.sets.indexOfFirst { it.id == set.id }.coerceAtLeast(0)
         tracker.track(
             AnalyticsEvent.SetLogged(
                 journalId = journalId,
@@ -64,9 +74,13 @@ class UpdateSetUseCase(
                 workoutNumber = workoutNumber,
                 recordId = recordId,
                 exerciseId = exercise.exercise.uuid,
-                setIndex = exercise.sets.indexOfFirst { it.id == set.id }.coerceAtLeast(0),
+                setIndex = setIndex,
                 resultType = exercise.resultType,
-                action = SetAction.UPDATE,
+                action = action,
+                day = dayContextOf(exercise.date, today()),
+                input = input,
+                vsLastTime = vsLastTime(exercise, setIndex, topValue, bottomValue),
+                inSession = inSession,
             ),
         )
         return updated

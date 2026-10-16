@@ -18,7 +18,10 @@ import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.analytics.Analytics
 import kz.maestrosultan.fitjournal.analytics.AnalyticsEvent
 import kz.maestrosultan.fitjournal.analytics.AnalyticsTracker
+import kz.maestrosultan.fitjournal.analytics.ExerciseEntry
 import kz.maestrosultan.fitjournal.analytics.ExerciseSource
+import kz.maestrosultan.fitjournal.analytics.dayContextOf
+import kz.maestrosultan.fitjournal.analytics.systemToday
 import kz.maestrosultan.fitjournal.domain.sync.SyncReason
 import kz.maestrosultan.fitjournal.domain.sync.SyncTrigger
 import kz.maestrosultan.fitjournal.domain.user.UserSessionState
@@ -48,6 +51,7 @@ class ImportWorkoutViewModel(
     private val destinationWorkoutNumber: Int,
     awaitSession: suspend () -> UserSessionState,
     private val tracker: AnalyticsTracker = Analytics,
+    private val today: () -> LocalDate = ::systemToday,
 ) : ViewModel(), ImportWorkoutContract.ViewModel {
 
     private val _uiState = MutableStateFlow(ImportWorkoutContract.ViewState.initial(destinationDate))
@@ -220,6 +224,9 @@ class ImportWorkoutViewModel(
                             count = selected.size,
                             source = ExerciseSource.COPY,
                             firstInSlot = !hadLive,
+                            day = dayContextOf(destinationDate, today()),
+                            entry = ExerciseEntry.COPY,
+                            foundVia = null,
                         ),
                     )
                 }

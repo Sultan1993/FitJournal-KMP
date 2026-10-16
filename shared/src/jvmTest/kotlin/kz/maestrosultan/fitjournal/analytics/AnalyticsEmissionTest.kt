@@ -19,6 +19,8 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
 import kz.maestrosultan.fitjournal.data.exercise.datasource.CategoriesDBDataSource
 import kz.maestrosultan.fitjournal.data.exercise.datasource.ExercisesDBDataSource
 import kz.maestrosultan.fitjournal.data.exercise.mapper.ExerciseDBMapper
@@ -37,12 +39,14 @@ import kz.maestrosultan.fitjournal.domain.user.LengthMeasurementSystem
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.domain.user.UserSessionState
 import kz.maestrosultan.fitjournal.domain.workout.FinishForgottenSessionUseCase
+import kz.maestrosultan.fitjournal.domain.workout.LastOccurrence
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
 import kz.maestrosultan.fitjournal.domain.workout.RepeatDestination
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
 import kz.maestrosultan.fitjournal.domain.workout.SetNotFoundException
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.usecase.AddSetUseCase
+import kz.maestrosultan.fitjournal.domain.workout.usecase.DeleteSetUseCase
 import kz.maestrosultan.fitjournal.domain.workout.usecase.EndWorkoutUseCase
 import kz.maestrosultan.fitjournal.domain.workout.usecase.RepeatWorkoutUseCase
 import kz.maestrosultan.fitjournal.domain.workout.usecase.StartWorkoutUseCase
@@ -71,6 +75,7 @@ class AnalyticsEmissionTest {
         testExerciseMapper,
     )
     private val tracker = RecordingTracker()
+    private val today: () -> LocalDate = { TODAY }
     private val sync = object : SyncTrigger {
         override fun requestTick(reason: SyncReason) = Unit
     }
@@ -104,12 +109,12 @@ class AnalyticsEmissionTest {
             ): Boolean = throw IllegalStateException("disk full")
         }
         assertFailsWith<IllegalStateException> {
-            AddSetUseCase(failingRepo, sync, tracker)(USER, JOURNAL, exercise, 50.0, 8, record.id, record.workoutNumber)
+            AddSetUseCase(failingRepo, sync, tracker, today)(USER, JOURNAL, exercise, 50.0, 8, record.id, record.workoutNumber, SetInput.TYPED, false)
         }
         assertTrue(tracker.events.isEmpty(), "a failed write must not emit")
 
         // A good write emits ADD with the slot join keys; the new set lands after the existing ones.
-        AddSetUseCase(repo, sync, tracker)(USER, JOURNAL, exercise, 50.0, 8, record.id, record.workoutNumber)
+        AddSetUseCase(repo, sync, tracker, today)(USER, JOURNAL, exercise, 50.0, 8, record.id, record.workoutNumber, SetInput.TYPED, false)
         val added = tracker.events.single()
         assertEquals(
             AnalyticsEvent.SetLogged(
@@ -121,6 +126,10 @@ class AnalyticsEmissionTest {
                 setIndex = exercise.sets.size,
                 resultType = ResultType.WEIGHT_REPS,
                 action = SetAction.ADD,
+                day = DAY_CONTEXT,
+                input = SetInput.TYPED,
+                vsLastTime = VsLastTime.NONE,
+                inSession = false,
             ),
             added,
         )
@@ -130,7 +139,9 @@ class AnalyticsEmissionTest {
         val fresh = repo.getRecordsByDate(USER, JOURNAL, DATE, includeLastOccurrence = false)
             .single().exercises.single()
         val set = fresh.sets.last()
-        UpdateSetUseCase(repo, sync, tracker)(USER, JOURNAL, set, fresh, 60.0, 5, record.id, record.workoutNumber)
+        UpdateSetUseCase(repo, sync, tracker, today)(
+            USER, JOURNAL, set, fresh, 60.0, 5, record.id, record.workoutNumber, SetAction.UPDATE, SetInput.TYPED, false,
+        )
         val updated = assertIs<AnalyticsEvent.SetLogged>(tracker.events.single())
         assertEquals(SetAction.UPDATE, updated.action)
         assertEquals(fresh.sets.size - 1, updated.setIndex)
@@ -143,7 +154,9 @@ class AnalyticsEmissionTest {
             ): Boolean = false
         }
         assertFailsWith<SetNotFoundException> {
-            UpdateSetUseCase(rejectingRepo, sync, tracker)(USER, JOURNAL, set, fresh, 60.0, 5, record.id, record.workoutNumber)
+            UpdateSetUseCase(rejectingRepo, sync, tracker, today)(
+                USER, JOURNAL, set, fresh, 60.0, 5, record.id, record.workoutNumber, SetAction.UPDATE, SetInput.TYPED, false,
+            )
         }
         assertTrue(tracker.events.isEmpty(), "update=false must not emit")
     }
@@ -160,7 +173,7 @@ class AnalyticsEmissionTest {
         )
 
         // Copied: one REPEAT event, slot read before the write => first_in_slot.
-        val copied = RepeatWorkoutUseCase(repo, sync, tracker = tracker)(USER, JOURNAL, DATE, 1, destination)
+        val copied = RepeatWorkoutUseCase(repo, sync, tracker = tracker, today = today)(USER, JOURNAL, DATE, 1, destination)
         assertIs<RepeatWorkoutUseCase.Result.Copied>(copied)
         assertEquals(
             AnalyticsEvent.ExerciseAdded(
@@ -171,13 +184,16 @@ class AnalyticsEmissionTest {
                 count = 1,
                 source = ExerciseSource.REPEAT,
                 firstInSlot = true,
+                day = dayContextOf(target, TODAY),
+                entry = ExerciseEntry.REPEAT,
+                foundVia = null,
             ),
             tracker.events.single(),
         )
 
         // Nothing to copy (empty source day): no event.
         tracker.events.clear()
-        val nothing = RepeatWorkoutUseCase(repo, sync, tracker = tracker)(
+        val nothing = RepeatWorkoutUseCase(repo, sync, tracker = tracker, today = today)(
             USER, JOURNAL, LocalDate(2026, 1, 1), 1,
             destination.copy(date = LocalDate(2026, 5, 13)),
         )
@@ -187,7 +203,7 @@ class AnalyticsEmissionTest {
         // Refused (quota exhausted, destination is a brand-new workout): no event, no write.
         FreeQuotaSettings.setLimit(1)
         FreeQuotaSettings.setHasEverSubscribed(false)
-        val refused = RepeatWorkoutUseCase(repo, sync, tracker = tracker)(
+        val refused = RepeatWorkoutUseCase(repo, sync, tracker = tracker, today = today)(
             USER, JOURNAL, DATE, 1,
             destination.copy(date = LocalDate(2026, 5, 14)),
         )
@@ -247,7 +263,7 @@ class AnalyticsEmissionTest {
         val record = repo.getRecordsByDate(USER, JOURNAL, DATE, includeLastOccurrence = false).single()
         val gone = record.exercises.single().copy(id = "no-such-workout-exercise")
 
-        AddSetUseCase(repo, sync, tracker)(USER, JOURNAL, gone, 50.0, 8, record.id, record.workoutNumber)
+        AddSetUseCase(repo, sync, tracker, today)(USER, JOURNAL, gone, 50.0, 8, record.id, record.workoutNumber, SetInput.TYPED, false)
 
         assertTrue(tracker.events.isEmpty(), "addSet wrote nothing, so no set_logged")
     }
@@ -255,10 +271,10 @@ class AnalyticsEmissionTest {
     @Test
     fun sessionStart_emitsOnlyWhenASessionWasWritten(): Unit = runBlocking {
         val sessions = DefaultWorkoutSessionRepository(sessionsDB, fixedClock(Instant.parse("2026-05-10T10:00:00Z")))
-        val start = StartWorkoutUseCase(sessions, sync, tracker)
+        val start = StartWorkoutUseCase(sessions, sync, tracker, today)
 
         start(USER, JOURNAL, DATE, 1)
-        assertEquals(listOf<AnalyticsEvent>(AnalyticsEvent.WorkoutSessionStart(JOURNAL, DATE, 1)), tracker.events.toList())
+        assertEquals(listOf<AnalyticsEvent>(AnalyticsEvent.WorkoutSessionStart(JOURNAL, DATE, 1, DAY_CONTEXT)), tracker.events.toList())
 
         // Same slot again: idempotent return, no second event.
         start(USER, JOURNAL, DATE, 1)
@@ -277,15 +293,15 @@ class AnalyticsEmissionTest {
         val sessions = DefaultWorkoutSessionRepository(sessionsDB, fixedClock(t0))
 
         // Nothing running: End is a no-op and emits nothing.
-        assertEquals(null, EndWorkoutUseCase(sessions, sync, tracker)(USER))
+        assertEquals(null, EndWorkoutUseCase(sessions, repo, sync, tracker, today)(USER))
         assertTrue(tracker.events.isEmpty())
 
-        StartWorkoutUseCase(sessions, sync, tracker)(USER, JOURNAL, DATE, 2)
-        assertEquals(listOf<AnalyticsEvent>(AnalyticsEvent.WorkoutSessionStart(JOURNAL, DATE, 2)), tracker.events.toList())
+        StartWorkoutUseCase(sessions, sync, tracker, today)(USER, JOURNAL, DATE, 2)
+        assertEquals(listOf<AnalyticsEvent>(AnalyticsEvent.WorkoutSessionStart(JOURNAL, DATE, 2, DAY_CONTEXT)), tracker.events.toList())
 
         // Pre-analytics overload (Swift shape) = END_BUTTON.
         tracker.events.clear()
-        EndWorkoutUseCase(DefaultWorkoutSessionRepository(sessionsDB, fixedClock(t0 + 1.hours)), sync, tracker)(USER)
+        EndWorkoutUseCase(DefaultWorkoutSessionRepository(sessionsDB, fixedClock(t0 + 1.hours)), repo, sync, tracker, today)(USER)
         val end = assertIs<AnalyticsEvent.WorkoutSessionEnd>(tracker.events.single())
         assertEquals(SessionEndVia.END_BUTTON, end.via)
         assertEquals(JOURNAL, end.journalId)
@@ -295,9 +311,9 @@ class AnalyticsEmissionTest {
 
         // Explicit via from the finish sheet.
         tracker.events.clear()
-        StartWorkoutUseCase(sessions, sync, tracker)(USER, JOURNAL, DATE, 3)
+        StartWorkoutUseCase(sessions, sync, tracker, today)(USER, JOURNAL, DATE, 3)
         tracker.events.clear()
-        EndWorkoutUseCase(sessions, sync, tracker)(USER, SessionEndVia.FINISH_SHEET)
+        EndWorkoutUseCase(sessions, repo, sync, tracker, today)(USER, SessionEndVia.FINISH_SHEET)
         assertEquals(SessionEndVia.FINISH_SHEET, assertIs<AnalyticsEvent.WorkoutSessionEnd>(tracker.events.single()).via)
     }
 
@@ -323,12 +339,188 @@ class AnalyticsEmissionTest {
         assertEquals(FinishForgottenSessionUseCase.Outcome.FINISHED, outcome)
         // Ended at its LAST ACTIVITY (2h of workout), not at the moment we noticed (20h).
         assertEquals(
-            AnalyticsEvent.WorkoutSessionEnd(JOURNAL, DATE, 1, 2 * 3600L, SessionEndVia.AUTO),
+            AnalyticsEvent.WorkoutSessionEnd(
+                JOURNAL, DATE, 1, 2 * 3600L, SessionEndVia.AUTO,
+                day = dayContextOf(DATE, fixedClock(now).todayIn(TimeZone.currentSystemDefault())),
+                exerciseCount = 0, setCount = 0,
+            ),
             tracker.events.single(),
         )
     }
 
+
+    // ── provenance / vs_last_time ────────────────────────────────────────
+
+    @Test
+    fun setLogged_carriesProvenance_dayContext_andVsLastTime(): Unit = runBlocking {
+        val exerciseId = seedExercise()
+        repo.addExercisesToDate(USER, JOURNAL, DATE, 1, listOf(exerciseId))
+        val record = repo.getRecordsByDate(USER, JOURNAL, DATE, includeLastOccurrence = false).single()
+        val bare = record.exercises.single()
+        repo.addSet(USER, JOURNAL, bare.id, 50.0, 8, null, null)
+        val withSet = repo.getRecordsByDate(USER, JOURNAL, DATE, includeLastOccurrence = false)
+            .single().exercises.single()
+        // Last session: 50 x 8 at every position (the overflow rule aligns the rest to it).
+        val exercise = withSet.copy(lastOccurrence = LastOccurrence(LocalDate(2026, 5, 3), listOf(withSet.sets.single())))
+        val set = exercise.sets.single()
+
+        suspend fun add(top: Double?, bottom: Int?, input: SetInput, inSession: Boolean) {
+            tracker.events.clear()
+            AddSetUseCase(repo, sync, tracker, today)(
+                USER, JOURNAL, exercise, top, bottom, record.id, record.workoutNumber, input, inSession,
+            )
+        }
+        add(60.0, 8, SetInput.TYPED, true)
+        val higher = assertIs<AnalyticsEvent.SetLogged>(tracker.events.single())
+        assertEquals(SetAction.ADD, higher.action)
+        assertEquals(DAY_CONTEXT, higher.day)
+        assertEquals(SetInput.TYPED, higher.input)
+        assertEquals(true, higher.inSession)
+        assertEquals(VsLastTime.HIGHER, higher.vsLastTime)
+        add(50.0, 8, SetInput.PREFILL_LAST_TIME, false)
+        assertEquals(VsLastTime.SAME, assertIs<AnalyticsEvent.SetLogged>(tracker.events.single()).vsLastTime)
+        add(40.0, 8, SetInput.DEFAULT, false)
+        assertEquals(VsLastTime.LOWER, assertIs<AnalyticsEvent.SetLogged>(tracker.events.single()).vsLastTime)
+        add(null, 8, SetInput.DEFAULT, false)
+        assertEquals(VsLastTime.NONE, assertIs<AnalyticsEvent.SetLogged>(tracker.events.single()).vsLastTime)
+
+        tracker.events.clear()
+        UpdateSetUseCase(repo, sync, tracker, today)(
+            USER, JOURNAL, set, exercise, 50.0, 9, record.id, record.workoutNumber,
+            SetAction.COMMIT_TARGET, SetInput.UNCHANGED, true,
+        )
+        val committed = assertIs<AnalyticsEvent.SetLogged>(tracker.events.single())
+        assertEquals(SetAction.COMMIT_TARGET, committed.action)
+        assertEquals(SetInput.UNCHANGED, committed.input)
+        assertEquals(true, committed.inSession)
+        assertEquals(VsLastTime.HIGHER, committed.vsLastTime, "equal weight, more reps than last time")
+        assertEquals(DAY_CONTEXT, committed.day)
+    }
+
+    // ── set_deleted ──────────────────────────────────────────────────────
+
+    @Test
+    fun setDeleted_firesOnlyWhenARowWasDeleted(): Unit = runBlocking {
+        val exerciseId = seedExercise()
+        repo.addExercisesToDate(USER, JOURNAL, DATE, 1, listOf(exerciseId))
+        val record = repo.getRecordsByDate(USER, JOURNAL, DATE, includeLastOccurrence = false).single()
+        val bare = record.exercises.single()
+        repo.addSet(USER, JOURNAL, bare.id, 50.0, 8, null, null)
+        repo.addSet(USER, JOURNAL, bare.id, null, null, null, null)
+        val exercise = repo.getRecordsByDate(USER, JOURNAL, DATE, includeLastOccurrence = false)
+            .single().exercises.single()
+        val logged = exercise.sets.first { it.isLogged }
+        val target = exercise.sets.first { !it.isLogged }
+        val delete = DeleteSetUseCase(repo, sync, tracker)
+
+        assertTrue(delete(USER, JOURNAL, exercise, logged.id, record.id, record.workoutNumber))
+        val first = assertIs<AnalyticsEvent.SetDeleted>(tracker.events.single())
+        assertEquals(exercise.sets.indexOf(logged), first.setIndex)
+        assertEquals(true, first.wasLogged)
+        assertEquals(record.id, first.recordId)
+        assertEquals(exerciseId, first.exerciseId)
+
+        tracker.events.clear()
+        assertTrue(delete(USER, JOURNAL, exercise, target.id, record.id, record.workoutNumber))
+        assertEquals(false, assertIs<AnalyticsEvent.SetDeleted>(tracker.events.single()).wasLogged)
+
+        // The row is already gone: the repository says false, nothing is emitted.
+        tracker.events.clear()
+        assertEquals(false, delete(USER, JOURNAL, exercise, logged.id, record.id, record.workoutNumber))
+        assertTrue(tracker.events.isEmpty(), "a delete that removed nothing must not emit")
+    }
+
+    // ── session counts ───────────────────────────────────────────────────
+
+    @Test
+    fun sessionEnd_countsExercisesAndLoggedSets_ofTheEndedSlot(): Unit = runBlocking {
+        seedSlotForCounts()
+        val sessions = DefaultWorkoutSessionRepository(sessionsDB, fixedClock(Instant.parse("2026-05-10T10:00:00Z")))
+        StartWorkoutUseCase(sessions, sync, tracker, today)(USER, JOURNAL, DATE, 1)
+        tracker.events.clear()
+
+        EndWorkoutUseCase(sessions, repo, sync, tracker, today)(USER, SessionEndVia.FINISH_SHEET)
+
+        val end = assertIs<AnalyticsEvent.WorkoutSessionEnd>(tracker.events.single())
+        assertEquals(2, end.exerciseCount, "two exercises in workout 1; workout 2 is another slot")
+        assertEquals(3, end.setCount, "three logged sets; the empty target row does not count")
+    }
+
+    @Test
+    fun sessionEnd_omitsCounts_whenTheReadThrows(): Unit = runBlocking {
+        seedSlotForCounts()
+        val sessions = DefaultWorkoutSessionRepository(sessionsDB, fixedClock(Instant.parse("2026-05-10T10:00:00Z")))
+        StartWorkoutUseCase(sessions, sync, tracker, today)(USER, JOURNAL, DATE, 1)
+        tracker.events.clear()
+        val throwingRead = object : RecordRepository by repo {
+            override suspend fun getRecordsByDate(
+                userId: String, journalId: String, date: LocalDate, includeLastOccurrence: Boolean,
+            ) = throw IllegalStateException("database is locked")
+        }
+
+        EndWorkoutUseCase(sessions, throwingRead, sync, tracker, today)(USER)
+
+        val end = assertIs<AnalyticsEvent.WorkoutSessionEnd>(tracker.events.single())
+        assertEquals(null, end.exerciseCount)
+        assertEquals(null, end.setCount)
+        assertTrue("exercise_count" !in end.params && "set_count" !in end.params, "absent, never zero")
+    }
+
+    @Test
+    fun sessionStartAndEnd_carryDayContext(): Unit = runBlocking {
+        val sessions = DefaultWorkoutSessionRepository(sessionsDB, fixedClock(Instant.parse("2026-05-10T10:00:00Z")))
+        StartWorkoutUseCase(sessions, sync, tracker) { LocalDate(2026, 5, 9) }(USER, JOURNAL, DATE, 1)
+        assertEquals(DayContext(DayKind.FUTURE, 1), assertIs<AnalyticsEvent.WorkoutSessionStart>(tracker.events.single()).day)
+
+        tracker.events.clear()
+        EndWorkoutUseCase(sessions, repo, sync, tracker) { DATE }(USER)
+        assertEquals(DayContext(DayKind.TODAY, 0), assertIs<AnalyticsEvent.WorkoutSessionEnd>(tracker.events.single()).day)
+    }
+
+    // ── exercise_added(copy / repeat) ────────────────────────────────────
+
+    @Test
+    fun exerciseAdded_copyAndRepeat_carryEntryAndDayContext(): Unit = runBlocking {
+        val exerciseId = seedExercise()
+        repo.addExercisesToDate(USER, JOURNAL, DATE, 1, listOf(exerciseId))
+
+        importInto(repo, TODAY)
+        val copy = assertIs<AnalyticsEvent.ExerciseAdded>(tracker.events.single())
+        assertEquals(ExerciseEntry.COPY, copy.entry)
+        assertEquals(null, copy.foundVia)
+        assertEquals(DayContext(DayKind.TODAY, 0), copy.day)
+        assertTrue("found_via" !in copy.params)
+
+        tracker.events.clear()
+        val future = LocalDate(2026, 5, 15)
+        val destination = RepeatDestination(
+            date = future, workoutNumber = 1, isNewWorkout = true, isRunning = false, exerciseCount = 0,
+        )
+        RepeatWorkoutUseCase(repo, sync, tracker = tracker, today = today)(USER, JOURNAL, DATE, 1, destination)
+        val repeat = assertIs<AnalyticsEvent.ExerciseAdded>(tracker.events.single())
+        assertEquals(ExerciseEntry.REPEAT, repeat.entry)
+        assertEquals(null, repeat.foundVia)
+        assertEquals(DayContext(DayKind.FUTURE, 3), repeat.day)
+        assertEquals("repeat", repeat.params["entry"])
+    }
+
     // ── harness ──────────────────────────────────────────────────────────
+
+    /** Workout 1 of [DATE]: two exercises, 3 logged sets + 1 empty target row; workout 2: one more logged set. */
+    private suspend fun seedSlotForCounts() {
+        val a = seedExercise()
+        val b = seedExercise()
+        repo.addExercisesToDate(USER, JOURNAL, DATE, 1, listOf(a, b))
+        repo.addExercisesToDate(USER, JOURNAL, DATE, 2, listOf(a))
+        val records = repo.getRecordsByDate(USER, JOURNAL, DATE, includeLastOccurrence = false)
+        val first = records.filter { it.workoutNumber == 1 }.flatMap { it.exercises }
+        repo.addSet(USER, JOURNAL, first[0].id, 50.0, 8, null, null)
+        repo.addSet(USER, JOURNAL, first[0].id, 55.0, 8, null, null)
+        repo.addSet(USER, JOURNAL, first[0].id, null, null, null, null)
+        repo.addSet(USER, JOURNAL, first[1].id, 20.0, 10, null, null)
+        val other = records.filter { it.workoutNumber == 2 }.flatMap { it.exercises }
+        repo.addSet(USER, JOURNAL, other[0].id, 70.0, 5, null, null)
+    }
 
     private suspend fun seedExercise(): String {
         val catUuid = UUID.randomUUID().toString()
@@ -349,6 +541,7 @@ class AnalyticsEmissionTest {
                 UserSessionState(USER, JOURNAL, MeasurementSystem.KG_KM, LengthMeasurementSystem.CENTIMETERS)
             },
             tracker = tracker,
+            today = today,
         )
         // Ready once the session resolved and the destination day's own read landed.
         withTimeout(5000) { vm.viewState.first { it.content !is ImportContent.Loading } }
@@ -372,5 +565,7 @@ class AnalyticsEmissionTest {
         const val USER = "user-1"
         const val JOURNAL = "journal-1"
         val DATE = LocalDate(2026, 5, 10)
+        val TODAY = LocalDate(2026, 5, 12)
+        val DAY_CONTEXT = DayContext(DayKind.PAST, -2)
     }
 }

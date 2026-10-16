@@ -44,6 +44,8 @@ import kz.maestrosultan.fitjournal.analytics.Analytics
 import kz.maestrosultan.fitjournal.analytics.AnalyticsEvent
 import kz.maestrosultan.fitjournal.analytics.AnalyticsTracker
 import kz.maestrosultan.fitjournal.analytics.Feature
+import kz.maestrosultan.fitjournal.analytics.SetAction
+import kz.maestrosultan.fitjournal.analytics.SetInput
 import kz.maestrosultan.fitjournal.domain.workout.usecase.AddSetUseCase
 import kz.maestrosultan.fitjournal.domain.workout.usecase.DeleteRecordUseCase
 import kz.maestrosultan.fitjournal.domain.workout.usecase.DeleteSetUseCase
@@ -686,6 +688,8 @@ class WorkoutFocusViewModel internal constructor(
                         bottomValue = input.repsText.toIntOrNull(),
                         recordId = loggedRecordId,
                         workoutNumber = workoutNumberOf(loggedRecordId),
+                        input = SetInput.TYPED, // ANALYTICS-PROVISIONAL
+                        inSession = false, // ANALYTICS-PROVISIONAL
                     )
                 }
                 if (written.isFailure) {
@@ -769,6 +773,9 @@ class WorkoutFocusViewModel internal constructor(
                         bottomValue = input.repsText.toIntOrNull(),
                         recordId = recordIdOwning(exercise.id),
                         workoutNumber = workoutNumberOf(recordIdOwning(exercise.id)),
+                        action = SetAction.UPDATE, // ANALYTICS-PROVISIONAL
+                        input = SetInput.TYPED, // ANALYTICS-PROVISIONAL
+                        inSession = false, // ANALYTICS-PROVISIONAL
                     )
                 }.fold(
                     onSuccess = {
@@ -795,7 +802,10 @@ class WorkoutFocusViewModel internal constructor(
                 val id = identityOrAlert(errorStrings.deleteSetFailed) ?: return@launch
                 // A `false` return means the row was already gone — success
                 // either way (it no longer exists); only a throw alerts.
-                runGuarded { deleteSet(id.userId, id.journalId, owner.id, setId) }.fold(
+                runGuarded {
+                    val recordId = recordIdOwning(owner.id)
+                    deleteSet(id.userId, id.journalId, owner, setId, recordId, workoutNumberOf(recordId))
+                }.fold(
                     onSuccess = { finishSetMutation(owner.id) },
                     // Plain alert, no [recoverFromWriteFailure]. That wrapper's
                     // whole job is the [SetNotFoundException] branch, and
@@ -863,6 +873,9 @@ class WorkoutFocusViewModel internal constructor(
                         bottomValue = resolved.reps,
                         recordId = recordIdOwning(owner.id),
                         workoutNumber = workoutNumberOf(recordIdOwning(owner.id)),
+                        action = SetAction.COMMIT_TARGET, // ANALYTICS-PROVISIONAL
+                        input = SetInput.TYPED, // ANALYTICS-PROVISIONAL
+                        inSession = false, // ANALYTICS-PROVISIONAL
                     )
                 }
                 if (written.isFailure) {

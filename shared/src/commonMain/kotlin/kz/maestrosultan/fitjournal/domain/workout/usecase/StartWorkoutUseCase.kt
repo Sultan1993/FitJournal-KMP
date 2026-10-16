@@ -4,6 +4,8 @@ import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.analytics.Analytics
 import kz.maestrosultan.fitjournal.analytics.AnalyticsEvent
 import kz.maestrosultan.fitjournal.analytics.AnalyticsTracker
+import kz.maestrosultan.fitjournal.analytics.dayContextOf
+import kz.maestrosultan.fitjournal.analytics.systemToday
 import kz.maestrosultan.fitjournal.domain.sync.SyncReason
 import kz.maestrosultan.fitjournal.domain.sync.SyncTrigger
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSession
@@ -26,6 +28,7 @@ class StartWorkoutUseCase(
     private val sessions: WorkoutSessionRepository,
     private val syncTrigger: SyncTrigger,
     private val tracker: AnalyticsTracker,
+    private val today: () -> LocalDate = ::systemToday,
 ) {
 
     /**
@@ -34,7 +37,7 @@ class StartWorkoutUseCase(
      * stays as an explicit overload.
      */
     constructor(sessions: WorkoutSessionRepository, syncTrigger: SyncTrigger) :
-        this(sessions, syncTrigger, Analytics)
+        this(sessions, syncTrigger, Analytics, ::systemToday)
 
     suspend operator fun invoke(
         userId: String,
@@ -54,7 +57,12 @@ class StartWorkoutUseCase(
         // another running workout wrote nothing, so it is not a start.
         if (created) {
             tracker.track(
-                AnalyticsEvent.WorkoutSessionStart(session.journalId, session.date, session.workoutNumber),
+                AnalyticsEvent.WorkoutSessionStart(
+                    session.journalId,
+                    session.date,
+                    session.workoutNumber,
+                    dayContextOf(session.date, today()),
+                ),
             )
         }
         return session

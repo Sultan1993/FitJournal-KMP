@@ -85,7 +85,7 @@ fun createWorkoutFinishViewModel(
     measurementSystem: MeasurementSystem,
 ): WorkoutFinishViewModel = WorkoutFinishViewModel(
     buildSummary = buildSessionSummaryUseCase(recordRepository, sessionRepository),
-    endWorkout = EndWorkoutUseCase(sessions = sessionRepository, syncTrigger = syncTrigger),
+    endWorkout = EndWorkoutUseCase(sessions = sessionRepository, records = recordRepository, syncTrigger = syncTrigger),
     sessionRepository = sessionRepository,
     userContext = IosWorkoutUserContext(userId, journalId, measurementSystem),
     units = measurementSystem,

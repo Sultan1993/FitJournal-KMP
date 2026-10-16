@@ -1,11 +1,15 @@
 package kz.maestrosultan.fitjournal.domain.workout
 
 import kotlin.time.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
 import kz.maestrosultan.fitjournal.analytics.Analytics
 import kz.maestrosultan.fitjournal.analytics.AnalyticsEvent
 import kz.maestrosultan.fitjournal.analytics.AnalyticsTracker
 import kz.maestrosultan.fitjournal.analytics.SessionEndVia
+import kz.maestrosultan.fitjournal.analytics.dayContextOf
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSessionActivity.INACTIVITY_LIMIT
+import kz.maestrosultan.fitjournal.domain.workout.usecase.endedSlotCounts
 
 /**
  * Close a workout the user forgot to finish.
@@ -93,6 +97,7 @@ class FinishForgottenSessionUseCase(
             endedAt = WorkoutSessionActivity.endedAtFor(running, since, now),
         )
         if (finished != null) {
+            val counts = records.endedSlotCounts(userId, finished)
             tracker.track(
                 AnalyticsEvent.WorkoutSessionEnd(
                     journalId = finished.journalId,
@@ -100,6 +105,9 @@ class FinishForgottenSessionUseCase(
                     workoutNumber = finished.workoutNumber,
                     durationSec = finished.durationSec(now),
                     via = SessionEndVia.AUTO,
+                    day = dayContextOf(finished.date, clock.todayIn(TimeZone.currentSystemDefault())),
+                    exerciseCount = counts?.first,
+                    setCount = counts?.second,
                 ),
             )
         }

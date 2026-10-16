@@ -88,7 +88,10 @@ class AnalyticsCatalogTest {
         val date = LocalDate(2026, 12, 31)
         val falseFlags = listOf(
             AnalyticsEvent.SignIn(SignInMethod.GOOGLE, isNewUser = false),
-            AnalyticsEvent.ExerciseAdded("j", date, 2, "e", 1, ExerciseSource.REPEAT, firstInSlot = false),
+            AnalyticsEvent.ExerciseAdded(
+                "j", date, 2, "e", 1, ExerciseSource.REPEAT, firstInSlot = false,
+                day = DayContext(DayKind.TODAY, 0), entry = ExerciseEntry.REPEAT, foundVia = null,
+            ),
         )
         falseFlags.forEach(::assertMatchesSpec)
         assertEquals("false", falseFlags[0].params["is_new_user"])
@@ -118,7 +121,7 @@ class AnalyticsCatalogTest {
             Feature.entries.map { AnalyticsEvent.FeatureUsed(it) } +
             PaywallEntry.entries.map { AnalyticsEvent.PaywallRequested(it) } +
             PurchaseOutcome.entries.map { AnalyticsEvent.PurchaseResult(it, "p", PaywallEntry.REPEAT) } +
-            SessionEndVia.entries.map { AnalyticsEvent.WorkoutSessionEnd("j", date, 1, 1, it) } +
+            SessionEndVia.entries.map { AnalyticsEvent.WorkoutSessionEnd("j", date, 1, 1, it, DayContext(DayKind.TODAY, 0), null, null) } +
             listOf(ExerciseEntry.REPLACE_WORKOUT, ExerciseEntry.REPLACE_FOCUS).map { AnalyticsEvent.ExerciseReplaced("j", date, 1, "r", "e", "n", it, FoundVia.BROWSE) } +
             WorkoutEntry.entries.flatMap { entry ->
                 SessionState.entries.map { AnalyticsEvent.WorkoutOpened("j", date, 1, DayContext(DayKind.TODAY, 0), entry, it) }
@@ -126,14 +129,19 @@ class AnalyticsCatalogTest {
             RestOutcome.entries.flatMap { o -> RestTrigger.entries.map { AnalyticsEvent.RestTimerEnded(o, 1, 2, it) } } +
             CategoryType.entries.map { AnalyticsEvent.CustomExerciseCreated("e", ResultType.DISTANCE_DURATION, it) } +
             ResultType.entries.flatMap { type ->
-                SetAction.entries.map { AnalyticsEvent.SetLogged("j", date, 1, "r", "e", 0, type, it) }
+                SetAction.entries.map { setLogged(type, it) }
             }
         everyEnumValue.forEach(::assertMatchesSpec)
         assertEquals(
             listOf("weight_reps", "distance_duration"),
-            ResultType.entries.map { AnalyticsEvent.SetLogged("j", date, 1, "r", "e", 0, it, SetAction.ADD).params["result_type"] },
+            ResultType.entries.map { setLogged(it, SetAction.ADD).params["result_type"] },
         )
     }
+
+    private fun setLogged(type: ResultType, action: SetAction) = AnalyticsEvent.SetLogged(
+        "j", LocalDate(2026, 12, 31), 1, "r", "e", 0, type, action,
+        day = DayContext(DayKind.TODAY, 0), input = SetInput.TYPED, vsLastTime = VsLastTime.NONE, inSession = false,
+    )
 
     /** Keys are declared, required keys present, every value of its declared type and vocabulary. */
     private fun assertMatchesSpec(event: AnalyticsEvent) {
@@ -142,6 +150,8 @@ class AnalyticsCatalogTest {
         val optional = when (event) {
             is AnalyticsEvent.PurchaseResult -> setOf("product_id", "entry")
             is AnalyticsEvent.ExerciseReplaced -> setOf("found_via")
+            is AnalyticsEvent.ExerciseAdded -> setOf("found_via")
+            is AnalyticsEvent.WorkoutSessionEnd -> setOf("exercise_count", "set_count")
             else -> emptySet()
         }
         assertTrue(declared.keys.containsAll(event.params.keys), "${spec.name}: undeclared ${event.params.keys - declared.keys}")

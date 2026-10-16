@@ -134,22 +134,28 @@ object AnalyticsCatalog {
             AnalyticsEvent.SignIn(SignInMethod.APPLE, isNewUser = true),
             AnalyticsEvent.SignOut,
             AnalyticsEvent.ScreenView(ScreenName.WORKOUT),
-            AnalyticsEvent.WorkoutSessionStart(journalId, date, workoutNumber = 1),
-            AnalyticsEvent.WorkoutSessionEnd(journalId, date, workoutNumber = 1, durationSec = 3_600, via = SessionEndVia.FINISH_SHEET),
+            AnalyticsEvent.WorkoutSessionStart(journalId, date, workoutNumber = 1, day = DayContext(DayKind.TODAY, 0)),
+            AnalyticsEvent.WorkoutSessionEnd(
+                journalId, date, workoutNumber = 1, durationSec = 3_600, via = SessionEndVia.FINISH_SHEET,
+                day = DayContext(DayKind.TODAY, 0), exerciseCount = 4, setCount = 12,
+            ),
             AnalyticsEvent.ExerciseAdded(
                 journalId, date, workoutNumber = 1, exerciseId = exerciseId, count = 2,
-                source = ExerciseSource.CATALOG, firstInSlot = true,
+                source = ExerciseSource.CATALOG, firstInSlot = true, day = DayContext(DayKind.PAST, -3),
+                entry = ExerciseEntry.WORKOUT_BUTTON, foundVia = FoundVia.SEARCH,
             ),
             AnalyticsEvent.SetLogged(
                 journalId, date, workoutNumber = 1, recordId = recordId,
                 exerciseId = exerciseId, setIndex = 0, resultType = ResultType.WEIGHT_REPS, action = SetAction.ADD,
+                day = DayContext(DayKind.PAST, -3), input = SetInput.PREFILL_LAST_TIME, vsLastTime = VsLastTime.SAME,
+                inSession = false,
             ),
             AnalyticsEvent.WorkoutDeleted(journalId, date, workoutNumber = 1),
             AnalyticsEvent.PaywallRequested(PaywallEntry.HOME_CARD),
             AnalyticsEvent.PaywallShown(PaywallEntry.HOME_CARD, placement = "paywall_no_trial"),
             AnalyticsEvent.PaywallSkipped(PaywallEntry.IMPORT, reason = "no_rule_match"),
             AnalyticsEvent.PurchaseResult(PurchaseOutcome.PURCHASED, productId = "fj_annual", entry = PaywallEntry.HOME_CARD),
-            AnalyticsEvent.RestTimerStarted(durationSec = 90),
+            AnalyticsEvent.RestTimerStarted(durationSec = 90, trigger = RestTrigger.MANUAL),
             AnalyticsEvent.FeatureUsed(Feature.ONE_RM_CALCULATOR),
             AnalyticsEvent.WorkoutOpened(
                 journalId, date, workoutNumber = 1, day = DayContext(DayKind.PAST, -3),
@@ -259,6 +265,14 @@ internal object EventSpecs {
         PaywallEntry.entries.map { it.value },
     )
     private val SLOT = listOf(JOURNAL_ID, WORKOUT_DATE, WORKOUT_NUMBER)
+    private val DAY_KIND = ParamSpec(
+        "day_kind", ParamType.STRING, "Where the workout's calendar day sits relative to today (device-local).",
+        DayKind.entries.map { it.value },
+    )
+    private val DAYS_FROM_TODAY = ParamSpec(
+        "days_from_today", ParamType.INT, "Signed days from today to the workout day; negative = past (measure, never a filter).",
+    )
+    private val DAY = listOf(DAY_KIND, DAYS_FROM_TODAY)
 
     val SIGN_IN = EventSpec(
         name = "sign_in",
@@ -293,7 +307,7 @@ internal object EventSpecs {
     val WORKOUT_SESSION_START = EventSpec(
         name = "workout_session_start",
         meaning = "The user started a workout session (Start).",
-        params = SLOT,
+        params = SLOT + DAY,
         funnels = emptyList(),
     )
 
@@ -303,6 +317,15 @@ internal object EventSpecs {
         params = SLOT + listOf(
             DURATION_SEC,
             ParamSpec("via", ParamType.STRING, "What ended the session.", SessionEndVia.entries.map { it.value }),
+        ) + DAY + listOf(
+            ParamSpec(
+                "exercise_count", ParamType.INT,
+                "Exercises in the ended slot; absent when the post-end read failed or before this field existed.",
+            ),
+            ParamSpec(
+                "set_count", ParamType.INT,
+                "Logged sets in the ended slot; absent when the post-end read failed or before this field existed.",
+            ),
         ),
         funnels = listOf("F3", "F5"),
     )
@@ -319,6 +342,18 @@ internal object EventSpecs {
                 "The slot held no live record before this write (re-logging a fully deleted slot repeats it).",
                 listOf("true", "false"),
             ),
+        ) + DAY + listOf(
+            ParamSpec(
+                "entry", ParamType.STRING, "Which control or flow added the exercises.",
+                listOf(
+                    ExerciseEntry.WORKOUT_BUTTON, ExerciseEntry.FOCUS, ExerciseEntry.EXERCISE_CALENDAR,
+                    ExerciseEntry.COPY, ExerciseEntry.REPEAT,
+                ).map { it.value },
+            ),
+            ParamSpec(
+                "found_via", ParamType.STRING, "How the exercise was found in the picker; absent when no picker was involved.",
+                FoundVia.entries.map { it.value },
+            ),
         ),
         funnels = listOf("F1", "F3", "F4", "F5"),
     )
@@ -332,6 +367,16 @@ internal object EventSpecs {
             ParamSpec("set_index", ParamType.INT, "Position of the set within the exercise, 0-based."),
             ParamSpec("result_type", ParamType.STRING, "Measurement kind of the set.", ResultType.entries.map { it.wire() }),
             ParamSpec("action", ParamType.STRING, "Whether the set was added or edited.", SetAction.entries.map { it.value }),
+        ) + DAY + listOf(
+            ParamSpec("input", ParamType.STRING, "Where the logged numbers came from.", SetInput.entries.map { it.value }),
+            ParamSpec(
+                "vs_last_time", ParamType.STRING, "The logged set against the aligned set of the previous session.",
+                VsLastTime.entries.map { it.value },
+            ),
+            ParamSpec(
+                "in_session", ParamType.STRING, "A session was running on this workout slot when the set was logged.",
+                listOf("true", "false"),
+            ),
         ),
         funnels = listOf("F3", "F5"),
     )
@@ -384,7 +429,10 @@ internal object EventSpecs {
     val REST_TIMER_STARTED = EventSpec(
         name = "rest_timer_started",
         meaning = "A rest timer was started.",
-        params = listOf(DURATION_SEC),
+        params = listOf(
+            DURATION_SEC,
+            ParamSpec("trigger", ParamType.STRING, "How the rest was started.", RestTrigger.entries.map { it.value }),
+        ),
         funnels = listOf("F5"),
     )
 
@@ -398,15 +446,6 @@ internal object EventSpecs {
     )
 
     private val RECORD_ID = ParamSpec("record_id", ParamType.STRING, "Workout record uuid (join key).")
-    private val DAY_KIND = ParamSpec(
-        "day_kind", ParamType.STRING, "Where the workout's calendar day sits relative to today (device-local).",
-        DayKind.entries.map { it.value },
-    )
-    private val DAYS_FROM_TODAY = ParamSpec(
-        "days_from_today", ParamType.INT, "Signed days from today to the workout day; negative = past (measure, never a filter).",
-    )
-    private val DAY = listOf(DAY_KIND, DAYS_FROM_TODAY)
-
     val WORKOUT_OPENED = EventSpec(
         name = "workout_opened",
         meaning = "The workout screen was opened on a slot: once at construction and once per distinct-date selection.",

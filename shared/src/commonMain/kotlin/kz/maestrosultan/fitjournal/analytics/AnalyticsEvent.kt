@@ -45,9 +45,10 @@ sealed class AnalyticsEvent {
         val journalId: String,
         val workoutDate: LocalDate,
         val workoutNumber: Int,
+        val day: DayContext,
     ) : AnalyticsEvent() {
         override val spec: EventSpec get() = EventSpecs.WORKOUT_SESSION_START
-        override val params: Map<String, Any> get() = slotParams(journalId, workoutDate, workoutNumber)
+        override val params: Map<String, Any> get() = slotParams(journalId, workoutDate, workoutNumber) + day.params()
     }
 
     data class WorkoutSessionEnd(
@@ -56,11 +57,20 @@ sealed class AnalyticsEvent {
         val workoutNumber: Int,
         val durationSec: Long,
         val via: SessionEndVia,
+        val day: DayContext,
+        val exerciseCount: Int?,
+        val setCount: Int?,
     ) : AnalyticsEvent() {
         override val spec: EventSpec get() = EventSpecs.WORKOUT_SESSION_END
         override val params: Map<String, Any>
-            get() = slotParams(journalId, workoutDate, workoutNumber) +
-                mapOf("duration_sec" to durationSec, "via" to via.value)
+            get() = buildMap {
+                putAll(slotParams(journalId, workoutDate, workoutNumber))
+                put("duration_sec", durationSec)
+                put("via", via.value)
+                putAll(day.params())
+                exerciseCount?.let { put("exercise_count", it.toLong()) }
+                setCount?.let { put("set_count", it.toLong()) }
+            }
     }
 
     data class ExerciseAdded(
@@ -71,15 +81,22 @@ sealed class AnalyticsEvent {
         val count: Int,
         val source: ExerciseSource,
         val firstInSlot: Boolean,
+        val day: DayContext,
+        val entry: ExerciseEntry,
+        val foundVia: FoundVia?,
     ) : AnalyticsEvent() {
         override val spec: EventSpec get() = EventSpecs.EXERCISE_ADDED
         override val params: Map<String, Any>
-            get() = slotParams(journalId, workoutDate, workoutNumber) + mapOf(
-                "exercise_id" to exerciseId,
-                "count" to count.toLong(),
-                "source" to source.value,
-                "first_in_slot" to firstInSlot.wire(),
-            )
+            get() = buildMap {
+                putAll(slotParams(journalId, workoutDate, workoutNumber))
+                put("exercise_id", exerciseId)
+                put("count", count.toLong())
+                put("source", source.value)
+                put("first_in_slot", firstInSlot.wire())
+                putAll(day.params())
+                put("entry", entry.value)
+                foundVia?.let { put("found_via", it.value) }
+            }
     }
 
     data class SetLogged(
@@ -91,6 +108,10 @@ sealed class AnalyticsEvent {
         val setIndex: Int,
         val resultType: ResultType,
         val action: SetAction,
+        val day: DayContext,
+        val input: SetInput,
+        val vsLastTime: VsLastTime,
+        val inSession: Boolean,
     ) : AnalyticsEvent() {
         override val spec: EventSpec get() = EventSpecs.SET_LOGGED
         override val params: Map<String, Any>
@@ -100,6 +121,10 @@ sealed class AnalyticsEvent {
                 "set_index" to setIndex.toLong(),
                 "result_type" to resultType.wire(),
                 "action" to action.value,
+            ) + day.params() + mapOf(
+                "input" to input.value,
+                "vs_last_time" to vsLastTime.value,
+                "in_session" to inSession.wire(),
             )
     }
 
@@ -142,9 +167,9 @@ sealed class AnalyticsEvent {
             }
     }
 
-    data class RestTimerStarted(val durationSec: Long) : AnalyticsEvent() {
+    data class RestTimerStarted(val durationSec: Long, val trigger: RestTrigger) : AnalyticsEvent() {
         override val spec: EventSpec get() = EventSpecs.REST_TIMER_STARTED
-        override val params: Map<String, Any> get() = mapOf("duration_sec" to durationSec)
+        override val params: Map<String, Any> get() = mapOf("duration_sec" to durationSec, "trigger" to trigger.value)
     }
 
     data class FeatureUsed(val feature: Feature) : AnalyticsEvent() {

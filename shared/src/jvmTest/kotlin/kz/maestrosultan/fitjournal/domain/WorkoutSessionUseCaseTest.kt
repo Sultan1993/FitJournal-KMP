@@ -2,9 +2,15 @@ package kz.maestrosultan.fitjournal.domain
 
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDate
+import kz.maestrosultan.fitjournal.data.exercise.datasource.CategoriesDBDataSource
+import kz.maestrosultan.fitjournal.data.exercise.datasource.ExercisesDBDataSource
+import kz.maestrosultan.fitjournal.data.exercise.mapper.ExerciseDBMapper
 import kz.maestrosultan.fitjournal.data.newTestDb
+import kz.maestrosultan.fitjournal.data.record.datasource.WorkoutsDBDataSource
+import kz.maestrosultan.fitjournal.data.record.repository.DefaultRecordRepository
 import kz.maestrosultan.fitjournal.data.session.datasource.WorkoutSessionsDBDataSource
 import kz.maestrosultan.fitjournal.data.session.repository.DefaultWorkoutSessionRepository
+import kz.maestrosultan.fitjournal.data.testExerciseMapper
 import kz.maestrosultan.fitjournal.domain.sync.SyncReason
 import kz.maestrosultan.fitjournal.domain.sync.SyncTrigger
 import kz.maestrosultan.fitjournal.domain.workout.usecase.EndWorkoutUseCase
@@ -25,7 +31,12 @@ class WorkoutSessionUseCaseTest {
     private val repo = DefaultWorkoutSessionRepository(sessionsDB)
     private val trigger = FakeSyncTrigger()
     private val start = StartWorkoutUseCase(repo, trigger)
-    private val end = EndWorkoutUseCase(repo, trigger)
+    private val records = DefaultRecordRepository(
+        WorkoutsDBDataSource(db.workoutRecordsQueries, db.workoutExercisesQueries, db.workoutSetsQueries),
+        ExercisesDBDataSource(db.exercisesQueries, ExerciseDBMapper(CategoriesDBDataSource(db.categoryQueries))),
+        testExerciseMapper,
+    )
+    private val end = EndWorkoutUseCase(repo, records, trigger)
     private val userId = "user-1"
     private val journalId = "journal-1"
     private val date = LocalDate(2026, 7, 31)

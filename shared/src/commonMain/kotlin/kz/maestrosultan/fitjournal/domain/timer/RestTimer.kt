@@ -14,10 +14,12 @@ import kotlinx.coroutines.launch
 import kz.maestrosultan.fitjournal.analytics.Analytics
 import kz.maestrosultan.fitjournal.analytics.AnalyticsEvent
 import kz.maestrosultan.fitjournal.analytics.AnalyticsTracker
+import kz.maestrosultan.fitjournal.analytics.RestOutcome
+import kz.maestrosultan.fitjournal.analytics.RestTrigger
 
 /** One lane command. Private: the channel is the only way anything reaches the writer. */
 private sealed interface Cmd {
-    data class Start(val info: RestPresentationInfo?) : Cmd
+    data class Start(val info: RestPresentationInfo?, val trigger: RestTrigger) : Cmd
     data object Stop : Cmd
     data class Toggle(val info: RestPresentationInfo?) : Cmd
     data class AutoStart(val info: RestPresentationInfo?) : Cmd
@@ -92,6 +94,14 @@ class RestTimer(
 
     private var tickJob: Job? = null
 
+    // Rest accounting for `rest_timer_ended`; lane-only, like [state]. [resumed] marks a rest
+    // adopted from a persisted deadline: its start moment and trigger are unknown, so it
+    // (and its later stop/expiry) tracks nothing.
+    private var runStartedAt = 0L
+    private var runDuration = 0
+    private var runTrigger = RestTrigger.MANUAL
+    private var resumed = false
+
     /** Convenience mirror of [state]; same eventual-consistency rule. */
     val isRunning: Boolean get() = _state.value is RestTimerState.Running
 
@@ -126,7 +136,7 @@ class RestTimer(
 
     /** `info == null` means "keep the current info" — resolved inside the lane. */
     fun start(info: RestPresentationInfo? = null) {
-        commands.trySend(Cmd.Start(info))
+        commands.trySend(Cmd.Start(info, RestTrigger.MANUAL))
     }
 
     fun stop() {
@@ -175,29 +185,36 @@ class RestTimer(
                 val duration = appliedConfig.durationSeconds
                 if (duration <= 0) return
                 info = cmd.info ?: info
-                val end = clock.now().toEpochMilliseconds() + duration * 1000L
+                val startedAt = clock.now().toEpochMilliseconds()
+                val end = startedAt + duration * 1000L
+                if (_state.value is RestTimerState.Running && !resumed) trackEnded(RestOutcome.RESTARTED, startedAt)
                 tickJob?.cancel()
                 _state.value = RestTimerState.Running(duration, end)
                 tickJob = startTicking(end)
                 presenter.restStarted(end, duration, info, appliedConfig.soundAndVibrationOn)
                 // Every real start funnels through here (start, toggle, auto-start), so one
                 // site; Resume adopts an already-running rest and is not a start.
-                tracker.track(AnalyticsEvent.RestTimerStarted(duration.toLong()))
+                runStartedAt = startedAt
+                runDuration = duration
+                runTrigger = cmd.trigger
+                resumed = false
+                tracker.track(AnalyticsEvent.RestTimerStarted(duration.toLong(), cmd.trigger))
             }
 
             is Cmd.Stop -> {
                 // Already idle: no second restEnded, so an expiry racing a stop ends once.
                 if (_state.value !is RestTimerState.Running) return
+                if (!resumed) trackEnded(RestOutcome.STOPPED, clock.now().toEpochMilliseconds())
                 tickJob?.cancel()
                 _state.value = RestTimerState.Idle(appliedConfig.durationSeconds)
                 presenter.restEnded(RestEndReason.Stopped)
             }
 
             is Cmd.Toggle ->
-                if (_state.value is RestTimerState.Running) apply(Cmd.Stop) else apply(Cmd.Start(cmd.info))
+                if (_state.value is RestTimerState.Running) apply(Cmd.Stop) else apply(Cmd.Start(cmd.info, RestTrigger.MANUAL))
 
             is Cmd.AutoStart ->
-                if (appliedConfig.autoStart) apply(Cmd.Start(cmd.info))
+                if (appliedConfig.autoStart) apply(Cmd.Start(cmd.info, RestTrigger.AUTO))
 
             is Cmd.Resume -> {
                 val now = clock.now().toEpochMilliseconds()
@@ -205,6 +222,7 @@ class RestTimer(
                 if (cmd.end <= now) return
                 info = cmd.info ?: info
                 val remaining = ceilSeconds(cmd.end - now)
+                resumed = true
                 tickJob?.cancel()
                 _state.value = RestTimerState.Running(remaining, cmd.end)
                 tickJob = startTicking(cmd.end)
@@ -236,6 +254,7 @@ class RestTimer(
                 // process is suspended, and the first tick after resume snaps back to truth.
                 val left = ceilSeconds(cmd.forDeadline - clock.now().toEpochMilliseconds())
                 if (left <= 0) {
+                    if (!resumed) trackEnded(RestOutcome.FINISHED, runStartedAt + runDuration * 1000L)
                     tickJob?.cancel()
                     _state.value = RestTimerState.Idle(appliedConfig.durationSeconds)
                     // Expired, not Stopped: the platform keeps its pending rest-end
@@ -249,6 +268,12 @@ class RestTimer(
 
             is Cmd.Barrier -> cmd.done.complete(Unit)
         }
+    }
+
+    /** `elapsed_sec` rounds to the nearest second and never exceeds the rest's duration. */
+    private fun trackEnded(outcome: RestOutcome, nowMillis: Long) {
+        val elapsed = (((nowMillis - runStartedAt) + 500) / 1000).coerceIn(0L, runDuration.toLong())
+        tracker.track(AnalyticsEvent.RestTimerEnded(outcome, elapsed, runDuration.toLong(), runTrigger))
     }
 
     /**

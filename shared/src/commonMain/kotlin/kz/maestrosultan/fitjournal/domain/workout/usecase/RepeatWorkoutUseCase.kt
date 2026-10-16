@@ -5,7 +5,10 @@ import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.analytics.Analytics
 import kz.maestrosultan.fitjournal.analytics.AnalyticsEvent
 import kz.maestrosultan.fitjournal.analytics.AnalyticsTracker
+import kz.maestrosultan.fitjournal.analytics.ExerciseEntry
 import kz.maestrosultan.fitjournal.analytics.ExerciseSource
+import kz.maestrosultan.fitjournal.analytics.dayContextOf
+import kz.maestrosultan.fitjournal.analytics.systemToday
 import kz.maestrosultan.fitjournal.domain.quota.WorkoutQuotaGate
 import kz.maestrosultan.fitjournal.domain.sync.SyncReason
 import kz.maestrosultan.fitjournal.domain.sync.SyncTrigger
@@ -38,6 +41,7 @@ class RepeatWorkoutUseCase(
     // compile unchanged (same trick as WorkoutDetailsViewModel's quotaGate param).
     private val quotaGate: WorkoutQuotaGate = WorkoutQuotaGate(recordRepository),
     private val tracker: AnalyticsTracker = Analytics,
+    private val today: () -> LocalDate = ::systemToday,
 ) {
 
     sealed interface Result {
@@ -113,6 +117,9 @@ class RepeatWorkoutUseCase(
                     count = sourceExerciseIds.size,
                     source = ExerciseSource.REPEAT,
                     firstInSlot = !hadLive,
+                    day = dayContextOf(destination.date, today()),
+                    entry = ExerciseEntry.REPEAT,
+                    foundVia = null,
                 ),
             )
         }

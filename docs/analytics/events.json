@@ -87,6 +87,21 @@
                     "name": "workout_number",
                     "type": "int",
                     "description": "Workout number within the day, 1-based (join key; measure, never a filter)."
+                },
+                {
+                    "name": "day_kind",
+                    "type": "string",
+                    "description": "Where the workout's calendar day sits relative to today (device-local).",
+                    "vocab": [
+                        "today",
+                        "past",
+                        "future"
+                    ]
+                },
+                {
+                    "name": "days_from_today",
+                    "type": "int",
+                    "description": "Signed days from today to the workout day; negative = past (measure, never a filter)."
                 }
             ]
         },
@@ -128,6 +143,31 @@
                         "auto",
                         "discard_empty"
                     ]
+                },
+                {
+                    "name": "day_kind",
+                    "type": "string",
+                    "description": "Where the workout's calendar day sits relative to today (device-local).",
+                    "vocab": [
+                        "today",
+                        "past",
+                        "future"
+                    ]
+                },
+                {
+                    "name": "days_from_today",
+                    "type": "int",
+                    "description": "Signed days from today to the workout day; negative = past (measure, never a filter)."
+                },
+                {
+                    "name": "exercise_count",
+                    "type": "int",
+                    "description": "Exercises in the ended slot; absent when the post-end read failed or before this field existed."
+                },
+                {
+                    "name": "set_count",
+                    "type": "int",
+                    "description": "Logged sets in the ended slot; absent when the post-end read failed or before this field existed."
                 }
             ]
         },
@@ -183,6 +223,43 @@
                     "vocab": [
                         "true",
                         "false"
+                    ]
+                },
+                {
+                    "name": "day_kind",
+                    "type": "string",
+                    "description": "Where the workout's calendar day sits relative to today (device-local).",
+                    "vocab": [
+                        "today",
+                        "past",
+                        "future"
+                    ]
+                },
+                {
+                    "name": "days_from_today",
+                    "type": "int",
+                    "description": "Signed days from today to the workout day; negative = past (measure, never a filter)."
+                },
+                {
+                    "name": "entry",
+                    "type": "string",
+                    "description": "Which control or flow added the exercises.",
+                    "vocab": [
+                        "workout_button",
+                        "focus",
+                        "exercise_calendar",
+                        "copy",
+                        "repeat"
+                    ]
+                },
+                {
+                    "name": "found_via",
+                    "type": "string",
+                    "description": "How the exercise was found in the picker; absent when no picker was involved.",
+                    "vocab": [
+                        "browse",
+                        "search",
+                        "created_custom"
                     ]
                 }
             ]
@@ -242,6 +319,53 @@
                         "add",
                         "update",
                         "commit_target"
+                    ]
+                },
+                {
+                    "name": "day_kind",
+                    "type": "string",
+                    "description": "Where the workout's calendar day sits relative to today (device-local).",
+                    "vocab": [
+                        "today",
+                        "past",
+                        "future"
+                    ]
+                },
+                {
+                    "name": "days_from_today",
+                    "type": "int",
+                    "description": "Signed days from today to the workout day; negative = past (measure, never a filter)."
+                },
+                {
+                    "name": "input",
+                    "type": "string",
+                    "description": "Where the logged numbers came from.",
+                    "vocab": [
+                        "prefill_last_time",
+                        "prefill_previous_set",
+                        "default",
+                        "typed",
+                        "unchanged"
+                    ]
+                },
+                {
+                    "name": "vs_last_time",
+                    "type": "string",
+                    "description": "The logged set against the aligned set of the previous session.",
+                    "vocab": [
+                        "higher",
+                        "same",
+                        "lower",
+                        "none"
+                    ]
+                },
+                {
+                    "name": "in_session",
+                    "type": "string",
+                    "description": "A session was running on this workout slot when the set was logged.",
+                    "vocab": [
+                        "true",
+                        "false"
                     ]
                 }
             ]
@@ -396,6 +520,15 @@
                     "name": "duration_sec",
                     "type": "int",
                     "description": "Duration in seconds."
+                },
+                {
+                    "name": "trigger",
+                    "type": "string",
+                    "description": "How the rest was started.",
+                    "vocab": [
+                        "auto",
+                        "manual"
+                    ]
                 }
             ]
         },

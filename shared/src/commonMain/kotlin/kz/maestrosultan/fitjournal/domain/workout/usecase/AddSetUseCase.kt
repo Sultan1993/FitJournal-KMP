@@ -4,6 +4,11 @@ import kz.maestrosultan.fitjournal.analytics.Analytics
 import kz.maestrosultan.fitjournal.analytics.AnalyticsEvent
 import kz.maestrosultan.fitjournal.analytics.AnalyticsTracker
 import kz.maestrosultan.fitjournal.analytics.SetAction
+import kz.maestrosultan.fitjournal.analytics.SetInput
+import kz.maestrosultan.fitjournal.analytics.dayContextOf
+import kz.maestrosultan.fitjournal.analytics.systemToday
+import kz.maestrosultan.fitjournal.analytics.vsLastTime
+import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.domain.sync.SyncReason
 import kz.maestrosultan.fitjournal.domain.sync.SyncTrigger
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
@@ -24,6 +29,7 @@ class AddSetUseCase(
     private val recordRepository: RecordRepository,
     private val syncTrigger: SyncTrigger,
     private val tracker: AnalyticsTracker = Analytics,
+    private val today: () -> LocalDate = ::systemToday,
 ) {
     suspend operator fun invoke(
         userId: String,
@@ -33,6 +39,8 @@ class AddSetUseCase(
         bottomValue: Int?,
         recordId: String,
         workoutNumber: Int,
+        input: SetInput,
+        inSession: Boolean,
     ) {
         val fields = setFieldsFor(
             resultType = exercise.resultType,
@@ -62,6 +70,10 @@ class AddSetUseCase(
                 setIndex = exercise.sets.size,
                 resultType = exercise.resultType,
                 action = SetAction.ADD,
+                day = dayContextOf(exercise.date, today()),
+                input = input,
+                vsLastTime = vsLastTime(exercise, exercise.sets.size, topValue, bottomValue),
+                inSession = inSession,
             ),
         )
     }

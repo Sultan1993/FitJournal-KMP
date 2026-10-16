@@ -355,7 +355,7 @@ class WorkoutFinishViewModelTest {
 
         fun vm(units: MeasurementSystem = MeasurementSystem.KG_KM) = WorkoutFinishViewModel(
             buildSummary = BuildSessionSummaryUseCase(recordRepo, sessionRepo, DetectSessionBestUseCase(recordRepo)),
-            endWorkout = EndWorkoutUseCase(sessionRepo, FakeSyncTrigger()),
+            endWorkout = EndWorkoutUseCase(sessionRepo, recordRepo, FakeSyncTrigger()),
             sessionRepository = sessionRepo,
             userContext = FakeUserContext(),
             units = units,
