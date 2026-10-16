@@ -61,7 +61,7 @@ second_workout AS (
 SELECT step, users, eligible_users FROM (
   SELECT 1 AS ord, 'signed_in' AS step, (SELECT COUNT(*) FROM signups) AS users, (SELECT COUNT(*) FROM signups) AS eligible_users
   UNION ALL SELECT 2, 'viewed_workout', (SELECT COUNT(*) FROM viewed), (SELECT COUNT(*) FROM viewed)
-  UNION ALL SELECT 3, 'logged_first_workout', (SELECT COUNT(*) FROM first_workout), (SELECT COUNT(*) FROM first_workout)
+  UNION ALL SELECT 3, 'logged_first_workout', (SELECT COUNT(*) FROM first_workout), (SELECT COUNT(*) FROM viewed)
   UNION ALL SELECT 4, 'second_workout_7d', (SELECT COUNT(*) FROM second_workout), (SELECT COUNT(*) FROM eligible)
 )
 ORDER BY ord;
