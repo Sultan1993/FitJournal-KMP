@@ -1,0 +1,607 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FitJournal product-analytics harness, event catalog and five funnels — design spec (2026-10-16, revision 2, final)</title>
+<style>
+:root{--bg:#f5f7fa;--sf:#fff;--sf2:#eef1f6;--bd:#d7dde6;--ink:#1a2029;--soft:#54606f;--faint:#8791a0;
+--mech:#1f9d68;--std:#2560c4;--fro:#7c53e6;--bad:#cc4444;--mono:ui-monospace,Menlo,Consolas,monospace}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1117;--sf:#161c25;--sf2:#1c232e;--bd:#2a3441;--ink:#e7ecf3;--soft:#9aa6b6;--faint:#647084;--mech:#43c78c;--std:#5b8cf0;--fro:#a689f7;--bad:#e5706b}}
+:root[data-theme="light"]{--bg:#f5f7fa;--sf:#fff;--sf2:#eef1f6;--bd:#d7dde6;--ink:#1a2029;--soft:#54606f;--faint:#8791a0;--mech:#1f9d68;--std:#2560c4;--fro:#7c53e6;--bad:#cc4444}
+:root[data-theme="dark"]{--bg:#0d1117;--sf:#161c25;--sf2:#1c232e;--bd:#2a3441;--ink:#e7ecf3;--soft:#9aa6b6;--faint:#647084;--mech:#43c78c;--std:#5b8cf0;--fro:#a689f7;--bad:#e5706b}
+*{box-sizing:border-box}
+body{margin:0 auto;max-width:1180px;background:var(--bg);color:var(--ink);font:15px/1.62 system-ui,-apple-system,sans-serif;padding:40px 24px 72px}
+a{color:var(--std)}
+h1{font-size:27px;line-height:1.25;margin:0 0 6px;letter-spacing:-.01em}
+h3{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono);margin:0 0 14px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.wnum{color:var(--ink);font-weight:700}.wmeta{color:var(--faint);text-transform:none;letter-spacing:0}
+.sub{color:var(--soft);font-family:var(--mono);font-size:12.5px;margin-bottom:24px;word-break:break-all}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:30px}
+.stat{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:9px 15px}
+.stat b{font-size:19px;display:block;line-height:1.2}.stat span{font-size:11px;color:var(--faint);font-family:var(--mono)}
+.brief{background:var(--sf);border:1px solid var(--bd);border-left:3px solid var(--std);border-radius:10px;padding:4px 20px;margin-bottom:34px}
+.brief h4{font-size:14px;margin:14px 0 6px}
+.wave{margin-bottom:34px}.wave.bad .wnum{color:var(--bad)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;align-items:start}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:15px 17px 5px}
+.card header{border-bottom:1px solid var(--bd);padding-bottom:10px;margin-bottom:12px}
+.card h4{margin:0 0 7px;font-size:15px;line-height:1.35}
+.meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.after{font-family:var(--mono);font-size:10.5px;color:var(--faint)}.after.free{opacity:.65}
+.blk{margin-bottom:14px}
+.blk h5{margin:0 0 5px;font:600 10.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.07em;color:var(--faint)}
+.blk p{margin:0 0 7px}.blk ul,.blk ol{margin:0 0 7px;padding-left:20px}.blk li{margin:2px 0}
+.blk :last-child{margin-bottom:0}
+.crit li{color:var(--soft)}
+.files code{display:inline-block;margin:0 4px 4px 0}
+pre.code{background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:9px 11px;overflow-x:auto;max-height:260px;overflow-y:auto;margin:0 0 7px}
+pre.code code{background:none;padding:0;font-size:11.5px;line-height:1.5;white-space:pre}
+code{font-family:var(--mono);font-size:.88em;background:color-mix(in srgb,var(--bd) 45%,transparent);padding:1px 5px;border-radius:4px;word-break:break-word}
+.chip{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+.chip.mechanical{color:var(--mech);background:color-mix(in srgb,var(--mech) 14%,transparent)}
+.chip.standard{color:var(--std);background:color-mix(in srgb,var(--std) 14%,transparent)}
+.chip.frontier{color:var(--fro);background:color-mix(in srgb,var(--fro) 14%,transparent)}
+.chip.bad{color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent)}
+details.checks{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:12px 18px;margin-top:10px}
+details.checks summary{cursor:pointer;font:600 11.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--faint)}
+details.checks ul{margin:12px 0 2px;padding-left:20px}
+details.checks li{margin:4px 0;color:var(--soft)}
+details.checks b{color:var(--bad);font-family:var(--mono);font-size:12.5px}
+details.checks .ok{color:var(--mech)}
+</style>
+<h1>FitJournal product-analytics harness, event catalog and five funnels — design spec (2026-10-16, revision 2, final)</h1>
+<div class="sub">2026-10-16-analytics-harness-design.md</div>
+<div class="stats">
+  <div class="stat"><b>11</b><span>tasks</span></div>
+  <div class="stat"><b>7</b><span>waves</span></div>
+  <div class="stat"><b style="color:var(--mech)">4</b><span>mechanical</span></div>
+  <div class="stat"><b style="color:var(--std)">6</b><span>standard</span></div>
+  <div class="stat"><b style="color:var(--fro)">1</b><span>frontier</span></div>
+</div>
+<div class="brief"><p>Chosen approach: 3 (Kotlin catalog is truth; dictionary rendered + diff-checked by jvmTest; native Firebase sinks; analysis layer of README, funnels.md, cookbook SQL and executed fixtures), carrying entry 4's decisions. I agree with the choice; nothing below argues against it.</p>
+<h4>Purpose</h4>
+<p>Replace the two legacy analytics stacks (<code>iOS/FitJournal/Analytics/*</code>, <code>Android/common/analytics/*</code> domain/data/di) with one Firebase-Analytics-backed harness whose <strong>event catalog lives once in KMP commonMain</strong>, is consumed by native iOS, native Android and the shared Compose Multiplatform screens, and is rendered to a machine-readable dictionary that a tested BigQuery cookbook is written against. The primary consumer of the data is Claude answering ad-hoc behavior questions later from raw <code>events_*</code> rows via <code>bq</code>; everything in the schema (stable names, typed params, join keys, closed vocabularies, no free text) serves that.</p>
+<h4>Assumptions</h4>
+<p>Decisions made without asking the user; what breaks if wrong.</p>
+<ul>
+<li>**Daily <code>events_*</code> export only; no streaming/intraday.** Cookbook base CTE filters <code>REGEXP_CONTAINS(_TABLE_SUFFIX, r'^\d{8}$')</code> so <code>events_intraday_*</code> never matches. If streaming is enabled later, same-day questions need a second CTE; nothing else breaks.</li>
+<li><strong>BigQuery dataset location = <code>EU</code>.</strong> README instructs the user to choose EU when linking; the fixture dataset <code>analytics_fixture</code> is created in EU to match. If the real export lands in US, cross-location joins fail; fix = recreate the fixture dataset in US (one <code>bq mk</code>).</li>
+<li><strong>No consent UI in scope.</strong> Collection stays on in release as today. GDPR/EEA consent is an explicit follow-up, not built.</li>
+<li><strong>Debug collection policy mirrored on both platforms:</strong> release builds always collect; debug builds collect only when DebugView is deliberately enabled (iOS launch argument <code>-FIRDebugEnabled</code>; Android <code>adb shell setprop debug.firebase.analytics.app kz.maestrosultan.fitjournal</code>). Every event additionally carries user property <code>app_build</code> ∈ {debug, release}, and every cookbook query excludes <code>app_build = 'debug'</code>, so verification sessions can never pollute analysis even if Firebase exports debug-mode rows (unverified; the filter makes it moot). Because <code>setAnalyticsCollectionEnabled</code> is persisted across sessions on both SDKs (verified for Android via Firebase reference docs), the policy is re-applied explicitly on every launch.</li>
+<li><strong>Automatic screen reporting is disabled on both platforms</strong> (iOS <code>Info.plist</code> <code>FirebaseAutomaticScreenReportingEnabled = NO</code>; Android manifest meta-data <code>google_analytics_automatic_screen_reporting_enabled = false</code>). Every <code>screen_view</code> is manual with a catalog <code>ScreenName</code>, one owner per screen. The literal key spellings were not returned by Context7 (see Unresolved); the behavioral requirement stands regardless.</li>
+<li><strong>Transport vs export name for the screen parameter.</strong> The SDKs log the screen under their <code>screen_name</code> parameter constant, but the GA4 export and DebugView surface it as <code>firebase_screen</code> (Firebase maintainer statement cited by the critic; GA4 parameter catalog lists <code>firebase_screen</code> as the app screen field). The catalog therefore declares <code>screen_name</code> as the <strong>transport</strong> name with <code>export_name = firebase_screen</code>; SQL reads <code>firebase_screen</code> first and falls back to <code>screen_name</code>; the fixture emits the export representation (<code>firebase_screen</code>). If a future SDK exported the raw <code>screen_name</code>, the <code>COALESCE</code> fallback still reads it.</li>
+<li><strong>GA4 app custom dimensions do not parse integer values</strong>, so every parameter that an Explore funnel filters on is a <strong>string with a closed vocabulary</strong>. <code>first_in_slot</code> and <code>is_new_user</code> are the strings <code>&quot;true&quot;</code>/<code>&quot;false&quot;</code> (Kotlin <code>Boolean</code> renders to these). Pure measures (<code>count</code>, <code>set_index</code>, <code>duration_sec</code>, <code>workout_number</code>) stay integers and are never used as Explore filters.</li>
+<li><strong><code>sub_tier</code> cannot distinguish trial from paid</strong> from <code>FreeQuotaSettings</code> alone; vocabulary is {entitled, lapsed, free, unknown}. Trial/paid split is a non-goal.</li>
+<li><strong><code>user_id</code> = Firebase Auth uid</strong> (brief), not the AWS <code>User.id</code>. Joins to AWS data go through <code>AWSUser.firebaseUid</code> (indexed).</li>
+<li><strong><code>is_new_user</code> = Firebase Auth's account-creation flag</strong> (<code>AuthDataResult.additionalUserInfo?.isNewUser</code> on iOS, <code>AuthResult.additionalUserInfo?.isNewUser</code> on Android), NOT the &quot;AWS row exists&quot; branch in <code>AuthUserUseCase</code> (that branch is &quot;provisioned or not&quot;: a returning free user without an AWS row would be reported as new on every sign-in). A missing <code>additionalUserInfo</code> reads as <code>false</code>. iOS <code>debugAuthenticate</code> passes <code>false</code>.</li>
+<li><strong>&quot;Workout logged&quot; = <code>exercise_added</code> with <code>first_in_slot = true</code></strong>, i.e. the add that put the first LIVE record into a (user, journal_id, workout_date, workout_number) slot. The flag is computed at the emitting site by reading <code>RecordRepository.hasLiveRecordInWorkout(...)</code> before the write (one local SQLite read). It is a param on the existing event, not a second event. <strong>It is not a durable &quot;first-ever&quot; signal:</strong> deleting every record in a slot and re-logging it emits <code>first_in_slot = true</code> again for the same slot. The cookbook counts distinct slots <code>(journal_id, workout_date, workout_number)</code>, so it is unaffected; GA4 Explore cannot de-duplicate slots and over-counts that case (stated as an F1 limitation; fixture p3 exercises it).</li>
+<li><strong>All set logging goes through the shared Focus VM</strong> (<code>AddSetUseCase</code>/<code>UpdateSetUseCase</code>), so instrumenting the two use cases covers both platforms; no native set-write path exists.</li>
+<li><strong>Screen visibility = lifecycle <code>STARTED</code>.</strong> <code>TrackScreenView</code> is <code>LifecycleStartEffect</code>-based (androidx lifecycle-runtime-compose is already a commonMain dependency, <code>Multiplatform/shared/build.gradle.kts:89</code>). Per the official CMP lifecycle table (kotlinlang.org/docs/multiplatform/compose-lifecycle.html, via WebSearch in round 1) iOS <code>viewWillAppear</code> → <code>ON_START</code> and <code>viewDidDisappear</code> → <code>ON_STOP</code>, while <code>RESUMED</code> tracks app activation, so <code>ON_START</code> is the event that corresponds to &quot;this screen became visible again&quot; on both platforms. If a future CMP version changes that mapping, iOS return-visits would stop emitting <code>screen_view</code>; the user gate (Task 11) catches it.</li>
+</ul>
+<h4>Design</h4>
+<h4>Components</h4>
+<pre class="code"><code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/analytics/
+  AnalyticsEvent.kt          sealed catalog: each case = GA4 name + typed params + EventSpec metadata (14 cases incl. ScreenView)
+  AnalyticsCatalog.kt        object: specs for events, screens, user properties; samples(); GA4 limits; every enum
+  AnalyticsTracker.kt        interface AnalyticsTracker (non-suspend) + AnalyticsSink (non-suspend)
+  Analytics.kt               object Analytics : AnalyticsTracker — process-wide holder, install(sink), runCatching on every call
+  AnalyticsUserPropertiesSync.kt  derives sub_tier / quota_state / workouts_used from FreeQuotaSettings + WorkoutQuotaGate + UserSession
+  PaywallEntry.kt            enum PaywallEntry + object PaywallAttribution (the PRESENTED paywall's entry, bound on onPresent)
+  TrackScreenView.kt         @Composable TrackScreenView(screen) — LifecycleStartEffect, the ONE screen_view owner for CMP/Compose screens
+Multiplatform/shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/analytics/
+  AnalyticsCatalogTest.kt    GA4 limits, spec↔instance agreement, renders events.json and diffs against docs
+  AnalyticsHarnessTest.kt    tracker never throws, user-property mapping, clearUser scope, paywall attribution
+  AnalyticsEmissionTest.kt   (Task 2) use-case/VM emission tests
+  RecordingTracker.kt        test fake
+Multiplatform/docs/analytics/
+  events.json (rendered)  README.md  funnels.md  cookbook/*.sql  fixtures/{generate_fixture.py, run_cookbook.py, events_schema.json, expected.json}
+  verification/ug1-evidence.md   written BY THE USER when performing the Task 11 gate (not by any implementer)
+iOS/FitJournal/Analytics/FirebaseAnalyticsSink.swift        implements AnalyticsSink over FirebaseAnalytics.Analytics
+Android/common/analytics/src/main/kotlin/.../common/analytics/FirebaseAnalyticsSink.kt   implements AnalyticsSink over FirebaseAnalytics
+Android/common/analytics/src/main/kotlin/.../common/analytics/AnalyticsInstaller.kt      sink install + collection policy (off-main)</code></pre>
+<p>Holder pattern follows <code>domain/user/UserSession.kt</code> and <code>domain/quota/FreeQuotaSettings.kt</code>: a global <code>object</code>, no DI, Swift calls it synchronously.</p>
+<p><strong>Swift-visible signatures never change shape.</strong> SKIE default-argument interop is not enabled in this repo (<code>shared/build.gradle.kts</code> <code>skie {}</code> configures only analytics upload), so a defaulted Kotlin parameter is a *required* Swift initializer argument. Therefore:</p>
+<ul>
+<li>Types that Swift constructs directly — <code>StartWorkoutUseCase</code>, <code>EndWorkoutUseCase</code> (<code>iOS/FitJournal/Workout/WorkoutCoordinator.swift:88-91</code>) and <code>FinishForgottenSessionUseCase</code> (<code>iOS/FitJournal/Workout/Session/Data/Repository/DefaultWorkoutSessionRepository.swift:27</code>) — keep their pre-existing Swift-facing constructor as an explicit <strong>secondary constructor</strong> delegating with <code>Analytics</code>; the primary constructor gains <code>tracker: AnalyticsTracker</code>. <code>FinishForgottenSessionUseCase</code> already has this shape today (<code>(sessions, records, clock: Clock = Clock.System)</code> primary + <code>(sessions, records)</code> secondary, <code>FinishForgottenSessionUseCase.kt:25-37</code>); its <code>clock</code> parameter stays third so the existing positional <code>fixedClock(now)</code> calls in <code>FinishForgottenSessionUseCaseTest.kt:133/155/172</code> compile unchanged, and <code>tracker</code> is appended fourth. The Swift call sites do not change.</li>
+<li><code>EndWorkoutUseCase.invoke(userId)</code> stays as an explicit overload delegating to <code>invoke(userId, via = END_BUTTON)</code>.</li>
+<li><code>AnalyticsUserPropertiesSync.start(quotaGate)</code> is a single-parameter function; the test seam is a separate three-parameter overload.</li>
+<li>ViewModels, <code>AddSetUseCase</code>, <code>UpdateSetUseCase</code>, <code>RepeatWorkoutUseCase</code> and <code>RestTimer</code> are constructed only from Kotlin (factories <code>createWorkoutViewModel</code>, <code>createWorkoutFocusViewModel</code>, <code>createWorkoutListViewModel</code>, <code>createWorkoutDetailsViewModel</code>, <code>createWorkoutFinishViewModel</code>, <code>createImportWorkoutViewModel</code>, <code>createRestTimer</code> — all called from Swift with their existing parameters), so they take a trailing <code>tracker: AnalyticsTracker = Analytics</code> defaulted parameter; the factories are unchanged and jvmTests inject <code>RecordingTracker</code> through the constructor.</li>
+</ul>
+<p>Interfaces are <strong>non-suspend</strong> so Swift can implement <code>AnalyticsSink</code> without the SKIE <code>__</code>-prefixed async requirement. Params cross to Swift as <code>[String: Any]</code> whose values are already <code>NSNumber</code>/<code>NSString</code> (Kotlin <code>Long</code>/<code>Double</code>/<code>String</code>), passed straight to <code>Analytics.logEvent(_:parameters:)</code>.</p>
+<h4>Data flow</h4>
+<ol>
+<li>App boot: native installs the sink (<code>Analytics.install(sink)</code>), applies the collection policy, sets process-scoped user property <code>app_build</code>, sets <code>user_id</code> if Firebase Auth already has a current user, and calls <code>AnalyticsUserPropertiesSync.start(quotaGate)</code> (iOS: <code>sharedWorkoutQuotaGate</code>; Android: Hilt <code>WorkoutQuotaGate</code> via <code>SyncTriggerEntryPoint</code>).</li>
+</ol>
+<ul>
+<li>Android collection policy runs <strong>off the main thread</strong>: <code>AnalyticsInstaller.install</code> reads <code>ApplicationInfo.FLAG_DEBUGGABLE</code> (a field read) and, only for debuggable builds, submits the <code>getprop debug.firebase.analytics.app</code> read to a single-thread executor, then calls <code>setAnalyticsCollectionEnabled(&lt;matches packageName&gt;)</code> from that thread. Release builds call <code>setAnalyticsCollectionEnabled(true)</code> synchronously (no subprocess). A debug manifest overlay sets <code>firebase_analytics_collection_enabled = false</code> as the first-launch default so nothing is collected before the read completes; events emitted in the ≤50 ms window on later launches (persisted value) are debug-tagged and filtered by SQL.</li>
+<li>iOS: <code>setAnalyticsCollectionEnabled(!DEBUG || arguments.contains(&quot;-FIRDebugEnabled&quot;))</code>, synchronous, no subprocess.</li>
+</ul>
+<ol>
+<li>Sign-in. The Firebase <code>isNewUser</code> flag is captured where the Firebase result exists and threaded to the use case:</li>
+</ol>
+<ul>
+<li>iOS: <code>FirebaseAuthController.finish(with result: AuthDataResult)</code> reads <code>result.additionalUserInfo?.isNewUser ?? false</code> and passes it through <code>FirebaseAuthControllerDelegate.authDidFinishWithSuccess(_:isNewUser:)</code> → <code>StartAuthViewController</code> dispatches <code>.authUser(method, isNewUser:)</code> → <code>StartAuthViewModel.authenticate(firebaseUserId:method:isNewUser:)</code> → <code>AuthUserUseCase.execute(firebaseUserId:method:isNewUser:)</code>. <code>debugAuthenticate</code> passes <code>false</code>.</li>
+<li>Android: <code>AuthViewModel</code>'s two <code>addOnSuccessListener</code> blocks (Apple at <code>AuthViewModel.kt:~119</code>, <code>signInWithFirebase</code> at <code>:140</code>) read <code>it.additionalUserInfo?.isNewUser ?: false</code> and pass it through <code>authUser(uid, email, method, isNewUser)</code> → <code>AuthUserUseCase.auth(firebaseUserId, email, authMethod, isNewUser)</code>.</li>
+<li>In both <code>AuthUserUseCase</code>s the emission is <strong>one site, before the exists/not-exists branch</strong>: after <code>getUser</code> resolves (either outcome), <code>Analytics.setUserId(firebaseUid)</code> then <code>track(SignIn(method, isNewUser))</code>, then the existing branch logic. The former Login/SignUp branch events are deleted; the branch no longer influences analytics.</li>
+<li>Logout (<code>LogoutUserUseCase.swift</code>, <code>DefaultUserManager.logout()</code>): <code>track(SignOut)</code> then <code>Analytics.clearUser()</code> — user id → null, every <strong>ACCOUNT-scoped</strong> user property → null, <code>PaywallAttribution</code> cleared; <strong>PROCESS-scoped <code>app_build</code> is preserved</strong>.</li>
+</ul>
+<ol>
+<li>Screens: CMP screens call <code>TrackScreenView(ScreenName.X)</code> at the top of their screen composable; native iOS UIKit screens call <code>Analytics.shared.screenView(screen:)</code> in <code>viewDidAppear</code>; native Android Compose screens call <code>TrackScreenView</code>. <code>screenView</code> is <code>track(ScreenView(screen))</code> — one catalog case, same path as every other event. Hosts (<code>WorkoutCmpViewController</code>, Android host composables) log nothing. <strong>Ownership rule: a <code>screen_view</code> fires every time the screen's <code>LocalLifecycleOwner</code> reaches <code>STARTED</code> while the screen is in composition, including entering composition while already started.</strong> Consequences: iOS open workout → present Focus (full-screen modal, <code>ExerciseFocusViewController.swift:54</code>) → dismiss yields <code>workout</code>, <code>workout_focus</code>, <code>workout</code>; Android NavHost destinations behave the same through the back-stack entry lifecycle; an in-composition overlay that does not change the owner's lifecycle (e.g. the finish bottom sheet) fires only its own <code>screen_view</code> on entry.</li>
+<li>Core loop: shared use cases and VMs <code>track(...)</code> <strong>after</strong> the repository write succeeds (never before, never on failure).</li>
+<li>Paywall attribution lifecycle (both platforms, one presentation entry point each: <code>presentQuotaPaywall(entry:)</code> iOS, <code>SubscriptionController.presentPaywall(entry)</code> → <code>SuperwallController.presentPaywall(entry)</code> Android):</li>
+</ol>
+<ul>
+<li>entry point: <code>Analytics.paywallRequested(entry)</code> → <code>paywall_requested</code>; no attribution state changes.</li>
+<li><code>handler.onPresent</code>: <code>Analytics.paywallShown(entry, placement)</code> → sets <code>PaywallAttribution.presented = entry</code>, tracks <code>paywall_shown</code>. The handler closure captures its own <code>entry</code> lexically.</li>
+<li><code>handler.onSkip</code>: <code>Analytics.paywallSkipped(entry, reason)</code>; attribution untouched. <code>handler.onError</code>: no event (log only); attribution untouched.</li>
+<li><code>handler.onDismiss</code>: <code>Analytics.paywallDismissed()</code> → <code>PaywallAttribution.presented = null</code>. (iOS <code>PaywallPresentationHandler.onDismiss</code>; Android <code>onDismiss(PaywallInfo, PaywallResult)</code> verified via Context7 <code>/superwall/superwall-android</code> in round 1.)</li>
+<li>purchase: <code>SuperwallController.purchase(product:)</code> reads <code>let entry = PaywallAttribution.shared.presented</code> <strong>synchronously at its first line</strong>, before awaiting Qonversion, and emits <code>purchase_result(outcome, product_id, entry)</code> from the Qonversion result. <code>restorePurchases</code> does the same with <code>restored</code>/<code>restore_failed</code>. Qonversion stays the authority; RevenueCat untouched.</li>
+<li>logout: <code>clearUser()</code> clears <code>presented</code>.</li>
+</ul>
+<ol>
+<li>User properties: <code>AnalyticsUserPropertiesSync</code> collects <code>UserSession.state</code> → for a signed-in user, <code>combine(quotaGate.getQuotaFlow(userId), FreeQuotaSettings.config, FreeQuotaSettings.isEntitled)</code> and sets <code>sub_tier</code>, <code>quota_state</code>, <code>workouts_used</code> on every distinct change. <code>catch { }</code> terminal backstop as in <code>FitJournalApplication.observeRunningSessionForTile</code>.</li>
+<li>Firebase buffers and uploads on its own schedule; GA4 daily export writes <code>fit-journal-pro.analytics_&lt;property_id&gt;.events_YYYYMMDD</code>; the cookbook queries that with <code>${DATASET}</code> substituted.</li>
+</ol>
+<h4>Error handling</h4>
+<ul>
+<li><code>Analytics</code> wraps every sink call in <code>runCatching { }.onFailure { /* no-op */ }</code>; before <code>install</code> all calls are no-ops. No analytics call may throw across SKIE (unhandled Kotlin throw = SIGABRT on iOS).</li>
+<li>Analytics never blocks UI: sinks are synchronous, Firebase calls are non-blocking; <code>AnalyticsUserPropertiesSync</code> runs on its own <code>CoroutineScope(SupervisorJob() + Dispatchers.Default)</code>; the Android <code>getprop</code> read runs on a dedicated executor thread (<code>runCatching</code>, default <code>false</code>).</li>
+<li>A failed repository write emits nothing. A quota decision that threw (fail-open ALLOW) emits nothing paywall-related. A <code>hasLiveRecordInWorkout</code> read that throws makes <code>first_in_slot = false</code> (never blocks the write).</li>
+<li>Catalog correctness is enforced at test time (<code>AnalyticsCatalogTest</code>), not at runtime.</li>
+</ul>
+<h4>Event catalog (the reporting contract)</h4>
+<p>GA4 limits enforced by test: ≤500 names, ≤25 params/event, names ≤40 chars <code>^[a-z][a-z0-9_]*$</code>, string values ≤100 chars, no <code>firebase_</code>/<code>google_</code>/<code>ga_</code> prefixes on names we choose (the <code>export_name</code> <code>firebase_screen</code> is the SDK's own, not ours, and is exempt), no reserved names (<code>session_start</code>, <code>first_open</code>, <code>app_remove</code>, …), user property names ≤24 chars, values ≤36 chars, ≤25 user properties.</p>
+<p>Join keys (same names everywhere): <code>journal_id</code> (uuid), <code>workout_date</code> (<code>YYYY-MM-DD</code>), <code>workout_number</code> (int), <code>record_id</code> (uuid), <code>exercise_id</code> (uuid), <code>set_index</code> (int, 0-based). No free text ever.</p>
+<p><strong>Every parameter that any funnel filters on is a STRING with a closed vocabulary</strong> (GA4 app custom dimensions ignore integer values). Integers are measures only.</p>
+<p>| event | params (type; vocab) | fires at (shared unless noted) | |---|---|---| | <code>sign_in</code> | <code>method</code> (string; apple, google), <code>is_new_user</code> (string; true, false — Firebase <code>additionalUserInfo.isNewUser</code>) | native <code>AuthUserUseCase</code> ×2, once per sign-in, before the exists/not-exists branch | | <code>sign_out</code> | — | native logout ×2 | | <code>screen_view</code> | <code>screen_name</code> (string; ScreenName vocab; <strong>export_name <code>firebase_screen</code></strong>) | <code>TrackScreenView</code> / <code>viewDidAppear</code>, via <code>AnalyticsEvent.ScreenView</code> | | <code>workout_session_start</code> | <code>journal_id</code>, <code>workout_date</code>, <code>workout_number</code> | <code>StartWorkoutUseCase</code> after <code>startSession</code> | | <code>workout_session_end</code> | <code>journal_id</code>, <code>workout_date</code>, <code>workout_number</code>, <code>duration_sec</code> (int), <code>via</code> (string; finish_sheet, end_button, auto) | <code>EndWorkoutUseCase</code> (via from caller: <code>WorkoutFinishViewModel</code>=finish_sheet, <code>WorkoutViewModel</code>=end_button), <code>FinishForgottenSessionUseCase</code>=auto | | <code>exercise_added</code> | <code>journal_id</code>, <code>workout_date</code>, <code>workout_number</code>, <code>exercise_id</code> (first added), <code>count</code> (int), <code>source</code> (string; catalog, copy, repeat), <code>first_in_slot</code> (string; true, false — slot had no live record before this write) | native <code>DefaultImportRecordRepository</code> ×2 (catalog), <code>ImportWorkoutViewModel</code> (copy), <code>RepeatWorkoutUseCase</code> on <code>Result.Copied</code> (repeat) | | <code>set_logged</code> | <code>journal_id</code>, <code>workout_date</code>, <code>workout_number</code>, <code>record_id</code>, <code>exercise_id</code>, <code>set_index</code>, <code>result_type</code> (string; weight_reps, distance_duration), <code>action</code> (string; add, update) | <code>AddSetUseCase</code> (add), <code>UpdateSetUseCase</code> when it returns true (update) | | <code>workout_deleted</code> | <code>journal_id</code>, <code>workout_date</code>, <code>workout_number</code> | <code>WorkoutDetailsViewModel</code> after <code>deleteWorkoutAtomic</code> | | <code>paywall_requested</code> | <code>entry</code> (string; PaywallEntry vocab) | <code>Analytics.paywallRequested</code> from the two native presentation entry points | | <code>paywall_shown</code> | <code>entry</code>, <code>placement</code> (string) | Superwall <code>onPresent</code> ×2 | | <code>paywall_skipped</code> | <code>entry</code>, <code>reason</code> (string; Superwall skip reason enum case name, ≤100) | Superwall <code>onSkip</code> ×2 | | <code>purchase_result</code> | <code>outcome</code> (string; purchased, cancelled, failed, restored, restore_failed), <code>product_id</code> (string, absent on restore), <code>entry</code> (absent when no paywall was presented) | <code>SuperwallController.purchase</code>/<code>restorePurchases</code> ×2 | | <code>rest_timer_started</code> | <code>duration_sec</code> (int) | <code>RestTimer.start</code> | | <code>feature_used</code> | <code>feature</code> (string; Feature vocab) | shared VMs: Focus <code>OpenOneRepMaxCalculator</code>, Focus pager switched to the history page, <code>AddToSuperset</code>/<code>MenuSupersetWithNext</code>, <code>ShareWorkout</code>/<code>ShareTapped</code>, <code>OpenWorkoutSummary</code>, <code>EditNote</code>/<code>MenuEditNote</code>/<code>NoteTapped</code>, <code>ToggleCalendar</code> (main + list) opening, <code>CopyFromWorkout</code>, <code>RepeatTapped</code> |</p>
+<p><code>first_in_slot</code> computation per site (all read <code>RecordRepository.hasLiveRecordInWorkout(userId, journalId, date, workoutNumber)</code> immediately before the write; <code>firstInSlot = !hadLive</code>): <code>addExercisesToDate</code> / <code>addRecordsToWorkout</code> callers use the target <code>(date, workoutNumber)</code>; <code>addRecordsFromDateToToday</code> (copy-as-is onto today) uses <code>(today, min source workoutNumber)</code> and reports that <code>workout_number</code>; <code>RepeatWorkoutUseCase</code> uses the destination slot carried by <code>Result.Copied</code>.</p>
+<p>Screen names, paywall entries, user properties, feature vocabulary: declared member-by-member in Cross-Task Contracts. Instrumented screens: <code>start_login</code>, <code>onboarding_units</code>, <code>home</code>, <code>workout</code>, <code>workout_focus</code>, <code>workout_finish</code>, <code>workout_details</code>, <code>workout_list</code>, <code>import_workout</code>. Declared but <strong>not</strong> instrumented (<code>instrumented: false</code>): <code>journals</code>, <code>exercises</code>, <code>notes</code>, <code>measurements</code>, <code>settings</code>, <code>calculator</code>, <code>workout_plans</code>. Card-vs-gate paywall entries derive in SQL from the <code>entry</code> vocabulary (<code>PaywallEntry.isCard</code>).</p>
+<p>User properties: <code>sub_tier</code> {entitled, lapsed, free, unknown} (ACCOUNT); <code>quota_state</code> {unlimited, metered, exhausted, lapsed} (ACCOUNT); <code>workouts_used</code> (int as string) (ACCOUNT); <code>app_build</code> {debug, release} (PROCESS).</p>
+<p>Legacy events dropped without replacement: onboarding start/finish, share app, journal list/create/switch/select/delete/save/help/details page, migration page, configuration page, delete account. Their call sites are removed.</p>
+<h4>The five questions and why these five</h4>
+<p>For a team that knows nothing about usage, the questions that change decisions are, in order: do new users reach the core value (F1); does the metered reverse trial convert and from where (F2); where inside a workout do users stall (F3); do they come back (F4); which of the expensive features earn their keep (F5). Each is answerable from this catalog alone and together they cover activation → monetization → engagement → retention → adoption.</p>
+<p><strong>Cohort vs observation windows.</strong> Every cookbook query takes <code>@start_date</code>, <code>@end_date</code> (entry window, inclusive, <code>YYYYMMDD</code>) and <code>@observed_through</code> (last fully exported day, ≥ <code>@end_date</code>). <code>events</code> scans through <code>@observed_through</code>; <code>window_events</code> restricts to the entry window. Non-cohort queries (02, 03, 05, 06) read only <code>window_events</code>. Cohort queries (01, 04) take membership from the window and follow-up from <code>events</code>, and count a user toward a horizon only when <strong>mature</strong>: <code>cohort_date + N days ≤ @observed_through</code>.</p>
+<ol>
+<li><strong>F1 Activation</strong> (<code>01_activation.sql</code>): cohort = <code>sign_in</code> with <code>is_new_user = 'true'</code> in window. Steps, each &quot;indirectly followed by&quot; the previous for the same user: <code>signed_in</code> → <code>viewed_workout</code> (<code>screen_view</code> with <code>screen = 'workout'</code>) → <code>logged_first_workout</code> (<code>exercise_added</code> <code>first_in_slot = 'true'</code>) → <code>second_workout_7d</code> (a later <code>exercise_added</code> <code>first_in_slot = 'true'</code> on a <strong>different distinct slot</strong> <code>(journal_id, workout_date, workout_number)</code> within 7 days of the first). <code>eligible_users</code> for step 4 = users at step 3 whose first-workout date + 7 ≤ <code>@observed_through</code>.</li>
+<li><strong>F2 Quota → paid</strong> (<code>02_paywall_conversion.sql</code>): per <code>entry</code>, users who <code>paywall_requested</code> → <code>paywall_shown</code> → <code>purchase_result(purchased)</code> / <code>(restored)</code>; attribution by the purchase's own <code>entry</code>; <code>entry_kind</code> card|gate.</li>
+<li><strong>F3 In-workout execution</strong> (<code>03_in_workout.sql</code>): unit = <strong>user-day (<code>user_id</code>, <code>event_date</code>)</strong>. <code>opened</code> = user-days with a <code>screen_view</code> <code>screen = 'workout'</code>; <code>added_exercise</code> = opened user-days that also contain <code>exercise_added</code>; <code>logged_set</code> = those that also contain <code>set_logged</code>; <code>finished_session</code> = those that also contain <code>workout_session_end</code>. All four events must fall in the same calendar <code>event_date</code>; a day with no workout open contributes to no step.</li>
+<li><strong>F4 Habit / retention</strong> (<code>04_retention.sql</code>): cohort = new users (<code>user_first_touch_timestamp</code> in window) with a first <code>exercise_added(first_in_slot='true')</code> (cohort date = that event's date); retained on day N ∈ {1, 3, 7, 30} = any <code>exercise_added(first_in_slot='true')</code> exactly N days after; <code>cohort_size</code> counts mature users only; rows for all four N.</li>
+<li><strong>F5 Feature adoption</strong> (<code>05_feature_adoption.sql</code>): among users with ≥1 <code>set_logged</code> in window: share using <code>rest_timer</code>, <code>one_rm_calculator</code>, <code>superset</code>, <code>share_workout</code> (<code>feature_used</code>), <code>copy_workout</code>/<code>repeat_workout</code> (<code>exercise_added.source</code>), <code>finished_session</code> (<code>workout_session_end</code>).</li>
+</ol>
+<p>Supporting: <code>06_weekly_active.sql</code> — weekly active loggers (ISO week, Monday start).</p>
+<p><strong>GA4 Explore equivalents</strong> (<code>funnels.md</code> gives these verbatim, plus the console prerequisite: register event-scoped custom dimensions <code>entry</code>, <code>first_in_slot</code>, <code>is_new_user</code>, <code>outcome</code>, <code>feature</code>, <code>source</code>, <code>via</code>, <code>action</code>, <code>result_type</code>, <code>reason</code>, <code>method</code> and user-scoped <code>sub_tier</code>, <code>quota_state</code>, <code>app_build</code>; the screen is the built-in &quot;Screen name&quot; dimension (<code>firebase_screen</code>)). Every Explore definition carries its limitation; the cookbook is the exact answer.</p>
+<ul>
+<li>F1 — Funnel exploration, closed funnel, segment &quot;app_build ≠ debug&quot;: step 1 <code>sign_in</code> where <code>is_new_user = true</code>; step 2 <code>screen_view</code> where Screen name = <code>workout</code>, indirectly followed by; step 3 <code>exercise_added</code> where <code>first_in_slot = true</code>; step 4 <code>exercise_added</code> where <code>first_in_slot = true</code>, indirectly followed by, within 7 days. Limitations: (a) Explore cannot test slot distinctness — a user who deletes a whole workout and re-logs the same slot emits <code>first_in_slot = true</code> twice and passes step 4 in Explore while the cookbook correctly rejects it (fixture p3); (b) follow-ups are bounded by the report range, no maturity denominator.</li>
+<li>F2 — Funnel exploration, open funnel, breakdown <code>entry</code>: <code>paywall_requested</code> → <code>paywall_shown</code> → <code>purchase_result</code> where <code>outcome = purchased</code> (second funnel: <code>restored</code>). Limitation: breakdown is per step value; the cookbook attributes by the purchase's own <code>entry</code>.</li>
+<li>F3 — Funnel exploration, <strong>closed funnel</strong>, elapsed time ≤ 1 day between adjacent steps: <code>screen_view</code> (Screen name = <code>workout</code>) → <code>exercise_added</code> → <code>set_logged</code> → <code>workout_session_end</code>. Limitations: Explore counts users, the cookbook counts user-days; and Explore's elapsed-time constraint is per adjacent pair, not &quot;same calendar day&quot;, so a sequence that spans midnight (open + add late on day D, set + finish on D+1 without reopening the workout screen) completes the Explore funnel but stops at <code>added_exercise</code> in the cookbook (fixture p12 demonstrates this).</li>
+<li>F4 — Cohort exploration: inclusion <code>exercise_added</code>; return <code>exercise_added</code>; daily; standard; segment &quot;new users&quot; = <code>first_open</code> in range. Limitation: cannot filter <code>first_in_slot</code>.</li>
+<li>F5 — Free-form: rows event name + <code>feature</code>; metric total users; segment users with ≥1 <code>set_logged</code>. <code>copy_workout</code>/<code>repeat_workout</code> from <code>exercise_added</code> by <code>source</code>.</li>
+<li>06 — Free-form, weekly, active users, same segment. Limitation: GA4 weeks start Sunday; cookbook ISO Monday.</li>
+</ul>
+<h4>Analysis layer</h4>
+<ul>
+<li><code>events.json</code>: rendered by <code>AnalyticsCatalogTest</code>, diff-checked against the checked-in file (fails with the path of the fresh copy). Carries <code>export_name</code> where transport ≠ export.</li>
+<li><code>README.md</code>: conventions (names, join keys, vocab, user properties, <code>first_in_slot</code> derivation and its re-log caveat, <strong>transport vs export names: <code>screen_name</code> → <code>firebase_screen</code>, read via the <code>screen</code> column of the base CTE</strong>), enabling BigQuery export (EU), custom-definition registration list, DebugView verification per platform, <strong>the UG-1 checklist (Task 11) with the evidence-file format</strong>, <code>bq</code> usage with <code>CLOUDSDK_CORE_ACCOUNT=seidalins@gmail.com --project_id=fit-journal-pro</code>, <code>${DATASET}</code> substitution, the three parameters and maturity rule, cohort caveats, GDPR follow-up.</li>
+<li><code>cookbook/*.sql</code>: one question per file, mandatory <code>events</code> + <code>window_events</code> CTEs (the <code>events</code> CTE materializes the normalized <code>screen</code> column), only columns in <code>events_schema.json</code> plus <code>screen</code>.</li>
+<li><code>fixtures/</code>: stdlib-Python generator of GA4-export-shaped NDJSON for twelve personas; schema; runner.</li>
+</ul>
+<h4>Non-goals (YAGNI)</h4>
+<p>Consent UI; trial-vs-paid tier; instrumenting the seven uninstrumented screens; events for notes/measurements/journals/exercise CRUD; streaming export; automated custom-definition registration; backfill; Gradle codegen; runtime catalog validation; Android <code>:common:analytics</code> Hilt module; SKIE default-argument interop; a durable &quot;first-ever slot&quot; signal (the distinct-slot SQL covers the analytical need).</p>
+<h4>Observable success criteria</h4>
+<ul>
+<li><code>cd Multiplatform &amp;&amp; m2 run ./gradlew :shared:jvmTest</code> green, including <code>AnalyticsCatalogTest</code>, <code>AnalyticsHarnessTest</code>, <code>AnalyticsEmissionTest</code> and the pre-existing <code>FinishForgottenSessionUseCaseTest</code>.</li>
+<li><code>Multiplatform/docs/analytics/events.json</code> equals the rendering.</li>
+<li>iOS arm64-simulator build and Android <code>assembleDebug</code> green with the legacy files gone; the legacy-reference grep matches nothing.</li>
+<li><code>python3 -I Multiplatform/docs/analytics/fixtures/run_cookbook.py --dataset analytics_fixture</code> prints <code>PASS</code> for all 12 runs and exits 0.</li>
+<li><strong>Native delivery, autonomous (Tasks 9–10):</strong> iOS simulator ndjson log contains one record with both <code>screen_view</code> and <code>start_login</code>; Android logcat contains the same on one <code>Logging event</code> line.</li>
+<li><strong>UG-1 signed-in DebugView gate (Task 11, performed by the user, recorded in <code>Multiplatform/docs/analytics/verification/ug1-evidence.md</code>):</strong> signed in on either platform in DebugView, the console shows in order: <code>screen_view{home}</code>, <code>screen_view{workout}</code>, <code>screen_view{workout_focus}</code>, <code>screen_view{workout}</code> after closing Focus (exactly one), <code>exercise_added{first_in_slot=true}</code> on the first add to an empty day, <code>set_logged{action=add}</code>, <code>paywall_requested{entry=home_card}</code> → <code>paywall_shown{entry=home_card}</code> from the home card, user properties <code>app_build</code>, <code>sub_tier</code>, <code>quota_state</code>, <code>workouts_used</code> present, and <strong>after sign-out + sign-in with the same existing account, <code>sign_in{is_new_user=false}</code></strong> (returning unprovisioned account check). Pass = every item observed.</li>
+</ul>
+<h4>Cross-Task Contracts</h4>
+<h4>Kotlin (commonMain, package <code>kz.maestrosultan.fitjournal.analytics</code>)</h4>
+<pre class="code"><code>// AnalyticsTracker.kt
+interface AnalyticsTracker {
+    fun track(event: AnalyticsEvent)
+    fun screenView(screen: ScreenName)                     // == track(AnalyticsEvent.ScreenView(screen))
+    fun setUserProperty(property: UserProperty, value: String?)
+}
+interface AnalyticsSink {
+    fun logEvent(name: String, params: Map&lt;String, Any&gt;)
+    fun setUserId(userId: String?)
+    fun setUserProperty(name: String, value: String?)
+}
+
+// Analytics.kt
+object Analytics : AnalyticsTracker {
+    fun install(sink: AnalyticsSink)
+    override fun track(event: AnalyticsEvent)
+    override fun screenView(screen: ScreenName)
+    override fun setUserProperty(property: UserProperty, value: String?)
+    fun setUserId(userId: String?)
+    fun clearUser()                                        // userId = null; ACCOUNT-scoped props = null; PaywallAttribution.presented = null; PROCESS-scoped untouched
+    fun paywallRequested(entry: PaywallEntry)
+    fun paywallShown(entry: PaywallEntry, placement: String)   // PaywallAttribution.presented = entry
+    fun paywallSkipped(entry: PaywallEntry, reason: String)
+    fun paywallDismissed()                                 // PaywallAttribution.presented = null
+}
+
+// PaywallEntry.kt
+enum class PaywallEntry(val value: String, val isCard: Boolean) {
+    HOME_CARD(&quot;home_card&quot;, true), LIST_CARD(&quot;list_card&quot;, true),
+    WORKOUT_SCREEN(&quot;workout_screen&quot;, false), IMPORT(&quot;import&quot;, false), REPEAT(&quot;repeat&quot;, false),
+    ADD_EXERCISE(&quot;add_exercise&quot;, false), EXERCISE_CALENDAR(&quot;exercise_calendar&quot;, false)
+}
+object PaywallAttribution { var presented: PaywallEntry? }
+
+// AnalyticsCatalog.kt
+enum class ScreenName(val value: String, val instrumented: Boolean) {
+    START_LOGIN(&quot;start_login&quot;, true), ONBOARDING_UNITS(&quot;onboarding_units&quot;, true), HOME(&quot;home&quot;, true),
+    WORKOUT(&quot;workout&quot;, true), WORKOUT_FOCUS(&quot;workout_focus&quot;, true), WORKOUT_FINISH(&quot;workout_finish&quot;, true),
+    WORKOUT_DETAILS(&quot;workout_details&quot;, true), WORKOUT_LIST(&quot;workout_list&quot;, true), IMPORT_WORKOUT(&quot;import_workout&quot;, true),
+    JOURNALS(&quot;journals&quot;, false), EXERCISES(&quot;exercises&quot;, false), NOTES(&quot;notes&quot;, false), MEASUREMENTS(&quot;measurements&quot;, false),
+    SETTINGS(&quot;settings&quot;, false), CALCULATOR(&quot;calculator&quot;, false), WORKOUT_PLANS(&quot;workout_plans&quot;, false)
+}
+enum class UserPropertyScope { ACCOUNT, PROCESS }
+enum class UserProperty(val value: String, val scope: UserPropertyScope) {
+    SUB_TIER(&quot;sub_tier&quot;, ACCOUNT), QUOTA_STATE(&quot;quota_state&quot;, ACCOUNT), WORKOUTS_USED(&quot;workouts_used&quot;, ACCOUNT), APP_BUILD(&quot;app_build&quot;, PROCESS)
+}
+enum class ParamType { STRING, INT, DOUBLE }
+data class ParamSpec(val name: String, val type: ParamType, val description: String, val vocab: List&lt;String&gt;? = null, val exportName: String? = null)
+data class EventSpec(val name: String, val meaning: String, val params: List&lt;ParamSpec&gt;, val funnels: List&lt;String&gt;)
+data class UserPropertySpec(val property: UserProperty, val description: String, val vocab: List&lt;String&gt;?)
+object AnalyticsCatalog {
+    val events: List&lt;EventSpec&gt;
+    val screens: List&lt;ScreenName&gt;
+    val userProperties: List&lt;UserPropertySpec&gt;
+    fun samples(): List&lt;AnalyticsEvent&gt;              // exactly one instance per sealed subclass (14)
+    fun renderJson(): String
+}
+
+// AnalyticsEvent.kt — 14 cases
+sealed class AnalyticsEvent {
+    abstract val spec: EventSpec
+    abstract val params: Map&lt;String, Any&gt;             // values are Long, Double or String only
+    data class SignIn(val method: SignInMethod, val isNewUser: Boolean) : AnalyticsEvent()
+    data object SignOut : AnalyticsEvent()
+    data class ScreenView(val screen: ScreenName) : AnalyticsEvent()        // name &quot;screen_view&quot;, param screen_name (export_name firebase_screen)
+    data class WorkoutSessionStart(val journalId: String, val workoutDate: LocalDate, val workoutNumber: Int) : AnalyticsEvent()
+    data class WorkoutSessionEnd(val journalId: String, val workoutDate: LocalDate, val workoutNumber: Int, val durationSec: Long, val via: SessionEndVia) : AnalyticsEvent()
+    data class ExerciseAdded(val journalId: String, val workoutDate: LocalDate, val workoutNumber: Int, val exerciseId: String, val count: Int, val source: ExerciseSource, val firstInSlot: Boolean) : AnalyticsEvent()
+    data class SetLogged(val journalId: String, val workoutDate: LocalDate, val workoutNumber: Int, val recordId: String, val exerciseId: String, val setIndex: Int, val resultType: ResultType, val action: SetAction) : AnalyticsEvent()
+    data class WorkoutDeleted(val journalId: String, val workoutDate: LocalDate, val workoutNumber: Int) : AnalyticsEvent()
+    data class PaywallRequested(val entry: PaywallEntry) : AnalyticsEvent()
+    data class PaywallShown(val entry: PaywallEntry, val placement: String) : AnalyticsEvent()
+    data class PaywallSkipped(val entry: PaywallEntry, val reason: String) : AnalyticsEvent()
+    data class PurchaseResult(val outcome: PurchaseOutcome, val productId: String?, val entry: PaywallEntry?) : AnalyticsEvent()
+    data class RestTimerStarted(val durationSec: Long) : AnalyticsEvent()
+    data class FeatureUsed(val feature: Feature) : AnalyticsEvent()
+}
+enum class SignInMethod(val value: String) { APPLE(&quot;apple&quot;), GOOGLE(&quot;google&quot;) }
+enum class SessionEndVia(val value: String) { FINISH_SHEET(&quot;finish_sheet&quot;), END_BUTTON(&quot;end_button&quot;), AUTO(&quot;auto&quot;) }
+enum class ExerciseSource(val value: String) { CATALOG(&quot;catalog&quot;), COPY(&quot;copy&quot;), REPEAT(&quot;repeat&quot;) }
+enum class SetAction(val value: String) { ADD(&quot;add&quot;), UPDATE(&quot;update&quot;) }
+enum class PurchaseOutcome(val value: String) { PURCHASED(&quot;purchased&quot;), CANCELLED(&quot;cancelled&quot;), FAILED(&quot;failed&quot;), RESTORED(&quot;restored&quot;), RESTORE_FAILED(&quot;restore_failed&quot;) }
+enum class Feature(val value: String) { ONE_RM_CALCULATOR(&quot;one_rm_calculator&quot;), FOCUS_HISTORY(&quot;focus_history&quot;), SUPERSET(&quot;superset&quot;), SHARE_WORKOUT(&quot;share_workout&quot;), WORKOUT_SUMMARY(&quot;workout_summary&quot;), EXERCISE_NOTE(&quot;exercise_note&quot;), CALENDAR(&quot;calendar&quot;), COPY_WORKOUT(&quot;copy_workout&quot;), REPEAT_WORKOUT(&quot;repeat_workout&quot;) }
+// ResultType is the existing kz.maestrosultan.fitjournal.domain.exercise.ResultType; value &quot;weight_reps&quot; | &quot;distance_duration&quot;.
+// Wire names: journal_id, workout_date (YYYY-MM-DD), workout_number, duration_sec, via, exercise_id, count, source,
+// first_in_slot (&quot;true&quot;|&quot;false&quot;), record_id, set_index, result_type, action, entry, placement, reason, outcome,
+// product_id, feature, method, is_new_user (&quot;true&quot;|&quot;false&quot;), screen_name (export_name firebase_screen).
+// Boolean renders as the STRING &quot;true&quot;/&quot;false&quot;; Int renders as Long; LocalDate as YYYY-MM-DD.
+
+// AnalyticsUserPropertiesSync.kt
+object AnalyticsUserPropertiesSync {
+    fun start(quotaGate: WorkoutQuotaGate)
+    fun start(quotaGate: WorkoutQuotaGate, tracker: AnalyticsTracker, scope: CoroutineScope)
+}
+
+// TrackScreenView.kt
+@Composable fun TrackScreenView(screen: ScreenName, tracker: AnalyticsTracker = Analytics)</code></pre>
+<p>Constructor contract (Task 2), complete overload sets:</p>
+<ul>
+<li><code>StartWorkoutUseCase(sessions, syncTrigger)</code> secondary (unchanged) + primary <code>StartWorkoutUseCase(sessions, syncTrigger, tracker: AnalyticsTracker)</code>.</li>
+<li><code>EndWorkoutUseCase(sessions, syncTrigger)</code> secondary (unchanged) + primary <code>EndWorkoutUseCase(sessions, syncTrigger, tracker: AnalyticsTracker)</code>; <code>suspend fun invoke(userId: String)</code> (unchanged, delegates with <code>END_BUTTON</code>) + <code>suspend fun invoke(userId: String, via: SessionEndVia)</code>.</li>
+<li><code>FinishForgottenSessionUseCase</code>: primary <code>FinishForgottenSessionUseCase(sessions: WorkoutSessionRepository, records: RecordRepository, clock: Clock = Clock.System, tracker: AnalyticsTracker = Analytics)</code> (clock stays third; existing positional <code>(sessions, records, fixedClock(now))</code> calls compile unchanged); secondary <code>FinishForgottenSessionUseCase(sessions, records)</code> unchanged (<code>this(sessions, records, Clock.System, Analytics)</code>). Emission tests pass <code>tracker = RecordingTracker()</code> by name.</li>
+<li>Kotlin-only constructed, trailing <code>tracker: AnalyticsTracker = Analytics</code>: <code>WorkoutViewModel</code>, <code>WorkoutFocusViewModel</code>, <code>WorkoutFinishViewModel</code>, <code>WorkoutDetailsViewModel</code>, <code>WorkoutListViewModel</code>, <code>ImportWorkoutViewModel</code>, <code>AddSetUseCase</code>, <code>UpdateSetUseCase</code>, <code>RepeatWorkoutUseCase</code>, <code>RestTimer</code>. Factories unchanged.</li>
+</ul>
+<h4>jvmTest (package <code>kz.maestrosultan.fitjournal.analytics</code>)</h4>
+<pre class="code"><code>class RecordingTracker : AnalyticsTracker {
+    val events: MutableList&lt;AnalyticsEvent&gt;; val screens: MutableList&lt;ScreenName&gt;; val properties: MutableMap&lt;UserProperty, String?&gt;
+}
+class AnalyticsCatalogTest {                       // Task 1
+    @Test fun everyEventSpecRespectsGa4Limits()
+    @Test fun everySampleInstanceMatchesItsSpec()        // 14 samples; param keys == spec names; types; vocab; Boolean → &quot;true&quot;/&quot;false&quot;
+    @Test fun noReservedOrPrefixedNames()
+    @Test fun userPropertiesRespectLimits()
+    @Test fun renderedDictionaryMatchesCheckedInEventsJson()
+}
+class AnalyticsHarnessTest {                       // Task 1
+    @Test fun analyticsIsNoOpBeforeInstall()
+    @Test fun trackerNeverThrows_whenSinkThrows()
+    @Test fun screenView_isTrackedAsScreenViewEvent()         // sink receives &quot;screen_view&quot; with screen_name = value
+    @Test fun userPropertiesSync_mapsQuotaToVocabulary()
+    @Test fun clearUser_preservesProcessScopedProperties()
+    @Test fun paywallAttribution_bindsToPresentedPaywall()
+}
+class AnalyticsEmissionTest {                      // Task 2
+    @Test fun setLogged_firesAfterSuccessfulWrite_notOnFailure()
+    @Test fun exerciseAdded_repeat_firesOnCopiedOnly()
+    @Test fun exerciseAdded_copy_setsFirstInSlotFromRepository()
+    @Test fun sessionStartAndEnd_carryJoinKeysAndVia()
+    @Test fun finishForgottenSession_emitsAutoEnd_withInjectedClock()   // constructed as (sessions, records, fixedClock(now), tracker = recorder)
+}</code></pre>
+<p>Dictionary path: <code>Paths.get(System.getProperty(&quot;user.dir&quot;), &quot;..&quot;, &quot;docs&quot;, &quot;analytics&quot;, &quot;events.json&quot;)</code>.</p>
+<h4>Swift (iOS)</h4>
+<pre class="code"><code>// iOS/FitJournal/Analytics/FirebaseAnalyticsSink.swift
+final class FirebaseAnalyticsSink: AnalyticsSink { /* logEvent(name:params:), setUserId(userId:), setUserProperty(name:value:) — non-async */ }
+// iOS/FitJournal/Subscription/Presentation/Superwall/QuotaPaywall.swift
+@MainActor func presentQuotaPaywall(entry: PaywallEntry)
+// iOS/FitJournal/Start/Domain/Utils/FirebaseAuthController.swift
+@MainActor protocol FirebaseAuthControllerDelegate: AnyObject {
+    func auth(_ controller: FirebaseAuthController, didFinishWithError error: String)
+    func authDidFinishWithSuccess(_ controller: FirebaseAuthController, isNewUser: Bool)   // replaces the no-arg form
+}
+// iOS/FitJournal/Start/Presentation/Auth/StartAuthViewModel.swift
+enum Action { case authUser(FirebaseAuthMethod, isNewUser: Bool); case debugAuthUser }
+// iOS/FitJournal/Start/Domain/UseCase/AuthUserUseCase.swift
+func execute(firebaseUserId: String, method: FirebaseAuthMethod, isNewUser: Bool) async throws -&gt; Bool</code></pre>
+<p>Info.plist key <code>FirebaseAutomaticScreenReportingEnabled</code> = <code>NO</code>. Swift call sites of <code>StartWorkoutUseCase(sessions:syncTrigger:)</code>, <code>EndWorkoutUseCase(sessions:syncTrigger:)</code>, <code>FinishForgottenSessionUseCase(sessions:records:)</code> and <code>AnalyticsUserPropertiesSync.shared.start(quotaGate:)</code> compile against the preserved shapes.</p>
+<h4>Kotlin (Android)</h4>
+<pre class="code"><code>// Android/common/analytics/.../FirebaseAnalyticsSink.kt
+class FirebaseAnalyticsSink(private val firebase: FirebaseAnalytics) : AnalyticsSink
+// Android/common/analytics/.../AnalyticsInstaller.kt
+object AnalyticsInstaller { fun install(application: Application) }
+// Android/feature/subscription/.../domain/controller/SubscriptionController.kt
+fun presentPaywall(entry: PaywallEntry)
+// Android/feature/auth/.../domain/usecase/AuthUserUseCase.kt
+suspend fun auth(firebaseUserId: String, email: String?, authMethod: FirebaseAuthMethod, isNewUser: Boolean): Flow&lt;Boolean&gt;
+// Android/feature/auth/.../presentation/AuthViewModel.kt
+private fun authUser(firebaseUserId: String, email: String?, method: FirebaseAuthMethod, isNewUser: Boolean)</code></pre>
+<p>Manifest meta-data <code>google_analytics_automatic_screen_reporting_enabled</code> = <code>false</code> (main); <code>firebase_analytics_collection_enabled</code> = <code>false</code> (debug source set only).</p>
+<h4>Docs / data files (<code>Multiplatform/docs/analytics/</code>)</h4>
+<p><code>events.json</code> shape:</p>
+<pre class="code"><code>{&quot;version&quot;: 1,
+ &quot;events&quot;: [{&quot;name&quot;: &quot;...&quot;, &quot;meaning&quot;: &quot;...&quot;, &quot;funnels&quot;: [&quot;F1&quot;], &quot;params&quot;: [{&quot;name&quot;: &quot;...&quot;, &quot;type&quot;: &quot;string|int|double&quot;, &quot;description&quot;: &quot;...&quot;, &quot;vocab&quot;: [&quot;...&quot;], &quot;export_name&quot;: &quot;...&quot;}]}],
+ &quot;screens&quot;: [{&quot;name&quot;: &quot;...&quot;, &quot;instrumented&quot;: true}],
+ &quot;user_properties&quot;: [{&quot;name&quot;: &quot;...&quot;, &quot;scope&quot;: &quot;account|process&quot;, &quot;description&quot;: &quot;...&quot;, &quot;vocab&quot;: [&quot;...&quot;]}],
+ &quot;limits&quot;: {&quot;event_name_max&quot;: 40, &quot;params_per_event_max&quot;: 25, &quot;param_value_max&quot;: 100, &quot;user_property_name_max&quot;: 24, &quot;user_property_value_max&quot;: 36}}</code></pre>
+<p><code>export_name</code> is present only when it differs from <code>name</code> (only <code>screen_view.screen_name</code> → <code>firebase_screen</code>).</p>
+<p>Cookbook files: <code>cookbook/01_activation.sql</code> … <code>06_weekly_active.sql</code>. Each: header comment, table ref `<code> </code>fit-journal-pro.${DATASET}.events_*<code> </code><code>, params </code>@start_date<code>, </code>@end_date<code>, </code>@observed_through<code> (STRING </code>YYYYMMDD`), and these two CTEs verbatim as the first two:</p>
+<pre class="code"><code>WITH events AS (
+  SELECT e.*,
+    (SELECT COALESCE(
+       MAX(IF(p.key = 'firebase_screen', p.value.string_value, NULL)),
+       MAX(IF(p.key = 'screen_name',     p.value.string_value, NULL)))
+     FROM UNNEST(e.event_params) p) AS screen
+  FROM `fit-journal-pro.${DATASET}.events_*` e
+  WHERE REGEXP_CONTAINS(_TABLE_SUFFIX, r'^\d{8}$') AND _TABLE_SUFFIX BETWEEN @start_date AND @observed_through
+    AND NOT EXISTS (SELECT 1 FROM UNNEST(e.user_properties) up WHERE up.key = 'app_build' AND up.value.string_value = 'debug')
+),
+window_events AS (
+  SELECT * FROM events WHERE event_date BETWEEN @start_date AND @end_date
+)</code></pre>
+<p>Screen conditions use <code>screen = '&lt;name&gt;'</code> only; no cookbook file reads <code>screen_name</code> or <code>firebase_screen</code> elsewhere. <code>first_in_slot</code>/<code>is_new_user</code> conditions use <code>value.string_value = 'true'</code>.</p>
+<p>Output columns (exact): 01 <code>step STRING, users INT64, eligible_users INT64</code> (steps <code>signed_in, viewed_workout, logged_first_workout, second_workout_7d</code>); 02 <code>entry, entry_kind, requested_users, shown_users, purchased_users, restored_users</code>; 03 <code>step, user_days</code> (steps <code>opened, added_exercise, logged_set, finished_session</code>); 04 <code>day_n INT64, cohort_size, retained</code>; 05 <code>feature, users, pct_of_loggers FLOAT64</code> (features <code>rest_timer, one_rm_calculator, superset, share_workout, copy_workout, repeat_workout, finished_session</code>); 06 <code>week_start DATE, active_loggers</code>.</p>
+<p><code>fixtures/events_schema.json</code>: exactly <code>event_date STRING, event_timestamp INT64, event_name STRING, event_params REPEATED RECORD(key STRING, value RECORD(string_value STRING, int_value INT64, float_value FLOAT64, double_value FLOAT64)), user_id STRING, user_pseudo_id STRING, user_first_touch_timestamp INT64, user_properties REPEATED RECORD(key STRING, value RECORD(string_value STRING, int_value INT64, float_value FLOAT64, double_value FLOAT64, set_timestamp_micros INT64)), platform STRING, device RECORD(category STRING, operating_system STRING), geo RECORD(country STRING), app_info RECORD(version STRING)</code>.</p>
+<p>CLIs (Python 3 stdlib only, <code>python3 -I</code>):</p>
+<ul>
+<li><code>fixtures/generate_fixture.py --out &lt;dir&gt;</code> → one <code>events_YYYYMMDD.ndjson</code> per day with events (<strong>17 files</strong>). <code>screen_view</code> rows carry the param <strong><code>firebase_screen</code></strong> (export representation), never <code>screen_name</code>; <code>first_in_slot</code>/<code>is_new_user</code> are <code>string_value</code> <code>&quot;true&quot;</code>/<code>&quot;false&quot;</code>.</li>
+<li><code>fixtures/run_cookbook.py --dataset &lt;name&gt; [--load] [--only &lt;stem&gt;] [--scenario &lt;name&gt;]</code> → as revision 1: <code>bq mk</code> (EU, 30-day expiry) if missing, <code>bq load --replace</code> per day, run every scenario × file with the three parameters, order-insensitive compare with 1e-6 tolerance, <code>PASS/FAIL &lt;scenario&gt;/&lt;stem&gt;</code>, exit 0 iff all pass, <code>CLOUDSDK_CORE_ACCOUNT=seidalins@gmail.com</code> + <code>--project_id=fit-journal-pro</code> on every call, refuse <code>--load</code> for datasets not starting with <code>analytics_fixture</code>.</li>
+</ul>
+<p>Fixture personas (<code>user_pseudo_id = p1..p12</code>, <code>user_id = uid-p1..</code>; helper <code>workout_day(user, date, number=1, sets, session=False, source=&quot;catalog&quot;)</code> emits <code>screen_view(home)</code>, <code>screen_view(workout)</code>, [<code>workout_session_start</code>], <code>exercise_added(source, count=1, first_in_slot=&quot;true&quot;)</code>, <code>screen_view(workout_focus)</code>, <code>set_logged</code>×sets, [<code>workout_session_end(via=finish_sheet)</code>]; extra <code>exercise_added</code> on an already-logged day carry <code>first_in_slot=&quot;false&quot;</code>; all rows carry user properties <code>app_build</code>, <code>sub_tier</code>, <code>quota_state</code>, <code>workouts_used</code> and <code>platform</code>):</p>
+<p>| id | platform | first_touch | events | |---|---|---|---| | p1 | IOS | 09-01 | 09-01 <code>sign_in(is_new_user=true)</code>, workout_day(09-01, 3, session) + <code>rest_timer_started</code>×2 + <code>feature_used(one_rm_calculator)</code>; workout_day(09-04, 2, session); workout_day(09-08, 2); workout_day(09-15, 1) | | p2 | ANDROID | 09-02 | 09-02 <code>sign_in(true)</code>, <code>screen_view(home)</code>, <code>screen_view(workout)</code>; 09-05 <code>screen_view(home)</code> | | p3 | IOS | 09-02 | 09-02 <code>sign_in(true)</code>, <code>screen_view(home)</code>; 09-18 workout_day(09-18, 2), then <strong><code>workout_deleted(09-18, 1)</code>, then <code>exercise_added(catalog, count 1, first_in_slot=&quot;true&quot;)</code> on the SAME slot (09-18, 1), <code>set_logged</code>×1</strong> — delete/re-log case | | p4 | ANDROID | 2025-01-01 | 09-01 <code>sign_in(false)</code>; workout_day each day 09-01..09-10 (sets 1); 09-03 + <code>feature_used(superset)</code>; 09-05 + <code>exercise_added(repeat, count 3, first_in_slot=&quot;false&quot;)</code>; 09-11 <code>screen_view(home)</code>, <code>screen_view(workout)</code>, <code>paywall_requested(workout_screen)</code>, <code>paywall_shown(workout_screen, paywall_no_trial)</code>, <code>purchase_result(purchased, fj_annual, workout_screen)</code>; workout_day(09-12, 1) | | p5 | IOS | 2025-01-01 | 09-04 <code>screen_view(home)</code>, <code>paywall_requested(home_card)</code>, <code>paywall_shown</code>, <code>purchase_result(purchased, fj_annual, home_card)</code>; workout_day(09-06, 2) | | p6 | ANDROID | 2025-01-01 | 09-04 and 09-09: <code>screen_view(home)</code>, <code>paywall_requested(home_card)</code>, <code>paywall_shown</code>, <code>purchase_result(cancelled, fj_annual, home_card)</code> | | p7 | IOS | 2025-01-01 | 09-05 <code>screen_view(workout)</code>, <code>paywall_requested(import)</code>, <code>paywall_skipped(import, no_rule_match)</code> | | p8 | ANDROID | 2025-01-01 | 09-06 <code>screen_view(workout_list)</code>, <code>paywall_requested(list_card)</code>, <code>paywall_shown</code>, <code>purchase_result(restored, —, list_card)</code> | | p9 | IOS, <code>app_build=debug</code> | 09-01 | 09-01 <code>sign_in(true)</code>, workout_day(09-01, 1), <code>paywall_requested(home_card)</code>, <code>paywall_shown</code>, <code>purchase_result(purchased)</code> — excluded everywhere | | p10 | ANDROID | 2025-01-01 | 09-01 <code>sign_in(false)</code>, workout_day(09-01, 1); workout_day(09-02, 1) + <code>exercise_added(copy, count 2, first_in_slot=&quot;false&quot;)</code> + <code>feature_used(share_workout)</code>; workout_day(09-10, 1) + <code>rest_timer_started</code> | | p11 | ANDROID | 09-01 | 09-01 <code>sign_in(true)</code>, workout_day(09-01, 1); workout_day(10-01, 1) | | p12 | ANDROID | 2025-01-01 | <strong>cross-midnight:</strong> 09-13 <code>screen_view(home)</code>, <code>screen_view(workout)</code>, <code>workout_session_start(09-13, 1)</code>, <code>exercise_added(catalog, 1, first_in_slot=&quot;true&quot;)</code>; 09-14 <code>screen_view(workout_focus)</code>, <code>set_logged(09-13 slot, add)</code>, <code>workout_session_end(09-13 slot, via=auto)</code> — no <code>screen_view(workout)</code> on 09-14 |</p>
+<p>Days with events (17): 09-01 … 09-12, 09-13, 09-14, 09-15, 09-18, 10-01.</p>
+<p><code>expected.json</code>, scenario <code>observed_0921</code> (<code>20260901</code>, <code>20260921</code>, <code>20260921</code>):</p>
+<ul>
+<li><code>01_activation</code>: signed_in 4/4, viewed_workout 4/4, logged_first_workout 3/4, second_workout_7d 1/2 (p3 immature; p3's re-log is the same slot and must not count; p11's second slot is 30 days later).</li>
+<li><code>02_paywall_conversion</code>: home_card/card 2,2,1,0; workout_screen/gate 1,1,1,0; import/gate 1,0,0,0; list_card/card 1,1,0,1.</li>
+<li><code>03_in_workout</code>: opened 25, added_exercise 22, logged_set 21, finished_session 2 (p12's 09-13 reaches <code>added_exercise</code> only; 09-14 contributes nothing).</li>
+<li><code>04_retention</code>: day 1 → 3,0; day 3 → 3,1; day 7 → 2,1; day 30 → 0,0.</li>
+<li><code>05_feature_adoption</code> (loggers = 7): rest_timer 2 (0.2857143), one_rm_calculator 1, superset 1, share_workout 1, copy_workout 1, repeat_workout 1 (each 0.1428571), finished_session 2 (0.2857143).</li>
+<li><code>06_weekly_active</code>: 2026-08-31 → 5; 2026-09-07 → 3; 2026-09-14 → 3.</li>
+</ul>
+<p>Scenario <code>observed_1005</code> (<code>20260901</code>, <code>20260921</code>, <code>20261005</code>): identical except <code>01_activation</code> second_workout_7d 1/3 (p3 now mature and still NOT converted — the re-logged slot is not a second workout) and <code>04_retention</code> day 7 → 3,1; day 30 → 2,1.</p>
+<p>Test policy: <code>:shared:jvmTest</code> is the shared suite; Task 1 lands it green, Task 2 extends it and keeps it green (including the untouched <code>FinishForgottenSessionUseCaseTest</code>); Task 8 re-runs it.</p>
+<h4>Global Constraints</h4>
+<ul>
+<li>Three separate git repos (<code>iOS/</code>, <code>Android/</code>, <code>Multiplatform/</code>), all on branch <code>feature/analytics</code>; top-level is not a repo; file paths are workspace-relative; commit per repo.</li>
+<li>Never build locally. KMP: <code>cd Multiplatform &amp;&amp; m2 run ./gradlew :shared:jvmTest</code>; Android: <code>cd Android &amp;&amp; m2 run ./gradlew :app:assembleDebug</code>; iOS: <code>cd iOS &amp;&amp; m2 sh -c 'xcodebuild -scheme FitJournal -configuration Debug -destination &quot;platform=iOS Simulator,name=iPhone 17&quot; ARCHS=arm64 ONLY_ACTIVE_ARCH=YES build'</code> (no <code>-derivedDataPath</code>). Never run the iOS and Android builds, or the simulator and the emulator, at the same time: every native build/run command takes the mkdir lock <code>/private/tmp/claude-501/-Users-sultan-Development-FitJournal/7934b72b-ad0d-4a77-b636-1f122811d1c4/scratchpad/native-build.lock</code> first. <code>bq</code>/<code>gcloud</code>/<code>python3</code> run on this laptop, never via m2.</li>
+<li>Every Verify command starts with <code>set -o pipefail;</code> locally and inside every <code>m2 sh -c '...'</code>, never hides a failing exit code behind <code>tail</code>/<code>grep</code>, asserts absence with <code>! grep ...</code>, and ends with <code>exit &quot;$rc&quot;</code>.</li>
+<li><code>bq</code> always as <code>CLOUDSDK_CORE_ACCOUNT=seidalins@gmail.com bq --project_id=fit-journal-pro …</code>; never <code>gcloud config set</code>; only dataset <code>analytics_fixture</code> may be created/written.</li>
+<li>Analytics must never throw across SKIE and never block UI: every sink call inside <code>runCatching</code>, every interface non-suspend, no subprocess or I/O on the main thread.</li>
+<li>No defaulted parameter on any Kotlin declaration Swift calls directly; preserve existing shapes with explicit overloads / secondary constructors; never reorder or remove an existing constructor parameter (the <code>FinishForgottenSessionUseCase</code> <code>clock</code> stays third).</li>
+<li>Every param an Explore funnel filters on is a STRING with a closed vocabulary; <code>Boolean</code> renders as <code>&quot;true&quot;</code>/<code>&quot;false&quot;</code>; integers are measures only.</li>
+<li>Parity: any emission added on one platform is added on the other in the same task; shared logic goes in <code>Multiplatform/shared</code> commonMain.</li>
+<li>Kotlin 2.4.20 for KMP (SKIE ceiling), no new dependencies on any repo; iOS deployment target 18.0, arm64 only; Android strings live in <code>common/resources</code> (none needed here).</li>
+<li>GA4 limits are test-enforced; no free text in any param; join keys use the exact names in Contracts; add an event only by adding a catalog case + spec + sample + re-rendering <code>events.json</code>.</li>
+<li>Implementers invoke skills before writing: <code>kotlin-multiplatform-expect-actual</code> (Tasks 1–2), <code>compose-side-effects</code> (Tasks 1, 2, 4), <code>swift-concurrency</code> (Task 3), <code>android</code> (Task 4).</li>
+<li>Verify commands run under zsh: never assign <code>status</code>, <code>path</code>, <code>argv</code>, <code>options</code>; use <code>rc=$?</code>.</li>
+<li>Surgical changes: no refactors of adjacent code; delete only what this spec names; iOS synchronized folders need no pbxproj edit.</li>
+</ul>
+<h4>Tasks</h4></div>
+
+<section class="wave">
+  <h3><span class="wnum">Wave 1</span>
+    <span class="wmeta">1 task</span></h3>
+  <div class="grid"><article class="card" id="task-0">
+  <header>
+    <h4>Task 1: KMP analytics catalog, tracker, dictionary + jvmTest</h4>
+    <div class="meta">
+      <span class="chip frontier">frontier</span>
+      <span class="after free">no dependencies</span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Land the shared analytics package (14-case catalog incl. <code>ScreenView</code>, tracker, sink interface, user-property sync, <code>TrackScreenView</code>, <code>PaywallEntry</code>/<code>PaywallAttribution</code>) with jvmTests that enforce GA4 limits, harness behaviour, and render/diff <code>events.json</code>.</p></div>
+  <div class="blk"><h5>Files</h5><p class="files"><code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/analytics/AnalyticsEvent.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/analytics/AnalyticsCatalog.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/analytics/AnalyticsTracker.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/analytics/Analytics.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/analytics/AnalyticsUserPropertiesSync.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/analytics/PaywallEntry.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/analytics/TrackScreenView.kt</code> <code>Multiplatform/shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/analytics/AnalyticsCatalogTest.kt</code> <code>Multiplatform/shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/analytics/AnalyticsHarnessTest.kt</code> <code>Multiplatform/shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/analytics/RecordingTracker.kt</code> <code>Multiplatform/docs/analytics/events.json</code></p></div>
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>All Contract signatures/enum members exist exactly: 14 event cases incl. ScreenView, 16 screens (9 instrumented), 7 paywall entries with isCard, 4 user properties with scope, six value enums, ParamSpec.exportName; samples() returns 14</li><li>screenView routes through AnalyticsEvent.ScreenView; sink gets screen_view/screen_name; screenView_isTrackedAsScreenViewEvent passes</li><li>Analytics no-op before install; every sink call in runCatching; trackerNeverThrows_whenSinkThrows passes</li><li>clearUser nulls user id, ACCOUNT props and PaywallAttribution.presented, preserves app_build; clearUser_preservesProcessScopedProperties passes</li><li>paywallShown binds attribution, requested/skipped do not, dismissed clears; paywallAttribution_bindsToPresentedPaywall passes</li><li>AnalyticsUserPropertiesSync.start idempotent in both overloads; userPropertiesSync_mapsQuotaToVocabulary covers all cases</li><li>TrackScreenView uses LifecycleStartEffect(screen): fires on every ON_START incl. synthetic, never on recomposition</li><li>AnalyticsCatalogTest has five and AnalyticsHarnessTest six named tests; GA4 limits enforced; events.json diff fails with cp-able path</li><li>events.json byte-identical to renderJson(); uninstrumented false; scope on user properties; export_name only on screen_view.screen_name; first_in_slot and is_new_user string with vocab true/false</li><li>Param values only Long/Double/String; LocalDate YYYY-MM-DD; enums wire values; Boolean renders string true/false</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>set -o pipefail; cd /Users/sultan/Development/FitJournal/Multiplatform &amp;&amp; m2 run ./gradlew :shared:jvmTest --tests 'kz.maestrosultan.fitjournal.analytics.*' 2&gt;&amp;1 | tail -20; rc=$?; echo &quot;task1 rc=$rc&quot;; exit &quot;$rc&quot;</code></pre></div>
+</article></div>
+</section>
+<section class="wave">
+  <h3><span class="wnum">Wave 2</span>
+    <span class="wmeta">3 tasks · run in parallel</span></h3>
+  <div class="grid"><article class="card" id="task-1">
+  <header>
+    <h4>Task 2: Instrument shared use cases, ViewModels and CMP screens</h4>
+    <div class="meta">
+      <span class="chip standard">standard</span>
+      <span class="after">after <a href="#task-0">Task 1: KMP analytics catalog, tracker, dictionary + jvmTest</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Emit every shared-origin catalog event from the use cases and ViewModels (with <code>first_in_slot</code> computed before the write), preserve every Swift-visible and existing-test-visible signature via explicit overloads, and give each CMP screen its single <code>TrackScreenView</code> owner, with emission tests.</p></div>
+  <div class="blk"><h5>Files</h5><p class="files"><code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/workout/usecase/StartWorkoutUseCase.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/workout/usecase/EndWorkoutUseCase.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/workout/usecase/AddSetUseCase.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/workout/usecase/UpdateSetUseCase.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/workout/usecase/RepeatWorkoutUseCase.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/workout/FinishForgottenSessionUseCase.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/timer/RestTimer.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/main/WorkoutViewModel.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/main/WorkoutScreen.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/focus/WorkoutFocusViewModel.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/focus/WorkoutFocusScreen.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/finish/WorkoutFinishViewModel.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/finish/WorkoutFinishSheet.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/details/WorkoutDetailsViewModel.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/details/WorkoutDetailsScreen.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/list/WorkoutListViewModel.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/list/WorkoutListScreen.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/imports/ImportWorkoutViewModel.kt</code> <code>Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/imports/ImportWorkoutScreen.kt</code> <code>Multiplatform/shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/analytics/AnalyticsEmissionTest.kt</code></p></div>
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>Constructor contract implemented: secondary constructors / invoke overload preserve Swift shapes; FinishForgottenSessionUseCase keeps clock third and appends tracker; FinishForgottenSessionUseCaseTest.kt untouched and green; Kotlin-only types take trailing defaulted tracker; factories unchanged</li><li>Emission sites match the Design table exactly, after successful writes only, firstInSlot read via hasLiveRecordInWorkout before the write</li><li>No emission before a write, on a thrown write, on Result.Refused or UpdateSetUseCase false; throwing slot read yields firstInSlot=false</li><li>Five CMP screens call TrackScreenView once at the top; WorkoutFinishSheet only while visible; hosts/VMs log no screen views</li><li>AnalyticsEmissionTest has the five named tests incl. the injected-clock FinishForgottenSession test; full :shared:jvmTest green</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>set -o pipefail; cd /Users/sultan/Development/FitJournal/Multiplatform &amp;&amp; [ -z &quot;$(git status --porcelain shared/src/jvmTest/kotlin/kz/maestrosultan/fitjournal/domain/workout/FinishForgottenSessionUseCaseTest.kt)&quot; ] &amp;&amp; m2 run ./gradlew :shared:jvmTest 2&gt;&amp;1 | tail -25; rc=$?; echo &quot;task2 rc=$rc&quot;; exit &quot;$rc&quot;</code></pre></div>
+</article><article class="card" id="task-4">
+  <header>
+    <h4>Task 5: README, funnels.md and cookbook SQL</h4>
+    <div class="meta">
+      <span class="chip standard">standard</span>
+      <span class="after">after <a href="#task-0">Task 1: KMP analytics catalog, tracker, dictionary + jvmTest</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Write the analysis-layer documentation (Explore definitions with stated limitations, transport-vs-export naming, the UG-1 checklist and evidence format) and the six cookbook queries with the cohort/observation split and the normalized <code>screen</code> column.</p></div>
+  <div class="blk"><h5>Files</h5><p class="files"><code>Multiplatform/docs/analytics/README.md</code> <code>Multiplatform/docs/analytics/funnels.md</code> <code>Multiplatform/docs/analytics/cookbook/01_activation.sql</code> <code>Multiplatform/docs/analytics/cookbook/02_paywall_conversion.sql</code> <code>Multiplatform/docs/analytics/cookbook/03_in_workout.sql</code> <code>Multiplatform/docs/analytics/cookbook/04_retention.sql</code> <code>Multiplatform/docs/analytics/cookbook/05_feature_adoption.sql</code> <code>Multiplatform/docs/analytics/cookbook/06_weekly_active.sql</code></p></div>
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>README covers conventions incl. transport-vs-export naming, string-vocab rule, first_in_slot re-log caveat, EU export, full registration list incl. is_new_user, bq prefix, DATASET substitution, parameters + maturity, DebugView per platform, debug exclusion, cohort caveats, consent follow-up, UG-1 checklist verbatim with evidence-file format</li><li>funnels.md documents F1-F5 and 06 Explore definitions with conditions, sequencing, time constraints, segments, stated limitations (F1 slot distinctness, F3 closed funnel + calendar-day mismatch), justification and cookbook file</li><li>Each cookbook file uses both CTEs verbatim incl. screen column, schema-only columns, placeholder, three params, exact outputs; screen = '...' conditions; string 'true' conditions; 03 per user-day with same-day workout open; 01 distinct-slot step 4; 01/04 maturity; 04 four rows</li><li>bq --dry_run parses every file (non-zero only for a missing table before Task 7, noted in report)</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>set -o pipefail; cd /Users/sultan/Development/FitJournal/Multiplatform/docs/analytics &amp;&amp; grep -q &quot;ug1-evidence.md&quot; README.md &amp;&amp; grep -q &quot;RESULT: PASS&quot; README.md &amp;&amp; rc=0; for f in cookbook/*.sql; do grep -q &quot;AS screen&quot; &quot;$f&quot; || { echo &quot;$f lacks screen column&quot;; rc=1; }; sed 's/\${DATASET}/analytics_fixture/g' &quot;$f&quot; &gt; /private/tmp/claude-501/-Users-sultan-Development-FitJournal/7934b72b-ad0d-4a77-b636-1f122811d1c4/scratchpad/fj_cb.sql; if CLOUDSDK_CORE_ACCOUNT=seidalins@gmail.com bq --project_id=fit-journal-pro query --use_legacy_sql=false --dry_run --parameter=start_date:STRING:20260901 --parameter=end_date:STRING:20260921 --parameter=observed_through:STRING:20260921 &quot;$(cat /private/tmp/claude-501/-Users-sultan-Development-FitJournal/7934b72b-ad0d-4a77-b636-1f122811d1c4/scratchpad/fj_cb.sql)&quot; &gt;/dev/null 2&gt;&amp;1; then echo &quot;$f OK&quot;; else echo &quot;$f FAIL&quot;; rc=1; fi; done; echo &quot;task5 rc=$rc&quot;; exit &quot;$rc&quot;</code></pre></div>
+</article><article class="card" id="task-5">
+  <header>
+    <h4>Task 6: Fixture generator, schema, expected results, runner</h4>
+    <div class="meta">
+      <span class="chip standard">standard</span>
+      <span class="after">after <a href="#task-0">Task 1: KMP analytics catalog, tracker, dictionary + jvmTest</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Produce the deterministic GA4-export-shaped fixture generator (twelve personas incl. the delete/re-log and cross-midnight cases, 17 day files, <code>firebase_screen</code> as the screen param), the bq schema, the hand-derived expected results for both observation scenarios, and the runner.</p></div>
+  <div class="blk"><h5>Files</h5><p class="files"><code>Multiplatform/docs/analytics/fixtures/generate_fixture.py</code> <code>Multiplatform/docs/analytics/fixtures/run_cookbook.py</code> <code>Multiplatform/docs/analytics/fixtures/events_schema.json</code> <code>Multiplatform/docs/analytics/fixtures/expected.json</code></p></div>
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>Stdlib-only scripts; generator emits the twelve-persona table exactly incl. p3 delete/re-log and p12 cross-midnight; 17 NDJSON day files; deterministic bytes</li><li>screen_view rows use firebase_screen (never screen_name); first_in_slot/is_new_user are string_value true/false</li><li>Generator validates every event/param name and vocab against events.json using export names</li><li>events_schema.json matches the Contracts column list exactly</li><li>expected.json holds the two scenarios with six revised result sets each</li><li>run_cookbook.py implements the Contracts CLI incl. EU dataset creation, replace-load, substitution, parameters, scenario loop, tolerant comparison, PASS/FAIL, exit code, account/project, dataset-name guard</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>set -o pipefail; S=/private/tmp/claude-501/-Users-sultan-Development-FitJournal/7934b72b-ad0d-4a77-b636-1f122811d1c4/scratchpad; cd /Users/sultan/Development/FitJournal/Multiplatform/docs/analytics/fixtures &amp;&amp; rm -rf &quot;$S/fx&quot; &quot;$S/fx2&quot; &amp;&amp; python3 -I generate_fixture.py --out &quot;$S/fx&quot; &amp;&amp; python3 -I generate_fixture.py --out &quot;$S/fx2&quot; &amp;&amp; diff -r &quot;$S/fx&quot; &quot;$S/fx2&quot; &gt;/dev/null &amp;&amp; [ &quot;$(ls &quot;$S/fx&quot; | wc -l | tr -d ' ')&quot; -eq 17 ] &amp;&amp; grep -q '&quot;firebase_screen&quot;' &quot;$S/fx/events_20260901.ndjson&quot; &amp;&amp; ! grep -q '&quot;screen_name&quot;' &quot;$S/fx/events_20260901.ndjson&quot; &amp;&amp; grep -q 'workout_deleted' &quot;$S/fx/events_20260918.ndjson&quot; &amp;&amp; python3 -I run_cookbook.py --help &gt;/dev/null; rc=$?; echo &quot;task6 rc=$rc&quot;; exit &quot;$rc&quot;</code></pre></div>
+</article></div>
+</section>
+<section class="wave">
+  <h3><span class="wnum">Wave 3</span>
+    <span class="wmeta">3 tasks · run in parallel</span></h3>
+  <div class="grid"><article class="card" id="task-2">
+  <header>
+    <h4>Task 3: iOS harness, sink, call sites, legacy deletion</h4>
+    <div class="meta">
+      <span class="chip standard">standard</span>
+      <span class="after">after <a href="#task-0">Task 1: KMP analytics catalog, tracker, dictionary + jvmTest</a>, <a href="#task-1">Task 2: Instrument shared use cases, ViewModels and CMP screens</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Replace <code>AnalyticsKit</code>/<code>EventKit</code> with the KMP tracker on iOS: Firebase sink, collection policy, manual screen views, Firebase-<code>isNewUser</code>-based sign-in identity, logout, paywall entry + attribution lifecycle, Qonversion-path purchase outcomes, catalog-add <code>exercise_added</code> with <code>first_in_slot</code>.</p></div>
+  <div class="blk"><h5>Files</h5><p class="files"><code>iOS/FitJournal/Analytics/FirebaseAnalyticsSink.swift</code> <code>iOS/FitJournal/Analytics/Event.swift</code> <code>iOS/FitJournal/Analytics/EventKit.swift</code> <code>iOS/FitJournal/Analytics/Core/AnalyticsEngine.swift</code> <code>iOS/FitJournal/Analytics/Core/AnalyticsKit.swift</code> <code>iOS/FitJournal/Analytics/Engines/FirebaseEngine.swift</code> <code>iOS/FitJournal/AppDelegate/AppDelegate.swift</code> <code>iOS/FitJournal/Info.plist</code> <code>iOS/FitJournal/Start/Domain/Utils/FirebaseAuthController.swift</code> <code>iOS/FitJournal/Start/Presentation/Auth/StartAuthViewController.swift</code> <code>iOS/FitJournal/Start/Presentation/Auth/StartAuthViewModel.swift</code> <code>iOS/FitJournal/Start/Domain/UseCase/AuthUserUseCase.swift</code> <code>iOS/FitJournal/Profile/Domain/UseCase/LogoutUserUseCase.swift</code> <code>iOS/FitJournal/Subscription/Presentation/Superwall/QuotaPaywall.swift</code> <code>iOS/FitJournal/Subscription/Data/Service/SuperwallController.swift</code> <code>iOS/FitJournal/Home/HomeCoordinator.swift</code> <code>iOS/FitJournal/Workout/WorkoutCoordinator.swift</code> <code>iOS/FitJournal/Workout/Main/Presentation/WorkoutCmpViewController.swift</code> <code>iOS/FitJournal/Workout/List/Presentation/WorkoutListCmpViewController.swift</code> <code>iOS/FitJournal/Workout/Import/Presentation/Workout/ImportWorkoutCmpViewController.swift</code> <code>iOS/FitJournal/Workout/Details/Presentation/WorkoutDetailsCmpViewController.swift</code> <code>iOS/FitJournal/Exercises/Search/ExerciseSearchViewModel.swift</code> <code>iOS/FitJournal/Exercises/List/Presentation/ExerciseListViewModel.swift</code> <code>iOS/FitJournal/Exercises/Details/Presentation/Calendar/ExerciseDetailsCalendarViewController.swift</code> <code>iOS/FitJournal/Home/Presentation/HomeViewController.swift</code> <code>iOS/FitJournal/Start/Presentation/Login/StartLoginViewController.swift</code> <code>iOS/FitJournal/Onboarding/Presentation/Units/OnboardingUnitsViewController.swift</code> <code>iOS/FitJournal/Workout/Import/Data/Repository/DefaultImportRecordRepository.swift</code> <code>iOS/FitJournal/Settings/Presentation/Main/SettingsViewController.swift</code> <code>iOS/FitJournal/AppDelegate/AppCoordinator.swift</code> <code>iOS/FitJournal/Settings/Presentation/DeleteAccount/DeleteAccountViewController.swift</code> <code>iOS/FitJournal/Journal/Presentation/List/JournalListViewController.swift</code> <code>iOS/FitJournal/Journal/Presentation/Details/JournalDetailsViewController.swift</code> <code>iOS/FitJournal/Configuration/Presentation/Migration/MigrationViewController.swift</code> <code>iOS/FitJournal/Configuration/Presentation/Configuration/ConfigurationViewController.swift</code></p></div>
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>FirebaseAnalyticsSink implements AnalyticsSink non-async and is installed in AppDelegate with app_build, user id and AnalyticsUserPropertiesSync.start(quotaGate:)</li><li>Collection policy set every launch; Info.plist FirebaseAutomaticScreenReportingEnabled=NO; no subprocess</li><li>WorkoutCoordinator.swift:88-91 and DefaultWorkoutSessionRepository.swift:27 untouched and compiling</li><li>isNewUser read from AuthDataResult.additionalUserInfo at both signIn sites, threaded delegate -&gt; VC -&gt; VM -&gt; AuthUserUseCase.execute(firebaseUserId:method:isNewUser:); SignIn tracked once before the exists/not-exists branch; no analytics in either branch; debug auth passes false</li><li>LogoutUserUseCase SignOut then clearUser before Superwall reset</li><li>presentQuotaPaywall(entry:) tracks requested; onPresent shown, onSkip skipped, onError nothing, onDismiss paywallDismissed; all ten callers pass the listed entry</li><li>SuperwallController captures presented entry first, tracks PurchaseResult incl. restore; RevenueCat untouched</li><li>Home/StartLogin/OnboardingUnits track screen views in viewDidAppear; no other iOS screen_view sites</li><li>DefaultImportRecordRepository emits exercise_added CATALOG with firstInSlot read before the write</li><li>No legacy references remain; legacy files deleted; iOS arm64 simulator build succeeds under the lock</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>set -o pipefail; L=/private/tmp/claude-501/-Users-sultan-Development-FitJournal/7934b72b-ad0d-4a77-b636-1f122811d1c4/scratchpad/native-build.lock; until mkdir &quot;$L&quot; 2&gt;/dev/null; do sleep 15; done; trap 'rmdir &quot;$L&quot;' EXIT; cd /Users/sultan/Development/FitJournal/iOS &amp;&amp; ! grep -rn &quot;EventKit\|AnalyticsKit\|AnalyticsEngine\|FirebaseEngine&quot; FitJournal --include=*.swift &amp;&amp; grep -q &quot;isNewUser&quot; FitJournal/Start/Domain/Utils/FirebaseAuthController.swift &amp;&amp; grep -q &quot;isNewUser&quot; FitJournal/Start/Domain/UseCase/AuthUserUseCase.swift &amp;&amp; m2 sh -c 'set -o pipefail; xcodebuild -scheme FitJournal -configuration Debug -destination &quot;platform=iOS Simulator,name=iPhone 17&quot; ARCHS=arm64 ONLY_ACTIVE_ARCH=YES build 2&gt;&amp;1 | grep -E &quot;error:|BUILD (SUCCEEDED|FAILED)&quot; | tail -20'; rc=$?; echo &quot;task3 rc=$rc&quot;; exit &quot;$rc&quot;</code></pre></div>
+</article><article class="card" id="task-3">
+  <header>
+    <h4>Task 4: Android harness, sink, call sites, legacy deletion</h4>
+    <div class="meta">
+      <span class="chip standard">standard</span>
+      <span class="after">after <a href="#task-0">Task 1: KMP analytics catalog, tracker, dictionary + jvmTest</a>, <a href="#task-1">Task 2: Instrument shared use cases, ViewModels and CMP screens</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Mirror Task 3 on Android: rebuild <code>:common:analytics</code> as the Firebase sink, install from the Application with an off-main collection policy, manual screen views, Firebase-<code>isNewUser</code>-based sign-in identity, logout, paywall entry + attribution lifecycle, Qonversion-path purchase outcomes, catalog-add <code>exercise_added</code> with <code>first_in_slot</code>.</p></div>
+  <div class="blk"><h5>Files</h5><p class="files"><code>Android/common/analytics/src/main/kotlin/kz/maestrosultan/fitjournal/common/analytics/FirebaseAnalyticsSink.kt</code> <code>Android/common/analytics/src/main/kotlin/kz/maestrosultan/fitjournal/common/analytics/AnalyticsInstaller.kt</code> <code>Android/app/src/debug/AndroidManifest.xml</code> <code>Android/common/analytics/src/main/kotlin/kz/maestrosultan/fitjournal/common/analytics/domain/manager/AnalyticsManager.kt</code> <code>Android/common/analytics/src/main/kotlin/kz/maestrosultan/fitjournal/common/analytics/domain/model/AnalyticsEvent.kt</code> <code>Android/common/analytics/src/main/kotlin/kz/maestrosultan/fitjournal/common/analytics/domain/model/SimpleAnalyticsEvent.kt</code> <code>Android/common/analytics/src/main/kotlin/kz/maestrosultan/fitjournal/common/analytics/domain/engine/AnalyticsEngine.kt</code> <code>Android/common/analytics/src/main/kotlin/kz/maestrosultan/fitjournal/common/analytics/data/manager/AnalyticsManager.kt</code> <code>Android/common/analytics/src/main/kotlin/kz/maestrosultan/fitjournal/common/analytics/data/engine/FirebaseAnalyticsEngine.kt</code> <code>Android/common/analytics/src/main/kotlin/kz/maestrosultan/fitjournal/common/analytics/di/AnalyticsModule.kt</code> <code>Android/feature/auth/src/main/kotlin/kz/maestrosultan/fitjournal/feature/auth/domain/event/Login.kt</code> <code>Android/feature/auth/src/main/kotlin/kz/maestrosultan/fitjournal/feature/auth/domain/event/SignUp.kt</code> <code>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/home/domain/event/HomePage.kt</code> <code>Android/common/analytics/build.gradle.kts</code> <code>Android/app/src/main/AndroidManifest.xml</code> <code>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/FitJournalApplication.kt</code> <code>Android/feature/auth/src/main/kotlin/kz/maestrosultan/fitjournal/feature/auth/presentation/AuthViewModel.kt</code> <code>Android/feature/auth/src/main/kotlin/kz/maestrosultan/fitjournal/feature/auth/domain/usecase/AuthUserUseCase.kt</code> <code>Android/common/user/src/main/kotlin/kz/maestrosultan/fitjournal/common/user/data/manager/DefaultUserManager.kt</code> <code>Android/feature/subscription/src/main/kotlin/kz/maestrosultan/fitjournal/feature/subscription/domain/controller/SubscriptionController.kt</code> <code>Android/feature/subscription/src/main/kotlin/kz/maestrosultan/fitjournal/feature/subscription/data/controller/DefaultSubscriptionController.kt</code> <code>Android/feature/subscription/src/main/kotlin/kz/maestrosultan/fitjournal/feature/subscription/data/service/SuperwallController.kt</code> <code>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/home/presentation/HomeViewModel.kt</code> <code>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/main/presentation/WorkoutCmpHostViewModel.kt</code> <code>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/list/presentation/WorkoutListHostViewModel.kt</code> <code>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/importing/presentation/records/ImportWorkoutCmpScreen.kt</code> <code>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/details/presentation/WorkoutDetailsHostViewModel.kt</code> <code>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/exercise/list/presentation/ExerciseListViewModel.kt</code> <code>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/exercise/search/presentation/ExerciseSearchViewModel.kt</code> <code>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/exercise/details/presentation/calendar/ExerciseDetailsCalendarViewModel.kt</code> <code>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/home/presentation/HomeScreen.kt</code> <code>Android/feature/auth/src/main/kotlin/kz/maestrosultan/fitjournal/feature/auth/presentation/AuthScreen.kt</code> <code>Android/feature/onboarding/src/main/kotlin/kz/maestrosultan/fitjournal/feature/onboarding/units/presentation/OnboardingUnitsScreen.kt</code> <code>Android/feature/onboarding/build.gradle.kts</code> <code>Android/app/src/main/kotlin/kz/maestrosultan/fitjournal/workout/importing/data/DefaultImportRecordRepository.kt</code> <code>Android/app/build.gradle.kts</code> <code>Android/feature/auth/build.gradle.kts</code></p></div>
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>FirebaseAnalyticsSink + AnalyticsInstaller installed from FitJournalApplication; release inline, debuggable getprop on background executor; no subprocess on main; app_build, user id, AnalyticsUserPropertiesSync via entry point</li><li>Main manifest automatic screen reporting false; debug overlay collection false; release no flag</li><li>AuthViewModel reads additionalUserInfo.isNewUser at both success listeners and threads it to AuthUserUseCase.auth(..., isNewUser); SignIn tracked once before the exists branch; no analytics in either branch; Login/SignUp deleted; logout SignOut then clearUser</li><li>presentPaywall(entry): requested before register; onPresent shown, onDismiss paywallDismissed, onSkip skipped, onError log only; eight callers pass the listed entry</li><li>SuperwallController captures presented entry first, tracks PurchaseResult incl. restore; RevenueCat untouched</li><li>HomeScreen/AuthScreen/OnboardingUnitsScreen use TrackScreenView; HomePage removed</li><li>DefaultImportRecordRepository emits exercise_added CATALOG with firstInSlot read before the write</li><li>No legacy references remain; :common:analytics drops KSP/Hilt; :app:assembleDebug succeeds under the lock</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>set -o pipefail; L=/private/tmp/claude-501/-Users-sultan-Development-FitJournal/7934b72b-ad0d-4a77-b636-1f122811d1c4/scratchpad/native-build.lock; until mkdir &quot;$L&quot; 2&gt;/dev/null; do sleep 15; done; trap 'rmdir &quot;$L&quot;' EXIT; cd /Users/sultan/Development/FitJournal/Android &amp;&amp; ! grep -rn &quot;common.analytics.domain\|common.analytics.data\|AnalyticsManager\|AnalyticsEngine&quot; app/src feature common --include=*.kt &amp;&amp; grep -q &quot;additionalUserInfo&quot; feature/auth/src/main/kotlin/kz/maestrosultan/fitjournal/feature/auth/presentation/AuthViewModel.kt &amp;&amp; grep -q &quot;isNewUser&quot; feature/auth/src/main/kotlin/kz/maestrosultan/fitjournal/feature/auth/domain/usecase/AuthUserUseCase.kt &amp;&amp; m2 sh -c 'set -o pipefail; ./gradlew :app:assembleDebug 2&gt;&amp;1 | grep -E &quot;^e: |error:|BUILD (SUCCESSFUL|FAILED)&quot; | tail -20'; rc=$?; echo &quot;task4 rc=$rc&quot;; exit &quot;$rc&quot;</code></pre></div>
+</article><article class="card" id="task-6">
+  <header>
+    <h4>Task 7: Load fixture and execute the cookbook against BigQuery</h4>
+    <div class="meta">
+      <span class="chip standard">standard</span>
+      <span class="after">after <a href="#task-4">Task 5: README, funnels.md and cookbook SQL</a>, <a href="#task-5">Task 6: Fixture generator, schema, expected results, runner</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Create <code>analytics_fixture</code>, load the 17 generated days, run every cookbook query under both scenarios and make all twelve runs match <code>expected.json</code>, fixing SQL (or, with written justification, expected values) where they disagree.</p></div>
+  <div class="blk"><h5>Files</h5><p class="files"><code>Multiplatform/docs/analytics/cookbook/01_activation.sql</code> <code>Multiplatform/docs/analytics/cookbook/02_paywall_conversion.sql</code> <code>Multiplatform/docs/analytics/cookbook/03_in_workout.sql</code> <code>Multiplatform/docs/analytics/cookbook/04_retention.sql</code> <code>Multiplatform/docs/analytics/cookbook/05_feature_adoption.sql</code> <code>Multiplatform/docs/analytics/cookbook/06_weekly_active.sql</code> <code>Multiplatform/docs/analytics/fixtures/expected.json</code></p></div>
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>analytics_fixture exists in EU with 17 events_YYYYMMDD tables loaded with events_schema.json</li><li>run_cookbook.py prints twelve PASS and exits 0; scenarios differ only where Contracts says; 01 step 4 observed_1005 = 1/3; 03 = 25/22/21/2</li><li>expected.json changes justified by persona-table derivation; SQL changes keep Contracts headers/CTEs/columns/labels</li><li>No BigQuery object outside analytics_fixture touched; no gcloud config set</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>set -o pipefail; cd /Users/sultan/Development/FitJournal/Multiplatform/docs/analytics/fixtures &amp;&amp; python3 -I run_cookbook.py --dataset analytics_fixture --load; rc=$?; echo &quot;task7 rc=$rc&quot;; exit &quot;$rc&quot;</code></pre></div>
+</article></div>
+</section>
+<section class="wave">
+  <h3><span class="wnum">Wave 4</span>
+    <span class="wmeta">1 task</span></h3>
+  <div class="grid"><article class="card" id="task-7">
+  <header>
+    <h4>Task 8: Verification gate — jvmTest, both builds, cookbook run</h4>
+    <div class="meta">
+      <span class="chip mechanical">mechanical</span>
+      <span class="after">after <a href="#task-1">Task 2: Instrument shared use cases, ViewModels and CMP screens</a>, <a href="#task-2">Task 3: iOS harness, sink, call sites, legacy deletion</a>, <a href="#task-3">Task 4: Android harness, sink, call sites, legacy deletion</a>, <a href="#task-6">Task 7: Load fixture and execute the cookbook against BigQuery</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Prove the whole change is green end to end: shared tests, iOS and Android builds in sequence under the lock, dictionary diff, legacy-reference grep, and the cookbook run against the loaded fixture.</p></div>
+  <div class="blk"><h5>Files</h5><p>none (verification only)</p></div>
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>:shared:jvmTest exit 0 and BUILD SUCCESSFUL</li><li>iOS arm64 simulator build BUILD SUCCEEDED, then Android :app:assembleDebug BUILD SUCCESSFUL, sequential under the lock</li><li>Legacy-reference grep matches nothing</li><li>run_cookbook.py without --load prints twelve PASS and exits 0</li><li>events.json unchanged by the jvmTest render</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>set -o pipefail; L=/private/tmp/claude-501/-Users-sultan-Development-FitJournal/7934b72b-ad0d-4a77-b636-1f122811d1c4/scratchpad/native-build.lock; until mkdir &quot;$L&quot; 2&gt;/dev/null; do sleep 15; done; trap 'rmdir &quot;$L&quot;' EXIT; cd /Users/sultan/Development/FitJournal &amp;&amp; (cd Multiplatform &amp;&amp; m2 run ./gradlew :shared:jvmTest 2&gt;&amp;1 | grep -E &quot;tests completed|BUILD&quot; | tail -3) &amp;&amp; [ -z &quot;$(git -C Multiplatform status --porcelain docs/analytics/events.json)&quot; ] &amp;&amp; (cd iOS &amp;&amp; m2 sh -c 'set -o pipefail; xcodebuild -scheme FitJournal -configuration Debug -destination &quot;platform=iOS Simulator,name=iPhone 17&quot; ARCHS=arm64 ONLY_ACTIVE_ARCH=YES build 2&gt;&amp;1 | grep -E &quot;BUILD (SUCCEEDED|FAILED)&quot;') &amp;&amp; (cd Android &amp;&amp; m2 sh -c 'set -o pipefail; ./gradlew :app:assembleDebug 2&gt;&amp;1 | grep -E &quot;BUILD (SUCCESSFUL|FAILED)&quot;') &amp;&amp; ! grep -rn &quot;EventKit\|AnalyticsKit\|AnalyticsManager\|AnalyticsEngine\|FirebaseEngine&quot; iOS/FitJournal Android/app/src Android/feature Android/common --include=*.swift --include=*.kt &amp;&amp; python3 -I Multiplatform/docs/analytics/fixtures/run_cookbook.py --dataset analytics_fixture; rc=$?; echo &quot;gate rc=$rc&quot;; exit &quot;$rc&quot;</code></pre></div>
+</article></div>
+</section>
+<section class="wave">
+  <h3><span class="wnum">Wave 5</span>
+    <span class="wmeta">1 task</span></h3>
+  <div class="grid"><article class="card" id="task-8">
+  <header>
+    <h4>Task 9: iOS native delivery gate on the M2 simulator</h4>
+    <div class="meta">
+      <span class="chip mechanical">mechanical</span>
+      <span class="after">after <a href="#task-7">Task 8: Verification gate — jvmTest, both builds, cookbook run</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Prove the iOS sink hands events to Firebase by launching the built app on the M2 simulator in debug/verbose mode and finding the pre-sign-in <code>screen_view</code> with <code>start_login</code> inside one complete log record.</p></div>
+  <div class="blk"><h5>Files</h5><p>none (verification only)</p></div>
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>Simulator log captured 40 s as ndjson (one complete record per line) contains a line with both screen_view and start_login; exit 1 otherwise</li><li>Captured log contains a line matching app_build.*debug</li><li>Fresh install so login is the first screen; no account needed</li><li>Runs under the native-build lock and shuts the simulator down</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>set -o pipefail; L=/private/tmp/claude-501/-Users-sultan-Development-FitJournal/7934b72b-ad0d-4a77-b636-1f122811d1c4/scratchpad/native-build.lock; until mkdir &quot;$L&quot; 2&gt;/dev/null; do sleep 15; done; trap 'rmdir &quot;$L&quot;' EXIT; cd /Users/sultan/Development/FitJournal/iOS &amp;&amp; m2 sh -c 'set -o pipefail; SIM=&quot;iPhone 17&quot;; APP=&quot;$(ls -d &quot;$HOME&quot;/Library/Developer/Xcode/DerivedData/FitJournal-*/Build/Products/Debug-iphonesimulator/FitJournal.app | head -1)&quot;; [ -d &quot;$APP&quot; ] || { echo &quot;no built app&quot;; exit 2; }; xcrun simctl boot &quot;$SIM&quot; 2&gt;/dev/null; xcrun simctl bootstatus &quot;$SIM&quot; -b &gt;/dev/null; xcrun simctl uninstall &quot;$SIM&quot; kz.maestrosultan.FitJournal 2&gt;/dev/null; xcrun simctl install &quot;$SIM&quot; &quot;$APP&quot;; LOG=/tmp/fj_ios_analytics.ndjson; xcrun simctl spawn &quot;$SIM&quot; log stream --style ndjson --predicate &quot;subsystem CONTAINS \&quot;FirebaseAnalytics\&quot; OR eventMessage CONTAINS \&quot;Logging event\&quot; OR eventMessage CONTAINS \&quot;user property\&quot;&quot; &gt; &quot;$LOG&quot; 2&gt;&amp;1 &amp; LP=$!; sleep 3; xcrun simctl launch &quot;$SIM&quot; kz.maestrosultan.FitJournal -FIRDebugEnabled -FIRAnalyticsDebugEnabled -FIRAnalyticsVerboseLoggingEnabled &gt;/dev/null; sleep 40; kill $LP 2&gt;/dev/null; xcrun simctl shutdown &quot;$SIM&quot; &gt;/dev/null 2&gt;&amp;1; grep -c &quot;Logging event&quot; &quot;$LOG&quot; || true; grep screen_view &quot;$LOG&quot; | grep -q start_login &amp;&amp; grep -Eq &quot;app_build.*debug&quot; &quot;$LOG&quot;; rc=$?; echo &quot;ios delivery rc=$rc&quot;; exit &quot;$rc&quot;'; rc=$?; echo &quot;task9 rc=$rc&quot;; exit &quot;$rc&quot;</code></pre></div>
+</article></div>
+</section>
+<section class="wave">
+  <h3><span class="wnum">Wave 6</span>
+    <span class="wmeta">1 task</span></h3>
+  <div class="grid"><article class="card" id="task-9">
+  <header>
+    <h4>Task 10: Android native delivery gate on the M2 emulator</h4>
+    <div class="meta">
+      <span class="chip mechanical">mechanical</span>
+      <span class="after">after <a href="#task-8">Task 9: iOS native delivery gate on the M2 simulator</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Prove the Android sink hands events to Firebase by running the debug APK on the M2 emulator (AVD <code>vibetrip_api36</code> or the first listed) with DebugView + verbose <code>FA</code> logging and finding the pre-sign-in <code>screen_view</code> with <code>start_login</code> on one <code>Logging event</code> logcat line.</p></div>
+  <div class="blk"><h5>Files</h5><p>none (verification only)</p></div>
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>logcat -d -s FA FA-SVC (40 s after launch, three setprops before install) contains a Logging event line with both screen_view and start_login; exit 1 otherwise</li><li>Dump contains a line matching app_build.*debug</li><li>Installed via :app:installDebug, launched via monkey LAUNCHER on the first listed AVD (vibetrip_api36 present); emulator killed at the end</li><li>Runs under the lock after Task 9 shut the simulator down</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>set -o pipefail; L=/private/tmp/claude-501/-Users-sultan-Development-FitJournal/7934b72b-ad0d-4a77-b636-1f122811d1c4/scratchpad/native-build.lock; until mkdir &quot;$L&quot; 2&gt;/dev/null; do sleep 15; done; trap 'rmdir &quot;$L&quot;' EXIT; cd /Users/sultan/Development/FitJournal/Android &amp;&amp; m2 sh -c 'set -o pipefail; SDK=&quot;${ANDROID_HOME:-$HOME/Library/Android/sdk}&quot;; EMU=&quot;$SDK/emulator/emulator&quot;; ADB=&quot;$SDK/platform-tools/adb&quot;; AVD=&quot;$(&quot;$EMU&quot; -list-avds | head -1)&quot;; [ -n &quot;$AVD&quot; ] || { echo &quot;no AVD&quot;; exit 2; }; nohup &quot;$EMU&quot; -avd &quot;$AVD&quot; -no-window -no-audio -no-boot-anim &gt;/dev/null 2&gt;&amp;1 &amp; &quot;$ADB&quot; wait-for-device; until [ &quot;$(&quot;$ADB&quot; shell getprop sys.boot_completed | tr -d &quot;\r&quot;)&quot; = &quot;1&quot; ]; do sleep 3; done; &quot;$ADB&quot; shell setprop log.tag.FA VERBOSE; &quot;$ADB&quot; shell setprop log.tag.FA-SVC VERBOSE; &quot;$ADB&quot; shell setprop debug.firebase.analytics.app kz.maestrosultan.fitjournal; &quot;$ADB&quot; uninstall kz.maestrosultan.fitjournal &gt;/dev/null 2&gt;&amp;1; ./gradlew :app:installDebug -q 2&gt;&amp;1 | tail -5; &quot;$ADB&quot; logcat -c; &quot;$ADB&quot; shell monkey -p kz.maestrosultan.fitjournal -c android.intent.category.LAUNCHER 1 &gt;/dev/null 2&gt;&amp;1; sleep 40; LOG=/tmp/fj_android_analytics.log; &quot;$ADB&quot; logcat -d -s FA FA-SVC &gt; &quot;$LOG&quot;; &quot;$ADB&quot; emu kill &gt;/dev/null 2&gt;&amp;1; grep -c &quot;Logging event&quot; &quot;$LOG&quot; || true; grep &quot;Logging event&quot; &quot;$LOG&quot; | grep screen_view | grep -q start_login &amp;&amp; grep -Eq &quot;app_build.*debug&quot; &quot;$LOG&quot;; rc=$?; echo &quot;android delivery rc=$rc&quot;; exit &quot;$rc&quot;'; rc=$?; echo &quot;task10 rc=$rc&quot;; exit &quot;$rc&quot;</code></pre></div>
+</article></div>
+</section>
+<section class="wave">
+  <h3><span class="wnum">Wave 7</span>
+    <span class="wmeta">1 task</span></h3>
+  <div class="grid"><article class="card" id="task-10">
+  <header>
+    <h4>Task 11: UG-1 signed-in DebugView user gate (user-performed)</h4>
+    <div class="meta">
+      <span class="chip mechanical">mechanical</span>
+      <span class="after">after <a href="#task-0">Task 1: KMP analytics catalog, tracker, dictionary + jvmTest</a>, <a href="#task-1">Task 2: Instrument shared use cases, ViewModels and CMP screens</a>, <a href="#task-2">Task 3: iOS harness, sink, call sites, legacy deletion</a>, <a href="#task-3">Task 4: Android harness, sink, call sites, legacy deletion</a>, <a href="#task-4">Task 5: README, funnels.md and cookbook SQL</a>, <a href="#task-5">Task 6: Fixture generator, schema, expected results, runner</a>, <a href="#task-6">Task 7: Load fixture and execute the cookbook against BigQuery</a>, <a href="#task-7">Task 8: Verification gate — jvmTest, both builds, cookbook run</a>, <a href="#task-8">Task 9: iOS native delivery gate on the M2 simulator</a>, <a href="#task-9">Task 10: Android native delivery gate on the M2 emulator</a></span>
+    </div>
+  </header>
+  <div class="blk"><h5>Goal</h5><p>Record the user's signed-in DebugView verification of the eleven UG-1 checklist items as pass/fail evidence; this task is pending until the user has performed it and cannot be completed by an implementer.</p></div>
+  <div class="blk"><h5>Files</h5><p>none (verification only; the evidence file <code>Multiplatform/docs/analytics/verification/ug1-evidence.md</code> is written BY THE USER when they perform the gate, never by an implementer or the coordinator)</p></div>
+  <div class="blk"><h5>Done when</h5><ul class="crit"><li>Evidence file Multiplatform/docs/analytics/verification/ug1-evidence.md written by the user exists with DATE, PLATFORM, exactly eleven '- [x] ' lines, zero '- [ ] ' lines and final line 'RESULT: PASS'; otherwise exit 1 with UG-1 PENDING or UG-1 FAIL</li><li>No implementer or automated step creates or edits the evidence file; coordinator reports PENDING for the user</li><li>Performed with DebugView enabled on a debug build with a real signed-in account, including sign-out and re-sign-in showing is_new_user=false</li></ul></div>
+  <div class="blk"><h5>Verify</h5><pre class="code"><code>set -o pipefail; cd /Users/sultan/Development/FitJournal/Multiplatform/docs/analytics &amp;&amp; echo &quot;=== UG-1 checklist (from README) ===&quot;; sed -n '/UG-1/,/RESULT: PASS/p' README.md; E=verification/ug1-evidence.md; if [ ! -f &quot;$E&quot; ]; then echo &quot;UG-1 PENDING: no evidence file at Multiplatform/docs/analytics/$E&quot;; exit 1; fi; grep -q '^DATE: ' &quot;$E&quot; &amp;&amp; grep -q '^PLATFORM: ' &quot;$E&quot; &amp;&amp; [ &quot;$(grep -c '^- \[x\] ' &quot;$E&quot;)&quot; -eq 11 ] &amp;&amp; [ &quot;$(grep -c '^- \[ \] ' &quot;$E&quot;)&quot; -eq 0 ] &amp;&amp; [ &quot;$(tail -1 &quot;$E&quot;)&quot; = &quot;RESULT: PASS&quot; ]; rc=$?; [ &quot;$rc&quot; -eq 0 ] &amp;&amp; echo &quot;UG-1 PASS&quot; || echo &quot;UG-1 FAIL&quot;; exit &quot;$rc&quot;</code></pre></div>
+</article></div>
+</section>
+<div class="brief"><h4>Unresolved</h4>
+<ul>
+<li>Firebase key spellings <code>FirebaseAutomaticScreenReportingEnabled</code> (Info.plist) and <code>google_analytics_automatic_screen_reporting_enabled</code> (manifest), and the iOS launch argument <code>-FIRAnalyticsVerboseLoggingEnabled</code>, were not returned by Context7 in round 1 and no network call was made this round; Tasks 3/4/9 implementers should confirm the three literals against current Firebase docs. The gate greps match only <code>screen_view</code> + <code>start_login</code>, so they are robust to log-format differences.</li>
+<li><code>log stream --style ndjson</code> is documented in <code>man log</code> on macOS and is what Task 9 relies on to get one complete record per line; not re-verified against the iOS 26 simulator runtime this round. If the simulator's <code>log</code> rejects <code>ndjson</code>, use <code>--style json</code> and pre-join records with <code>python3 -I -c</code> before grepping (same pass condition).</li>
+<li>Whether Firebase exports DebugView-mode events to BigQuery is still unverified; the <code>app_build=debug</code> SQL filter makes it irrelevant for analysis.</li>
+</ul>
+<h4>Revision notes</h4>
+<ul>
+<li>Returning free users classified as new — fixed: <code>is_new_user</code> now comes from Firebase <code>additionalUserInfo.isNewUser</code>, read at the <code>signIn</code> completion sites (iOS <code>FirebaseAuthController.finish(with:)</code>, Android <code>AuthViewModel</code> success listeners) and threaded through delegate → VC → VM → <code>AuthUserUseCase</code> (iOS) and <code>authUser(...)</code> → <code>AuthUserUseCase.auth(...)</code> (Android); <code>SignIn</code> is tracked once before the AWS-row branch, both branch events deleted; new caller files added to Tasks 3/4 with grep checks in Verify; the returning-unprovisioned-account case is an explicit UG-1 item (no native unit-test target exists).</li>
+<li>Integer custom dimensions — fixed: <code>first_in_slot</code> and <code>is_new_user</code> are STRING params with vocab <code>true</code>/<code>false</code>; Kotlin <code>Boolean</code> renders to those strings; SQL filters <code>string_value = 'true'</code>; fixture emits strings; registration list now includes <code>is_new_user</code> (and <code>method</code>); Global Constraint added that every filterable param is a closed-vocab string.</li>
+<li>Fourteenth event undeclared — fixed: <code>AnalyticsEvent.ScreenView(screen)</code> declared; <code>screenView</code> routes through it; <code>samples()</code> returns 14; <code>screenView_isTrackedAsScreenViewEvent</code> added to <code>AnalyticsHarnessTest</code> (six tests).</li>
+<li>Constructor drops the clock seam — fixed: <code>FinishForgottenSessionUseCase</code> primary is <code>(sessions, records, clock = Clock.System, tracker = Analytics)</code> with the existing <code>(sessions, records)</code> secondary unchanged; the existing test file is pinned untouched in Task 2's Verify; emission test passes <code>tracker</code> by name; Global Constraint forbids reordering/removing existing constructor params.</li>
+<li>UG-1 has no execution task — fixed: Task 11 (<code>files: []</code>, blockedBy all) prints the README checklist and checks the user-written evidence file <code>verification/ug1-evidence.md</code> for eleven checked items + <code>RESULT: PASS</code>; exits 1 as <code>PENDING</code> until the user performs it, which the coordinator reports rather than claims.</li>
+<li><code>screen_name</code> vs <code>firebase_screen</code> — fixed: <code>ParamSpec.exportName</code> / <code>events.json</code> <code>export_name</code>; base <code>events</code> CTE materializes <code>screen = COALESCE(firebase_screen, screen_name)</code>; all cookbook screen conditions use <code>screen</code>; fixture emits <code>firebase_screen</code> only (Task 6 Verify asserts); README documents transport vs export.</li>
+<li>iOS gate discards multiline parameters — fixed: Task 9 captures <code>log stream --style ndjson</code> (one complete record per line, newlines escaped) so event name and screen value from the same record match on one line; fallback noted in Unresolved.</li>
+<li><code>first_in_slot</code> not distinct workouts — fixed: exactness claim removed; Assumption now states it is not a durable first-ever signal; F1 Explore limitation (a) documents the over-count; p3 fixture gained <code>workout_deleted</code> + same-slot re-log on 09-18, which a naive count would convert in <code>observed_1005</code> (expected stays 1/3, so the distinct-slot SQL is exercised).</li>
+<li>F3 open funnel — fixed: Explore F3 is a closed funnel with the calendar-day mismatch stated; cookbook 03 definition made explicit (cumulative steps per user-day requiring a workout open that day); p12 cross-midnight persona added (09-13 open+add, 09-14 set+auto-finish without reopening); expected 03/05/06 recomputed (25/22/21/2; loggers 7; week 09-14 → 3); 17 day files.</li>
+<li>Coordinator resolution — AVD <code>vibetrip_api36</code> exists on the M2: Task 10 unchanged in mechanism, Unresolved entry dropped.</li>
+</ul></div>
+<details class="checks">
+  <summary>Structural checks (0)</summary>
+  <ul><li class="ok">none — plan is structurally clean</li></ul>
+</details>
