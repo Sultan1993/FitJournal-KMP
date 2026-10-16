@@ -60,7 +60,9 @@ The event catalog lives in code (`Multiplatform/shared/.../analytics/AnalyticsCa
   still emits, with `workout_number = 1` and a `session_state` read from the session table.
 - **Removal rule.** `exercise_removed` is emitted once per removed exercise (a superset record emits N) and only on a confirmed
   tombstone: a row already deleted (sync, a duplicate tap) emits nothing. `exercise_replaced` likewise fires only when the
-  repository reported the write.
+  repository reported the write. Removing one member of a superset from Focus splits it into its own record before deleting;
+  `exercise_removed.record_id` is the ORIGINAL record id (the one that member's `set_logged.record_id` carries), so join
+  removals to sets on `record_id` + `exercise_id`, not on the tombstoned row's id.
 - **Discard-empty rule.** `workout_session_end` with `via = discard_empty` always carries `exercise_count = 0` and `set_count = 0`
   (literal zeros). For other `via` values the counts are absent when the post-end read failed or the client predates them.
 - **`created_custom` ledger rule.** `found_via = created_custom` iff at least one committed exercise id is in the picker
