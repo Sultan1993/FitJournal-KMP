@@ -1,0 +1,134 @@
+[
+  {
+    "name": "event_date",
+    "type": "STRING"
+  },
+  {
+    "name": "event_timestamp",
+    "type": "INT64"
+  },
+  {
+    "name": "event_name",
+    "type": "STRING"
+  },
+  {
+    "name": "event_params",
+    "type": "RECORD",
+    "mode": "REPEATED",
+    "fields": [
+      {
+        "name": "key",
+        "type": "STRING"
+      },
+      {
+        "name": "value",
+        "type": "RECORD",
+        "fields": [
+          {
+            "name": "string_value",
+            "type": "STRING"
+          },
+          {
+            "name": "int_value",
+            "type": "INT64"
+          },
+          {
+            "name": "float_value",
+            "type": "FLOAT64"
+          },
+          {
+            "name": "double_value",
+            "type": "FLOAT64"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "user_id",
+    "type": "STRING"
+  },
+  {
+    "name": "user_pseudo_id",
+    "type": "STRING"
+  },
+  {
+    "name": "user_first_touch_timestamp",
+    "type": "INT64"
+  },
+  {
+    "name": "user_properties",
+    "type": "RECORD",
+    "mode": "REPEATED",
+    "fields": [
+      {
+        "name": "key",
+        "type": "STRING"
+      },
+      {
+        "name": "value",
+        "type": "RECORD",
+        "fields": [
+          {
+            "name": "string_value",
+            "type": "STRING"
+          },
+          {
+            "name": "int_value",
+            "type": "INT64"
+          },
+          {
+            "name": "float_value",
+            "type": "FLOAT64"
+          },
+          {
+            "name": "double_value",
+            "type": "FLOAT64"
+          },
+          {
+            "name": "set_timestamp_micros",
+            "type": "INT64"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "platform",
+    "type": "STRING"
+  },
+  {
+    "name": "device",
+    "type": "RECORD",
+    "fields": [
+      {
+        "name": "category",
+        "type": "STRING"
+      },
+      {
+        "name": "operating_system",
+        "type": "STRING"
+      }
+    ]
+  },
+  {
+    "name": "geo",
+    "type": "RECORD",
+    "fields": [
+      {
+        "name": "country",
+        "type": "STRING"
+      }
+    ]
+  },
+  {
+    "name": "app_info",
+    "type": "RECORD",
+    "fields": [
+      {
+        "name": "version",
+        "type": "STRING"
+      }
+    ]
+  }
+]

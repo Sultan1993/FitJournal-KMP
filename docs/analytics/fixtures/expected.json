@@ -1,0 +1,402 @@
+{
+  "scenarios": {
+    "observed_0921": {
+      "params": {
+        "start_date": "20260901",
+        "end_date": "20260921",
+        "observed_through": "20260921"
+      },
+      "results": {
+        "01_activation": {
+          "columns": [
+            "step",
+            "users",
+            "eligible_users"
+          ],
+          "rows": [
+            [
+              "signed_in",
+              4,
+              4
+            ],
+            [
+              "viewed_workout",
+              4,
+              4
+            ],
+            [
+              "logged_first_workout",
+              3,
+              4
+            ],
+            [
+              "second_workout_7d",
+              1,
+              2
+            ]
+          ]
+        },
+        "02_paywall_conversion": {
+          "columns": [
+            "entry",
+            "entry_kind",
+            "requested_users",
+            "shown_users",
+            "purchased_users",
+            "restored_users"
+          ],
+          "rows": [
+            [
+              "home_card",
+              "card",
+              2,
+              2,
+              1,
+              0
+            ],
+            [
+              "workout_screen",
+              "gate",
+              1,
+              1,
+              1,
+              0
+            ],
+            [
+              "import",
+              "gate",
+              1,
+              0,
+              0,
+              0
+            ],
+            [
+              "list_card",
+              "card",
+              1,
+              1,
+              0,
+              1
+            ]
+          ]
+        },
+        "03_in_workout": {
+          "columns": [
+            "step",
+            "user_days"
+          ],
+          "rows": [
+            [
+              "opened",
+              25
+            ],
+            [
+              "added_exercise",
+              22
+            ],
+            [
+              "logged_set",
+              21
+            ],
+            [
+              "finished_session",
+              2
+            ]
+          ]
+        },
+        "04_retention": {
+          "columns": [
+            "day_n",
+            "cohort_size",
+            "retained"
+          ],
+          "rows": [
+            [
+              1,
+              3,
+              0
+            ],
+            [
+              3,
+              3,
+              1
+            ],
+            [
+              7,
+              2,
+              1
+            ],
+            [
+              30,
+              0,
+              0
+            ]
+          ]
+        },
+        "05_feature_adoption": {
+          "columns": [
+            "feature",
+            "users",
+            "pct_of_loggers"
+          ],
+          "rows": [
+            [
+              "rest_timer",
+              2,
+              0.2857143
+            ],
+            [
+              "one_rm_calculator",
+              1,
+              0.1428571
+            ],
+            [
+              "superset",
+              1,
+              0.1428571
+            ],
+            [
+              "share_workout",
+              1,
+              0.1428571
+            ],
+            [
+              "copy_workout",
+              1,
+              0.1428571
+            ],
+            [
+              "repeat_workout",
+              1,
+              0.1428571
+            ],
+            [
+              "finished_session",
+              2,
+              0.2857143
+            ]
+          ]
+        },
+        "06_weekly_active": {
+          "columns": [
+            "week_start",
+            "active_loggers"
+          ],
+          "rows": [
+            [
+              "2026-08-31",
+              5
+            ],
+            [
+              "2026-09-07",
+              3
+            ],
+            [
+              "2026-09-14",
+              3
+            ]
+          ]
+        }
+      }
+    },
+    "observed_1005": {
+      "params": {
+        "start_date": "20260901",
+        "end_date": "20260921",
+        "observed_through": "20261005"
+      },
+      "results": {
+        "01_activation": {
+          "columns": [
+            "step",
+            "users",
+            "eligible_users"
+          ],
+          "rows": [
+            [
+              "signed_in",
+              4,
+              4
+            ],
+            [
+              "viewed_workout",
+              4,
+              4
+            ],
+            [
+              "logged_first_workout",
+              3,
+              4
+            ],
+            [
+              "second_workout_7d",
+              1,
+              3
+            ]
+          ]
+        },
+        "02_paywall_conversion": {
+          "columns": [
+            "entry",
+            "entry_kind",
+            "requested_users",
+            "shown_users",
+            "purchased_users",
+            "restored_users"
+          ],
+          "rows": [
+            [
+              "home_card",
+              "card",
+              2,
+              2,
+              1,
+              0
+            ],
+            [
+              "workout_screen",
+              "gate",
+              1,
+              1,
+              1,
+              0
+            ],
+            [
+              "import",
+              "gate",
+              1,
+              0,
+              0,
+              0
+            ],
+            [
+              "list_card",
+              "card",
+              1,
+              1,
+              0,
+              1
+            ]
+          ]
+        },
+        "03_in_workout": {
+          "columns": [
+            "step",
+            "user_days"
+          ],
+          "rows": [
+            [
+              "opened",
+              25
+            ],
+            [
+              "added_exercise",
+              22
+            ],
+            [
+              "logged_set",
+              21
+            ],
+            [
+              "finished_session",
+              2
+            ]
+          ]
+        },
+        "04_retention": {
+          "columns": [
+            "day_n",
+            "cohort_size",
+            "retained"
+          ],
+          "rows": [
+            [
+              1,
+              3,
+              0
+            ],
+            [
+              3,
+              3,
+              1
+            ],
+            [
+              7,
+              3,
+              1
+            ],
+            [
+              30,
+              2,
+              1
+            ]
+          ]
+        },
+        "05_feature_adoption": {
+          "columns": [
+            "feature",
+            "users",
+            "pct_of_loggers"
+          ],
+          "rows": [
+            [
+              "rest_timer",
+              2,
+              0.2857143
+            ],
+            [
+              "one_rm_calculator",
+              1,
+              0.1428571
+            ],
+            [
+              "superset",
+              1,
+              0.1428571
+            ],
+            [
+              "share_workout",
+              1,
+              0.1428571
+            ],
+            [
+              "copy_workout",
+              1,
+              0.1428571
+            ],
+            [
+              "repeat_workout",
+              1,
+              0.1428571
+            ],
+            [
+              "finished_session",
+              2,
+              0.2857143
+            ]
+          ]
+        },
+        "06_weekly_active": {
+          "columns": [
+            "week_start",
+            "active_loggers"
+          ],
+          "rows": [
+            [
+              "2026-08-31",
+              5
+            ],
+            [
+              "2026-09-07",
+              3
+            ],
+            [
+              "2026-09-14",
+              3
+            ]
+          ]
+        }
+      }
+    }
+  }
+}
