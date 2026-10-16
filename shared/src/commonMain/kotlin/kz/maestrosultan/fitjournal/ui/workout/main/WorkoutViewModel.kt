@@ -24,7 +24,11 @@ import kz.maestrosultan.fitjournal.analytics.Analytics
 import kz.maestrosultan.fitjournal.analytics.AnalyticsEvent
 import kz.maestrosultan.fitjournal.analytics.AnalyticsTracker
 import kz.maestrosultan.fitjournal.analytics.Feature
+import kz.maestrosultan.fitjournal.analytics.RemoveEntry
 import kz.maestrosultan.fitjournal.analytics.SessionEndVia
+import kz.maestrosultan.fitjournal.analytics.SessionState
+import kz.maestrosultan.fitjournal.analytics.WorkoutEntry
+import kz.maestrosultan.fitjournal.analytics.dayContextOf
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.quota.WorkoutQuota
 import kz.maestrosultan.fitjournal.domain.quota.WorkoutQuotaGate
@@ -65,6 +69,8 @@ class WorkoutViewModel(
     private val quotaGate: WorkoutQuotaGate,
     awaitSession: suspend () -> UserSessionState,
     initialDate: LocalDate,
+    // How the user got here — the `workout_opened` entry of the construction-time open.
+    entry: WorkoutEntry,
     // When set, the pager opens on the page with this workoutNumber (Edit /
     // Repeat land on a specific workout). Null keeps the default first page.
     private val initialWorkoutNumber: Int? = null,
@@ -92,6 +98,20 @@ class WorkoutViewModel(
     private var userId: String? = null
     private var journalId: String? = null
     private var measurementSystem: MeasurementSystem = MeasurementSystem.KG_KM
+
+    /**
+     * `workout_opened` requests not yet emitted, in request order: the
+     * construction-time open plus one per distinct-date [onDateSelected]. Drained
+     * by [drainPendingOpens] on the first loaded state for the selected date, so
+     * every request emits exactly once however the reads and the StateFlow
+     * conflation interleave.
+     */
+    private val pendingOpens = ArrayDeque<Pair<LocalDate, WorkoutEntry>>().apply {
+        addLast(initialDate to entry)
+    }
+
+    /** Double-tapped End must not discard (and track) the same empty session twice. */
+    private var endRequestInFlight = false
 
     init {
         viewModelScope.launch {
@@ -228,7 +248,65 @@ class WorkoutViewModel(
             workoutDays,
         ) { day, run, page, calVisible, calDays ->
             buildState(day.date, day.records, day.sessions, run, page.index, page.scrolling, calVisible, calDays)
-        }.collect { _uiState.value = it }
+        }.collect { state ->
+            _uiState.value = state
+            drainPendingOpens(uid, jid, state)
+        }
+    }
+
+    /**
+     * Emits every queued `workout_opened` once the selected date has a loaded
+     * state. A request for THIS date reads the shown page; a request for another
+     * date was superseded before its read finished (flatMapLatest cancelled it),
+     * so it lands on page 0 by construction and asks the session table for its
+     * state. The queue is taken synchronously, so a selection made while a read
+     * below suspends waits for the next drain, and order is preserved.
+     */
+    private suspend fun drainPendingOpens(uid: String, jid: String, state: WorkoutContract.ViewState) {
+        if (state.loading || state.selectedDate != selectedDate.value || pendingOpens.isEmpty()) return
+        val requests = pendingOpens.toList()
+        pendingOpens.clear()
+        requests.forEach { (date, entry) ->
+            val (workoutNumber, sessionState) = if (date == state.selectedDate) {
+                val page = state.currentPage
+                val number = page?.workoutNumber ?: 1
+                val running = state.runningSession
+                number to when {
+                    running != null && running.journalId == jid && running.date == date &&
+                        running.workoutNumber == page?.workoutNumber -> SessionState.RUNNING
+                    page?.session?.endedAt != null -> SessionState.FINISHED
+                    else -> SessionState.NONE
+                }
+            } else {
+                1 to supersededSessionState(uid, jid, date)
+            }
+            tracker.track(
+                AnalyticsEvent.WorkoutOpened(
+                    journalId = jid,
+                    workoutDate = date,
+                    workoutNumber = workoutNumber,
+                    day = dayContextOf(date, today()),
+                    entry = entry,
+                    sessionState = sessionState,
+                ),
+            )
+        }
+    }
+
+    /** A failed read labels the open `none` rather than dropping it. */
+    private suspend fun supersededSessionState(uid: String, jid: String, date: LocalDate): SessionState {
+        val session = try {
+            sessionRepository.getSessionByWorkoutNumber(uid, jid, date, 1)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Throwable) {
+            return SessionState.NONE
+        }
+        return when {
+            session == null -> SessionState.NONE
+            session.endedAt == null -> SessionState.RUNNING
+            else -> SessionState.FINISHED
+        }
     }
 
     private data class PageInfo(val index: Int, val scrolling: Boolean)
@@ -282,6 +360,8 @@ class WorkoutViewModel(
     // ─── Actions (private — every interaction arrives via [dispatch]) ────
 
     private fun onDateSelected(date: LocalDate) {
+        // A re-select of the shown day is not a new open.
+        if (date != selectedDate.value) pendingOpens.addLast(date to WorkoutEntry.CALENDAR)
         currentPageIndex.value = 0
         selectedDate.value = date
         // Let the tapped day's highlight land before the calendar collapses away.
@@ -338,23 +418,42 @@ class WorkoutViewModel(
      * record raises the confirm sheet.
      */
     private fun onRequestEndSession() {
+        if (endRequestInFlight) return
         val uid = userId ?: return
         val jid = journalId ?: return
         val running = _uiState.value.runningSession ?: return
+        endRequestInFlight = true
         viewModelScope.launch {
-            // ponytail: getRecordsByDate over-reads (builds lastOccurrence) but
-            // End is a rare user tap — swap for a COUNT query if it ever profiles hot.
-            val hasRecords = recordRepository.getRecordsByDate(uid, jid, running.date)
-                .any { it.workoutNumber == running.workoutNumber }
-            if (hasRecords) {
-                emit(WorkoutContract.ViewEffect.RequestEndSession)
-            } else {
-                sessionRepository.deleteSession(uid, running.id)
-                // Nothing was logged → the page is not a workout; drop any note with it.
-                recordRepository.clearWorkoutNote(uid, jid, running.date, running.workoutNumber)
-                // Both writes are tombstones that have to reach AWS; without this
-                // they'd sit until the next cold start / foreground / periodic tick.
-                syncTrigger.requestTick(SyncReason.PostWrite.WorkoutSession)
+            try {
+                // ponytail: getRecordsByDate over-reads (builds lastOccurrence) but
+                // End is a rare user tap — swap for a COUNT query if it ever profiles hot.
+                val hasRecords = recordRepository.getRecordsByDate(uid, jid, running.date)
+                    .any { it.workoutNumber == running.workoutNumber }
+                if (hasRecords) {
+                    emit(WorkoutContract.ViewEffect.RequestEndSession)
+                } else {
+                    sessionRepository.deleteSession(uid, running.id)
+                    // Nothing to count: a discarded-empty workout's counts are literal zeros.
+                    tracker.track(
+                        AnalyticsEvent.WorkoutSessionEnd(
+                            journalId = jid,
+                            workoutDate = running.date,
+                            workoutNumber = running.workoutNumber,
+                            durationSec = running.durationSec(clock.now()),
+                            via = SessionEndVia.DISCARD_EMPTY,
+                            day = dayContextOf(running.date, today()),
+                            exerciseCount = 0,
+                            setCount = 0,
+                        ),
+                    )
+                    // Nothing was logged → the page is not a workout; drop any note with it.
+                    recordRepository.clearWorkoutNote(uid, jid, running.date, running.workoutNumber)
+                    // Both writes are tombstones that have to reach AWS; without this
+                    // they'd sit until the next cold start / foreground / periodic tick.
+                    syncTrigger.requestTick(SyncReason.PostWrite.WorkoutSession)
+                }
+            } finally {
+                endRequestInFlight = false
             }
         }
     }
@@ -368,7 +467,23 @@ class WorkoutViewModel(
         val uid = userId ?: return
         val jid = journalId ?: return
         viewModelScope.launch {
-            recordRepository.deleteRecord(uid, jid, record)
+            // `true` only when THIS call tombstoned a live record — a row already
+            // gone (sync, a duplicate tap) removed nothing and tracks nothing.
+            if (recordRepository.deleteRecord(uid, jid, record)) {
+                record.exercises.forEach { exercise ->
+                    tracker.track(
+                        AnalyticsEvent.ExerciseRemoved(
+                            journalId = jid,
+                            workoutDate = record.date,
+                            workoutNumber = record.workoutNumber,
+                            recordId = record.id,
+                            exerciseId = exercise.exercise.uuid,
+                            hadSets = exercise.hasLoggedSets,
+                            entry = RemoveEntry.WORKOUT,
+                        ),
+                    )
+                }
+            }
             pruneEmptiedPage(uid, jid, record.date, record.workoutNumber)
             syncTrigger.requestTick(SyncReason.PostWrite.WorkoutRecord)
         }

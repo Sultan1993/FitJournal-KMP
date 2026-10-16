@@ -5,6 +5,8 @@ import kz.maestrosultan.fitjournal.domain.exercise.allCategories
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.domain.workout.DisplaySetValues
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
+import kz.maestrosultan.fitjournal.domain.workout.SeedSource
+import kz.maestrosultan.fitjournal.domain.workout.SeededSetValues
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSet
@@ -168,7 +170,7 @@ internal suspend fun buildFocusUi(
  *
  * `fallBackToPreviousSet = false` here, and on every read-only row: a list row
  * shows its own data or last time's ghost, never a number borrowed from the row
- * above it. The single site that passes `true` is [focusEditorSeedValues].
+ * above it. The single site that passes `true` is [focusEditorSeed].
  */
 private suspend fun buildSlots(
     exercise: WorkoutExercise,
@@ -300,19 +302,32 @@ private suspend fun buildEditor(
  * fall back to the row above it; every read-only row in [buildSlots] passes
  * `false` so it can never borrow from its neighbour.
  *
- * Both numbers come from the single [WorkoutExercise.displayValuesAt] call, so
- * the seeded weight and rep count always describe the same set. Shared with the
+ * Both numbers come from the single [WorkoutExercise.seedValuesAt] call (via
+ * [focusEditorSeed]), so the seeded weight and rep count always describe the
+ * same set. Shared with the
  * commit-target path so tapping a target row and opening its editor can never
  * resolve to different numbers (iOS `resolvedValues`, Android `resolvedValues`).
  */
 internal fun focusEditorSeedValues(exercise: WorkoutExercise, set: WorkoutSet): DisplaySetValues {
+    val seed = focusEditorSeed(exercise, set)
+    return DisplaySetValues(value = seed.value, reps = seed.reps)
+}
+
+/** [focusEditorSeedValues] plus which rule supplied the pair — the `set_logged.input` provenance. */
+internal fun focusEditorSeed(exercise: WorkoutExercise, set: WorkoutSet): SeededSetValues {
     // Position in the loaded list — the sibling fallback is n-1, not
     // `sets.last()`; when editing a middle row those differ.
     val index = exercise.sets.indexOfFirst { it.id == set.id }
     // A set that is not in the exercise (stale id after a reload) has no
     // position to align against — show its own values, nothing borrowed.
-    if (index < 0) return DisplaySetValues(value = set.displayValue, reps = set.displayReps)
-    return exercise.displayValuesAt(index, fallBackToPreviousSet = true)
+    if (index < 0) {
+        return SeededSetValues(
+            value = set.displayValue,
+            reps = set.displayReps,
+            source = if (set.hasOwnNumbers) SeedSource.OWN else SeedSource.NONE,
+        )
+    }
+    return exercise.seedValuesAt(index, fallBackToPreviousSet = true)
 }
 
 /**

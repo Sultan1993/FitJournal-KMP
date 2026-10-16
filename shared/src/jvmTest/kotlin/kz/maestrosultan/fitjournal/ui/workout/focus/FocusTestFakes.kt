@@ -19,6 +19,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.datetime.LocalDate
+import kz.maestrosultan.fitjournal.analytics.RecordingTracker
 import kz.maestrosultan.fitjournal.domain.coach.FocusCoachService
 import kz.maestrosultan.fitjournal.domain.coach.NoopFocusCoachService
 import kz.maestrosultan.fitjournal.domain.exercise.Category
@@ -618,6 +619,9 @@ class FocusBed(
     val presenter = FakeRestTimerPresenter()
     val clock = FakeClock(T0_MILLIS)
 
+    /** Everything the VM and its set use cases tracked, in order. */
+    val tracker = RecordingTracker()
+
     /** The engine's own scope: app-lifetime in production, so `dispose()` must never touch it. */
     val timerScope = CoroutineScope(StandardTestDispatcher(scheduler))
     val timer = RestTimer(presenter = presenter, scope = timerScope, clock = clock)
@@ -639,9 +643,9 @@ class FocusBed(
         recordRepository = repository,
         sessionRepository = sessions,
         getExerciseFocusData = GetExerciseFocusDataUseCase(repository),
-        addSet = AddSetUseCase(repository, syncTrigger),
-        updateSet = UpdateSetUseCase(repository, syncTrigger),
-        deleteSet = DeleteSetUseCase(repository, syncTrigger),
+        addSet = AddSetUseCase(repository, syncTrigger, tracker),
+        updateSet = UpdateSetUseCase(repository, syncTrigger, tracker),
+        deleteSet = DeleteSetUseCase(repository, syncTrigger, tracker),
         resetSet = ResetSetUseCase(repository, syncTrigger),
         supersetRecords = SupersetRecordsUseCase(repository, syncTrigger),
         removeExerciseFromSuperset = RemoveExerciseFromSupersetUseCase(repository, syncTrigger),
@@ -658,6 +662,7 @@ class FocusBed(
         strings = focusTestStrings,
         errorStrings = focusTestErrorStrings,
         buildDispatcher = dispatcher,
+        tracker = tracker,
     ).also { viewModels += it }
 
     fun tearDown() {

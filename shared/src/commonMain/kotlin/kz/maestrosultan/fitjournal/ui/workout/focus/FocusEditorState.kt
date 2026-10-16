@@ -1,5 +1,7 @@
 package kz.maestrosultan.fitjournal.ui.workout.focus
 
+import kz.maestrosultan.fitjournal.analytics.SetInput
+
 /**
  * Single source of truth for the accordion + edit target (iOS
  * `FocusEditorMode`, Android `FocusEditorMode`). Deliberately ONE value — a
@@ -48,6 +50,10 @@ data class FocusInputState(
      * ""); any digit/backspace clears it. Set again on every focus change.
      */
     val fresh: Boolean = true,
+    /** Where the seeded numbers came from — `set_logged.input` when nothing was typed. */
+    val seedInput: SetInput = SetInput.DEFAULT,
+    /** True once the user typed into either field since the last (re)seed. */
+    val edited: Boolean = false,
 ) {
 
     fun focusedText(): String = when (focusedField) {
@@ -56,8 +62,8 @@ data class FocusInputState(
     }
 
     fun withFocusedText(text: String): FocusInputState = when (focusedField) {
-        FocusInputField.Value -> copy(valueText = text, fresh = false)
-        FocusInputField.Reps -> copy(repsText = text, fresh = false)
+        FocusInputField.Value -> copy(valueText = text, fresh = false, edited = true)
+        FocusInputField.Reps -> copy(repsText = text, fresh = false, edited = true)
     }
 
     /** Applies one keypad digit per the spec's keypad rules (§8.6). */

@@ -7,7 +7,8 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 
 /**
  * Deletes [record] and asks for a sync tick. Same shape as
- * [SetWorkoutNoteUseCase].
+ * [SetWorkoutNoteUseCase]. Returns the repository's answer: `true` only when
+ * THIS call tombstoned a live record.
  */
 class DeleteRecordUseCase(
     private val recordRepository: RecordRepository,
@@ -17,8 +18,9 @@ class DeleteRecordUseCase(
         userId: String,
         journalId: String,
         record: WorkoutRecord,
-    ) {
-        recordRepository.deleteRecord(userId, journalId, record)
+    ): Boolean {
+        val deleted = recordRepository.deleteRecord(userId, journalId, record)
         syncTrigger.requestTick(SyncReason.PostWrite.WorkoutRecord)
+        return deleted
     }
 }

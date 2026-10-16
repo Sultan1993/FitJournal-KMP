@@ -3,6 +3,7 @@ package kz.maestrosultan.fitjournal.ui.workout.main
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.LocalDate
+import kz.maestrosultan.fitjournal.analytics.WorkoutEntry
 import kz.maestrosultan.fitjournal.domain.quota.WorkoutQuotaGate
 import kz.maestrosultan.fitjournal.domain.sync.SyncTrigger
 import kz.maestrosultan.fitjournal.domain.user.UserSession
@@ -18,7 +19,8 @@ import kz.maestrosultan.fitjournal.domain.workout.usecase.StartWorkoutUseCase
  * the user store here. `first()` on the non-null session suspends only until
  * bootstrap has run (iOS populates it synchronously at launch).
  *
- * Swift: `WorkoutViewModelFactoryKt.createWorkoutViewModel(...)`.
+ * Swift: `WorkoutViewModelFactoryKt.createWorkoutViewModel(...)`. Every
+ * parameter is explicit — Swift cannot see Kotlin defaults.
  */
 fun createWorkoutViewModel(
     recordRepository: RecordRepository,
@@ -28,7 +30,9 @@ fun createWorkoutViewModel(
     syncTrigger: SyncTrigger,
     initialDate: LocalDate,
     // Which workout of the day to open on (Edit / Repeat); null = first page.
-    initialWorkoutNumber: Int? = null,
+    initialWorkoutNumber: Int?,
+    // The route that opened the screen — `workout_opened.entry`.
+    entry: WorkoutEntry,
 ): WorkoutViewModel = WorkoutViewModel(
     recordRepository = recordRepository,
     sessionRepository = sessionRepository,
@@ -40,5 +44,6 @@ fun createWorkoutViewModel(
     quotaGate = WorkoutQuotaGate(recordRepository),
     awaitSession = { UserSession.state.filterNotNull().first() },
     initialDate = initialDate,
+    entry = entry,
     initialWorkoutNumber = initialWorkoutNumber,
 )

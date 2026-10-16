@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.Job
@@ -33,6 +34,7 @@ import kz.maestrosultan.fitjournal.domain.timer.RestTimerState
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
+import kz.maestrosultan.fitjournal.domain.workout.SeedSource
 import kz.maestrosultan.fitjournal.domain.workout.SetNotFoundException
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
@@ -44,6 +46,8 @@ import kz.maestrosultan.fitjournal.analytics.Analytics
 import kz.maestrosultan.fitjournal.analytics.AnalyticsEvent
 import kz.maestrosultan.fitjournal.analytics.AnalyticsTracker
 import kz.maestrosultan.fitjournal.analytics.Feature
+import kz.maestrosultan.fitjournal.analytics.FocusEntry
+import kz.maestrosultan.fitjournal.analytics.RemoveEntry
 import kz.maestrosultan.fitjournal.analytics.SetAction
 import kz.maestrosultan.fitjournal.analytics.SetInput
 import kz.maestrosultan.fitjournal.domain.workout.usecase.AddSetUseCase
@@ -306,6 +310,13 @@ class WorkoutFocusViewModel internal constructor(
     private var sessionRunningHere = false
 
     /**
+     * The running session's workoutNumber when it is on THIS journal + day, else
+     * null — `set_logged.in_session` is scoped to the record's own workout, which
+     * [sessionRunningHere] (any workout of the day) is not. Refreshed beside it.
+     */
+    private var runningWorkoutNumber: Int? = null
+
+    /**
      * Timestamp (ms) of the last Finish ADVANCE. Guards ONLY the dismiss, so
      * deliberate fast paging is never debounced.
      */
@@ -436,7 +447,7 @@ class WorkoutFocusViewModel internal constructor(
             if (editIndex >= 0) {
                 val editSet = member.sets[editIndex]
                 editorMode = FocusEditorMode.Editing(editSet.id, editIndex + 1)
-                inputByExercise[member.id] = buildInput(member, editSet)
+                inputByExercise[member.id] = buildInput(member, editSet, SeedMode.EDIT)
             } else {
                 // Land collapsed on first open — let the user decide (tap a set,
                 // swipe-commit a target, or Add another). Only post-log advances
@@ -487,7 +498,10 @@ class WorkoutFocusViewModel internal constructor(
             if (hasResolvedActive) emitNotFound()
             return
         }
-        hasResolvedActive = true
+        if (!hasResolvedActive) {
+            hasResolvedActive = true
+            trackFocusOpened(record, exercise, if (startAddingSet) FocusEntry.ADD_SET else FocusEntry.ROW_TAP)
+        }
         snapshot.value = FocusSnapshot(
             dayRecords = dayRecords,
             record = record,
@@ -594,22 +608,31 @@ class WorkoutFocusViewModel internal constructor(
      *   3. the sibling set at n-1 in this exercise today
      *   4. a sensible default
      *
-     * Steps 1-3 are [focusEditorSeedValues] (the ONE place
+     * Steps 1-3 are [focusEditorSeed] (the ONE place
      * `fallBackToPreviousSet = true` is legal), so the seeded value and rep
      * count always describe the SAME set — resolving them independently once
      * paired last session's weight with today's rep count. Step 4 lives here and
      * only here: `CommitTarget` deliberately stops at step 3 rather than write a
      * defaulted 20 kg onto a row that never had a target.
      */
-    private fun buildInput(exercise: WorkoutExercise, set: WorkoutSet): FocusInputState {
+    private fun buildInput(exercise: WorkoutExercise, set: WorkoutSet, mode: SeedMode): FocusInputState {
         val isCardio = exercise.resultType == ResultType.DISTANCE_DURATION
-        val resolved = focusEditorSeedValues(exercise, set)
+        val resolved = focusEditorSeed(exercise, set)
         return FocusInputState(
             valueText = WorkoutValueFormatter.number(
                 resolved.value ?: if (isCardio) DEFAULT_DISTANCE else DEFAULT_WEIGHT,
             ),
             repsText = (resolved.reps ?: DEFAULT_BOTTOM).toString(),
             isCardio = isCardio,
+            // In add mode the "own" row is today's last one, so its numbers are
+            // a previous-set prefill; in edit mode they are the row itself.
+            seedInput = when (resolved.source) {
+                SeedSource.OWN -> if (mode == SeedMode.EDIT) SetInput.UNCHANGED else SetInput.PREFILL_PREVIOUS_SET
+                SeedSource.LAST_TIME -> SetInput.PREFILL_LAST_TIME
+                SeedSource.PREVIOUS_SET -> SetInput.PREFILL_PREVIOUS_SET
+                SeedSource.NONE -> SetInput.DEFAULT
+            },
+            edited = false,
         )
     }
 
@@ -619,7 +642,7 @@ class WorkoutFocusViewModel internal constructor(
      * there is no row yet.
      */
     private fun prefillLogInput(exercise: WorkoutExercise): FocusInputState =
-        exercise.sets.lastOrNull()?.let { buildInput(exercise, it) } ?: defaultInput(exercise)
+        exercise.sets.lastOrNull()?.let { buildInput(exercise, it, SeedMode.ADD) } ?: defaultInput(exercise)
 
     private fun defaultInput(exercise: WorkoutExercise): FocusInputState {
         val isCardio = exercise.resultType == ResultType.DISTANCE_DURATION
@@ -688,8 +711,8 @@ class WorkoutFocusViewModel internal constructor(
                         bottomValue = input.repsText.toIntOrNull(),
                         recordId = loggedRecordId,
                         workoutNumber = workoutNumberOf(loggedRecordId),
-                        input = SetInput.TYPED, // ANALYTICS-PROVISIONAL
-                        inSession = false, // ANALYTICS-PROVISIONAL
+                        input = input.setInput(),
+                        inSession = isInSession(loggedRecordId),
                     )
                 }
                 if (written.isFailure) {
@@ -719,7 +742,12 @@ class WorkoutFocusViewModel internal constructor(
                 // Keep the just-logged numbers as the next prefill, but re-armed
                 // so the first keypress replaces them.
                 inputByExercise[exercise.id] = (inputByExercise[exercise.id] ?: input)
-                    .copy(fresh = true, focusedField = FocusInputField.Value)
+                    .copy(
+                        fresh = true,
+                        focusedField = FocusInputField.Value,
+                        seedInput = SetInput.PREFILL_PREVIOUS_SET,
+                        edited = false,
+                    )
                 syncActiveExpansion()
                 republish()
             } finally {
@@ -773,9 +801,9 @@ class WorkoutFocusViewModel internal constructor(
                         bottomValue = input.repsText.toIntOrNull(),
                         recordId = recordIdOwning(exercise.id),
                         workoutNumber = workoutNumberOf(recordIdOwning(exercise.id)),
-                        action = SetAction.UPDATE, // ANALYTICS-PROVISIONAL
-                        input = SetInput.TYPED, // ANALYTICS-PROVISIONAL
-                        inSession = false, // ANALYTICS-PROVISIONAL
+                        action = SetAction.UPDATE,
+                        input = input.setInput(),
+                        inSession = isInSession(recordIdOwning(exercise.id)),
                     )
                 }.fold(
                     onSuccess = {
@@ -848,7 +876,7 @@ class WorkoutFocusViewModel internal constructor(
      * identical to opening its editor and committing, MINUS the advance, so the
      * user can keep swiping down the target list.
      *
-     * The values come from [focusEditorSeedValues], i.e. steps 1-3 of the chain
+     * The values come from [focusEditorSeed], i.e. steps 1-3 of the chain
      * with NO default: writing a defaulted 20 kg onto a row that never had a
      * target would be fabricating a logged set.
      */
@@ -857,7 +885,14 @@ class WorkoutFocusViewModel internal constructor(
         val owner = ownerOf(setId) ?: return
         val set = owner.sets.firstOrNull { it.id == setId } ?: return
         if (set.isLogged) return
-        val resolved = focusEditorSeedValues(owner, set)
+        val resolved = focusEditorSeed(owner, set)
+        // The target inherits whatever the row showed; say which rule supplied it.
+        val input = when (resolved.source) {
+            SeedSource.OWN -> SetInput.UNCHANGED
+            SeedSource.LAST_TIME -> SetInput.PREFILL_LAST_TIME
+            SeedSource.PREVIOUS_SET -> SetInput.PREFILL_PREVIOUS_SET
+            SeedSource.NONE -> SetInput.DEFAULT
+        }
 
         isMutating = true
         viewModelScope.launch {
@@ -873,9 +908,9 @@ class WorkoutFocusViewModel internal constructor(
                         bottomValue = resolved.reps,
                         recordId = recordIdOwning(owner.id),
                         workoutNumber = workoutNumberOf(recordIdOwning(owner.id)),
-                        action = SetAction.COMMIT_TARGET, // ANALYTICS-PROVISIONAL
-                        input = SetInput.TYPED, // ANALYTICS-PROVISIONAL
-                        inSession = false, // ANALYTICS-PROVISIONAL
+                        action = SetAction.COMMIT_TARGET,
+                        input = input,
+                        inSession = isInSession(recordIdOwning(owner.id)),
                     )
                 }
                 if (written.isFailure) {
@@ -971,7 +1006,7 @@ class WorkoutFocusViewModel internal constructor(
         activeRecordId = record.id
         activeExerciseId = owner.id
         editorMode = FocusEditorMode.Editing(setId, index + 1)
-        inputByExercise[owner.id] = buildInput(owner, owner.sets[index])
+        inputByExercise[owner.id] = buildInput(owner, owner.sets[index], SeedMode.EDIT)
         republish()
 
         // Stats/coach for a newly-focused member arrive after the row is
@@ -1030,7 +1065,7 @@ class WorkoutFocusViewModel internal constructor(
         val index = exercise.sets.indexOfFirst { !it.isLogged }
         editorMode = if (index >= 0) {
             val set = exercise.sets[index]
-            inputByExercise[exercise.id] = buildInput(exercise, set)
+            inputByExercise[exercise.id] = buildInput(exercise, set, SeedMode.EDIT)
             FocusEditorMode.Editing(set.id, index + 1)
         } else {
             FocusEditorMode.Collapsed
@@ -1447,6 +1482,11 @@ class WorkoutFocusViewModel internal constructor(
         if (next != null) {
             lastFinishAdvanceAt = nowMillis()
             handleSelectRecord(next.id)
+            if (activeRecordId == next.id) {
+                activeRecord?.let { record ->
+                    activeExercise?.let { trackFocusOpened(record, it, FocusEntry.NEXT_EXERCISE) }
+                }
+            }
             return
         }
         if (nowMillis() - lastFinishAdvanceAt < FINISH_DEBOUNCE_MILLIS) return
@@ -1627,14 +1667,18 @@ class WorkoutFocusViewModel internal constructor(
             try {
                 val id = identityOrAlert(errorStrings.recordDeleteFailed) ?: return@launch
                 val removed = runGuarded {
-                    if (record.exercises.size > 1) {
+                    val deleted = if (record.exercises.size > 1) {
                         val updated = removeExerciseFromSuperset(id.userId, id.journalId, record, exercise)
                         updated.firstOrNull { candidate ->
                             candidate.id != record.id && candidate.exercises.any { it.id == exercise.id }
-                        }?.let { deleteRecord(id.userId, id.journalId, it) }
+                        }?.let { deleteRecord(id.userId, id.journalId, it) } ?: false
                     } else {
                         deleteRecord(id.userId, id.journalId, record)
                     }
+                    // Tracked off the write's own answer, before the reload: a
+                    // record already gone (sync) removed nothing, and a failed
+                    // READ afterwards does not un-remove it.
+                    if (deleted) trackExerciseRemoved(id, record, exercise)
                     reloadDay(id)
                 }
                 if (removed.isFailure) {
@@ -1724,6 +1768,42 @@ class WorkoutFocusViewModel internal constructor(
 
     private fun trackFeature(feature: Feature) = tracker.track(AnalyticsEvent.FeatureUsed(feature))
 
+    /** What the user did to the editor since its seed: typed, or kept the seed's provenance. */
+    private fun FocusInputState.setInput(): SetInput = if (edited) SetInput.TYPED else seedInput
+
+    /** Is the session running on THIS record's workout (not merely on this day)? */
+    private fun isInSession(recordId: String): Boolean = runningWorkoutNumber == workoutNumberOf(recordId)
+
+    private fun trackFocusOpened(record: WorkoutRecord, exercise: WorkoutExercise, entry: FocusEntry) {
+        val journalId = identity?.journalId ?: return
+        tracker.track(
+            AnalyticsEvent.FocusOpened(
+                journalId = journalId,
+                workoutDate = record.date,
+                workoutNumber = record.workoutNumber,
+                recordId = record.id,
+                exerciseId = exercise.exercise.uuid,
+                entry = entry,
+                startAddingSet = entry == FocusEntry.ADD_SET,
+            ),
+        )
+    }
+
+    /** [record] and [exercise] as captured BEFORE the write — `had_sets` is what was there. */
+    private fun trackExerciseRemoved(id: Identity, record: WorkoutRecord, exercise: WorkoutExercise) {
+        tracker.track(
+            AnalyticsEvent.ExerciseRemoved(
+                journalId = id.journalId,
+                workoutDate = record.date,
+                workoutNumber = record.workoutNumber,
+                recordId = record.id,
+                exerciseId = exercise.exercise.uuid,
+                hadSets = exercise.hasLoggedSets,
+                entry = RemoveEntry.FOCUS,
+            ),
+        )
+    }
+
     private fun ownerOf(setId: String): WorkoutExercise? =
         dayRecords.flatMap { it.exercises }.firstOrNull { exercise -> exercise.sets.any { it.id == setId } }
 
@@ -1757,6 +1837,7 @@ class WorkoutFocusViewModel internal constructor(
         val id = identity ?: return
         val running = runGuarded { sessionRepository.getRunningSession(id.userId) }.getOrNull()
         sessionRunningHere = running != null && running.journalId == id.journalId && running.date == date
+        runningWorkoutNumber = running?.takeIf { it.journalId == id.journalId && it.date == date }?.workoutNumber
     }
 
     /**
@@ -1778,10 +1859,19 @@ class WorkoutFocusViewModel internal constructor(
         viewModelScope.launch {
             val id = requireIdentity() ?: return@launch
             sessionRepository.getRunningSessionFlow(id.userId)
+                // Before the Boolean collapse below: a switch between two
+                // workouts of the same day leaves the Boolean unchanged.
+                .onEach { running ->
+                    runningWorkoutNumber =
+                        running?.takeIf { it.journalId == id.journalId && it.date == date }?.workoutNumber
+                }
                 .map { running ->
                     running != null && running.journalId == id.journalId && running.date == date
                 }
-                .catch { emit(false) }
+                .catch {
+                    runningWorkoutNumber = null
+                    emit(false)
+                }
                 // On the BOOLEAN, not the row: an ordinary set write bumps the
                 // running session's row and must not republish the screen.
                 .distinctUntilChanged()
@@ -1856,6 +1946,9 @@ class WorkoutFocusViewModel internal constructor(
     )
 
     private enum class PendingReturn { IMPORT, REPLACE, NOTE }
+
+    /** Editor seed for an APPENDED set (add) vs an existing row (edit) — see [buildInput]. */
+    private enum class SeedMode { ADD, EDIT }
 
     private companion object {
         const val DEFAULT_WEIGHT = 20.0
