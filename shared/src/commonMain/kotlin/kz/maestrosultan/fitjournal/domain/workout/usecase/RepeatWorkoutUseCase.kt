@@ -2,6 +2,10 @@ package kz.maestrosultan.fitjournal.domain.workout.usecase
 
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.datetime.LocalDate
+import kz.maestrosultan.fitjournal.analytics.Analytics
+import kz.maestrosultan.fitjournal.analytics.AnalyticsEvent
+import kz.maestrosultan.fitjournal.analytics.AnalyticsTracker
+import kz.maestrosultan.fitjournal.analytics.ExerciseSource
 import kz.maestrosultan.fitjournal.domain.quota.WorkoutQuotaGate
 import kz.maestrosultan.fitjournal.domain.sync.SyncReason
 import kz.maestrosultan.fitjournal.domain.sync.SyncTrigger
@@ -33,6 +37,7 @@ class RepeatWorkoutUseCase(
     // Default-constructed so Android's existing Hilt provider and the Swift factory
     // compile unchanged (same trick as WorkoutDetailsViewModel's quotaGate param).
     private val quotaGate: WorkoutQuotaGate = WorkoutQuotaGate(recordRepository),
+    private val tracker: AnalyticsTracker = Analytics,
 ) {
 
     sealed interface Result {
@@ -72,11 +77,45 @@ class RepeatWorkoutUseCase(
         }
         if (!allowed) return Result.Refused
 
+        // Both reads happen BEFORE the write: afterwards the destination slot always has a
+        // live record. A throwing slot read is "unknown": assume live, so first_in_slot
+        // reports false; a throwing source read means no event. Neither blocks the copy.
+        val hadLive = try {
+            recordRepository.hasLiveRecordInWorkout(userId, journalId, destination.date, resolvedNumber)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            true
+        }
+        val sourceExerciseIds = try {
+            recordRepository.getRecordsByDate(userId, journalId, sourceDate, includeLastOccurrence = false)
+                .filter { it.workoutNumber == sourceWorkoutNumber }
+                .flatMap { it.exercises }
+                .map { it.exercise.uuid }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            emptyList()
+        }
+
         val copied = recordRepository.copyWorkoutTo(
             userId, journalId, sourceDate, sourceWorkoutNumber, destination.date, resolvedNumber,
         )
         if (!copied) return Result.NothingToCopy
         syncTrigger.requestTick(SyncReason.PostWrite.WorkoutRecord)
+        if (sourceExerciseIds.isNotEmpty()) {
+            tracker.track(
+                AnalyticsEvent.ExerciseAdded(
+                    journalId = journalId,
+                    workoutDate = destination.date,
+                    workoutNumber = resolvedNumber,
+                    exerciseId = sourceExerciseIds.first(),
+                    count = sourceExerciseIds.size,
+                    source = ExerciseSource.REPEAT,
+                    firstInSlot = !hadLive,
+                ),
+            )
+        }
         return Result.Copied(destination.date, resolvedNumber)
     }
 }

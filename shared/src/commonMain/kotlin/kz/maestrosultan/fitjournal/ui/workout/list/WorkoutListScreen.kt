@@ -41,6 +41,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kz.maestrosultan.fitjournal.analytics.ScreenName
+import kz.maestrosultan.fitjournal.analytics.TrackScreenView
 import kz.maestrosultan.fitjournal.ui.journal.JournalPickerRow
 import kz.maestrosultan.fitjournal.ui.quota.QuotaCard
 import kz.maestrosultan.fitjournal.ui.quota.QuotaCardContent
@@ -68,6 +70,7 @@ fun WorkoutListScreen(
     isRefreshing: Boolean = false,
     onRefresh: (() -> Unit)? = null,
 ) {
+    TrackScreenView(ScreenName.WORKOUT_LIST)
     val state by viewModel.viewState.collectAsState()
     FitJournalTheme {
         WorkoutListBody(

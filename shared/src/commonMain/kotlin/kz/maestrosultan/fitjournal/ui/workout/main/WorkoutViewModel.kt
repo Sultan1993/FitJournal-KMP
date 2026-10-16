@@ -20,6 +20,11 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
+import kz.maestrosultan.fitjournal.analytics.Analytics
+import kz.maestrosultan.fitjournal.analytics.AnalyticsEvent
+import kz.maestrosultan.fitjournal.analytics.AnalyticsTracker
+import kz.maestrosultan.fitjournal.analytics.Feature
+import kz.maestrosultan.fitjournal.analytics.SessionEndVia
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.quota.WorkoutQuota
 import kz.maestrosultan.fitjournal.domain.quota.WorkoutQuotaGate
@@ -65,6 +70,7 @@ class WorkoutViewModel(
     private val initialWorkoutNumber: Int? = null,
     private val clock: Clock = Clock.System,
     private val timeZone: TimeZone = TimeZone.currentSystemDefault(),
+    private val tracker: AnalyticsTracker = Analytics,
 ) : ViewModel(), WorkoutContract.ViewModel {
 
     private val selectedDate = MutableStateFlow(initialDate)
@@ -126,7 +132,10 @@ class WorkoutViewModel(
                 emit(WorkoutContract.ViewEffect.OpenExerciseFocus(action.workoutExerciseId, action.workoutSetId, action.startAddingSet))
             is WorkoutContract.ViewAction.OpenExerciseInfo ->
                 emit(WorkoutContract.ViewEffect.OpenExerciseInfo(action.exerciseId, action.section))
-            is WorkoutContract.ViewAction.EditNote -> emit(WorkoutContract.ViewEffect.EditNote(action.workoutExerciseId))
+            is WorkoutContract.ViewAction.EditNote -> {
+                trackFeature(Feature.EXERCISE_NOTE)
+                emit(WorkoutContract.ViewEffect.EditNote(action.workoutExerciseId))
+            }
             is WorkoutContract.ViewAction.ReplaceExercise -> emit(WorkoutContract.ViewEffect.ReplaceExercise(action.workoutExerciseId))
             // Gated: the exercise picker and the copy picker are how a NEW workout
             // gets opened. On a workout that already has records the gate says yes
@@ -136,16 +145,24 @@ class WorkoutViewModel(
             }
 
             is WorkoutContract.ViewAction.CopyFromWorkout -> ifWorkoutWritable(action.workoutNumber) {
+                trackFeature(Feature.COPY_WORKOUT)
                 emit(WorkoutContract.ViewEffect.CopyFromWorkout(action.workoutNumber))
             }
 
             // Ungated: opening the recap is a read, not a write.
-            is WorkoutContract.ViewAction.OpenWorkoutSummary ->
+            is WorkoutContract.ViewAction.OpenWorkoutSummary -> {
+                trackFeature(Feature.WORKOUT_SUMMARY)
                 emit(WorkoutContract.ViewEffect.OpenWorkoutSummary(action.workoutNumber))
+            }
 
-            is WorkoutContract.ViewAction.ShareWorkout -> emit(WorkoutContract.ViewEffect.ShareWorkout(action.workoutNumber))
+            is WorkoutContract.ViewAction.ShareWorkout -> {
+                trackFeature(Feature.SHARE_WORKOUT)
+                emit(WorkoutContract.ViewEffect.ShareWorkout(action.workoutNumber))
+            }
         }
     }
+
+    private fun trackFeature(feature: Feature) = tracker.track(AnalyticsEvent.FeatureUsed(feature))
 
     private fun emit(effect: WorkoutContract.ViewEffect) {
         _effects.trySend(effect)
@@ -279,6 +296,7 @@ class WorkoutViewModel(
         val show = !calendarVisible.value
         calendarVisible.value = show
         if (show) {
+            trackFeature(Feature.CALENDAR)
             val date = _uiState.value.selectedDate
             loadWorkoutDays(date.year, date.monthNumber)
         }
@@ -343,7 +361,7 @@ class WorkoutViewModel(
 
     private fun onEndSession() {
         val uid = userId ?: return
-        viewModelScope.launch { endWorkout(uid) }
+        viewModelScope.launch { endWorkout(uid, SessionEndVia.END_BUTTON) }
     }
 
     private fun onDeleteRecord(record: WorkoutRecord) {
@@ -398,6 +416,7 @@ class WorkoutViewModel(
         viewModelScope.launch {
             recordRepository.mergeRecords(uid, jid, record, next)
             syncTrigger.requestTick(SyncReason.PostWrite.WorkoutRecord)
+            trackFeature(Feature.SUPERSET)
         }
     }
 

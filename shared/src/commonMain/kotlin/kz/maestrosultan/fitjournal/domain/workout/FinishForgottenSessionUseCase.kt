@@ -1,6 +1,10 @@
 package kz.maestrosultan.fitjournal.domain.workout
 
 import kotlin.time.Clock
+import kz.maestrosultan.fitjournal.analytics.Analytics
+import kz.maestrosultan.fitjournal.analytics.AnalyticsEvent
+import kz.maestrosultan.fitjournal.analytics.AnalyticsTracker
+import kz.maestrosultan.fitjournal.analytics.SessionEndVia
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSessionActivity.INACTIVITY_LIMIT
 
 /**
@@ -26,6 +30,7 @@ class FinishForgottenSessionUseCase(
     private val sessions: WorkoutSessionRepository,
     private val records: RecordRepository,
     private val clock: Clock = Clock.System,
+    private val tracker: AnalyticsTracker = Analytics,
 ) {
 
     /**
@@ -34,7 +39,7 @@ class FinishForgottenSessionUseCase(
      * `Clock` it has no natural way to name.
      */
     constructor(sessions: WorkoutSessionRepository, records: RecordRepository) :
-        this(sessions, records, Clock.System)
+        this(sessions, records, Clock.System, Analytics)
 
     /**
      * @return the outcome, so a caller can skip re-publishing a tile it is about
@@ -83,10 +88,21 @@ class FinishForgottenSessionUseCase(
             return Outcome.DISCARDED_EMPTY
         }
 
-        sessions.endSession(
+        val finished = sessions.endSession(
             userId = userId,
             endedAt = WorkoutSessionActivity.endedAtFor(running, since, now),
         )
+        if (finished != null) {
+            tracker.track(
+                AnalyticsEvent.WorkoutSessionEnd(
+                    journalId = finished.journalId,
+                    workoutDate = finished.date,
+                    workoutNumber = finished.workoutNumber,
+                    durationSec = finished.durationSec(now),
+                    via = SessionEndVia.AUTO,
+                ),
+            )
+        }
         return Outcome.FINISHED
     }
 

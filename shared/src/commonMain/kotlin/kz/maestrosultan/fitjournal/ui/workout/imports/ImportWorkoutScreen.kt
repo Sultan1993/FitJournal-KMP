@@ -42,6 +42,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kz.maestrosultan.fitjournal.analytics.ScreenName
+import kz.maestrosultan.fitjournal.analytics.TrackScreenView
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.import_workout_add
@@ -69,6 +71,7 @@ fun ImportWorkoutScreen(
     viewModel: ImportWorkoutViewModel,
     modifier: Modifier = Modifier,
 ) {
+    TrackScreenView(ScreenName.IMPORT_WORKOUT)
     val state by viewModel.viewState.collectAsState()
     FitJournalTheme {
         ImportWorkoutBody(state = state, dispatch = viewModel::dispatch, modifier = modifier)

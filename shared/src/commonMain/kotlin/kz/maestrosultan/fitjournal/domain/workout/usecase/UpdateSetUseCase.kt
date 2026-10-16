@@ -1,5 +1,9 @@
 package kz.maestrosultan.fitjournal.domain.workout.usecase
 
+import kz.maestrosultan.fitjournal.analytics.Analytics
+import kz.maestrosultan.fitjournal.analytics.AnalyticsEvent
+import kz.maestrosultan.fitjournal.analytics.AnalyticsTracker
+import kz.maestrosultan.fitjournal.analytics.SetAction
 import kz.maestrosultan.fitjournal.domain.sync.SyncReason
 import kz.maestrosultan.fitjournal.domain.sync.SyncTrigger
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
@@ -15,11 +19,14 @@ import kz.maestrosultan.fitjournal.domain.workout.setFieldsFor
  * after the write returns.
  *
  * @throws SetNotFoundException if the set was gone by the time the write
- * ran (e.g. a concurrent sync pull deleted it) — no write happened, no tick.
+ * ran (e.g. a concurrent sync pull deleted it) — no write happened, no tick,
+ * no `set_logged`. [recordId] / [workoutNumber] name the record (slot) that owns
+ * [exercise].
  */
 class UpdateSetUseCase(
     private val recordRepository: RecordRepository,
     private val syncTrigger: SyncTrigger,
+    private val tracker: AnalyticsTracker = Analytics,
 ) {
     suspend operator fun invoke(
         userId: String,
@@ -28,6 +35,8 @@ class UpdateSetUseCase(
         exercise: WorkoutExercise,
         topValue: Double?,
         bottomValue: Int?,
+        recordId: String,
+        workoutNumber: Int,
     ): Boolean {
         val fields = setFieldsFor(
             resultType = exercise.resultType,
@@ -48,6 +57,18 @@ class UpdateSetUseCase(
             throw SetNotFoundException()
         }
         syncTrigger.requestTick(SyncReason.PostWrite.WorkoutRecord)
+        tracker.track(
+            AnalyticsEvent.SetLogged(
+                journalId = journalId,
+                workoutDate = exercise.date,
+                workoutNumber = workoutNumber,
+                recordId = recordId,
+                exerciseId = exercise.exercise.uuid,
+                setIndex = exercise.sets.indexOfFirst { it.id == set.id }.coerceAtLeast(0),
+                resultType = exercise.resultType,
+                action = SetAction.UPDATE,
+            ),
+        )
         return updated
     }
 }

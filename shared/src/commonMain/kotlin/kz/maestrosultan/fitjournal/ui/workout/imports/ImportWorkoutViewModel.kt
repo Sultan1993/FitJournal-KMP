@@ -15,6 +15,10 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
+import kz.maestrosultan.fitjournal.analytics.Analytics
+import kz.maestrosultan.fitjournal.analytics.AnalyticsEvent
+import kz.maestrosultan.fitjournal.analytics.AnalyticsTracker
+import kz.maestrosultan.fitjournal.analytics.ExerciseSource
 import kz.maestrosultan.fitjournal.domain.sync.SyncReason
 import kz.maestrosultan.fitjournal.domain.sync.SyncTrigger
 import kz.maestrosultan.fitjournal.domain.user.UserSessionState
@@ -43,6 +47,7 @@ class ImportWorkoutViewModel(
     private val destinationDate: LocalDate,
     private val destinationWorkoutNumber: Int,
     awaitSession: suspend () -> UserSessionState,
+    private val tracker: AnalyticsTracker = Analytics,
 ) : ViewModel(), ImportWorkoutContract.ViewModel {
 
     private val _uiState = MutableStateFlow(ImportWorkoutContract.ViewState.initial(destinationDate))
@@ -192,9 +197,32 @@ class ImportWorkoutViewModel(
                 _effects.trySend(ImportWorkoutContract.ViewEffect.ShowPaywall)
                 return@launch
             }
+            // Read BEFORE the write (afterwards the slot always has a live record). A
+            // throwing read is "unknown": assume live, so first_in_slot reports false,
+            // and never block the import.
+            val hadLive = try {
+                recordRepository.hasLiveRecordInWorkout(uid, jid, destinationDate, destinationWorkoutNumber)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                true
+            }
             try {
                 recordRepository.addRecordsToWorkout(uid, jid, destinationDate, destinationWorkoutNumber, selected)
                 syncTrigger.requestTick(SyncReason.PostWrite.WorkoutRecord)
+                selected.firstNotNullOfOrNull { it.exercises.firstOrNull() }?.let { first ->
+                    tracker.track(
+                        AnalyticsEvent.ExerciseAdded(
+                            journalId = jid,
+                            workoutDate = destinationDate,
+                            workoutNumber = destinationWorkoutNumber,
+                            exerciseId = first.exercise.uuid,
+                            count = selected.size,
+                            source = ExerciseSource.COPY,
+                            firstInSlot = !hadLive,
+                        ),
+                    )
+                }
                 _effects.trySend(ImportWorkoutContract.ViewEffect.Dismiss)
             } catch (e: CancellationException) {
                 throw e

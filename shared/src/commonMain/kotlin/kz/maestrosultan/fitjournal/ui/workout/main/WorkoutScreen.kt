@@ -32,6 +32,8 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kz.maestrosultan.fitjournal.analytics.ScreenName
+import kz.maestrosultan.fitjournal.analytics.TrackScreenView
 import kz.maestrosultan.fitjournal.ui.common.PageDots
 import kz.maestrosultan.fitjournal.ui.common.TopFadeScrim
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
@@ -52,6 +54,7 @@ fun WorkoutScreen(
     viewModel: WorkoutViewModel,
     modifier: Modifier = Modifier,
 ) {
+    TrackScreenView(ScreenName.WORKOUT)
     val state by viewModel.viewState.collectAsState()
     FitJournalTheme {
         WorkoutBody(state = state, dispatch = viewModel::dispatch, modifier = modifier)

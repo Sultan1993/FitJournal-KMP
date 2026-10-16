@@ -25,6 +25,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.analytics.ScreenName
+import kz.maestrosultan.fitjournal.analytics.TrackScreenView
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_confirm_eyebrow
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_confirm_finish
@@ -68,6 +70,8 @@ fun WorkoutFinishSheet(
     onVisibilityChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Composed only while the sheet is up, so this is "only while visible".
+    TrackScreenView(ScreenName.WORKOUT_FINISH)
     // Start-once effect whose dispose must call the LATEST callback, not the
     // one captured at entry — rememberUpdatedState keeps it fresh without
     // restarting the effect (which would emit spurious false/true pairs).

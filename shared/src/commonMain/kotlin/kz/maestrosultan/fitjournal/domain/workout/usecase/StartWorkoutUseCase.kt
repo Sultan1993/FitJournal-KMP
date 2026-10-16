@@ -1,6 +1,9 @@
 package kz.maestrosultan.fitjournal.domain.workout.usecase
 
 import kotlinx.datetime.LocalDate
+import kz.maestrosultan.fitjournal.analytics.Analytics
+import kz.maestrosultan.fitjournal.analytics.AnalyticsEvent
+import kz.maestrosultan.fitjournal.analytics.AnalyticsTracker
 import kz.maestrosultan.fitjournal.domain.sync.SyncReason
 import kz.maestrosultan.fitjournal.domain.sync.SyncTrigger
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSession
@@ -22,7 +25,17 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutSessionRepository
 class StartWorkoutUseCase(
     private val sessions: WorkoutSessionRepository,
     private val syncTrigger: SyncTrigger,
+    private val tracker: AnalyticsTracker,
 ) {
+
+    /**
+     * Swift-visible constructor. Kotlin default arguments do not survive the ObjC
+     * bridge (SKIE default-argument interop is off), so the pre-analytics shape
+     * stays as an explicit overload.
+     */
+    constructor(sessions: WorkoutSessionRepository, syncTrigger: SyncTrigger) :
+        this(sessions, syncTrigger, Analytics)
+
     suspend operator fun invoke(
         userId: String,
         journalId: String,
@@ -34,6 +47,12 @@ class StartWorkoutUseCase(
         // (deferred): it's the offline-first contract, harmless now (nothing to
         // drain), and forward-compatible for when session sync lands.
         syncTrigger.requestTick(SyncReason.PostWrite.WorkoutSession)
+        // After the write succeeded (a throw above skips this). The returned session
+        // is the authority for the slot: when one was already running this is that
+        // session, and the event names the slot actually running.
+        tracker.track(
+            AnalyticsEvent.WorkoutSessionStart(session.journalId, session.date, session.workoutNumber),
+        )
         return session
     }
 }

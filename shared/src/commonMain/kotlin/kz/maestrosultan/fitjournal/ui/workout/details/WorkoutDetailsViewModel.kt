@@ -22,6 +22,10 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import kz.maestrosultan.fitjournal.analytics.Analytics
+import kz.maestrosultan.fitjournal.analytics.AnalyticsEvent
+import kz.maestrosultan.fitjournal.analytics.AnalyticsTracker
+import kz.maestrosultan.fitjournal.analytics.Feature
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
@@ -87,6 +91,7 @@ class WorkoutDetailsViewModel internal constructor(
      * next. Production keeps Default; tests pass their own scheduler.
      */
     private val buildDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val tracker: AnalyticsTracker = Analytics,
 ) : ViewModel(), WorkoutDetailsContract.ViewModel {
 
     /**
@@ -331,6 +336,7 @@ class WorkoutDetailsViewModel internal constructor(
 
     private fun onShareTapped() {
         val loaded = loadedContent() ?: return
+        tracker.track(AnalyticsEvent.FeatureUsed(Feature.SHARE_WORKOUT))
         emit(WorkoutDetailsContract.ViewEffect.OpenShareComposer(date, loaded.focusedWorkoutNumber))
     }
 
@@ -365,6 +371,7 @@ class WorkoutDetailsViewModel internal constructor(
         )
         repeatPickerVm = vm
         repeatPicker.value = WorkoutDetailsContract.RepeatPicker(viewModel = vm)
+        tracker.track(AnalyticsEvent.FeatureUsed(Feature.REPEAT_WORKOUT))
     }
 
     /**
@@ -443,6 +450,8 @@ class WorkoutDetailsViewModel internal constructor(
                 log("delete workout failed", e)
             }.isSuccess
             if (succeeded) {
+                // After the atomic delete committed; a failed delete emits nothing.
+                tracker.track(AnalyticsEvent.WorkoutDeleted(id.journalId, date, deletedWorkoutNumber))
                 loaded.workouts
                     .map { it.workoutNumber }
                     .filter { it != deletedWorkoutNumber }
@@ -456,6 +465,7 @@ class WorkoutDetailsViewModel internal constructor(
     private fun onNoteTapped() {
         val loaded = loadedContent() ?: return
         val focused = loaded.workouts.firstOrNull { it.workoutNumber == loaded.focusedWorkoutNumber } ?: return
+        tracker.track(AnalyticsEvent.FeatureUsed(Feature.EXERCISE_NOTE))
         noteEditor.value = WorkoutDetailsContract.NoteEditor(
             workoutNumber = focused.workoutNumber,
             initialText = focused.note.text ?: "",

@@ -24,6 +24,7 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutSessionRepository
 import kz.maestrosultan.fitjournal.domain.workout.summary.BuildSessionSummaryUseCase
 import kz.maestrosultan.fitjournal.domain.workout.summary.SessionSummary
 import kz.maestrosultan.fitjournal.domain.workout.usecase.EndWorkoutUseCase
+import kz.maestrosultan.fitjournal.analytics.SessionEndVia
 import kz.maestrosultan.fitjournal.ui.workout.FinishResult
 import kz.maestrosultan.fitjournal.ui.workout.PostWorkoutContext
 import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
@@ -145,7 +146,7 @@ class WorkoutFinishViewModel(
         val current = session ?: return // load not finished, or nothing was running
         isEnding = true
         viewModelScope.launch {
-            val ended = runCatching { endWorkout(current.userId) }
+            val ended = runCatching { endWorkout(current.userId, SessionEndVia.FINISH_SHEET) }
             ended.exceptionOrNull()?.let { failure ->
                 if (failure is CancellationException) throw failure
                 // The use case returns null (never throws) on the ordinary

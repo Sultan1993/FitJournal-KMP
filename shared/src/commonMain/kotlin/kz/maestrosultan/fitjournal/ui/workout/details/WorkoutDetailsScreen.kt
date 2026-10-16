@@ -45,6 +45,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.isActive
+import kz.maestrosultan.fitjournal.analytics.ScreenName
+import kz.maestrosultan.fitjournal.analytics.TrackScreenView
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_achievements
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_delete
@@ -81,6 +83,7 @@ fun WorkoutDetailsScreen(
     viewModel: WorkoutDetailsContract.ViewModel,
     modifier: Modifier = Modifier,
 ) {
+    TrackScreenView(ScreenName.WORKOUT_DETAILS)
     val state by viewModel.viewState.collectAsState()
     WorkoutDetailsBody(state = state, dispatch = viewModel::dispatch, modifier = modifier)
 }

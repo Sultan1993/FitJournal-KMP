@@ -40,6 +40,10 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecordOrdering
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSessionRepository
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSet
 import kz.maestrosultan.fitjournal.domain.workout.resultType
+import kz.maestrosultan.fitjournal.analytics.Analytics
+import kz.maestrosultan.fitjournal.analytics.AnalyticsEvent
+import kz.maestrosultan.fitjournal.analytics.AnalyticsTracker
+import kz.maestrosultan.fitjournal.analytics.Feature
 import kz.maestrosultan.fitjournal.domain.workout.usecase.AddSetUseCase
 import kz.maestrosultan.fitjournal.domain.workout.usecase.DeleteRecordUseCase
 import kz.maestrosultan.fitjournal.domain.workout.usecase.DeleteSetUseCase
@@ -111,6 +115,7 @@ class WorkoutFocusViewModel internal constructor(
     private val strings: FocusStrings,
     private val errorStrings: FocusErrorStrings,
     private val buildDispatcher: CoroutineDispatcher,
+    private val tracker: AnalyticsTracker = Analytics,
 ) : ViewModel(), WorkoutFocusContract.ViewModel {
 
     /**
@@ -679,6 +684,8 @@ class WorkoutFocusViewModel internal constructor(
                         exercise = exercise,
                         topValue = input.valueText.toDoubleOrNull(),
                         bottomValue = input.repsText.toIntOrNull(),
+                        recordId = loggedRecordId,
+                        workoutNumber = workoutNumberOf(loggedRecordId),
                     )
                 }
                 if (written.isFailure) {
@@ -760,6 +767,8 @@ class WorkoutFocusViewModel internal constructor(
                         exercise = exercise,
                         topValue = input.valueText.toDoubleOrNull(),
                         bottomValue = input.repsText.toIntOrNull(),
+                        recordId = recordIdOwning(exercise.id),
+                        workoutNumber = workoutNumberOf(recordIdOwning(exercise.id)),
                     )
                 }.fold(
                     onSuccess = {
@@ -852,6 +861,8 @@ class WorkoutFocusViewModel internal constructor(
                         exercise = owner,
                         topValue = resolved.value,
                         bottomValue = resolved.reps,
+                        recordId = recordIdOwning(owner.id),
+                        workoutNumber = workoutNumberOf(recordIdOwning(owner.id)),
                     )
                 }
                 if (written.isFailure) {
@@ -1124,8 +1135,12 @@ class WorkoutFocusViewModel internal constructor(
     // ─── History page ──────────────────────────────────────────────────
 
     private fun handlePageChanged(page: Int) {
+        val switched = currentPage != page
         currentPage = page
-        if (page == HISTORY_PAGE) syncHistory()
+        if (page == HISTORY_PAGE) {
+            if (switched) trackFeature(Feature.FOCUS_HISTORY)
+            syncHistory()
+        }
     }
 
     /**
@@ -1441,6 +1456,7 @@ class WorkoutFocusViewModel internal constructor(
         val exercise = activeExercise ?: return
         val data = focusDataByExercise[exercise.id] ?: return
         val source = data.oneRepMaxSource ?: data.maxSet ?: return
+        trackFeature(Feature.ONE_RM_CALCULATOR)
         emitEffect(
             WorkoutFocusContract.ViewEffect.OpenOneRepMaxCalculator(
                 weight = source.weight,
@@ -1476,6 +1492,7 @@ class WorkoutFocusViewModel internal constructor(
         // The note editor is presented OVER Focus; HostReturned reloads the day
         // when it closes, WITHOUT the land-on-current jump.
         pendingReturn = PendingReturn.NOTE
+        trackFeature(Feature.EXERCISE_NOTE)
         republish()
         emitEffect(WorkoutFocusContract.ViewEffect.OpenEditNote(exercise))
     }
@@ -1517,6 +1534,7 @@ class WorkoutFocusViewModel internal constructor(
                     // AddToSupersetError here, iOS `:915`, Android `:1203`).
                     emitEffect(WorkoutFocusContract.ViewEffect.ShowError(errorStrings.recordFetchFailed()))
                 } else {
+                    trackFeature(Feature.SUPERSET)
                     // The active exercise's uuid survives the merge — re-point
                     // whichever record now owns it.
                     dayRecords.firstOrNull { r -> r.exercises.any { it.id == activeExerciseId } }?.let {
@@ -1682,6 +1700,16 @@ class WorkoutFocusViewModel internal constructor(
 
     private fun exerciseById(id: String): WorkoutExercise? =
         dayRecords.flatMap { it.exercises }.firstOrNull { it.id == id }
+
+    /** The record (slot owner) holding [workoutExerciseId]; falls back to the active record. */
+    private fun recordIdOwning(workoutExerciseId: String): String =
+        dayRecords.firstOrNull { r -> r.exercises.any { it.id == workoutExerciseId } }?.id
+            ?: activeRecordId.orEmpty()
+
+    private fun workoutNumberOf(recordId: String): Int =
+        dayRecords.firstOrNull { it.id == recordId }?.workoutNumber ?: activeRecord?.workoutNumber ?: 1
+
+    private fun trackFeature(feature: Feature) = tracker.track(AnalyticsEvent.FeatureUsed(feature))
 
     private fun ownerOf(setId: String): WorkoutExercise? =
         dayRecords.flatMap { it.exercises }.firstOrNull { exercise -> exercise.sets.any { it.id == setId } }

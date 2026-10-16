@@ -28,6 +28,10 @@ import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
+import kz.maestrosultan.fitjournal.analytics.Analytics
+import kz.maestrosultan.fitjournal.analytics.AnalyticsEvent
+import kz.maestrosultan.fitjournal.analytics.AnalyticsTracker
+import kz.maestrosultan.fitjournal.analytics.Feature
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.journal.JournalRepository
 import kz.maestrosultan.fitjournal.domain.quota.WorkoutQuotaGate
@@ -71,6 +75,7 @@ class WorkoutListViewModel(
      * next. Production keeps Default; tests pass their own scheduler.
      */
     private val buildDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val tracker: AnalyticsTracker = Analytics,
 ) : ViewModel(), WorkoutListContract.ViewModel {
 
     private val session = sessionState.filterNotNull()
@@ -216,6 +221,7 @@ class WorkoutListViewModel(
         val show = !calendarVisible.value
         calendarVisible.value = show
         if (show) {
+            tracker.track(AnalyticsEvent.FeatureUsed(Feature.CALENDAR))
             val today = today()
             visibleMonth = today.year to today.monthNumber
             val s = latestSession ?: return

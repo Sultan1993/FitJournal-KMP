@@ -38,6 +38,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kz.maestrosultan.fitjournal.analytics.ScreenName
+import kz.maestrosultan.fitjournal.analytics.TrackScreenView
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_menu_remove_exercise
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_remove_exercise_message
@@ -88,6 +90,7 @@ fun WorkoutFocusScreen(
     viewModel: WorkoutFocusContract.ViewModel,
     modifier: Modifier = Modifier,
 ) {
+    TrackScreenView(ScreenName.WORKOUT_FOCUS)
     val viewState by viewModel.viewState.collectAsState()
     val history by viewModel.history.collectAsState()
     WorkoutFocusBody(

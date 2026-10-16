@@ -11,6 +11,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kz.maestrosultan.fitjournal.analytics.Analytics
+import kz.maestrosultan.fitjournal.analytics.AnalyticsEvent
+import kz.maestrosultan.fitjournal.analytics.AnalyticsTracker
 
 /** One lane command. Private: the channel is the only way anything reaches the writer. */
 private sealed interface Cmd {
@@ -57,6 +60,7 @@ class RestTimer(
     private val presenter: RestTimerPresenter,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
     private val clock: Clock = Clock.System,
+    private val tracker: AnalyticsTracker = Analytics,
 ) {
 
     private val commands = Channel<Cmd>(Channel.UNLIMITED)   // UNLIMITED => trySend never fails
@@ -176,6 +180,9 @@ class RestTimer(
                 _state.value = RestTimerState.Running(duration, end)
                 tickJob = startTicking(end)
                 presenter.restStarted(end, duration, info, appliedConfig.soundAndVibrationOn)
+                // Every real start funnels through here (start, toggle, auto-start), so one
+                // site; Resume adopts an already-running rest and is not a start.
+                tracker.track(AnalyticsEvent.RestTimerStarted(duration.toLong()))
             }
 
             is Cmd.Stop -> {
