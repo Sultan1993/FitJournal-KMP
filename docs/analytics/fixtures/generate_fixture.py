@@ -416,6 +416,9 @@ def build():
     f.emit(u, early, "exercise_added", _at=hms(0, 5), exercise_id="ex-1", count=1, source="catalog",
            first_in_slot="true", day_kind="today", days_from_today=0, entry="workout_button", found_via="browse",
            **f.slot(u, early, 1))
+    # iOS lock-screen rest: `finished` is logged hours late when the app next runs; not an orphan.
+    f.rest_started(u, late, 90, "auto", _at=hms(8, 0))
+    f.rest_ended(u, late, "finished", 90, 90, "auto", _at=hms(13, 0))
 
     return f
 

@@ -257,6 +257,20 @@ class AnalyticsEmissionTest {
     }
 
     @Test
+    fun exerciseAdded_copy_countsExercisesNotRecords_forSuperset(): Unit = runBlocking {
+        val a = seedExercise()
+        val b = seedExercise()
+        repo.addExercisesToDate(USER, JOURNAL, DATE, 1, listOf(a, b))
+        val (r1, r2) = repo.getRecordsByDate(USER, JOURNAL, DATE, includeLastOccurrence = false)
+        repo.mergeRecords(USER, JOURNAL, r1, r2)
+        assertEquals(1, repo.getRecordsByDate(USER, JOURNAL, DATE, includeLastOccurrence = false).size)
+
+        importInto(repo, LocalDate(2026, 5, 23))
+        val event = assertIs<AnalyticsEvent.ExerciseAdded>(tracker.events.single())
+        assertEquals(2, event.count, "one superset record holding two exercises is two exercises added")
+    }
+
+    @Test
     fun setLogged_missingExercise_emitsNothing(): Unit = runBlocking {
         val exerciseId = seedExercise()
         repo.addExercisesToDate(USER, JOURNAL, DATE, 2, listOf(exerciseId))
@@ -341,6 +355,28 @@ class AnalyticsEmissionTest {
         assertEquals(
             AnalyticsEvent.WorkoutSessionEnd(
                 JOURNAL, DATE, 1, 2 * 3600L, SessionEndVia.AUTO,
+                day = dayContextOf(DATE, fixedClock(now).todayIn(TimeZone.currentSystemDefault())),
+                exerciseCount = 0, setCount = 0,
+            ),
+            tracker.events.single(),
+        )
+    }
+
+
+    @Test
+    fun finishForgottenSession_emptySession_emitsAutoEnd_atLastActivityBasis(): Unit = runBlocking {
+        val now = Instant.parse("2026-08-24T20:00:00Z")
+        val startedAt = now - 20.hours
+        DefaultWorkoutSessionRepository(sessionsDB, fixedClock(startedAt)).startSession(USER, JOURNAL, DATE, 1)
+        val sessions = DefaultWorkoutSessionRepository(sessionsDB, fixedClock(now))
+
+        val outcome = FinishForgottenSessionUseCase(sessions, repo, fixedClock(now), tracker = tracker)(USER)
+
+        assertEquals(FinishForgottenSessionUseCase.Outcome.DISCARDED_EMPTY, outcome)
+        // No records: activity basis is the session's own start, so the duration is 0, not 20h.
+        assertEquals(
+            AnalyticsEvent.WorkoutSessionEnd(
+                JOURNAL, DATE, 1, 0L, SessionEndVia.AUTO,
                 day = dayContextOf(DATE, fixedClock(now).todayIn(TimeZone.currentSystemDefault())),
                 exerciseCount = 0, setCount = 0,
             ),

@@ -64,10 +64,11 @@ import kz.maestrosultan.fitjournal.data.time.toStoredString
  * `pendingUpload=1` on the parent — children don't carry their own flag;
  * mutations bubble up so the SyncWorker re-encodes the full JSON tree.
  *
- * [database] backs ONLY [deleteWorkoutAtomic]; every other method goes
+ * [database] backs the two atomic deletes, [deleteWorkoutAtomic] and
+ * [deleteRecord] (both via `transactionWithResult`); every other method goes
  * through [workoutsDB]/[exercisesDB]. It's nullable so the legacy 3-arg
  * constructor below can pass `null` — [deleteWorkoutAtomic] throws without
- * it. [afterRecordTombstones] is an `internal` mid-transaction test seam for
+ * it, and [deleteRecord] degrades to the mutex alone. [afterRecordTombstones] is an `internal` mid-transaction test seam for
  * jvmTest to force a rollback (see [deleteWorkoutAtomic]) — always `null`
  * outside tests.
  */

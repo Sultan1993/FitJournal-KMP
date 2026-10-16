@@ -50,7 +50,17 @@ The event catalog lives in code (`Multiplatform/shared/.../analytics/AnalyticsCa
   (`finished`, `stopped`, or `restarted` when a new rest replaces the running one). A rest that outlives its process (the OS kills
   the app mid-rest) emits no `ended` on either platform. The orphan rate is measured by
   [`cookbook/13_rest_orphans.sql`](cookbook/13_rest_orphans.sql): mature starts with a `trigger` only (legacy starts without one
-  can never be paired), `ended` looked up through `@observed_through`.
+  can never be paired), `ended` looked up through `@observed_through`. An **orphan** is a mature start with no `rest_timer_ended`
+  of the same user between it and that user's next `rest_timer_started` (or `@observed_through` when there is none); there is
+  no duration cap. iOS is suspended while the phone is locked, so a lock-screen rest logs `finished` only when the app next
+  runs: the event timestamp is that later moment (can be hours after start + duration) while `elapsed_sec` stays truthful.
+  A start is mature once its deadline (start + `duration_sec`) has passed and either a later start exists or 12 h have elapsed.
+- **`sign_in`.** Emitted at Firebase sign-in success, BEFORE the AWS user fetch/provisioning. A failed provisioning followed by
+  a retry can therefore yield two `sign_in` events for one uid; the first carries `is_new_user=true`. Cohort queries take the
+  uid's first `sign_in` (cookbook 01 takes `MIN(event_timestamp)` over a uid's `sign_in{is_new_user=true}` events, which is
+  consistent: the first new-user sign_in).
+- **`sign_out`.** A user action only (Log out, or Delete account). Identity (user id + account properties) is cleared on EVERY
+  session teardown, including the stale-session reconcile, which emits no `sign_out`.
 - **Picker-attribution rule.** An `exercise_added` / `exercise_replaced` completes the latest preceding `exercise_picker_opened`
   of the same user **and the same `entry`** if it occurs within 30 minutes. An open followed by another open of that entry before
   any add is abandoned; the successor may lie beyond `@end_date`, which is why cookbook 09 reads `events` for the lookahead. Opens

@@ -1,8 +1,9 @@
 /*
-F12 Rest orphans: rest_timer_started with no rest_timer_ended by the same user in (start, LEAST(start + duration + 60 s, next start)].
+F12 Rest orphans: rest_timer_started with no rest_timer_ended by the same user in (start, next start of that user] (up to the end of @observed_through when there is no next start).
+There is deliberately NO duration cap: iOS is suspended while the phone is locked, so a lock-screen rest logs `finished` only when the app next runs (possibly hours late; elapsed_sec stays truthful).
 Candidates = starts in window_events with trigger IS NOT NULL (legacy starts can never be paired and are excluded).
 next_start_ts is computed over ALL rest_timer_started in `events`; ended rows are looked up in `events` (through @observed_through).
-A start is mature iff its deadline is <= the end of @observed_through; immature starts are counted in `immature` and excluded from starts.
+A start is mature iff its deadline (start + duration_sec) is <= the end of @observed_through AND either a later start of the same user exists (the pairing window is closed) or 12 h have passed since the deadline (a late `finished` would have shown up by then). Immature starts are counted in `immature` and excluded from starts.
 Rows only for platforms with at least one mature start.
 Params: @start_date/@end_date (entry window, YYYYMMDD), @observed_through (>= @end_date).
 Output: platform STRING, starts INT64, orphans INT64, orphan_rate FLOAT64, immature INT64.
@@ -29,7 +30,7 @@ all_starts AS (
 ),
 candidates AS (
   SELECT a.user_id, a.platform, a.event_timestamp AS start_ts, a.next_start_ts,
-    a.event_timestamp + (COALESCE((SELECT MAX(IF(p.key = 'duration_sec', p.value.int_value, NULL)) FROM UNNEST(a.event_params) p), 0) + 60) * 1000000 AS deadline_ts
+    a.event_timestamp + COALESCE((SELECT MAX(IF(p.key = 'duration_sec', p.value.int_value, NULL)) FROM UNNEST(a.event_params) p), 0) * 1000000 AS deadline_ts
   FROM all_starts a
   WHERE a.trigger IS NOT NULL
     AND EXISTS (SELECT 1 FROM window_events w
@@ -37,11 +38,13 @@ candidates AS (
 ),
 judged AS (
   SELECT c.platform,
-    c.deadline_ts <= UNIX_MICROS(TIMESTAMP(DATE_ADD(PARSE_DATE('%Y%m%d', @observed_through), INTERVAL 1 DAY))) AS mature,
+    (c.deadline_ts <= UNIX_MICROS(TIMESTAMP(DATE_ADD(PARSE_DATE('%Y%m%d', @observed_through), INTERVAL 1 DAY)))
+     AND (c.next_start_ts IS NOT NULL
+          OR c.deadline_ts + 43200 * 1000000 <= UNIX_MICROS(TIMESTAMP(DATE_ADD(PARSE_DATE('%Y%m%d', @observed_through), INTERVAL 1 DAY))))) AS mature,
     EXISTS (SELECT 1 FROM events x
             WHERE x.user_id = c.user_id AND x.event_name = 'rest_timer_ended'
               AND x.event_timestamp > c.start_ts
-              AND x.event_timestamp <= LEAST(c.deadline_ts, IFNULL(c.next_start_ts, c.deadline_ts))) AS paired
+              AND (c.next_start_ts IS NULL OR x.event_timestamp <= c.next_start_ts)) AS paired
   FROM candidates c
 )
 SELECT platform,

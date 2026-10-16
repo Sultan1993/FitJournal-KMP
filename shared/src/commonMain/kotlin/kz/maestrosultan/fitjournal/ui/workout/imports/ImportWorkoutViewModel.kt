@@ -20,6 +20,7 @@ import kz.maestrosultan.fitjournal.analytics.AnalyticsEvent
 import kz.maestrosultan.fitjournal.analytics.AnalyticsTracker
 import kz.maestrosultan.fitjournal.analytics.ExerciseEntry
 import kz.maestrosultan.fitjournal.analytics.ExerciseSource
+import kz.maestrosultan.fitjournal.analytics.hadLiveRecordForAnalytics
 import kz.maestrosultan.fitjournal.analytics.dayContextOf
 import kz.maestrosultan.fitjournal.analytics.systemToday
 import kz.maestrosultan.fitjournal.domain.sync.SyncReason
@@ -205,7 +206,7 @@ class ImportWorkoutViewModel(
             // throwing read is "unknown": assume live, so first_in_slot reports false,
             // and never block the import.
             val hadLive = try {
-                recordRepository.hasLiveRecordInWorkout(uid, jid, destinationDate, destinationWorkoutNumber)
+                hadLiveRecordForAnalytics(recordRepository, uid, jid, destinationDate, destinationWorkoutNumber)
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
@@ -221,7 +222,7 @@ class ImportWorkoutViewModel(
                             workoutDate = destinationDate,
                             workoutNumber = destinationWorkoutNumber,
                             exerciseId = first.exercise.uuid,
-                            count = selected.size,
+                            count = selected.sumOf { it.exercises.size },
                             source = ExerciseSource.COPY,
                             firstInSlot = !hadLive,
                             day = dayContextOf(destinationDate, today()),
