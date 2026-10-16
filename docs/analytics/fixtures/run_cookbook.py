@@ -116,14 +116,16 @@ def main():
         load_fixture(args.dataset)
 
     all_stems = sorted({k for s in scenarios.values() for k in s["results"]})
-    stems = [s for s in all_stems if not args.only or s == args.only]
-    if args.only and not stems:
+    if args.only and args.only not in all_stems:
         sys.stderr.write("unknown cookbook stem: %s\n" % args.only)
         return 2
 
     failed = False
     for name, scenario in scenarios.items():
-        for stem in stems:
+        # each scenario runs only the stems its own `results` lists
+        for stem in sorted(scenario["results"]):
+            if args.only and stem != args.only:
+                continue
             label = "%s/%s" % (name, stem)
             path = os.path.join(COOKBOOK, stem + ".sql")
             try:

@@ -3,7 +3,7 @@
 Each funnel below is the approximate, clickable GA4 Explore equivalent of a cookbook query. **The cookbook is the exact
 answer;** Explore differs in the stated limitations. Prerequisite: register the custom dimensions listed in
 [`README.md`](README.md) (event-scoped `entry, first_in_slot, is_new_user, outcome, feature, source, via, action, result_type,
-reason, method`; user-scoped `sub_tier, quota_state, app_build`). The screen is the built-in "Screen name" dimension
+reason, method, day_kind, found_via, input, vs_last_time, in_session, session_state, was_logged, had_sets, start_adding_set, trigger, category`; user-scoped `sub_tier, quota_state, app_build`). The screen is the built-in "Screen name" dimension
 (`firebase_screen`).
 
 Why these five: for a team that knows nothing about usage, the questions that change decisions are, in order: do new users reach
@@ -54,3 +54,41 @@ cover activation, monetization, engagement, retention and adoption.
 
 - Type: Free-form, weekly, active users, same segment as F5.
 - Limitation: GA4 weeks start on Sunday; the cookbook uses ISO weeks (Monday start).
+
+## F6 Live vs backfill -- `cookbook/07_live_vs_backfill.sql`
+
+- Type: Free-form. Rows = `day_kind` x `in_session`; metric = event count of `set_logged`; segment "app_build != debug".
+- Limitation: sets from pre-change clients have neither dimension and appear as `(not set)`; the cookbook reports them as the
+  `unknown` row and gives percentages over all sets.
+
+## F7 Workout build mode -- `cookbook/08_workout_build_mode.sql`
+
+- Type: Free-form. Rows = `source`; metric = event count of `exercise_added` filtered to `first_in_slot = true`.
+- Limitation: Explore shows `source` values, not the scratch (`catalog`) / routine (`copy`, `repeat`) grouping, and over-counts a
+  slot that was emptied and re-logged (see the `first_in_slot` caveat in the README).
+
+## F8 Picker abandonment -- `cookbook/09_picker_abandonment.sql`
+
+- Type: Funnel exploration, **open funnel**, breakdown `entry`: `exercise_picker_opened` -> `exercise_added`.
+- Limitation: Explore cannot pin the add to the **same `entry`** as the open, cannot apply the 30-minute bound with
+  "next open supersedes", has no maturity rule, and ignores `exercise_replaced` completions.
+
+## F9 Prefill and progression -- `cookbook/10_prefill_and_progression.sql`
+
+- Type: Free-form. Rows = `input`, then a second table with rows = `vs_last_time`; metric = event count of `set_logged`.
+- Limitation: Explore shows counts, not shares of all sets; divide by the total by hand. Pre-change sets show as `(not set)`.
+
+## F10 Workout size -- `cookbook/11_workout_size.sql`
+
+- Cookbook only: Explore cannot bucket the integer `set_count` (integers are measures, never filters) into
+  empty / 1-9 / 10-19 / 20+.
+
+## F11 Side-door usage -- `cookbook/12_side_door_usage.sql`
+
+- Type: Free-form. Rows = `entry`; metrics = event count and total users of `exercise_added`.
+- Limitation: pre-change adds show as `(not set)` rather than the cookbook's `unknown` row; the metric is the same.
+
+## F12 Rest orphans -- `cookbook/13_rest_orphans.sql`
+
+- Cookbook only: Explore cannot pair a `rest_timer_started` with a later `rest_timer_ended` by user, bounded by the rest's
+  duration and the next start, nor apply the maturity rule.

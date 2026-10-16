@@ -28,6 +28,45 @@ The event catalog lives in code (`Multiplatform/shared/.../analytics/AnalyticsCa
   record of a slot and logging into it again emits `first_in_slot = "true"` again for the same slot. The cookbook counts
   distinct slots, so it is unaffected; GA4 Explore cannot de-duplicate slots and over-counts that case.
 - **`is_new_user`** is Firebase Auth's account-creation flag, not "AWS row exists". A missing flag reads as `false`.
+- **Day context.** `workout_opened`, `workout_session_start/end`, `exercise_added` and `set_logged` carry `day_kind`
+  {today, past, future} and `days_from_today` (integer, negative = past), computed from the slot's `workout_date` against the
+  **device-local calendar day** at emission time. `day_kind = past` is a backfill; `today` is live logging.
+- **Provenance of a set (`set_logged`).**
+  - `input` says where the numbers came from: `typed` (the user edited the row), `prefill_last_time` (the aligned set of the
+    previous occurrence), `prefill_previous_set` (the previous committed set of this workout), `default` (nothing to seed from),
+    `unchanged` (re-saved a filled row without typing). A swipe-commit of a target row (`action = commit_target`) maps the
+    seed source four ways: own values -> `unchanged`, last session -> `prefill_last_time`, previous set -> `prefill_previous_set`,
+    nothing -> `default`.
+  - `vs_last_time` compares the logged set with the aligned set of the previous occurrence, top value first (weight or
+    distance), then the companion (reps or duration) on a tie: `higher` / `lower` / `same`. `none` when there is no prior set,
+    the prior has no top value, or the logged top value is null (a reps-only prior is not comparable). `0` **is** a value; a null
+    companion on a tied top value reads `same`.
+  - `in_session = "true"` iff a session is running on **that exact slot** (same journal, date and workout number); a running
+    session on another date or on workout 1 while logging workout 2 reads `false`.
+- **Missing field = pre-change client.** Pre-change events lack the new params; there is no sentinel value. Every cookbook query
+  that reads a new param on a pre-existing event uses `COALESCE(param, 'unknown')` and reports the `unknown` bucket as its own
+  row whenever it is non-empty; it is never filtered out.
+- **Rest-timer pairing rule.** Within a process every `rest_timer_started` is paired with exactly one `rest_timer_ended`
+  (`finished`, `stopped`, or `restarted` when a new rest replaces the running one). A rest that outlives its process (the OS kills
+  the app mid-rest) emits no `ended` on either platform. The orphan rate is measured by
+  [`cookbook/13_rest_orphans.sql`](cookbook/13_rest_orphans.sql): mature starts with a `trigger` only (legacy starts without one
+  can never be paired), `ended` looked up through `@observed_through`.
+- **Picker-attribution rule.** An `exercise_added` / `exercise_replaced` completes the latest preceding `exercise_picker_opened`
+  of the same user **and the same `entry`** if it occurs within 30 minutes. An open followed by another open of that entry before
+  any add is abandoned; the successor may lie beyond `@end_date`, which is why cookbook 09 reads `events` for the lookahead. Opens
+  within 30 minutes of the end of `@observed_through` are **immature**: excluded from `opened`/`completed` and counted in the
+  `immature` column. `copy`, `repeat` and `exercise_calendar` adds have no picker open.
+- **Superseded-open rule.** `workout_opened` is emitted once per open request. A calendar pick that outruns the previous read
+  still emits, with `workout_number = 1` and a `session_state` read from the session table.
+- **Removal rule.** `exercise_removed` is emitted once per removed exercise (a superset record emits N) and only on a confirmed
+  tombstone: a row already deleted (sync, a duplicate tap) emits nothing. `exercise_replaced` likewise fires only when the
+  repository reported the write.
+- **Discard-empty rule.** `workout_session_end` with `via = discard_empty` always carries `exercise_count = 0` and `set_count = 0`
+  (literal zeros). For other `via` values the counts are absent when the post-end read failed or the client predates them.
+- **`created_custom` ledger rule.** `found_via = created_custom` iff at least one committed exercise id is in the picker
+  session's created-id ledger (fed only by the create flow); it takes precedence over `browse` / `search`. An exercise that
+  appears through sync during the session is never `created_custom`. `found_via` is absent for `copy`, `repeat`,
+  `exercise_calendar` and replace routes without a picker add.
 
 ## Enabling BigQuery export (EU)
 
@@ -38,7 +77,8 @@ is EU as well; mixing locations breaks joins), enable the **daily** export (stre
 ## Register custom definitions (GA4 Admin > Custom definitions)
 
 - Event-scoped dimensions: `entry`, `first_in_slot`, `is_new_user`, `outcome`, `feature`, `source`, `via`, `action`,
-  `result_type`, `reason`, `method`.
+  `result_type`, `reason`, `method`, `day_kind`, `found_via`, `input`, `vs_last_time`, `in_session`, `session_state`,
+  `was_logged`, `had_sets`, `start_adding_set`, `trigger`, `category`.
 - User-scoped dimensions: `sub_tier`, `quota_state`, `app_build`.
 - The screen is the built-in **Screen name** dimension (`firebase_screen`); do not register it.
 
@@ -111,6 +151,49 @@ PLATFORM: ios|android
 - [x] <item 1 text>
 - [ ] <item 2 text>
 ... one line per checklist item, in order (eleven lines) ...
+RESULT: PASS
+```
+
+The last line is `RESULT: PASS` (every item `[x]`) or `RESULT: FAIL`.
+
+## UG-2 checklist (signed-in DebugView gate for the tracking extension)
+
+Performed by the user on either platform, signed in, in DebugView. Pass = every item observed **exactly once per action**.
+
+1. [ ] `workout_opened{entry=home_start,session_state=none}`
+2. [ ] calendar pick of a past day: `workout_opened{entry=calendar,day_kind=past}` (one each, no extra)
+3. [ ] `exercise_picker_opened{entry=workout_button}`
+4. [ ] add from search: `exercise_added{entry=workout_button,found_via=search,day_kind=past}`
+5. [ ] row-tap into Focus: `focus_opened{entry=row_tap}`
+6. [ ] log without typing: `set_logged{input=prefill_*|default,in_session=false}`
+7. [ ] type and log: `set_logged{input=typed}`
+8. [ ] back on the Workout screen, **prepare the copy source:** make sure an earlier day contains an exercise that was previously
+       logged (has a last occurrence), then copy that day (Workout -> copy picker): `exercise_added{entry=copy,source=copy}` with
+       no `found_via` and no `exercise_picker_opened`
+9. [ ] row-tap the copied exercise: `focus_opened{entry=row_tap}`
+10. [ ] swipe-commit its first target row: `set_logged{action=commit_target,input=prefill_last_time}`
+11. [ ] delete a set: `set_deleted`
+12. [ ] start and stop the rest timer: `rest_timer_started{trigger=manual}`, `rest_timer_ended{outcome=stopped}`
+13. [ ] replace from the Focus menu: `exercise_picker_opened{entry=replace_focus}`, `exercise_replaced{entry=replace_focus}`
+14. [ ] remove the exercise: `exercise_removed{entry=focus,had_sets=true}`
+15. [ ] open the picker, create a custom exercise and commit it: `custom_exercise_created{category=...}`,
+        `exercise_added{found_via=created_custom}`
+16. [ ] exercise details -> Add to workout -> pick a date: `exercise_added{entry=exercise_calendar}` (no `found_via`)
+17. [ ] start a session on an empty day and tap End: `workout_session_end{via=discard_empty,exercise_count=0,set_count=0}` (no sheet)
+18. [ ] start and finish a session with sets on today: `workout_session_start{day_kind=today}`,
+        `workout_session_end{exercise_count,set_count}`
+
+### Evidence file
+
+Record the result in `Multiplatform/docs/analytics/verification/ug2-evidence.md` (written by the user, not by an
+implementer) in exactly this format:
+
+```
+DATE: YYYY-MM-DD
+PLATFORM: ios|android
+- [x] <item 1 text>
+- [ ] <item 2 text>
+... one line per checklist item, in order (eighteen lines) ...
 RESULT: PASS
 ```
 

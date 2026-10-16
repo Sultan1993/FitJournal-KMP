@@ -397,6 +397,245 @@
           ]
         }
       }
+    },
+    "tracking_aug": {
+      "params": {
+        "start_date": "20260820",
+        "end_date": "20260830",
+        "observed_through": "20260831"
+      },
+      "results": {
+        "07_live_vs_backfill": {
+          "columns": [
+            "day_kind",
+            "in_session",
+            "sets",
+            "pct_of_sets"
+          ],
+          "rows": [
+            [
+              "today",
+              "true",
+              2,
+              0.25
+            ],
+            [
+              "today",
+              "false",
+              3,
+              0.375
+            ],
+            [
+              "past",
+              "false",
+              2,
+              0.25
+            ],
+            [
+              "unknown",
+              "unknown",
+              1,
+              0.125
+            ]
+          ]
+        },
+        "08_workout_build_mode": {
+          "columns": [
+            "mode",
+            "workouts"
+          ],
+          "rows": [
+            [
+              "scratch",
+              3
+            ],
+            [
+              "routine",
+              2
+            ]
+          ]
+        },
+        "09_picker_abandonment": {
+          "columns": [
+            "entry",
+            "opened",
+            "completed",
+            "completion_rate",
+            "immature"
+          ],
+          "rows": [
+            [
+              "workout_button",
+              4,
+              2,
+              0.5,
+              0
+            ],
+            [
+              "focus",
+              1,
+              0,
+              0.0,
+              0
+            ],
+            [
+              "replace_workout",
+              1,
+              1,
+              1.0,
+              0
+            ]
+          ]
+        },
+        "10_prefill_and_progression": {
+          "columns": [
+            "dimension",
+            "value",
+            "sets",
+            "pct_of_sets"
+          ],
+          "rows": [
+            [
+              "input",
+              "typed",
+              2,
+              0.25
+            ],
+            [
+              "input",
+              "prefill_last_time",
+              2,
+              0.25
+            ],
+            [
+              "input",
+              "prefill_previous_set",
+              1,
+              0.125
+            ],
+            [
+              "input",
+              "default",
+              1,
+              0.125
+            ],
+            [
+              "input",
+              "unchanged",
+              1,
+              0.125
+            ],
+            [
+              "input",
+              "unknown",
+              1,
+              0.125
+            ],
+            [
+              "vs_last_time",
+              "none",
+              2,
+              0.25
+            ],
+            [
+              "vs_last_time",
+              "same",
+              3,
+              0.375
+            ],
+            [
+              "vs_last_time",
+              "higher",
+              1,
+              0.125
+            ],
+            [
+              "vs_last_time",
+              "lower",
+              1,
+              0.125
+            ],
+            [
+              "vs_last_time",
+              "unknown",
+              1,
+              0.125
+            ]
+          ]
+        },
+        "11_workout_size": {
+          "columns": [
+            "bucket",
+            "sessions"
+          ],
+          "rows": [
+            [
+              "empty",
+              2
+            ],
+            [
+              "1_9",
+              1
+            ],
+            [
+              "unknown",
+              1
+            ]
+          ]
+        },
+        "12_side_door_usage": {
+          "columns": [
+            "entry",
+            "adds",
+            "users"
+          ],
+          "rows": [
+            [
+              "workout_button",
+              2,
+              2
+            ],
+            [
+              "exercise_calendar",
+              1,
+              1
+            ],
+            [
+              "repeat",
+              1,
+              1
+            ],
+            [
+              "copy",
+              2,
+              2
+            ],
+            [
+              "unknown",
+              1,
+              1
+            ]
+          ]
+        },
+        "13_rest_orphans": {
+          "columns": [
+            "platform",
+            "starts",
+            "orphans",
+            "orphan_rate",
+            "immature"
+          ],
+          "rows": [
+            [
+              "IOS",
+              4,
+              1,
+              0.25,
+              0
+            ]
+          ]
+        }
+      }
     }
   }
 }

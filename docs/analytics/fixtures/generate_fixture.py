@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic GA4-export-shaped NDJSON fixture generator (twelve personas).
+"""Deterministic GA4-export-shaped NDJSON fixture generator (seventeen personas).
 
 Usage: python3 -I generate_fixture.py --out <dir>
 
@@ -36,8 +36,13 @@ def midnight_micros(date):
     return delta.days * 86400 * 1_000_000
 
 
+TODAY = ("today", 0)
+AUTO = object()  # sentinel: derive the default
+
+
 class Persona:
-    def __init__(self, n, platform, first_touch, build="release", quota=("free", "metered")):
+    def __init__(self, n, platform, first_touch, build="release", quota=("free", "metered"), legacy=False):
+        self.legacy = legacy  # True: a pre-change client, omits every post-change param
         self.n = n
         self.pseudo = "p%d" % n
         self.uid = "uid-p%d" % n
@@ -84,11 +89,12 @@ class Fixture:
                 raise SystemExit("unsupported type %s" % p["type"])
         return out
 
-    def emit(self, user, date, name, **params):
+    def emit(self, user, date, name, _at=None, **params):
+        """_at: explicit second of the day (overrides the seconds-apart sequencing)."""
         key = (user.pseudo, date)
         step = self.counter.get(key, -1) + 1
         self.counter[key] = step
-        second = self.base.get(key, 12 * 3600) + step
+        second = _at if _at is not None else self.base.get(key, 12 * 3600) + step
         ts = midnight_micros(date) + second * 1_000_000
         row = {
             "event_date": date.strftime("%Y%m%d"),
@@ -125,26 +131,70 @@ class Fixture:
     def slot(self, user, date, number):
         return dict(journal_id=user.journal, workout_date=date.isoformat(), workout_number=number)
 
-    def exercise_added(self, user, date, number=1, source="catalog", count=1, first="true"):
-        self.emit(user, date, "exercise_added", exercise_id="ex-1", count=count, source=source,
-                  first_in_slot=first, **self.slot(user, date, number))
+    def ctx(self, user, day):
+        """day_kind + days_from_today, omitted for a legacy persona."""
+        if user.legacy:
+            return {}
+        return dict(day_kind=day[0], days_from_today=day[1])
 
-    def set_logged(self, user, date, number, index, slot_date=None):
+    def exercise_added(self, user, date, number=1, source="catalog", count=1, first="true", ex="ex-1",
+                       day=TODAY, entry=None, found_via=AUTO, slot_date=None):
         sd = slot_date or date
+        extra = {}
+        if not user.legacy:
+            extra = self.ctx(user, day)
+            extra["entry"] = entry or {"catalog": "workout_button", "copy": "copy", "repeat": "repeat"}[source]
+            extra["found_via"] = ("browse" if source == "catalog" else None) if found_via is AUTO else found_via
+        self.emit(user, date, "exercise_added", exercise_id=ex, count=count, source=source,
+                  first_in_slot=first, **self.slot(user, sd, number), **extra)
+
+    def set_logged(self, user, date, number, index, slot_date=None, ex="ex-1", action="add", day=TODAY,
+                   input="typed", vs="none", in_session="false"):
+        sd = slot_date or date
+        extra = {}
+        if not user.legacy:
+            extra = dict(self.ctx(user, day), input=input, vs_last_time=vs, in_session=in_session)
         self.emit(user, date, "set_logged", record_id="rec-%s-%s-%d" % (user.pseudo, sd.isoformat(), number),
-                  exercise_id="ex-1", set_index=index, result_type="weight_reps", action="add",
-                  **self.slot(user, sd, number))
+                  exercise_id=ex, set_index=index, result_type="weight_reps", action=action,
+                  **self.slot(user, sd, number), **extra)
 
-    def session_end(self, user, date, number, via, slot_date=None):
+    def session_start(self, user, date, number, slot_date=None, day=TODAY):
         sd = slot_date or date
-        self.emit(user, date, "workout_session_end", duration_sec=1800, via=via,
-                  **self.slot(user, sd, number))
+        self.emit(user, date, "workout_session_start", **self.slot(user, sd, number), **self.ctx(user, day))
+
+    def session_end(self, user, date, number, via, slot_date=None, duration=1800, day=TODAY, counts=None):
+        sd = slot_date or date
+        extra = self.ctx(user, day)
+        if counts is not None and not user.legacy:
+            extra.update(exercise_count=counts[0], set_count=counts[1])
+        self.emit(user, date, "workout_session_end", duration_sec=duration, via=via,
+                  **self.slot(user, sd, number), **extra)
+
+    def opened(self, user, date, number, entry, state, slot_date=None, day=TODAY):
+        sd = slot_date or date
+        self.emit(user, date, "workout_opened", entry=entry, session_state=state,
+                  **self.slot(user, sd, number), **self.ctx(user, day))
+
+    def picker(self, user, date, entry, _at=None):
+        self.emit(user, date, "exercise_picker_opened", entry=entry, _at=_at)
+
+    def rest_started(self, user, date, duration, trigger, _at=None):
+        self.emit(user, date, "rest_timer_started", duration_sec=duration,
+                  trigger=None if user.legacy else trigger, _at=_at)
+
+    def rest_ended(self, user, date, outcome, elapsed, duration, trigger, _at=None):
+        self.emit(user, date, "rest_timer_ended", outcome=outcome, elapsed_sec=elapsed, duration_sec=duration,
+                  trigger=trigger, _at=_at)
 
     def workout_day(self, user, date, number=1, sets=1, session=False, source="catalog"):
         self.screen(user, date, "home")
         self.screen(user, date, "workout")
+        if not user.legacy:
+            self.opened(user, date, number, "home_start", "none")
         if session:
-            self.emit(user, date, "workout_session_start", **self.slot(user, date, number))
+            self.session_start(user, date, number)
+        if source == "catalog" and not user.legacy:
+            self.picker(user, date, "workout_button")
         self.exercise_added(user, date, number, source=source)
         self.screen(user, date, "workout_focus")
         for i in range(sets):
@@ -259,7 +309,7 @@ def build():
     f.workout_day(u, d("10-01"), sets=1)
 
     # p12: cross-midnight sequence
-    u = Persona(12, "ANDROID", OLD)
+    u = Persona(12, "ANDROID", OLD, legacy=True)
     day1, day2 = d("09-13"), d("09-14")
     f.start_at(u, day1, 23 * 3600 + 50 * 60)
     f.start_at(u, day2, 5 * 60)
@@ -270,6 +320,102 @@ def build():
     f.screen(u, day2, "workout_focus")
     f.set_logged(u, day2, 1, 0, slot_date=day1)
     f.session_end(u, day2, 1, "auto", slot_date=day1)
+
+    # ---- August personas: carry the post-change behaviour; the September scenarios never scan them ----
+    PAST = ("past", -3)
+
+    # p13: discard-empty, backfill of a past day, picker abandonment, remove, stopped rest
+    u = Persona(13, "IOS", OLD)
+    day, past = d("08-24"), d("08-21")
+    f.screen(u, day, "home")
+    f.screen(u, day, "workout")
+    f.opened(u, day, 1, "home_start", "none")
+    f.session_start(u, day, 1)
+    f.session_end(u, day, 1, "discard_empty", duration=45, counts=(0, 0))
+    f.opened(u, day, 1, "calendar", "none", slot_date=past, day=PAST)
+    f.picker(u, day, "workout_button")
+    f.exercise_added(u, day, 1, "catalog", 1, "true", day=PAST, entry="workout_button", found_via="search", slot_date=past)
+    f.screen(u, day, "workout_focus")
+    f.emit(u, day, "focus_opened", record_id="rec-p13-2026-08-21-1", exercise_id="ex-1", entry="row_tap",
+           start_adding_set="false", **f.slot(u, past, 1))
+    f.set_logged(u, day, 1, 0, slot_date=past, day=PAST, input="prefill_last_time", vs="same")
+    f.set_logged(u, day, 1, 1, slot_date=past, day=PAST, input="typed", vs="higher")
+    f.emit(u, day, "set_deleted", record_id="rec-p13-2026-08-21-1", exercise_id="ex-1", set_index=1,
+           was_logged="true", **f.slot(u, past, 1))
+    f.emit(u, day, "exercise_removed", record_id="rec-p13-2026-08-21-1", exercise_id="ex-1", had_sets="true",
+           entry="focus", **f.slot(u, past, 1))
+    f.picker(u, day, "focus")
+    f.rest_started(u, day, 90, "manual")
+    f.rest_ended(u, day, "stopped", 40, 90, "manual")
+
+    # p14: repeat, replace, custom exercise, two slots on one day
+    u = Persona(14, "ANDROID", OLD)
+    day = d("08-25")
+    f.screen(u, day, "home")
+    f.screen(u, day, "workout")
+    f.opened(u, day, 1, "home_start", "none")
+    f.session_start(u, day, 1)
+    f.exercise_added(u, day, 1, "repeat", 1, "true")
+    f.picker(u, day, "replace_workout")
+    f.emit(u, day, "exercise_replaced", record_id="rec-p14-2026-08-25-1", exercise_id="ex-1", new_exercise_id="ex-2",
+           entry="replace_workout", found_via="browse", **f.slot(u, day, 1))
+    f.screen(u, day, "workout_focus")
+    f.emit(u, day, "focus_opened", record_id="rec-p14-2026-08-25-1", exercise_id="ex-2", entry="add_set",
+           start_adding_set="true", **f.slot(u, day, 1))
+    f.set_logged(u, day, 1, 0, ex="ex-2", input="default", vs="none", in_session="true")
+    f.set_logged(u, day, 1, 1, ex="ex-2", input="prefill_previous_set", vs="none", in_session="true")
+    f.emit(u, day, "custom_exercise_created", exercise_id="ex-9", result_type="weight_reps", category="chest")
+    f.session_end(u, day, 1, "finish_sheet", counts=(1, 2))
+    f.session_start(u, day, 2)
+    f.exercise_added(u, day, 2, "copy", 2, "true")
+    f.session_end(u, day, 2, "end_button", duration=600, counts=(2, 0))
+
+    # p15: copy + calendar side door, target commits, paired auto rest, abandoned picker
+    u = Persona(15, "IOS", OLD)
+    day = d("08-26")
+    f.screen(u, day, "home")
+    f.screen(u, day, "workout")
+    f.opened(u, day, 1, "home_start", "none")
+    f.picker(u, day, "workout_button")
+    f.exercise_added(u, day, 1, "catalog", 1, "true", ex="ex-1", entry="workout_button", found_via="browse")
+    f.exercise_added(u, day, 1, "copy", 1, "false", ex="ex-2")  # copied from 08-19
+    f.exercise_added(u, day, 1, "catalog", 1, "false", ex="ex-3", entry="exercise_calendar", found_via=None)
+    f.screen(u, day, "workout_focus")
+    f.emit(u, day, "focus_opened", record_id="rec-p15-2026-08-26-1", exercise_id="ex-2", entry="row_tap",
+           start_adding_set="false", **f.slot(u, day, 1))
+    f.set_logged(u, day, 1, 0, ex="ex-2", action="commit_target", input="prefill_last_time", vs="same")
+    f.set_logged(u, day, 1, 1, ex="ex-2", action="update", input="typed", vs="lower")
+    f.set_logged(u, day, 1, 0, ex="ex-2", action="update", input="unchanged", vs="same")
+    f.emit(u, day, "focus_opened", record_id="rec-p15-2026-08-26-1", exercise_id="ex-3", entry="next_exercise",
+           start_adding_set="false", **f.slot(u, day, 1))
+    f.rest_started(u, day, 90, "auto")
+    f.rest_ended(u, day, "finished", 90, 90, "auto")
+    f.picker(u, day, "workout_button")
+
+    # p16: pre-change client, no post-change param anywhere
+    u = Persona(16, "ANDROID", OLD, legacy=True)
+    day = d("08-22")
+    f.screen(u, day, "home")
+    f.screen(u, day, "workout")
+    f.session_start(u, day, 1)
+    f.exercise_added(u, day, 1, "catalog", 1, "true")
+    f.screen(u, day, "workout_focus")
+    f.set_logged(u, day, 1, 0)
+    f.rest_started(u, day, 90, None)
+    f.session_end(u, day, 1, "finish_sheet")
+
+    # p17: day-boundary persona, explicit times (seconds of day)
+    u = Persona(17, "IOS", OLD)
+    late, early = d("08-30"), d("08-31")
+    hms = lambda h, m: h * 3600 + m * 60
+    f.rest_started(u, late, 90, "auto", _at=hms(22, 0))  # never ended: a true orphan
+    f.picker(u, late, "workout_button", _at=hms(23, 50))
+    f.rest_started(u, late, 600, "manual", _at=hms(23, 58))
+    f.picker(u, early, "workout_button", _at=hms(0, 0))
+    f.rest_ended(u, early, "stopped", 300, 600, "manual", _at=hms(0, 3))
+    f.emit(u, early, "exercise_added", _at=hms(0, 5), exercise_id="ex-1", count=1, source="catalog",
+           first_in_slot="true", day_kind="today", days_from_today=0, entry="workout_button", found_via="browse",
+           **f.slot(u, early, 1))
 
     return f
 
