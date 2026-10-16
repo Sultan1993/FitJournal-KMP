@@ -1,0 +1,537 @@
+{
+    "version": 1,
+    "events": [
+        {
+            "name": "sign_in",
+            "meaning": "A sign-in completed (Firebase Auth), once per sign-in, before AWS provisioning.",
+            "funnels": [
+                "F1"
+            ],
+            "params": [
+                {
+                    "name": "method",
+                    "type": "string",
+                    "description": "Identity provider.",
+                    "vocab": [
+                        "apple",
+                        "google"
+                    ]
+                },
+                {
+                    "name": "is_new_user",
+                    "type": "string",
+                    "description": "Firebase Auth's account-creation flag.",
+                    "vocab": [
+                        "true",
+                        "false"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "sign_out",
+            "meaning": "The user logged out.",
+            "funnels": [],
+            "params": []
+        },
+        {
+            "name": "screen_view",
+            "meaning": "A screen became visible (lifecycle STARTED), including returning to it.",
+            "funnels": [
+                "F1",
+                "F3"
+            ],
+            "params": [
+                {
+                    "name": "screen_name",
+                    "type": "string",
+                    "description": "Catalog screen name.",
+                    "vocab": [
+                        "start_login",
+                        "onboarding_units",
+                        "home",
+                        "workout",
+                        "workout_focus",
+                        "workout_finish",
+                        "workout_details",
+                        "workout_list",
+                        "import_workout",
+                        "journals",
+                        "exercises",
+                        "notes",
+                        "measurements",
+                        "settings",
+                        "calculator",
+                        "workout_plans"
+                    ],
+                    "export_name": "firebase_screen"
+                }
+            ]
+        },
+        {
+            "name": "workout_session_start",
+            "meaning": "The user started a workout session (Start).",
+            "funnels": [],
+            "params": [
+                {
+                    "name": "journal_id",
+                    "type": "string",
+                    "description": "Journal uuid (join key)."
+                },
+                {
+                    "name": "workout_date",
+                    "type": "string",
+                    "description": "Calendar day of the workout slot, YYYY-MM-DD (join key)."
+                },
+                {
+                    "name": "workout_number",
+                    "type": "int",
+                    "description": "Workout number within the day, 1-based (join key; measure, never a filter)."
+                }
+            ]
+        },
+        {
+            "name": "workout_session_end",
+            "meaning": "A running workout session ended.",
+            "funnels": [
+                "F3",
+                "F5"
+            ],
+            "params": [
+                {
+                    "name": "journal_id",
+                    "type": "string",
+                    "description": "Journal uuid (join key)."
+                },
+                {
+                    "name": "workout_date",
+                    "type": "string",
+                    "description": "Calendar day of the workout slot, YYYY-MM-DD (join key)."
+                },
+                {
+                    "name": "workout_number",
+                    "type": "int",
+                    "description": "Workout number within the day, 1-based (join key; measure, never a filter)."
+                },
+                {
+                    "name": "duration_sec",
+                    "type": "int",
+                    "description": "Duration in seconds."
+                },
+                {
+                    "name": "via",
+                    "type": "string",
+                    "description": "What ended the session.",
+                    "vocab": [
+                        "finish_sheet",
+                        "end_button",
+                        "auto"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "exercise_added",
+            "meaning": "Exercises were written into a workout slot (one event per write).",
+            "funnels": [
+                "F1",
+                "F3",
+                "F4",
+                "F5"
+            ],
+            "params": [
+                {
+                    "name": "journal_id",
+                    "type": "string",
+                    "description": "Journal uuid (join key)."
+                },
+                {
+                    "name": "workout_date",
+                    "type": "string",
+                    "description": "Calendar day of the workout slot, YYYY-MM-DD (join key)."
+                },
+                {
+                    "name": "workout_number",
+                    "type": "int",
+                    "description": "Workout number within the day, 1-based (join key; measure, never a filter)."
+                },
+                {
+                    "name": "exercise_id",
+                    "type": "string",
+                    "description": "Uuid of the first exercise added (join key)."
+                },
+                {
+                    "name": "count",
+                    "type": "int",
+                    "description": "Number of exercises added by this write."
+                },
+                {
+                    "name": "source",
+                    "type": "string",
+                    "description": "Where the exercises came from.",
+                    "vocab": [
+                        "catalog",
+                        "copy",
+                        "repeat"
+                    ]
+                },
+                {
+                    "name": "first_in_slot",
+                    "type": "string",
+                    "description": "The slot held no live record before this write (re-logging a fully deleted slot repeats it).",
+                    "vocab": [
+                        "true",
+                        "false"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "set_logged",
+            "meaning": "A set was written (added or updated) after the write succeeded.",
+            "funnels": [
+                "F3",
+                "F5"
+            ],
+            "params": [
+                {
+                    "name": "journal_id",
+                    "type": "string",
+                    "description": "Journal uuid (join key)."
+                },
+                {
+                    "name": "workout_date",
+                    "type": "string",
+                    "description": "Calendar day of the workout slot, YYYY-MM-DD (join key)."
+                },
+                {
+                    "name": "workout_number",
+                    "type": "int",
+                    "description": "Workout number within the day, 1-based (join key; measure, never a filter)."
+                },
+                {
+                    "name": "record_id",
+                    "type": "string",
+                    "description": "Workout record uuid (join key)."
+                },
+                {
+                    "name": "exercise_id",
+                    "type": "string",
+                    "description": "Exercise uuid (join key)."
+                },
+                {
+                    "name": "set_index",
+                    "type": "int",
+                    "description": "Position of the set within the exercise, 0-based."
+                },
+                {
+                    "name": "result_type",
+                    "type": "string",
+                    "description": "Measurement kind of the set.",
+                    "vocab": [
+                        "weight_reps",
+                        "distance_duration"
+                    ]
+                },
+                {
+                    "name": "action",
+                    "type": "string",
+                    "description": "Whether the set was added or edited.",
+                    "vocab": [
+                        "add",
+                        "update"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "workout_deleted",
+            "meaning": "A whole workout slot was deleted.",
+            "funnels": [],
+            "params": [
+                {
+                    "name": "journal_id",
+                    "type": "string",
+                    "description": "Journal uuid (join key)."
+                },
+                {
+                    "name": "workout_date",
+                    "type": "string",
+                    "description": "Calendar day of the workout slot, YYYY-MM-DD (join key)."
+                },
+                {
+                    "name": "workout_number",
+                    "type": "int",
+                    "description": "Workout number within the day, 1-based (join key; measure, never a filter)."
+                }
+            ]
+        },
+        {
+            "name": "paywall_requested",
+            "meaning": "A native entry point asked Superwall for the quota paywall.",
+            "funnels": [
+                "F2"
+            ],
+            "params": [
+                {
+                    "name": "entry",
+                    "type": "string",
+                    "description": "Where the paywall was asked for; card vs gate derives from the value.",
+                    "vocab": [
+                        "home_card",
+                        "list_card",
+                        "workout_screen",
+                        "import",
+                        "repeat",
+                        "add_exercise",
+                        "exercise_calendar"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "paywall_shown",
+            "meaning": "Superwall presented the paywall.",
+            "funnels": [
+                "F2"
+            ],
+            "params": [
+                {
+                    "name": "entry",
+                    "type": "string",
+                    "description": "Where the paywall was asked for; card vs gate derives from the value.",
+                    "vocab": [
+                        "home_card",
+                        "list_card",
+                        "workout_screen",
+                        "import",
+                        "repeat",
+                        "add_exercise",
+                        "exercise_calendar"
+                    ]
+                },
+                {
+                    "name": "placement",
+                    "type": "string",
+                    "description": "Superwall paywall identifier that was presented."
+                }
+            ]
+        },
+        {
+            "name": "paywall_skipped",
+            "meaning": "Superwall decided not to present a paywall for the request.",
+            "funnels": [],
+            "params": [
+                {
+                    "name": "entry",
+                    "type": "string",
+                    "description": "Where the paywall was asked for; card vs gate derives from the value.",
+                    "vocab": [
+                        "home_card",
+                        "list_card",
+                        "workout_screen",
+                        "import",
+                        "repeat",
+                        "add_exercise",
+                        "exercise_calendar"
+                    ]
+                },
+                {
+                    "name": "reason",
+                    "type": "string",
+                    "description": "Superwall skip reason (enum case name)."
+                }
+            ]
+        },
+        {
+            "name": "purchase_result",
+            "meaning": "A purchase or restore finished (Qonversion result).",
+            "funnels": [
+                "F2"
+            ],
+            "params": [
+                {
+                    "name": "outcome",
+                    "type": "string",
+                    "description": "How it ended.",
+                    "vocab": [
+                        "purchased",
+                        "cancelled",
+                        "failed",
+                        "restored",
+                        "restore_failed"
+                    ]
+                },
+                {
+                    "name": "product_id",
+                    "type": "string",
+                    "description": "Store product id; absent on restore."
+                },
+                {
+                    "name": "entry",
+                    "type": "string",
+                    "description": "Entry of the paywall on screen at purchase time; absent when none was presented.",
+                    "vocab": [
+                        "home_card",
+                        "list_card",
+                        "workout_screen",
+                        "import",
+                        "repeat",
+                        "add_exercise",
+                        "exercise_calendar"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "rest_timer_started",
+            "meaning": "A rest timer was started.",
+            "funnels": [
+                "F5"
+            ],
+            "params": [
+                {
+                    "name": "duration_sec",
+                    "type": "int",
+                    "description": "Duration in seconds."
+                }
+            ]
+        },
+        {
+            "name": "feature_used",
+            "meaning": "The user opened or used one of the tracked features.",
+            "funnels": [
+                "F5"
+            ],
+            "params": [
+                {
+                    "name": "feature",
+                    "type": "string",
+                    "description": "Which feature.",
+                    "vocab": [
+                        "one_rm_calculator",
+                        "focus_history",
+                        "superset",
+                        "share_workout",
+                        "workout_summary",
+                        "exercise_note",
+                        "calendar",
+                        "copy_workout",
+                        "repeat_workout"
+                    ]
+                }
+            ]
+        }
+    ],
+    "screens": [
+        {
+            "name": "start_login",
+            "instrumented": true
+        },
+        {
+            "name": "onboarding_units",
+            "instrumented": true
+        },
+        {
+            "name": "home",
+            "instrumented": true
+        },
+        {
+            "name": "workout",
+            "instrumented": true
+        },
+        {
+            "name": "workout_focus",
+            "instrumented": true
+        },
+        {
+            "name": "workout_finish",
+            "instrumented": true
+        },
+        {
+            "name": "workout_details",
+            "instrumented": true
+        },
+        {
+            "name": "workout_list",
+            "instrumented": true
+        },
+        {
+            "name": "import_workout",
+            "instrumented": true
+        },
+        {
+            "name": "journals",
+            "instrumented": false
+        },
+        {
+            "name": "exercises",
+            "instrumented": false
+        },
+        {
+            "name": "notes",
+            "instrumented": false
+        },
+        {
+            "name": "measurements",
+            "instrumented": false
+        },
+        {
+            "name": "settings",
+            "instrumented": false
+        },
+        {
+            "name": "calculator",
+            "instrumented": false
+        },
+        {
+            "name": "workout_plans",
+            "instrumented": false
+        }
+    ],
+    "user_properties": [
+        {
+            "name": "sub_tier",
+            "scope": "account",
+            "description": "Subscription tier: entitled now, lapsed (subscribed before, not now), free (never subscribed), or unknown (not resolved yet). Trial and paid are not distinguished.",
+            "vocab": [
+                "entitled",
+                "lapsed",
+                "free",
+                "unknown"
+            ]
+        },
+        {
+            "name": "quota_state",
+            "scope": "account",
+            "description": "Free-workout meter: unlimited (not metered), metered (free workouts left), exhausted (none left), lapsed (former subscriber, no allowance).",
+            "vocab": [
+                "unlimited",
+                "metered",
+                "exhausted",
+                "lapsed"
+            ]
+        },
+        {
+            "name": "workouts_used",
+            "scope": "account",
+            "description": "Workouts counted by the meter, as a decimal string; the whole library when lapsed; unset when unlimited."
+        },
+        {
+            "name": "app_build",
+            "scope": "process",
+            "description": "Build flavour of the install. Every cookbook query excludes debug.",
+            "vocab": [
+                "debug",
+                "release"
+            ]
+        }
+    ],
+    "limits": {
+        "event_name_max": 40,
+        "params_per_event_max": 25,
+        "param_value_max": 100,
+        "user_property_name_max": 24,
+        "user_property_value_max": 36
+    }
+}
