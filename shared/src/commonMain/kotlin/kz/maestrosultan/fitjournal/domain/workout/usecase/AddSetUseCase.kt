@@ -39,7 +39,7 @@ class AddSetUseCase(
             topValue = topValue ?: 0.0,
             bottomValue = bottomValue ?: 0,
         )
-        recordRepository.addSet(
+        val inserted = recordRepository.addSet(
             userId = userId,
             journalId = journalId,
             workoutExerciseId = exercise.id,
@@ -49,6 +49,8 @@ class AddSetUseCase(
             duration = fields.duration,
         )
         syncTrigger.requestTick(SyncReason.PostWrite.WorkoutRecord)
+        // The exercise may be gone (nothing written): that is not a logged set.
+        if (!inserted) return
         tracker.track(
             AnalyticsEvent.SetLogged(
                 journalId = journalId,

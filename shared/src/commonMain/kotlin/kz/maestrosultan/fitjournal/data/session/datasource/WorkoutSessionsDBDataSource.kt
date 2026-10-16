@@ -116,16 +116,29 @@ class WorkoutSessionsDBDataSource(
         date: String,
         workoutNumber: Int,
         now: Instant,
-    ): DBWorkoutSessionObject = withContext(Dispatchers.IO) {
+    ): DBWorkoutSessionObject = startSessionTracked(uuid, userId, journalId, date, workoutNumber, now).first
+
+    /**
+     * [startSession] plus whether a row was actually written (created or revived):
+     * `false` for the two idempotent returns (page already live, or another workout running).
+     */
+    suspend fun startSessionTracked(
+        uuid: String,
+        userId: String,
+        journalId: String,
+        date: String,
+        workoutNumber: Int,
+        now: Instant,
+    ): Pair<DBWorkoutSessionObject, Boolean> = withContext(Dispatchers.IO) {
         val nowText = now.toStoredString()
         val workoutNumberLong = workoutNumber.toLong()
         dao.transactionWithResult {
             val existing = dao.getSessionByWorkoutNumber(userId, journalId, date, workoutNumberLong)
                 .executeAsOneOrNull()
-            if (existing != null) return@transactionWithResult existing.map()
+            if (existing != null) return@transactionWithResult existing.map() to false
 
             val running = dao.getRunningSession(userId).executeAsOneOrNull()
-            if (running != null) return@transactionWithResult running.map()
+            if (running != null) return@transactionWithResult running.map() to false
 
             val tombstoned = dao.getSessionUuidByPage(userId, journalId, date, workoutNumberLong)
                 .executeAsOneOrNull()
@@ -150,7 +163,7 @@ class WorkoutSessionsDBDataSource(
                 uuid
             }
             // Read-your-writes inside the same transaction/connection.
-            dao.getSessionById(liveUuid).executeAsOne().map()
+            dao.getSessionById(liveUuid).executeAsOne().map() to true
         }
     }
 

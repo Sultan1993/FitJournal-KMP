@@ -42,7 +42,7 @@ class StartWorkoutUseCase(
         date: LocalDate,
         workoutNumber: Int,
     ): WorkoutSession {
-        val session = sessions.startSession(userId, journalId, date, workoutNumber)
+        val (session, created) = sessions.startSessionTracked(userId, journalId, date, workoutNumber)
         // Fire the post-write tick even though sessions have no AWS sync leg yet
         // (deferred): it's the offline-first contract, harmless now (nothing to
         // drain), and forward-compatible for when session sync lands.
@@ -50,9 +50,13 @@ class StartWorkoutUseCase(
         // After the write succeeded (a throw above skips this). The returned session
         // is the authority for the slot: when one was already running this is that
         // session, and the event names the slot actually running.
-        tracker.track(
-            AnalyticsEvent.WorkoutSessionStart(session.journalId, session.date, session.workoutNumber),
-        )
+        // Only when a session was created/revived: an idempotent repeat or a start blocked by
+        // another running workout wrote nothing, so it is not a start.
+        if (created) {
+            tracker.track(
+                AnalyticsEvent.WorkoutSessionStart(session.journalId, session.date, session.workoutNumber),
+            )
+        }
         return session
     }
 }

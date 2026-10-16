@@ -1,7 +1,7 @@
 /*
 F5 Feature adoption: among users with at least one set_logged in the window, the share who used each feature.
 rest_timer = rest_timer_started; one_rm_calculator/superset/share_workout = feature_used.feature;
-copy_workout/repeat_workout = exercise_added.source; finished_session = workout_session_end.
+copy_workout/repeat_workout = exercise_added.source ONLY (feature_used copy/repeat_workout fire when a picker opens, so a cancelled picker must not count); finished_session = workout_session_end.
 Params: @start_date/@end_date (entry window, YYYYMMDD), @observed_through (>= @end_date; unused here, reads window_events only).
 Output: feature, users, pct_of_loggers FLOAT64.
 */
@@ -25,7 +25,9 @@ used AS (
   SELECT DISTINCT user_id,
     CASE
       WHEN event_name = 'rest_timer_started' THEN 'rest_timer'
-      WHEN event_name = 'feature_used' THEN (SELECT MAX(IF(p.key = 'feature', p.value.string_value, NULL)) FROM UNNEST(event_params) p)
+      WHEN event_name = 'feature_used'
+        AND (SELECT MAX(IF(p.key = 'feature', p.value.string_value, NULL)) FROM UNNEST(event_params) p) NOT IN ('copy_workout', 'repeat_workout')
+        THEN (SELECT MAX(IF(p.key = 'feature', p.value.string_value, NULL)) FROM UNNEST(event_params) p)
       WHEN event_name = 'exercise_added' AND (SELECT MAX(IF(p.key = 'source', p.value.string_value, NULL)) FROM UNNEST(event_params) p) = 'copy' THEN 'copy_workout'
       WHEN event_name = 'exercise_added' AND (SELECT MAX(IF(p.key = 'source', p.value.string_value, NULL)) FROM UNNEST(event_params) p) = 'repeat' THEN 'repeat_workout'
       WHEN event_name = 'workout_session_end' THEN 'finished_session'

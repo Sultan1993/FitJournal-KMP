@@ -101,7 +101,7 @@ class AnalyticsEmissionTest {
             override suspend fun addSet(
                 userId: String, journalId: String, workoutExerciseId: String,
                 weight: Double?, reps: Int?, distance: Double?, duration: Int?,
-            ): Unit = throw IllegalStateException("disk full")
+            ): Boolean = throw IllegalStateException("disk full")
         }
         assertFailsWith<IllegalStateException> {
             AddSetUseCase(failingRepo, sync, tracker)(USER, JOURNAL, exercise, 50.0, 8, record.id, record.workoutNumber)
@@ -238,6 +238,35 @@ class AnalyticsEmissionTest {
         }
         importInto(failingWrite, LocalDate(2026, 5, 22), expectDismiss = false)
         assertTrue(tracker.events.isEmpty(), "a failed import must not emit")
+    }
+
+    @Test
+    fun setLogged_missingExercise_emitsNothing(): Unit = runBlocking {
+        val exerciseId = seedExercise()
+        repo.addExercisesToDate(USER, JOURNAL, DATE, 2, listOf(exerciseId))
+        val record = repo.getRecordsByDate(USER, JOURNAL, DATE, includeLastOccurrence = false).single()
+        val gone = record.exercises.single().copy(id = "no-such-workout-exercise")
+
+        AddSetUseCase(repo, sync, tracker)(USER, JOURNAL, gone, 50.0, 8, record.id, record.workoutNumber)
+
+        assertTrue(tracker.events.isEmpty(), "addSet wrote nothing, so no set_logged")
+    }
+
+    @Test
+    fun sessionStart_emitsOnlyWhenASessionWasWritten(): Unit = runBlocking {
+        val sessions = DefaultWorkoutSessionRepository(sessionsDB, fixedClock(Instant.parse("2026-05-10T10:00:00Z")))
+        val start = StartWorkoutUseCase(sessions, sync, tracker)
+
+        start(USER, JOURNAL, DATE, 1)
+        assertEquals(listOf<AnalyticsEvent>(AnalyticsEvent.WorkoutSessionStart(JOURNAL, DATE, 1)), tracker.events.toList())
+
+        // Same slot again: idempotent return, no second event.
+        start(USER, JOURNAL, DATE, 1)
+        assertEquals(1, tracker.events.size, "a repeated start of the same slot must not emit")
+
+        // Another slot while the first is still running: blocked, nothing written, no event.
+        start(USER, JOURNAL, DATE, 2)
+        assertEquals(1, tracker.events.size, "a start blocked by a running workout must not emit")
     }
 
     // ── session start / end ──────────────────────────────────────────────

@@ -24,3 +24,9 @@
 - [Important] fixed — iOS delivery gate grep broke on multiline log records; ndjson log stream
 - [Important] fixed — first_in_slot not a durable distinct-workout signal; exactness claim removed, delete/re-log fixture
 - [Important] fixed — F3 open funnel mismeasured sequence; closed funnel + cross-midnight fixture
+
+## code · round 1 · 2026-10-16 · 365s
+- [Critical] fixed — F5 counted cancelled copy/repeat pickers (feature_used on open) as completed usage
+- [Important] fixed — Android finish sheet: two WorkoutFinishSheet call sites (loading vs loaded) → duplicate workout_finish screen_view
+- [Critical] fixed — set_logged emitted when DefaultRecordRepository.addSet silently skipped a missing exercise
+- [Important] fixed — workout_session_start emitted when startSession returned an existing/running session (double tap)

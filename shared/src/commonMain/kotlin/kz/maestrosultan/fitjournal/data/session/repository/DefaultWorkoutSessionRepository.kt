@@ -11,6 +11,7 @@ import kz.maestrosultan.fitjournal.data.session.datasource.WorkoutSessionsDBData
 import kz.maestrosultan.fitjournal.data.session.entity.toDomain
 import kz.maestrosultan.fitjournal.domain.identifier.randomUuid
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSession
+import kz.maestrosultan.fitjournal.domain.workout.StartedSession
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSessionRepository
 
 /**
@@ -125,6 +126,23 @@ class DefaultWorkoutSessionRepository(
         workoutNumber = workoutNumber,
         now = clock.now(),
     ).toDomain()
+
+    override suspend fun startSessionTracked(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+        workoutNumber: Int,
+    ): StartedSession {
+        val (row, created) = sessionsDB.startSessionTracked(
+            uuid = randomUuid(),
+            userId = userId,
+            journalId = journalId,
+            date = date.toString(),
+            workoutNumber = workoutNumber,
+            now = clock.now(),
+        )
+        return StartedSession(row.toDomain(), created)
+    }
 
     override suspend fun endSession(userId: String, endedAt: Instant?): WorkoutSession? =
         sessionsDB.endRunningSession(userId, endedAt ?: clock.now())?.toDomain()

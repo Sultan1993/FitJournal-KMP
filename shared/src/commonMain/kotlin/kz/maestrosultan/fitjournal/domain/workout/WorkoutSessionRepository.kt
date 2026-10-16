@@ -4,6 +4,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
 
+/**
+ * [startSessionTracked]'s result: the session plus whether this call wrote it
+ * ([created] = inserted or revived; false = an existing/blocking session was returned unchanged).
+ */
+data class StartedSession(val session: WorkoutSession, val created: Boolean)
+
 /** 100% local (offline-first contract): no AWS imports, no network. */
 interface WorkoutSessionRepository {
     /** The session timing one page (userId, journalId, date, workoutNumber), or null. */
@@ -61,6 +67,18 @@ interface WorkoutSessionRepository {
         date: LocalDate,
         workoutNumber: Int,
     ): WorkoutSession
+
+    /**
+     * Same contract as [startSession], but reports whether the call actually
+     * wrote a session. Used by StartWorkoutUseCase so analytics fire only on a
+     * real start.
+     */
+    suspend fun startSessionTracked(
+        userId: String,
+        journalId: String,
+        date: LocalDate,
+        workoutNumber: Int,
+    ): StartedSession
 
     /**
      * Ends the user's running session; returns the finished session, or null if

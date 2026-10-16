@@ -975,8 +975,8 @@ class DefaultRecordRepository(
         reps: Int?,
         distance: Double?,
         duration: Int?,
-    ) {
-        val tree = findTreeContainingExercise(userId, journalId, workoutExerciseId) ?: return
+    ): Boolean {
+        val tree = findTreeContainingExercise(userId, journalId, workoutExerciseId) ?: return false
         val updatedExercises = tree.exercises.map { exWithSets ->
             if (exWithSets.exercise.uuid != workoutExerciseId) return@map exWithSets
             val newSet = DBWorkoutSetObject(
@@ -997,6 +997,7 @@ class DefaultRecordRepository(
                 exercises = updatedExercises,
             ),
         )
+        return true
     }
 
     override suspend fun updateSet(

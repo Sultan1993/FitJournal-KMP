@@ -177,6 +177,9 @@ def build():
     f.emit(u, d("09-01"), "feature_used", feature="one_rm_calculator")
     f.workout_day(u, d("09-04"), sets=2, session=True)
     f.workout_day(u, d("09-08"), sets=2)
+    # cancelled pickers: opened (feature_used) but nothing copied/repeated; must NOT count for F5
+    f.emit(u, d("09-08"), "feature_used", feature="copy_workout")
+    f.emit(u, d("09-08"), "feature_used", feature="repeat_workout")
     f.workout_day(u, d("09-15"), sets=1)
 
     # p2

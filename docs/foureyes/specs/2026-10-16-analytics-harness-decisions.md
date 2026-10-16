@@ -63,3 +63,8 @@ Nothing is pushed or merged; all work is on `feature/analytics` in iOS / Android
   - Fixed in ae4f09ae: tag the process only after collection is enabled.
   - The gate's `monkey` launch also failed (exit -5, "no activities"), so it now uses `am start` with the resolved launcher activity.
   - After the fix: `Setting user property: app_build, debug` and then `Logging event: origin=app,name=screen_view(_vs) … ga_screen(_sn)=start_login`. PASS.
+- Sol code review round 1 (365s): 2 Critical, 2 Important, all checked and found true; all would have inflated numbers. A fix implementer has them.
+  - F5 counted cancelled copy/repeat pickers.
+  - The Android finish sheet logged its screen view twice.
+  - `set_logged` fired on a write the repository silently skipped. Fix: `addSet` now returns whether a row was inserted.
+  - `workout_session_start` fired on an idempotent re-start. Fix: emit only on create/revive.

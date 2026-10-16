@@ -156,7 +156,7 @@ private class FakeRecordRepository : RecordRepository {
         reps: Int?,
         distance: Double?,
         duration: Int?,
-    ): Unit = unsupported()
+    ): Boolean = unsupported()
     override suspend fun updateSet(
         userId: String,
         journalId: String,

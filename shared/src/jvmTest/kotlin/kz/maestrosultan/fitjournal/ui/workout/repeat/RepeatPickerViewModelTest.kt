@@ -942,7 +942,7 @@ private class FakeRecordRepository : RecordRepository {
         reps: Int?,
         distance: Double?,
         duration: Int?,
-    ): Unit = unsupported()
+    ): Boolean = unsupported()
 
     override suspend fun updateSet(
         userId: String,
@@ -1016,6 +1016,7 @@ private class FakeSessionRepository : WorkoutSessionRepository {
         date: LocalDate,
         workoutNumber: Int,
     ): WorkoutSession = unsupported()
+    override suspend fun startSessionTracked(userId: String, journalId: String, date: LocalDate, workoutNumber: Int): kz.maestrosultan.fitjournal.domain.workout.StartedSession = unsupported()
 
     override suspend fun endSession(userId: String, endedAt: Instant?): WorkoutSession? = unsupported()
     override suspend fun deleteSession(userId: String, sessionUuid: String): Unit = unsupported()

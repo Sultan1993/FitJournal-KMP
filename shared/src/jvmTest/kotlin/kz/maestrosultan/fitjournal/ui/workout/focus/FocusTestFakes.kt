@@ -271,6 +271,7 @@ class FakeFocusSessionRepository(
     ): Int = unsupported()
 
     override suspend fun startSession(userId: String, journalId: String, date: LocalDate, workoutNumber: Int): WorkoutSession = unsupported()
+    override suspend fun startSessionTracked(userId: String, journalId: String, date: LocalDate, workoutNumber: Int): kz.maestrosultan.fitjournal.domain.workout.StartedSession = unsupported()
     override suspend fun endSession(userId: String, endedAt: Instant?): WorkoutSession? = unsupported()
     override suspend fun deleteSession(userId: String, sessionUuid: String): Unit = unsupported()
     override suspend fun deleteUserSessions(userId: String): Unit = unsupported()
@@ -381,11 +382,11 @@ class RecordingRecordRepository(
         reps: Int?,
         distance: Double?,
         duration: Int?,
-    ) {
+    ): Boolean {
         calls += "addSet($workoutExerciseId,weight=$weight,reps=$reps)"
         addSetGate?.await()
         failNextWrite?.let { failNextWrite = null; throw it }
-        val owner = day.flatMap { it.exercises }.firstOrNull { it.id == workoutExerciseId } ?: return
+        val owner = day.flatMap { it.exercises }.firstOrNull { it.id == workoutExerciseId } ?: return false
         val appended = WorkoutSet(
             id = "added-${nextSetOrdinal++}",
             userId = userId,
@@ -398,6 +399,7 @@ class RecordingRecordRepository(
             resultType = owner.exercise.resultType,
         )
         mutateExercise(workoutExerciseId) { it.copy(sets = it.sets + appended) }
+        return true
     }
 
     override suspend fun updateSet(

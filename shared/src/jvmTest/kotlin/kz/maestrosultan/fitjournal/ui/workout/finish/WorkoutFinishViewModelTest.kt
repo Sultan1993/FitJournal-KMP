@@ -120,6 +120,7 @@ private class FakeSessionRepo(
         date: LocalDate,
         workoutNumber: Int,
     ): WorkoutSession = error("unused")
+    override suspend fun startSessionTracked(userId: String, journalId: String, date: LocalDate, workoutNumber: Int): kz.maestrosultan.fitjournal.domain.workout.StartedSession = error("unused")
 
     override suspend fun deleteSession(userId: String, sessionUuid: String) = error("unused")
 
@@ -235,7 +236,7 @@ private class FakeRecordRepo(var records: List<WorkoutRecord>) : RecordRepositor
         reps: Int?,
         distance: Double?,
         duration: Int?,
-    ) = error("unused")
+    ): Boolean = error("unused")
 
     override suspend fun updateSet(
         userId: String,

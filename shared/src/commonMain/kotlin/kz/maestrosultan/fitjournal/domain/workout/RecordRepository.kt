@@ -372,6 +372,7 @@ interface RecordRepository {
             .forEach { deleteRecord(userId, journalId, it) }
     }
 
+    /** @return true if a set row was inserted; false if the exercise was gone (no write). */
     suspend fun addSet(
         userId: String,
         journalId: String,
@@ -380,7 +381,7 @@ interface RecordRepository {
         reps: Int?,
         distance: Double?,
         duration: Int?,
-    )
+    ): Boolean
 
     /** @return true if the target set existed and was updated; false if it
      *  was already gone (no write is performed in that case). */
