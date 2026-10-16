@@ -24,7 +24,8 @@
       "blockedBy": [
         0,
         1
-      ]
+      ],
+      "status": "completed"
     },
     {
       "id": 3,
@@ -33,7 +34,8 @@
       "blockedBy": [
         0,
         1
-      ]
+      ],
+      "status": "completed"
     },
     {
       "id": 4,
@@ -72,7 +74,8 @@
         2,
         3,
         6
-      ]
+      ],
+      "status": "completed"
     },
     {
       "id": 8,
@@ -80,7 +83,8 @@
       "description": "### Task 9: iOS native delivery gate on the M2 simulator\n\n**Goal:** Prove the iOS sink hands events to Firebase by launching the built app on the M2 simulator in debug/verbose mode and finding the pre-sign-in `screen_view` with `start_login` inside one complete log record.\n\n**Files:** none (verification only)\n\n**Acceptance Criteria:**\n- Observable: the simulator unified log captured for 40 s after launch with `-FIRDebugEnabled -FIRAnalyticsDebugEnabled -FIRAnalyticsVerboseLoggingEnabled`, captured as **`log stream --style ndjson`** so each log record (including its multi-line parameter dump) is one JSON line with newlines escaped. Pass: at least one captured line contains both `screen_view` and `start_login` (the Firebase SDK logs the event name in the header and the screen value in a later parameter line of the same record; ndjson joins them). Fail otherwise (exit 1).\n- Observable: the same capture contains a line matching `app_build.*debug`; pass iff present.\n- Fresh install (`simctl uninstall` first) so the login screen is first; no account required.\n- Runs under the native-build lock; simulator shut down at the end.\n\n**Verify:** `set -o pipefail; L=/private/tmp/claude-501/-Users-sultan-Development-FitJournal/7934b72b-ad0d-4a77-b636-1f122811d1c4/scratchpad/native-build.lock; until mkdir \"$L\" 2>/dev/null; do sleep 15; done; trap 'rmdir \"$L\"' EXIT; cd /Users/sultan/Development/FitJournal/iOS && m2 sh -c 'set -o pipefail; SIM=\"iPhone 17\"; APP=\"$(ls -d \"$HOME\"/Library/Developer/Xcode/DerivedData/FitJournal-*/Build/Products/Debug-iphonesimulator/FitJournal.app | head -1)\"; [ -d \"$APP\" ] || { echo \"no built app\"; exit 2; }; xcrun simctl boot \"$SIM\" 2>/dev/null; xcrun simctl bootstatus \"$SIM\" -b >/dev/null; xcrun simctl uninstall \"$SIM\" kz.maestrosultan.FitJournal 2>/dev/null; xcrun simctl install \"$SIM\" \"$APP\"; LOG=/tmp/fj_ios_analytics.ndjson; xcrun simctl spawn \"$SIM\" log stream --style ndjson --predicate \"subsystem CONTAINS \\\"FirebaseAnalytics\\\" OR eventMessage CONTAINS \\\"Logging event\\\" OR eventMessage CONTAINS \\\"user property\\\"\" > \"$LOG\" 2>&1 & LP=$!; sleep 3; xcrun simctl launch \"$SIM\" kz.maestrosultan.FitJournal -FIRDebugEnabled -FIRAnalyticsDebugEnabled -FIRAnalyticsVerboseLoggingEnabled >/dev/null; sleep 40; kill $LP 2>/dev/null; xcrun simctl shutdown \"$SIM\" >/dev/null 2>&1; grep -c \"Logging event\" \"$LOG\" || true; grep screen_view \"$LOG\" | grep -q start_login && grep -Eq \"app_build.*debug\" \"$LOG\"; rc=$?; echo \"ios delivery rc=$rc\"; exit \"$rc\"'; rc=$?; echo \"task9 rc=$rc\"; exit \"$rc\"`\n\n```json:metadata\n{\"files\": [], \"modelTier\": \"mechanical\", \"verifyCommand\": \"set -o pipefail; L=/private/tmp/claude-501/-Users-sultan-Development-FitJournal/7934b72b-ad0d-4a77-b636-1f122811d1c4/scratchpad/native-build.lock; until mkdir \\\"$L\\\" 2>/dev/null; do sleep 15; done; trap 'rmdir \\\"$L\\\"' EXIT; cd /Users/sultan/Development/FitJournal/iOS && m2 sh -c 'set -o pipefail; SIM=\\\"iPhone 17\\\"; APP=\\\"$(ls -d \\\"$HOME\\\"/Library/Developer/Xcode/DerivedData/FitJournal-*/Build/Products/Debug-iphonesimulator/FitJournal.app | head -1)\\\"; [ -d \\\"$APP\\\" ] || { echo \\\"no built app\\\"; exit 2; }; xcrun simctl boot \\\"$SIM\\\" 2>/dev/null; xcrun simctl bootstatus \\\"$SIM\\\" -b >/dev/null; xcrun simctl uninstall \\\"$SIM\\\" kz.maestrosultan.FitJournal 2>/dev/null; xcrun simctl install \\\"$SIM\\\" \\\"$APP\\\"; LOG=/tmp/fj_ios_analytics.ndjson; xcrun simctl spawn \\\"$SIM\\\" log stream --style ndjson --predicate \\\"subsystem CONTAINS \\\\\\\"FirebaseAnalytics\\\\\\\" OR eventMessage CONTAINS \\\\\\\"Logging event\\\\\\\" OR eventMessage CONTAINS \\\\\\\"user property\\\\\\\"\\\" > \\\"$LOG\\\" 2>&1 & LP=$!; sleep 3; xcrun simctl launch \\\"$SIM\\\" kz.maestrosultan.FitJournal -FIRDebugEnabled -FIRAnalyticsDebugEnabled -FIRAnalyticsVerboseLoggingEnabled >/dev/null; sleep 40; kill $LP 2>/dev/null; xcrun simctl shutdown \\\"$SIM\\\" >/dev/null 2>&1; grep -c \\\"Logging event\\\" \\\"$LOG\\\" || true; grep screen_view \\\"$LOG\\\" | grep -q start_login && grep -Eq \\\"app_build.*debug\\\" \\\"$LOG\\\"; rc=$?; echo \\\"ios delivery rc=$rc\\\"; exit \\\"$rc\\\"'; rc=$?; echo \\\"task9 rc=$rc\\\"; exit \\\"$rc\\\"\", \"acceptanceCriteria\": [\"Simulator log captured 40 s as ndjson (one complete record per line) contains a line with both screen_view and start_login; exit 1 otherwise\", \"Captured log contains a line matching app_build.*debug\", \"Fresh install so login is the first screen; no account needed\", \"Runs under the native-build lock and shuts the simulator down\"], \"blockedBy\": [8]}\n```",
       "blockedBy": [
         7
-      ]
+      ],
+      "status": "completed"
     },
     {
       "id": 9,
@@ -88,7 +92,8 @@
       "description": "### Task 10: Android native delivery gate on the M2 emulator\n\n**Goal:** Prove the Android sink hands events to Firebase by running the debug APK on the M2 emulator (AVD `vibetrip_api36` or the first listed) with DebugView + verbose `FA` logging and finding the pre-sign-in `screen_view` with `start_login` on one `Logging event` logcat line.\n\n**Files:** none (verification only)\n\n**Acceptance Criteria:**\n- Observable: `adb logcat -d -s FA FA-SVC` dumped 40 s after launch, with `log.tag.FA=VERBOSE`, `log.tag.FA-SVC=VERBOSE` and `debug.firebase.analytics.app=kz.maestrosultan.fitjournal` set before install/launch. Pass: at least one `Logging event` line contains both `screen_view` and `start_login` (Android FA prints the whole Bundle on one line; the key may appear as `firebase_screen(_sn)`, which is why only the value is matched). Fail otherwise.\n- Observable: the dump contains a line matching `app_build.*debug`.\n- APK installed via `./gradlew :app:installDebug` and launched via `monkey -p kz.maestrosultan.fitjournal -c android.intent.category.LAUNCHER 1`; the emulator is the first AVD from `emulator -list-avds` (`vibetrip_api36` exists on the M2) and is killed at the end.\n- Runs under the lock, after Task 9 shut the simulator down.\n\n**Verify:** `set -o pipefail; L=/private/tmp/claude-501/-Users-sultan-Development-FitJournal/7934b72b-ad0d-4a77-b636-1f122811d1c4/scratchpad/native-build.lock; until mkdir \"$L\" 2>/dev/null; do sleep 15; done; trap 'rmdir \"$L\"' EXIT; cd /Users/sultan/Development/FitJournal/Android && m2 sh -c 'set -o pipefail; SDK=\"${ANDROID_HOME:-$HOME/Library/Android/sdk}\"; EMU=\"$SDK/emulator/emulator\"; ADB=\"$SDK/platform-tools/adb\"; AVD=\"$(\"$EMU\" -list-avds | head -1)\"; [ -n \"$AVD\" ] || { echo \"no AVD\"; exit 2; }; nohup \"$EMU\" -avd \"$AVD\" -no-window -no-audio -no-boot-anim >/dev/null 2>&1 & \"$ADB\" wait-for-device; until [ \"$(\"$ADB\" shell getprop sys.boot_completed | tr -d \"\\r\")\" = \"1\" ]; do sleep 3; done; \"$ADB\" shell setprop log.tag.FA VERBOSE; \"$ADB\" shell setprop log.tag.FA-SVC VERBOSE; \"$ADB\" shell setprop debug.firebase.analytics.app kz.maestrosultan.fitjournal; \"$ADB\" uninstall kz.maestrosultan.fitjournal >/dev/null 2>&1; ./gradlew :app:installDebug -q 2>&1 | tail -5; \"$ADB\" logcat -c; \"$ADB\" shell monkey -p kz.maestrosultan.fitjournal -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; sleep 40; LOG=/tmp/fj_android_analytics.log; \"$ADB\" logcat -d -s FA FA-SVC > \"$LOG\"; \"$ADB\" emu kill >/dev/null 2>&1; grep -c \"Logging event\" \"$LOG\" || true; grep \"Logging event\" \"$LOG\" | grep screen_view | grep -q start_login && grep -Eq \"app_build.*debug\" \"$LOG\"; rc=$?; echo \"android delivery rc=$rc\"; exit \"$rc\"'; rc=$?; echo \"task10 rc=$rc\"; exit \"$rc\"`\n\n```json:metadata\n{\"files\": [], \"modelTier\": \"mechanical\", \"verifyCommand\": \"set -o pipefail; L=/private/tmp/claude-501/-Users-sultan-Development-FitJournal/7934b72b-ad0d-4a77-b636-1f122811d1c4/scratchpad/native-build.lock; until mkdir \\\"$L\\\" 2>/dev/null; do sleep 15; done; trap 'rmdir \\\"$L\\\"' EXIT; cd /Users/sultan/Development/FitJournal/Android && m2 sh -c 'set -o pipefail; SDK=\\\"${ANDROID_HOME:-$HOME/Library/Android/sdk}\\\"; EMU=\\\"$SDK/emulator/emulator\\\"; ADB=\\\"$SDK/platform-tools/adb\\\"; AVD=\\\"$(\\\"$EMU\\\" -list-avds | head -1)\\\"; [ -n \\\"$AVD\\\" ] || { echo \\\"no AVD\\\"; exit 2; }; nohup \\\"$EMU\\\" -avd \\\"$AVD\\\" -no-window -no-audio -no-boot-anim >/dev/null 2>&1 & \\\"$ADB\\\" wait-for-device; until [ \\\"$(\\\"$ADB\\\" shell getprop sys.boot_completed | tr -d \\\"\\\\r\\\")\\\" = \\\"1\\\" ]; do sleep 3; done; \\\"$ADB\\\" shell setprop log.tag.FA VERBOSE; \\\"$ADB\\\" shell setprop log.tag.FA-SVC VERBOSE; \\\"$ADB\\\" shell setprop debug.firebase.analytics.app kz.maestrosultan.fitjournal; \\\"$ADB\\\" uninstall kz.maestrosultan.fitjournal >/dev/null 2>&1; ./gradlew :app:installDebug -q 2>&1 | tail -5; \\\"$ADB\\\" logcat -c; \\\"$ADB\\\" shell monkey -p kz.maestrosultan.fitjournal -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; sleep 40; LOG=/tmp/fj_android_analytics.log; \\\"$ADB\\\" logcat -d -s FA FA-SVC > \\\"$LOG\\\"; \\\"$ADB\\\" emu kill >/dev/null 2>&1; grep -c \\\"Logging event\\\" \\\"$LOG\\\" || true; grep \\\"Logging event\\\" \\\"$LOG\\\" | grep screen_view | grep -q start_login && grep -Eq \\\"app_build.*debug\\\" \\\"$LOG\\\"; rc=$?; echo \\\"android delivery rc=$rc\\\"; exit \\\"$rc\\\"'; rc=$?; echo \\\"task10 rc=$rc\\\"; exit \\\"$rc\\\"\", \"acceptanceCriteria\": [\"logcat -d -s FA FA-SVC (40 s after launch, three setprops before install) contains a Logging event line with both screen_view and start_login; exit 1 otherwise\", \"Dump contains a line matching app_build.*debug\", \"Installed via :app:installDebug, launched via monkey LAUNCHER on the first listed AVD (vibetrip_api36 present); emulator killed at the end\", \"Runs under the lock after Task 9 shut the simulator down\"], \"blockedBy\": [9]}\n```",
       "blockedBy": [
         8
-      ]
+      ],
+      "status": "completed"
     },
     {
       "id": 10,
@@ -108,5 +113,5 @@
       ]
     }
   ],
-  "lastUpdated": "2026-10-16T04:16:12"
+  "lastUpdated": "2026-10-16T04:42:22"
 }

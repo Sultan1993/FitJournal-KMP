@@ -48,3 +48,18 @@ Nothing is pushed or merged; all work is on `feature/analytics` in iOS / Android
 - Task 7 (e4919e9c) created `analytics_fixture` in EU (17 day tables, 30-day expiry) and ran all six cookbook queries × 2 scenarios: **12/12 PASS**. Its one fix: the denominator for 01's step-3 `eligible_users`.
 - My follow-up commit made every 01 row use the same rule: `eligible_users` = users who reached the previous step (mature-only at step 4). Re-run: PASS. Consistent denominators matter because I'll be the one reading these numbers.
 - Task 4 (Android) committed as c4d7b681. Also committed 1c4d4f60, fixing `ConfigurationGateTest` for the new `presentPaywall(entry)` signature; assembleDebug never compiles unit tests, so the implementer couldn't see that break.
+- Task 3 (iOS) committed as f359c43d; review: spec ✅ and Approved; tracking hooks match Android one for one.
+- Accepted deviation, same on both platforms: catalog `exercise_added` is emitted from `DefaultImportRecordRepository.addExercisesToDate` (the real catalog add), not `addRecordsToWorkout` as the spec said. The shared ImportWorkoutViewModel already emits that path as COPY, so emitting there too would double count.
+- Verify-command corrections (environment, not code): xcodebuild needs `-skipPackagePluginValidation -skipMacroValidation` (smithy-swift plugin validation); grep `--include` globs need quoting under zsh. The gate scripts carry both.
+- Found in review, will fix: `paywall_skipped.reason` came through as `noAudienceMatch` on iOS and `NoAudienceMatch` on Android, splitting one value into two. Fix: normalize once in shared `Analytics.paywallSkipped` to lower snake_case (`no_audience_match`), which also matches the fixture's `no_rule_match`.
+- Gate 8 (end to end) PASSED: jvmTest, `events.json` unchanged, iOS BUILD SUCCEEDED, Android assembleDebug + `:feature:configuration` unit-test compile, no legacy references, cookbook 12/12 PASS.
+- Barrier repair, Task 1 (8289c2df): `paywall_skipped.reason` normalized in shared KMP (`skipReasonWire`). Re-reviewed: Approved.
+- Gate 9 (iOS delivery) PASSED once the gate itself was fixed; the app was right all along. The spec's script had three defects:
+  - the bundle is `Fit Journal.app` (with a space), not `FitJournal.app`;
+  - Firebase logs under subsystem `com.google.firebase.analytics`, not one containing "FirebaseAnalytics";
+  - those lines are debug level, so `log stream` needs `--level debug`.
+  - Evidence: `Logging event: origin, name, params: app, screen_view (_vs), { ga_screen (_sn) = start_login … }` and `User property set. Name, value: app_build, debug`. No automatic duplicate screen_view.
+- Gate 10 (Android delivery) **found a real bug**: debug builds dropped `app_build` and the user id ("User property not set since app measurement is disabled"). The installer set them before the background thread enabled collection, so debug sessions would have escaped the `app_build='debug'` filter.
+  - Fixed in ae4f09ae: tag the process only after collection is enabled.
+  - The gate's `monkey` launch also failed (exit -5, "no activities"), so it now uses `am start` with the resolved launcher activity.
+  - After the fix: `Setting user property: app_build, debug` and then `Logging event: origin=app,name=screen_view(_vs) … ga_screen(_sn)=start_login`. PASS.
