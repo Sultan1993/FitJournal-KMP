@@ -60,7 +60,8 @@
       "blockedBy": [
         4,
         5
-      ]
+      ],
+      "status": "completed"
     },
     {
       "id": 7,
@@ -107,5 +108,5 @@
       ]
     }
   ],
-  "lastUpdated": "2026-10-16T04:10:41"
+  "lastUpdated": "2026-10-16T04:16:12"
 }

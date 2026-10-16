@@ -45,3 +45,6 @@ Nothing is pushed or merged; all work is on `feature/analytics` in iOS / Android
   - `feature_used(repeat_workout)` fires when the picker opens, as the spec's Design table says, not when the copy commits. Funnel readers should know it counts opens.
   - The cookbook SQL files open with `/* */` comments because `bq` treats a leading `--` as a flag.
 - Wave 3 dispatched: Task 3 (iOS) and Task 4 (Android) in parallel, with native builds serialized by an mkdir lock. Task 7 (the live BigQuery fixture run) follows.
+- Task 7 (e4919e9c) created `analytics_fixture` in EU (17 day tables, 30-day expiry) and ran all six cookbook queries × 2 scenarios: **12/12 PASS**. Its one fix: the denominator for 01's step-3 `eligible_users`.
+- My follow-up commit made every 01 row use the same rule: `eligible_users` = users who reached the previous step (mature-only at step 4). Re-run: PASS. Consistent denominators matter because I'll be the one reading these numbers.
+- Task 4 (Android) committed as c4d7b681. Also committed 1c4d4f60, fixing `ConfigurationGateTest` for the new `presentPaywall(entry)` signature; assembleDebug never compiles unit tests, so the implementer couldn't see that break.
