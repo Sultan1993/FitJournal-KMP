@@ -331,7 +331,7 @@ internal object EventSpecs {
         meaning = "Superwall decided not to present a paywall for the request.",
         params = listOf(
             ENTRY,
-            ParamSpec("reason", ParamType.STRING, "Superwall skip reason (enum case name)."),
+            ParamSpec("reason", ParamType.STRING, "Superwall skip reason, lower snake_case of the SDK case name (e.g. no_audience_match, holdout)."),
         ),
         funnels = emptyList(),
     )

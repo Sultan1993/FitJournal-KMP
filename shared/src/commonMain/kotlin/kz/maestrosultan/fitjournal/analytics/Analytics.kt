@@ -53,7 +53,8 @@ object Analytics : AnalyticsTracker {
     }
 
     /** Superwall decided not to show one. Nothing was presented, so attribution is untouched. */
-    fun paywallSkipped(entry: PaywallEntry, reason: String) = track(AnalyticsEvent.PaywallSkipped(entry, reason))
+    fun paywallSkipped(entry: PaywallEntry, reason: String) =
+        track(AnalyticsEvent.PaywallSkipped(entry, skipReasonWire(reason)))
 
     fun paywallDismissed() {
         PaywallAttribution.presented = null
@@ -70,3 +71,15 @@ object Analytics : AnalyticsTracker {
         runCatching { block(installed) }
     }
 }
+
+/**
+ * Superwall's skip reason arrives as a case name whose casing differs per SDK
+ * (iOS `noAudienceMatch`, Android `NoAudienceMatch`). Normalize once here to
+ * lower snake_case (`no_audience_match`) so both platforms share one vocabulary.
+ */
+internal fun skipReasonWire(reason: String): String = buildString {
+    reason.forEachIndexed { i, c ->
+        if (c.isUpperCase() && i > 0 && (reason[i - 1].isLowerCase() || reason[i - 1].isDigit())) append('_')
+        append(c.lowercaseChar())
+    }
+}.take(100)

@@ -339,7 +339,7 @@
                 {
                     "name": "reason",
                     "type": "string",
-                    "description": "Superwall skip reason (enum case name)."
+                    "description": "Superwall skip reason, lower snake_case of the SDK case name (e.g. no_audience_match, holdout)."
                 }
             ]
         },

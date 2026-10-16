@@ -330,4 +330,12 @@ class AnalyticsHarnessTest {
         const val USER = "user-1"
         const val SEEDED_AT = "2026-09-01T10:00:00Z"
     }
+
+    @Test
+    fun skipReason_isNormalizedToOneVocabularyAcrossPlatforms() {
+        assertEquals("no_audience_match", skipReasonWire("noAudienceMatch"))     // iOS case name
+        assertEquals("no_audience_match", skipReasonWire("NoAudienceMatch"))     // Android class simpleName
+        assertEquals("no_rule_match", skipReasonWire("no_rule_match"))           // already wire form
+        assertEquals("holdout", skipReasonWire("Holdout"))
+    }
 }
