@@ -195,7 +195,7 @@ private class FakeRecordRepo(var records: List<WorkoutRecord>) : RecordRepositor
         recordId: String,
         targetWorkoutExerciseId: String,
         newExerciseId: String,
-    ) = error("unused")
+    ): Boolean = error("unused")
 
     override suspend fun saveWorkoutExerciseComment(
         userId: String,
@@ -224,7 +224,7 @@ private class FakeRecordRepo(var records: List<WorkoutRecord>) : RecordRepositor
         exercise: WorkoutExercise,
     ): List<WorkoutRecord> = error("unused")
 
-    override suspend fun deleteRecord(userId: String, journalId: String, record: WorkoutRecord) = error("unused")
+    override suspend fun deleteRecord(userId: String, journalId: String, record: WorkoutRecord): Boolean = error("unused")
     override suspend fun deleteRecordsForDate(userId: String, journalId: String, date: LocalDate) = error("unused")
     override suspend fun deleteUserRecords(userId: String) = error("unused")
 

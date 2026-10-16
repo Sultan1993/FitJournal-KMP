@@ -714,9 +714,11 @@ class WorkoutDetailsViewModelTest {
             return emptyList()
         }
 
-        override suspend fun deleteRecord(userId: String, journalId: String, record: WorkoutRecord) {
+        override suspend fun deleteRecord(userId: String, journalId: String, record: WorkoutRecord): Boolean {
+            val existed = records.value.any { it.id == record.id }
             records.value = records.value.filterNot { it.id == record.id }
             changeSignal.update { it + 1 }
+            return existed
         }
 
         // In-memory workout notes keyed by workoutNumber (the screen is one day).
@@ -818,7 +820,7 @@ class WorkoutDetailsViewModelTest {
             recordId: String,
             targetWorkoutExerciseId: String,
             newExerciseId: String,
-        ): Unit = unsupported()
+        ): Boolean = unsupported()
 
         override suspend fun saveWorkoutExerciseComment(
             userId: String,

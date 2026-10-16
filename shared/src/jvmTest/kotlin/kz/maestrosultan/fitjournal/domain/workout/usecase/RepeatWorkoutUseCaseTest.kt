@@ -112,7 +112,7 @@ private class FakeRecordRepository : RecordRepository {
         recordId: String,
         targetWorkoutExerciseId: String,
         newExerciseId: String,
-    ): Unit = unsupported()
+    ): Boolean = unsupported()
     override suspend fun getSetsForExercise(userId: String, journalId: String, exerciseId: String): List<WorkoutSet> = unsupported()
     override suspend fun getExerciseOccurrences(userId: String, journalId: String, exerciseId: String): List<WorkoutExercise> = unsupported()
     override suspend fun getWeightedSetHistoryForExercise(
@@ -145,7 +145,7 @@ private class FakeRecordRepository : RecordRepository {
         record: WorkoutRecord,
         exercise: WorkoutExercise,
     ): List<WorkoutRecord> = unsupported()
-    override suspend fun deleteRecord(userId: String, journalId: String, record: WorkoutRecord): Unit = unsupported()
+    override suspend fun deleteRecord(userId: String, journalId: String, record: WorkoutRecord): Boolean = unsupported()
     override suspend fun deleteRecordsForDate(userId: String, journalId: String, date: LocalDate): Unit = unsupported()
     override suspend fun deleteUserRecords(userId: String): Unit = unsupported()
     override suspend fun addSet(

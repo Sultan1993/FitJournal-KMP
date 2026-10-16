@@ -15,6 +15,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
 
 /**
@@ -74,8 +75,8 @@ class AnalyticsCatalogTest {
         val cases = AnalyticsEvent::class.java.declaredClasses
             .filter { AnalyticsEvent::class.java.isAssignableFrom(it) }
             .toSet()
-        assertEquals(14, cases.size, "the catalog has 14 cases")
-        assertEquals(14, samples.size)
+        assertEquals(22, cases.size, "the catalog has 22 cases")
+        assertEquals(22, samples.size)
         assertEquals(cases, samples.map { it.javaClass }.toSet(), "exactly one sample per case")
 
         samples.forEach { sample ->
@@ -100,11 +101,30 @@ class AnalyticsCatalogTest {
         assertMatchesSpec(restore)
         assertEquals(setOf("outcome"), restore.params.keys, "null optionals are absent, never empty strings")
 
+        val unfound = AnalyticsEvent.ExerciseReplaced(
+            "j", date, 1, "r", "e", "e2", ExerciseEntry.REPLACE_WORKOUT, foundVia = null,
+        )
+        assertMatchesSpec(unfound)
+        assertTrue("found_via" !in unfound.params, "a null found_via is absent, never an empty string")
+
+        val opened = AnalyticsEvent.WorkoutOpened(
+            "j", date, 2, DayContext(DayKind.FUTURE, 2), WorkoutEntry.HOME_START, SessionState.RUNNING,
+        )
+        assertMatchesSpec(opened)
+        assertEquals("future", opened.params["day_kind"])
+        assertEquals(2L, opened.params["days_from_today"])
+
         val everyEnumValue = ScreenName.entries.map { AnalyticsEvent.ScreenView(it) } +
             Feature.entries.map { AnalyticsEvent.FeatureUsed(it) } +
             PaywallEntry.entries.map { AnalyticsEvent.PaywallRequested(it) } +
             PurchaseOutcome.entries.map { AnalyticsEvent.PurchaseResult(it, "p", PaywallEntry.REPEAT) } +
             SessionEndVia.entries.map { AnalyticsEvent.WorkoutSessionEnd("j", date, 1, 1, it) } +
+            listOf(ExerciseEntry.REPLACE_WORKOUT, ExerciseEntry.REPLACE_FOCUS).map { AnalyticsEvent.ExerciseReplaced("j", date, 1, "r", "e", "n", it, FoundVia.BROWSE) } +
+            WorkoutEntry.entries.flatMap { entry ->
+                SessionState.entries.map { AnalyticsEvent.WorkoutOpened("j", date, 1, DayContext(DayKind.TODAY, 0), entry, it) }
+            } +
+            RestOutcome.entries.flatMap { o -> RestTrigger.entries.map { AnalyticsEvent.RestTimerEnded(o, 1, 2, it) } } +
+            CategoryType.entries.map { AnalyticsEvent.CustomExerciseCreated("e", ResultType.DISTANCE_DURATION, it) } +
             ResultType.entries.flatMap { type ->
                 SetAction.entries.map { AnalyticsEvent.SetLogged("j", date, 1, "r", "e", 0, type, it) }
             }
@@ -119,7 +139,11 @@ class AnalyticsCatalogTest {
     private fun assertMatchesSpec(event: AnalyticsEvent) {
         val spec = event.spec
         val declared = spec.params.associateBy { it.name }
-        val optional = if (event is AnalyticsEvent.PurchaseResult) setOf("product_id", "entry") else emptySet()
+        val optional = when (event) {
+            is AnalyticsEvent.PurchaseResult -> setOf("product_id", "entry")
+            is AnalyticsEvent.ExerciseReplaced -> setOf("found_via")
+            else -> emptySet()
+        }
         assertTrue(declared.keys.containsAll(event.params.keys), "${spec.name}: undeclared ${event.params.keys - declared.keys}")
         assertTrue(event.params.keys.containsAll(declared.keys - optional), "${spec.name}: missing required params")
         event.params.forEach { (key, value) ->

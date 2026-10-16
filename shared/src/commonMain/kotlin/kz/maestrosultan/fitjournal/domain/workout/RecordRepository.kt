@@ -288,6 +288,9 @@ interface RecordRepository {
      * that member's sets and keeping its slot. Any OTHER members of a superset
      * record are left untouched. No-op if the target member is absent (e.g. a
      * concurrent edit already changed it). Bumps `pendingUpload=1`.
+     *
+     * Returns `false` when the record or the target member is gone (nothing was
+     * written), `true` once the replacement is written.
      */
     suspend fun replaceExerciseInRecord(
         userId: String,
@@ -295,7 +298,7 @@ interface RecordRepository {
         recordId: String,
         targetWorkoutExerciseId: String,
         newExerciseId: String,
-    )
+    ): Boolean
 
     suspend fun saveWorkoutExerciseComment(
         userId: String,
@@ -339,7 +342,12 @@ interface RecordRepository {
         exercise: WorkoutExercise,
     ): List<WorkoutRecord>
 
-    suspend fun deleteRecord(userId: String, journalId: String, record: WorkoutRecord)
+    /**
+     * Returns `true` iff THIS call tombstoned a live record — a record already
+     * deleted (by sync or an earlier call) returns `false`, and of concurrent
+     * calls on one record exactly one returns `true`.
+     */
+    suspend fun deleteRecord(userId: String, journalId: String, record: WorkoutRecord): Boolean
 
     suspend fun deleteRecordsForDate(userId: String, journalId: String, date: LocalDate)
 

@@ -125,7 +125,8 @@
                     "vocab": [
                         "finish_sheet",
                         "end_button",
-                        "auto"
+                        "auto",
+                        "discard_empty"
                     ]
                 }
             ]
@@ -239,7 +240,8 @@
                     "description": "Whether the set was added or edited.",
                     "vocab": [
                         "add",
-                        "update"
+                        "update",
+                        "commit_target"
                     ]
                 }
             ]
@@ -418,6 +420,362 @@
                         "calendar",
                         "copy_workout",
                         "repeat_workout"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "workout_opened",
+            "meaning": "The workout screen was opened on a slot: once at construction and once per distinct-date selection.",
+            "funnels": [],
+            "params": [
+                {
+                    "name": "journal_id",
+                    "type": "string",
+                    "description": "Journal uuid (join key)."
+                },
+                {
+                    "name": "workout_date",
+                    "type": "string",
+                    "description": "Calendar day of the workout slot, YYYY-MM-DD (join key)."
+                },
+                {
+                    "name": "workout_number",
+                    "type": "int",
+                    "description": "Workout number within the day, 1-based (join key; measure, never a filter)."
+                },
+                {
+                    "name": "day_kind",
+                    "type": "string",
+                    "description": "Where the workout's calendar day sits relative to today (device-local).",
+                    "vocab": [
+                        "today",
+                        "past",
+                        "future"
+                    ]
+                },
+                {
+                    "name": "days_from_today",
+                    "type": "int",
+                    "description": "Signed days from today to the workout day; negative = past (measure, never a filter)."
+                },
+                {
+                    "name": "entry",
+                    "type": "string",
+                    "description": "Which route opened the screen.",
+                    "vocab": [
+                        "home_start",
+                        "details_edit",
+                        "calendar"
+                    ]
+                },
+                {
+                    "name": "session_state",
+                    "type": "string",
+                    "description": "State of the opened slot's session.",
+                    "vocab": [
+                        "none",
+                        "running",
+                        "finished"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "exercise_picker_opened",
+            "meaning": "The exercise picker was opened for an add or a replace.",
+            "funnels": [],
+            "params": [
+                {
+                    "name": "entry",
+                    "type": "string",
+                    "description": "Which control opened the picker.",
+                    "vocab": [
+                        "workout_button",
+                        "focus",
+                        "replace_workout",
+                        "replace_focus"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "set_deleted",
+            "meaning": "A set was deleted, after the write succeeded.",
+            "funnels": [],
+            "params": [
+                {
+                    "name": "journal_id",
+                    "type": "string",
+                    "description": "Journal uuid (join key)."
+                },
+                {
+                    "name": "workout_date",
+                    "type": "string",
+                    "description": "Calendar day of the workout slot, YYYY-MM-DD (join key)."
+                },
+                {
+                    "name": "workout_number",
+                    "type": "int",
+                    "description": "Workout number within the day, 1-based (join key; measure, never a filter)."
+                },
+                {
+                    "name": "record_id",
+                    "type": "string",
+                    "description": "Workout record uuid (join key)."
+                },
+                {
+                    "name": "exercise_id",
+                    "type": "string",
+                    "description": "Exercise uuid (join key)."
+                },
+                {
+                    "name": "set_index",
+                    "type": "int",
+                    "description": "Position of the deleted set within the exercise, 0-based."
+                },
+                {
+                    "name": "was_logged",
+                    "type": "string",
+                    "description": "The deleted set had recorded its defining number.",
+                    "vocab": [
+                        "true",
+                        "false"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "exercise_removed",
+            "meaning": "An exercise was removed (one event per exercise), only on a confirmed tombstone.",
+            "funnels": [],
+            "params": [
+                {
+                    "name": "journal_id",
+                    "type": "string",
+                    "description": "Journal uuid (join key)."
+                },
+                {
+                    "name": "workout_date",
+                    "type": "string",
+                    "description": "Calendar day of the workout slot, YYYY-MM-DD (join key)."
+                },
+                {
+                    "name": "workout_number",
+                    "type": "int",
+                    "description": "Workout number within the day, 1-based (join key; measure, never a filter)."
+                },
+                {
+                    "name": "record_id",
+                    "type": "string",
+                    "description": "Workout record uuid (join key)."
+                },
+                {
+                    "name": "exercise_id",
+                    "type": "string",
+                    "description": "Exercise uuid (join key)."
+                },
+                {
+                    "name": "had_sets",
+                    "type": "string",
+                    "description": "The exercise had at least one logged set.",
+                    "vocab": [
+                        "true",
+                        "false"
+                    ]
+                },
+                {
+                    "name": "entry",
+                    "type": "string",
+                    "description": "Where it was removed.",
+                    "vocab": [
+                        "workout",
+                        "focus"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "exercise_replaced",
+            "meaning": "An exercise was replaced by another, only when the repository wrote the replacement.",
+            "funnels": [],
+            "params": [
+                {
+                    "name": "journal_id",
+                    "type": "string",
+                    "description": "Journal uuid (join key)."
+                },
+                {
+                    "name": "workout_date",
+                    "type": "string",
+                    "description": "Calendar day of the workout slot, YYYY-MM-DD (join key)."
+                },
+                {
+                    "name": "workout_number",
+                    "type": "int",
+                    "description": "Workout number within the day, 1-based (join key; measure, never a filter)."
+                },
+                {
+                    "name": "record_id",
+                    "type": "string",
+                    "description": "Workout record uuid (join key)."
+                },
+                {
+                    "name": "exercise_id",
+                    "type": "string",
+                    "description": "Uuid of the exercise that was replaced (join key)."
+                },
+                {
+                    "name": "new_exercise_id",
+                    "type": "string",
+                    "description": "Uuid of the replacement exercise."
+                },
+                {
+                    "name": "entry",
+                    "type": "string",
+                    "description": "Where the replace was started.",
+                    "vocab": [
+                        "replace_workout",
+                        "replace_focus"
+                    ]
+                },
+                {
+                    "name": "found_via",
+                    "type": "string",
+                    "description": "How the replacement was found; absent when unknown.",
+                    "vocab": [
+                        "browse",
+                        "search",
+                        "created_custom"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "focus_opened",
+            "meaning": "The Focus editor resolved an exercise to edit, or advanced to the next one.",
+            "funnels": [],
+            "params": [
+                {
+                    "name": "journal_id",
+                    "type": "string",
+                    "description": "Journal uuid (join key)."
+                },
+                {
+                    "name": "workout_date",
+                    "type": "string",
+                    "description": "Calendar day of the workout slot, YYYY-MM-DD (join key)."
+                },
+                {
+                    "name": "workout_number",
+                    "type": "int",
+                    "description": "Workout number within the day, 1-based (join key; measure, never a filter)."
+                },
+                {
+                    "name": "record_id",
+                    "type": "string",
+                    "description": "Workout record uuid (join key)."
+                },
+                {
+                    "name": "exercise_id",
+                    "type": "string",
+                    "description": "Exercise uuid (join key)."
+                },
+                {
+                    "name": "entry",
+                    "type": "string",
+                    "description": "How Focus got here.",
+                    "vocab": [
+                        "row_tap",
+                        "add_set",
+                        "next_exercise"
+                    ]
+                },
+                {
+                    "name": "start_adding_set",
+                    "type": "string",
+                    "description": "Focus opened straight into a new set.",
+                    "vocab": [
+                        "true",
+                        "false"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "rest_timer_ended",
+            "meaning": "A rest timer ended: ran out, was stopped, or was replaced by a new rest.",
+            "funnels": [],
+            "params": [
+                {
+                    "name": "outcome",
+                    "type": "string",
+                    "description": "How the rest ended.",
+                    "vocab": [
+                        "finished",
+                        "stopped",
+                        "restarted"
+                    ]
+                },
+                {
+                    "name": "elapsed_sec",
+                    "type": "int",
+                    "description": "Seconds the rest actually ran."
+                },
+                {
+                    "name": "duration_sec",
+                    "type": "int",
+                    "description": "Duration in seconds."
+                },
+                {
+                    "name": "trigger",
+                    "type": "string",
+                    "description": "How the rest was started.",
+                    "vocab": [
+                        "auto",
+                        "manual"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "custom_exercise_created",
+            "meaning": "A custom exercise was created.",
+            "funnels": [],
+            "params": [
+                {
+                    "name": "exercise_id",
+                    "type": "string",
+                    "description": "Exercise uuid (join key)."
+                },
+                {
+                    "name": "result_type",
+                    "type": "string",
+                    "description": "Measurement kind of the exercise.",
+                    "vocab": [
+                        "weight_reps",
+                        "distance_duration"
+                    ]
+                },
+                {
+                    "name": "category",
+                    "type": "string",
+                    "description": "Primary muscle-group category.",
+                    "vocab": [
+                        "chest",
+                        "back",
+                        "biceps",
+                        "triceps",
+                        "forearms",
+                        "shoulders",
+                        "trapezius",
+                        "quadriceps",
+                        "hamstrings",
+                        "glutes",
+                        "calves",
+                        "abs",
+                        "cardio",
+                        "other"
                     ]
                 }
             ]

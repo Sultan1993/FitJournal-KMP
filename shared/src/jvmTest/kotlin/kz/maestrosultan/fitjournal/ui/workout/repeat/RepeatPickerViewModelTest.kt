@@ -901,7 +901,7 @@ private class FakeRecordRepository : RecordRepository {
         recordId: String,
         targetWorkoutExerciseId: String,
         newExerciseId: String,
-    ): Unit = unsupported()
+    ): Boolean = unsupported()
 
     override suspend fun saveWorkoutExerciseComment(
         userId: String,
@@ -930,7 +930,7 @@ private class FakeRecordRepository : RecordRepository {
         exercise: WorkoutExercise,
     ): List<WorkoutRecord> = unsupported()
 
-    override suspend fun deleteRecord(userId: String, journalId: String, record: WorkoutRecord): Unit = unsupported()
+    override suspend fun deleteRecord(userId: String, journalId: String, record: WorkoutRecord): Boolean = unsupported()
     override suspend fun deleteRecordsForDate(userId: String, journalId: String, date: LocalDate): Unit = unsupported()
     override suspend fun deleteUserRecords(userId: String): Unit = unsupported()
 

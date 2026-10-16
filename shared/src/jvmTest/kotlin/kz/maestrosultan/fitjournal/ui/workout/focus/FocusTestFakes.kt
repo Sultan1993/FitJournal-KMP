@@ -449,12 +449,14 @@ class RecordingRecordRepository(
         return found
     }
 
-    override suspend fun deleteRecord(userId: String, journalId: String, record: WorkoutRecord) {
+    override suspend fun deleteRecord(userId: String, journalId: String, record: WorkoutRecord): Boolean {
         calls += "deleteRecord(${record.id})"
         // Its OWN switch, not [failNextWrite]: the partial-failure case needs the
         // FIRST step of a composed write to commit and only the SECOND to fail.
         failDeleteRecord?.let { throw it }
+        val existed = day.any { it.id == record.id }
         day = day.filterNot { it.id == record.id }
+        return existed
     }
 
     override suspend fun refreshRecordPositions(userId: String, journalId: String, records: List<WorkoutRecord>) {
@@ -550,7 +552,7 @@ class RecordingRecordRepository(
         recordId: String,
         targetWorkoutExerciseId: String,
         newExerciseId: String,
-    ): Unit = unsupported()
+    ): Boolean = unsupported()
 
     override suspend fun deleteRecordsForDate(userId: String, journalId: String, date: LocalDate): Unit = unsupported()
     override suspend fun deleteUserRecords(userId: String): Unit = unsupported()

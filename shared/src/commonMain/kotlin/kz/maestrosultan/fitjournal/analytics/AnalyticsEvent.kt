@@ -1,6 +1,7 @@
 package kz.maestrosultan.fitjournal.analytics
 
 import kotlinx.datetime.LocalDate
+import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
 
 /**
@@ -150,15 +151,152 @@ sealed class AnalyticsEvent {
         override val spec: EventSpec get() = EventSpecs.FEATURE_USED
         override val params: Map<String, Any> get() = mapOf("feature" to feature.value)
     }
+
+    /** One per open request of the workout screen: construction and each distinct-date selection. */
+    data class WorkoutOpened(
+        val journalId: String,
+        val workoutDate: LocalDate,
+        val workoutNumber: Int,
+        val day: DayContext,
+        val entry: WorkoutEntry,
+        val sessionState: SessionState,
+    ) : AnalyticsEvent() {
+        override val spec: EventSpec get() = EventSpecs.WORKOUT_OPENED
+        override val params: Map<String, Any>
+            get() = slotParams(journalId, workoutDate, workoutNumber) + day.params() + mapOf(
+                "entry" to entry.value,
+                "session_state" to sessionState.value,
+            )
+    }
+
+    data class ExercisePickerOpened(val entry: ExerciseEntry) : AnalyticsEvent() {
+        override val spec: EventSpec get() = EventSpecs.EXERCISE_PICKER_OPENED
+        override val params: Map<String, Any> get() = mapOf("entry" to entry.value)
+    }
+
+    data class SetDeleted(
+        val journalId: String,
+        val workoutDate: LocalDate,
+        val workoutNumber: Int,
+        val recordId: String,
+        val exerciseId: String,
+        val setIndex: Int,
+        val wasLogged: Boolean,
+    ) : AnalyticsEvent() {
+        override val spec: EventSpec get() = EventSpecs.SET_DELETED
+        override val params: Map<String, Any>
+            get() = slotParams(journalId, workoutDate, workoutNumber) + mapOf(
+                "record_id" to recordId,
+                "exercise_id" to exerciseId,
+                "set_index" to setIndex.toLong(),
+                "was_logged" to wasLogged.wire(),
+            )
+    }
+
+    data class ExerciseRemoved(
+        val journalId: String,
+        val workoutDate: LocalDate,
+        val workoutNumber: Int,
+        val recordId: String,
+        val exerciseId: String,
+        val hadSets: Boolean,
+        val entry: RemoveEntry,
+    ) : AnalyticsEvent() {
+        override val spec: EventSpec get() = EventSpecs.EXERCISE_REMOVED
+        override val params: Map<String, Any>
+            get() = slotParams(journalId, workoutDate, workoutNumber) + mapOf(
+                "record_id" to recordId,
+                "exercise_id" to exerciseId,
+                "had_sets" to hadSets.wire(),
+                "entry" to entry.value,
+            )
+    }
+
+    /** [foundVia] is null when no picker was involved; it is then absent. */
+    data class ExerciseReplaced(
+        val journalId: String,
+        val workoutDate: LocalDate,
+        val workoutNumber: Int,
+        val recordId: String,
+        val exerciseId: String,
+        val newExerciseId: String,
+        val entry: ExerciseEntry,
+        val foundVia: FoundVia?,
+    ) : AnalyticsEvent() {
+        override val spec: EventSpec get() = EventSpecs.EXERCISE_REPLACED
+        override val params: Map<String, Any>
+            get() = buildMap {
+                putAll(slotParams(journalId, workoutDate, workoutNumber))
+                put("record_id", recordId)
+                put("exercise_id", exerciseId)
+                put("new_exercise_id", newExerciseId)
+                put("entry", entry.value)
+                foundVia?.let { put("found_via", it.value) }
+            }
+    }
+
+    data class FocusOpened(
+        val journalId: String,
+        val workoutDate: LocalDate,
+        val workoutNumber: Int,
+        val recordId: String,
+        val exerciseId: String,
+        val entry: FocusEntry,
+        val startAddingSet: Boolean,
+    ) : AnalyticsEvent() {
+        override val spec: EventSpec get() = EventSpecs.FOCUS_OPENED
+        override val params: Map<String, Any>
+            get() = slotParams(journalId, workoutDate, workoutNumber) + mapOf(
+                "record_id" to recordId,
+                "exercise_id" to exerciseId,
+                "entry" to entry.value,
+                "start_adding_set" to startAddingSet.wire(),
+            )
+    }
+
+    data class RestTimerEnded(
+        val outcome: RestOutcome,
+        val elapsedSec: Long,
+        val durationSec: Long,
+        val trigger: RestTrigger,
+    ) : AnalyticsEvent() {
+        override val spec: EventSpec get() = EventSpecs.REST_TIMER_ENDED
+        override val params: Map<String, Any>
+            get() = mapOf(
+                "outcome" to outcome.value,
+                "elapsed_sec" to elapsedSec,
+                "duration_sec" to durationSec,
+                "trigger" to trigger.value,
+            )
+    }
+
+    data class CustomExerciseCreated(
+        val exerciseId: String,
+        val resultType: ResultType,
+        val category: CategoryType,
+    ) : AnalyticsEvent() {
+        override val spec: EventSpec get() = EventSpecs.CUSTOM_EXERCISE_CREATED
+        override val params: Map<String, Any>
+            get() = mapOf(
+                "exercise_id" to exerciseId,
+                "result_type" to resultType.wire(),
+                "category" to category.identifier,
+            )
+    }
 }
 
 enum class SignInMethod(val value: String) { APPLE("apple"), GOOGLE("google") }
 
-enum class SessionEndVia(val value: String) { FINISH_SHEET("finish_sheet"), END_BUTTON("end_button"), AUTO("auto") }
+enum class SessionEndVia(val value: String) {
+    FINISH_SHEET("finish_sheet"),
+    END_BUTTON("end_button"),
+    AUTO("auto"),
+    DISCARD_EMPTY("discard_empty"),
+}
 
 enum class ExerciseSource(val value: String) { CATALOG("catalog"), COPY("copy"), REPEAT("repeat") }
 
-enum class SetAction(val value: String) { ADD("add"), UPDATE("update") }
+enum class SetAction(val value: String) { ADD("add"), UPDATE("update"), COMMIT_TARGET("commit_target") }
 
 enum class PurchaseOutcome(val value: String) {
     PURCHASED("purchased"),
@@ -186,6 +324,9 @@ private fun slotParams(journalId: String, workoutDate: LocalDate, workoutNumber:
     "workout_date" to workoutDate.toString(),
     "workout_number" to workoutNumber.toLong(),
 )
+
+private fun DayContext.params(): Map<String, Any> =
+    mapOf("day_kind" to dayKind.value, "days_from_today" to daysFromToday.toLong())
 
 private fun Boolean.wire(): String = if (this) "true" else "false"
 

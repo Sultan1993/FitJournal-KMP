@@ -9,6 +9,8 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -427,12 +429,12 @@ class DefaultRecordRepository(
         recordId: String,
         targetWorkoutExerciseId: String,
         newExerciseId: String,
-    ) {
-        val tree = workoutsDB.getWorkoutRecordById(recordId) ?: return
+    ): Boolean {
+        val tree = workoutsDB.getWorkoutRecordById(recordId) ?: return false
         // Replace exactly the targeted member, in place, keeping its slot and
         // every other member of a superset. No-op if it's already gone.
         val targetIndex = tree.exercises.indexOfFirst { it.exercise.uuid == targetWorkoutExerciseId }
-        if (targetIndex < 0) return
+        if (targetIndex < 0) return false
         val replacement = DBWorkoutExerciseWithSets(
             exercise = DBWorkoutExerciseObject(
                 uuid = randomUuid(),
@@ -450,6 +452,7 @@ class DefaultRecordRepository(
                 exercises = exercises,
             ),
         )
+        return true
     }
 
     /**
@@ -716,8 +719,32 @@ class DefaultRecordRepository(
         userId: String,
         journalId: String,
         record: WorkoutRecord,
-    ) {
-        workoutsDB.softDeleteWorkoutRecord(record.id)
+    ): Boolean = withContext(Dispatchers.IO) {
+        // The existence check and the guarded tombstone are one unit: the mutex
+        // serialises in-process callers (a JDBC in-memory driver shares one
+        // connection, so a bare transaction would not), the transaction keeps
+        // the pair atomic against everything else writing the table.
+        deleteRecordLock.withLock {
+            val db = database
+            if (db != null) {
+                db.transactionWithResult { tombstoneIfLive(db, record.id) }
+            } else {
+                workoutsDB.getWorkoutRecordById(record.id)?.let {
+                    workoutsDB.softDeleteWorkoutRecord(record.id)
+                    true
+                } ?: false
+            }
+        }
+    }
+
+    private val deleteRecordLock = Mutex()
+
+    private fun tombstoneIfLive(db: FitJournalDatabase, uuid: String): Boolean {
+        val queries = db.workoutRecordsQueries
+        if (queries.getWorkoutRecordById(uuid).executeAsOneOrNull() == null) return false
+        val now = Clock.System.now().toStoredString()
+        queries.softDeleteWorkoutRecord(deletedAt = now, updatedDate = now, uuid = uuid)
+        return true
     }
 
     override suspend fun deleteRecordsForDate(

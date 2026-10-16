@@ -44,20 +44,34 @@ data class WorkoutExercise(
      * Units, formatting and any last-resort default stay in presentation.
      */
     fun displayValuesAt(position: Int, fallBackToPreviousSet: Boolean): DisplaySetValues {
+        val seed = seedValuesAt(position, fallBackToPreviousSet)
+        return DisplaySetValues(value = seed.value, reps = seed.reps)
+    }
+
+    /**
+     * [displayValuesAt]'s resolution, plus which rule supplied the pair — the
+     * single implementation both share, so the two can never disagree.
+     * [SeedSource.NONE] means no candidate had any number.
+     */
+    fun seedValuesAt(position: Int, fallBackToPreviousSet: Boolean): SeededSetValues {
         val own = sets.getOrNull(position)
         // Rule 1. [WorkoutSet.hasOwnNumbers], NOT `isLogged`: reps alone counts
         // here, so a reps-only row renders from itself and never gets topped up
         // with someone else's weight. (`isLogged` is the stricter "worth showing
         // at all" test and belongs to the read-only surfaces, not to this.)
         if (own != null && own.hasOwnNumbers) {
-            return DisplaySetValues(value = own.displayValue, reps = own.displayReps)
+            return SeededSetValues(value = own.displayValue, reps = own.displayReps, source = SeedSource.OWN)
         }
         // Rule 2.
-        val source = listOfNotNull(
-            lastOccurrence?.setAt(position),
-            if (fallBackToPreviousSet) sets.getOrNull(position - 1) else null,
-        ).firstOrNull { it.hasOwnNumbers }
-        return DisplaySetValues(value = source?.displayValue, reps = source?.displayReps)
+        val lastTime = lastOccurrence?.setAt(position)?.takeIf { it.hasOwnNumbers }
+        if (lastTime != null) {
+            return SeededSetValues(value = lastTime.displayValue, reps = lastTime.displayReps, source = SeedSource.LAST_TIME)
+        }
+        val previous = if (fallBackToPreviousSet) sets.getOrNull(position - 1)?.takeIf { it.hasOwnNumbers } else null
+        if (previous != null) {
+            return SeededSetValues(value = previous.displayValue, reps = previous.displayReps, source = SeedSource.PREVIOUS_SET)
+        }
+        return SeededSetValues(value = null, reps = null, source = SeedSource.NONE)
     }
 
     /**
@@ -81,6 +95,16 @@ data class WorkoutExercise(
 data class DisplaySetValues(
     val value: Double?,
     val reps: Int?,
+)
+
+/** Which rule of [WorkoutExercise.seedValuesAt] supplied a row's numbers. */
+enum class SeedSource { OWN, LAST_TIME, PREVIOUS_SET, NONE }
+
+/** [WorkoutExercise.displayValuesAt]'s pair plus the winning [source]. */
+data class SeededSetValues(
+    val value: Double?,
+    val reps: Int?,
+    val source: SeedSource,
 )
 
 val WorkoutExercise.resultType: ResultType

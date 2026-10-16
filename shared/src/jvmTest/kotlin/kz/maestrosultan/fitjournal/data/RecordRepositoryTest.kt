@@ -1,5 +1,9 @@
 package kz.maestrosultan.fitjournal.data
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.data.exercise.datasource.CategoriesDBDataSource
@@ -16,6 +20,7 @@ import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -503,7 +508,7 @@ class RecordRepositoryTest {
         val memberB = superset.exercises.first { it.exercise.uuid == exB }
 
         // Replace member B (NOT the first) with catalog exercise C.
-        repo.replaceExerciseInRecord(userId, journalId, superset.id, memberB.id, exC)
+        assertTrue(repo.replaceExerciseInRecord(userId, journalId, superset.id, memberB.id, exC), "the write happened")
 
         val updated = repo.getRecordsByDate(userId, journalId, date).single()
         assertEquals(2, updated.exercises.size, "superset must keep both members")
@@ -640,6 +645,45 @@ class RecordRepositoryTest {
         val tombstone = assertNotNull(workoutsDB.getWorkoutRecordByIdIncludingDeleted(rec.id))
         assertNotNull(tombstone.row.deletedAt, "deletedAt must be stamped")
         assertTrue(workoutsDB.getPendingUploads(userId).any { it.uuid == rec.id }, "tombstone must be queued for push")
+    }
+
+    @Test
+    fun replaceExerciseInRecord_returnsFalse_whenRecordOrMemberIsGone(): Unit = runBlocking {
+        val exA = seedCatalogExercise()
+        val exB = seedCatalogExercise()
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(exA))
+        val rec = repo.getRecordsByDate(userId, journalId, date).single()
+
+        assertFalse(repo.replaceExerciseInRecord(userId, journalId, "no-such-record", "x", exB), "missing record")
+        assertFalse(repo.replaceExerciseInRecord(userId, journalId, rec.id, "no-such-member", exB), "missing member")
+        assertEquals(exA, repo.getRecordsByDate(userId, journalId, date).single().exercises.single().exercise.uuid, "nothing was written")
+
+        repo.deleteRecord(userId, journalId, rec)
+        assertFalse(repo.replaceExerciseInRecord(userId, journalId, rec.id, rec.exercises.single().id, exB), "tombstoned record")
+    }
+
+    @Test
+    fun deleteRecord_returnsFalse_whenTheRecordIsAlreadyGone(): Unit = runBlocking {
+        val exId = seedCatalogExercise()
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId))
+        val rec = repo.getRecordsByDate(userId, journalId, date).single()
+
+        assertTrue(repo.deleteRecord(userId, journalId, rec), "first call tombstones the live record")
+        val stamped = assertNotNull(workoutsDB.getWorkoutRecordByIdIncludingDeleted(rec.id)).row.deletedAt
+        assertFalse(repo.deleteRecord(userId, journalId, rec), "second call finds it already gone")
+        assertEquals(stamped, workoutsDB.getWorkoutRecordByIdIncludingDeleted(rec.id)?.row?.deletedAt, "deletedAt not shifted")
+        assertFalse(repo.deleteRecord(userId, journalId, rec.copy(id = UUID.randomUUID().toString())), "never inserted")
+    }
+
+    @Test
+    fun deleteRecord_returnsTrueExactlyOnce_forConcurrentCallsOnOneRecord(): Unit = runBlocking {
+        val exId = seedCatalogExercise()
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId))
+        val rec = repo.getRecordsByDate(userId, journalId, date).single()
+
+        val results = (1..16).map { async(Dispatchers.IO) { repo.deleteRecord(userId, journalId, rec) } }.awaitAll()
+
+        assertEquals(1, results.count { it }, "exactly one caller tombstoned it: $results")
     }
 
     @Test

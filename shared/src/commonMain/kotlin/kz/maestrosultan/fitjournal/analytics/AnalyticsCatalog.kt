@@ -8,6 +8,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
 
 /**
@@ -86,6 +87,14 @@ object AnalyticsCatalog {
         EventSpecs.PURCHASE_RESULT,
         EventSpecs.REST_TIMER_STARTED,
         EventSpecs.FEATURE_USED,
+        EventSpecs.WORKOUT_OPENED,
+        EventSpecs.EXERCISE_PICKER_OPENED,
+        EventSpecs.SET_DELETED,
+        EventSpecs.EXERCISE_REMOVED,
+        EventSpecs.EXERCISE_REPLACED,
+        EventSpecs.FOCUS_OPENED,
+        EventSpecs.REST_TIMER_ENDED,
+        EventSpecs.CUSTOM_EXERCISE_CREATED,
     )
 
     val screens: List<ScreenName> = ScreenName.entries
@@ -120,6 +129,7 @@ object AnalyticsCatalog {
         val journalId = "3f1c2a9e-5b7d-4e0a-9c1f-2d8e6b4a7c01"
         val date = LocalDate(2026, 9, 1)
         val exerciseId = "8a6e4d2c-1b3f-4a5e-8d7c-9e0f1a2b3c4d"
+        val recordId = "c4b2e8a6-0d1f-4c3b-a5e7-6f8d9c0b1a2e"
         return listOf(
             AnalyticsEvent.SignIn(SignInMethod.APPLE, isNewUser = true),
             AnalyticsEvent.SignOut,
@@ -131,7 +141,7 @@ object AnalyticsCatalog {
                 source = ExerciseSource.CATALOG, firstInSlot = true,
             ),
             AnalyticsEvent.SetLogged(
-                journalId, date, workoutNumber = 1, recordId = "c4b2e8a6-0d1f-4c3b-a5e7-6f8d9c0b1a2e",
+                journalId, date, workoutNumber = 1, recordId = recordId,
                 exerciseId = exerciseId, setIndex = 0, resultType = ResultType.WEIGHT_REPS, action = SetAction.ADD,
             ),
             AnalyticsEvent.WorkoutDeleted(journalId, date, workoutNumber = 1),
@@ -141,6 +151,30 @@ object AnalyticsCatalog {
             AnalyticsEvent.PurchaseResult(PurchaseOutcome.PURCHASED, productId = "fj_annual", entry = PaywallEntry.HOME_CARD),
             AnalyticsEvent.RestTimerStarted(durationSec = 90),
             AnalyticsEvent.FeatureUsed(Feature.ONE_RM_CALCULATOR),
+            AnalyticsEvent.WorkoutOpened(
+                journalId, date, workoutNumber = 1, day = DayContext(DayKind.PAST, -3),
+                entry = WorkoutEntry.CALENDAR, sessionState = SessionState.NONE,
+            ),
+            AnalyticsEvent.ExercisePickerOpened(ExerciseEntry.WORKOUT_BUTTON),
+            AnalyticsEvent.SetDeleted(
+                journalId, date, workoutNumber = 1, recordId = recordId, exerciseId = exerciseId,
+                setIndex = 1, wasLogged = true,
+            ),
+            AnalyticsEvent.ExerciseRemoved(
+                journalId, date, workoutNumber = 1, recordId = recordId, exerciseId = exerciseId,
+                hadSets = true, entry = RemoveEntry.FOCUS,
+            ),
+            AnalyticsEvent.ExerciseReplaced(
+                journalId, date, workoutNumber = 1, recordId = recordId, exerciseId = exerciseId,
+                newExerciseId = "5d7f9b1a-3c2e-4a6b-8e0d-1f3a5c7e9b2d", entry = ExerciseEntry.REPLACE_FOCUS,
+                foundVia = FoundVia.SEARCH,
+            ),
+            AnalyticsEvent.FocusOpened(
+                journalId, date, workoutNumber = 1, recordId = recordId, exerciseId = exerciseId,
+                entry = FocusEntry.ROW_TAP, startAddingSet = false,
+            ),
+            AnalyticsEvent.RestTimerEnded(RestOutcome.STOPPED, elapsedSec = 40, durationSec = 90, trigger = RestTrigger.MANUAL),
+            AnalyticsEvent.CustomExerciseCreated(exerciseId, ResultType.WEIGHT_REPS, CategoryType.CHEST),
         )
     }
 
@@ -361,5 +395,121 @@ internal object EventSpecs {
             ParamSpec("feature", ParamType.STRING, "Which feature.", Feature.entries.map { it.value }),
         ),
         funnels = listOf("F5"),
+    )
+
+    private val RECORD_ID = ParamSpec("record_id", ParamType.STRING, "Workout record uuid (join key).")
+    private val DAY_KIND = ParamSpec(
+        "day_kind", ParamType.STRING, "Where the workout's calendar day sits relative to today (device-local).",
+        DayKind.entries.map { it.value },
+    )
+    private val DAYS_FROM_TODAY = ParamSpec(
+        "days_from_today", ParamType.INT, "Signed days from today to the workout day; negative = past (measure, never a filter).",
+    )
+    private val DAY = listOf(DAY_KIND, DAYS_FROM_TODAY)
+
+    val WORKOUT_OPENED = EventSpec(
+        name = "workout_opened",
+        meaning = "The workout screen was opened on a slot: once at construction and once per distinct-date selection.",
+        params = SLOT + DAY + listOf(
+            ParamSpec("entry", ParamType.STRING, "Which route opened the screen.", WorkoutEntry.entries.map { it.value }),
+            ParamSpec(
+                "session_state", ParamType.STRING, "State of the opened slot's session.",
+                SessionState.entries.map { it.value },
+            ),
+        ),
+        funnels = emptyList(),
+    )
+
+    val EXERCISE_PICKER_OPENED = EventSpec(
+        name = "exercise_picker_opened",
+        meaning = "The exercise picker was opened for an add or a replace.",
+        params = listOf(
+            ParamSpec(
+                "entry", ParamType.STRING, "Which control opened the picker.",
+                listOf(
+                    ExerciseEntry.WORKOUT_BUTTON, ExerciseEntry.FOCUS,
+                    ExerciseEntry.REPLACE_WORKOUT, ExerciseEntry.REPLACE_FOCUS,
+                ).map { it.value },
+            ),
+        ),
+        funnels = emptyList(),
+    )
+
+    val SET_DELETED = EventSpec(
+        name = "set_deleted",
+        meaning = "A set was deleted, after the write succeeded.",
+        params = SLOT + listOf(
+            RECORD_ID,
+            EXERCISE_ID,
+            ParamSpec("set_index", ParamType.INT, "Position of the deleted set within the exercise, 0-based."),
+            ParamSpec("was_logged", ParamType.STRING, "The deleted set had recorded its defining number.", listOf("true", "false")),
+        ),
+        funnels = emptyList(),
+    )
+
+    val EXERCISE_REMOVED = EventSpec(
+        name = "exercise_removed",
+        meaning = "An exercise was removed (one event per exercise), only on a confirmed tombstone.",
+        params = SLOT + listOf(
+            RECORD_ID,
+            EXERCISE_ID,
+            ParamSpec("had_sets", ParamType.STRING, "The exercise had at least one logged set.", listOf("true", "false")),
+            ParamSpec("entry", ParamType.STRING, "Where it was removed.", RemoveEntry.entries.map { it.value }),
+        ),
+        funnels = emptyList(),
+    )
+
+    val EXERCISE_REPLACED = EventSpec(
+        name = "exercise_replaced",
+        meaning = "An exercise was replaced by another, only when the repository wrote the replacement.",
+        params = SLOT + listOf(
+            RECORD_ID,
+            ParamSpec("exercise_id", ParamType.STRING, "Uuid of the exercise that was replaced (join key)."),
+            ParamSpec("new_exercise_id", ParamType.STRING, "Uuid of the replacement exercise."),
+            ParamSpec(
+                "entry", ParamType.STRING, "Where the replace was started.",
+                listOf(ExerciseEntry.REPLACE_WORKOUT, ExerciseEntry.REPLACE_FOCUS).map { it.value },
+            ),
+            ParamSpec(
+                "found_via", ParamType.STRING, "How the replacement was found; absent when unknown.",
+                FoundVia.entries.map { it.value },
+            ),
+        ),
+        funnels = emptyList(),
+    )
+
+    val FOCUS_OPENED = EventSpec(
+        name = "focus_opened",
+        meaning = "The Focus editor resolved an exercise to edit, or advanced to the next one.",
+        params = SLOT + listOf(
+            RECORD_ID,
+            EXERCISE_ID,
+            ParamSpec("entry", ParamType.STRING, "How Focus got here.", FocusEntry.entries.map { it.value }),
+            ParamSpec("start_adding_set", ParamType.STRING, "Focus opened straight into a new set.", listOf("true", "false")),
+        ),
+        funnels = emptyList(),
+    )
+
+    val REST_TIMER_ENDED = EventSpec(
+        name = "rest_timer_ended",
+        meaning = "A rest timer ended: ran out, was stopped, or was replaced by a new rest.",
+        params = listOf(
+            ParamSpec("outcome", ParamType.STRING, "How the rest ended.", RestOutcome.entries.map { it.value }),
+            ParamSpec("elapsed_sec", ParamType.INT, "Seconds the rest actually ran."),
+            DURATION_SEC,
+            ParamSpec("trigger", ParamType.STRING, "How the rest was started.", RestTrigger.entries.map { it.value }),
+        ),
+        funnels = emptyList(),
+    )
+
+    val CUSTOM_EXERCISE_CREATED = EventSpec(
+        name = "custom_exercise_created",
+        meaning = "A custom exercise was created.",
+        params = listOf(
+            EXERCISE_ID,
+            ParamSpec("result_type", ParamType.STRING, "Measurement kind of the exercise.", ResultType.entries.map { it.wire() }),
+            ParamSpec("category", ParamType.STRING, "Primary muscle-group category.", CategoryType.entries.map { it.identifier }),
+        ),
+        funnels = emptyList(),
     )
 }
