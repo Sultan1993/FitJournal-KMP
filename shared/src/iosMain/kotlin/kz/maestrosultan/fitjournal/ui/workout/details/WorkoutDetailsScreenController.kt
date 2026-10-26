@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.uikit.OnFocusBehavior
 import androidx.compose.ui.window.ComposeUIViewController
 import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
@@ -66,7 +67,13 @@ fun WorkoutDetailsScreenController(
     onEditWorkout: (LocalDate, Int) -> Unit,
     onShareWorkout: (LocalDate, Int) -> Unit,
     onShowPaywall: () -> Unit,
-): UIViewController = ComposeUIViewController {
+): UIViewController = ComposeUIViewController(
+    // The note sheet already lifts itself by the keyboard (ModalBottomSheet's IME
+    // insets). The default FocusableAboveKeyboard also panned the whole view when
+    // the keyboard rose while the sheet was still sliding in — on device the
+    // sheet ended a keyboard-height too high, Save under the status bar.
+    configure = { onFocusBehavior = OnFocusBehavior.DoNothing },
+) {
     FitJournalTheme {
         // The VM's effect stream is a buffered Channel — one consumer, delivered
         // even if it is emitted before this collector attaches.
