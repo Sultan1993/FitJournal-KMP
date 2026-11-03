@@ -141,8 +141,8 @@ sqldelight {
             // Enabling it would require rewriting frozen released migrations.
             // The squashed 8.sqm is instead verified out-of-band (it drops the v8
             // tables and recreates the .sq schema verbatim; replaying it onto a v8
-            // snapshot reproduces a fresh install — proven via sqlite3 and
-            // SQLDelight's own verifyCommonMainFitJournalDatabaseMigration task).
+            // snapshot reproduces a fresh install — proven via sqlite3; SQLDelight's
+            // verifyCommonMainFitJournalDatabaseMigration task can't check it, see above).
         }
     }
 }
