@@ -10,6 +10,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
+import kz.maestrosultan.fitjournal.domain.workout.SetEffort
 
 /**
  * Every screen that can be reported. Only [instrumented] screens emit
@@ -148,7 +149,7 @@ object AnalyticsCatalog {
                 journalId, date, workoutNumber = 1, recordId = recordId,
                 exerciseId = exerciseId, setIndex = 0, resultType = ResultType.WEIGHT_REPS, action = SetAction.ADD,
                 day = DayContext(DayKind.PAST, -3), input = SetInput.PREFILL_LAST_TIME, vsLastTime = VsLastTime.SAME,
-                inSession = false,
+                inSession = false, effort = SetEffort.HARD,
             ),
             AnalyticsEvent.WorkoutDeleted(journalId, date, workoutNumber = 1),
             AnalyticsEvent.PaywallRequested(PaywallEntry.HOME_CARD),
@@ -376,6 +377,11 @@ internal object EventSpecs {
             ParamSpec(
                 "in_session", ParamType.STRING, "A session was running on this workout slot when the set was logged.",
                 listOf("true", "false"),
+            ),
+            ParamSpec(
+                "effort", ParamType.STRING,
+                "The set's Easy/Hard tag as written; normal = untagged (the default), not a deliberate choice.",
+                SetEffort.entries.map { it.wire() },
             ),
         ),
         funnels = listOf("F3", "F5"),

@@ -1,6 +1,7 @@
 package kz.maestrosultan.fitjournal.analytics
 
 import java.nio.file.Files
+import kz.maestrosultan.fitjournal.domain.workout.SetEffort
 import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.test.Test
@@ -141,6 +142,7 @@ class AnalyticsCatalogTest {
     private fun setLogged(type: ResultType, action: SetAction) = AnalyticsEvent.SetLogged(
         "j", LocalDate(2026, 12, 31), 1, "r", "e", 0, type, action,
         day = DayContext(DayKind.TODAY, 0), input = SetInput.TYPED, vsLastTime = VsLastTime.NONE, inSession = false,
+        effort = SetEffort.NORMAL,
     )
 
     /** Keys are declared, required keys present, every value of its declared type and vocabulary. */

@@ -84,6 +84,7 @@ class UpdateSetUseCase(
                 input = input,
                 vsLastTime = vsLastTime(exercise, setIndex, topValue, bottomValue),
                 inSession = inSession,
+                effort = effort,
             ),
         )
         return updated

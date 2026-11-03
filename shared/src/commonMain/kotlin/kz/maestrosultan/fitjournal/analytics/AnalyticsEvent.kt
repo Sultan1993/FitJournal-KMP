@@ -3,6 +3,7 @@ package kz.maestrosultan.fitjournal.analytics
 import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
+import kz.maestrosultan.fitjournal.domain.workout.SetEffort
 
 /**
  * The event catalog — the reporting contract. One case per GA4 event; each
@@ -112,6 +113,8 @@ sealed class AnalyticsEvent {
         val input: SetInput,
         val vsLastTime: VsLastTime,
         val inSession: Boolean,
+        /** The Easy/Hard tag the set was written with; NORMAL = untagged. */
+        val effort: SetEffort,
     ) : AnalyticsEvent() {
         override val spec: EventSpec get() = EventSpecs.SET_LOGGED
         override val params: Map<String, Any>
@@ -125,6 +128,7 @@ sealed class AnalyticsEvent {
                 "input" to input.value,
                 "vs_last_time" to vsLastTime.value,
                 "in_session" to inSession.wire(),
+                "effort" to effort.wire(),
             )
     }
 
@@ -357,3 +361,5 @@ private fun Boolean.wire(): String = if (this) "true" else "false"
 
 /** `ResultType` is a domain enum without a wire value; its analytics vocabulary is the lowercased name. */
 internal fun ResultType.wire(): String = name.lowercase()
+
+internal fun SetEffort.wire(): String = name.lowercase()

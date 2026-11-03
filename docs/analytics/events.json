@@ -367,6 +367,16 @@
                         "true",
                         "false"
                     ]
+                },
+                {
+                    "name": "effort",
+                    "type": "string",
+                    "description": "The set's Easy/Hard tag as written; normal = untagged (the default), not a deliberate choice.",
+                    "vocab": [
+                        "normal",
+                        "easy",
+                        "hard"
+                    ]
                 }
             ]
         },

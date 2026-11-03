@@ -3,7 +3,7 @@
 Each funnel below is the approximate, clickable GA4 Explore equivalent of a cookbook query. **The cookbook is the exact
 answer;** Explore differs in the stated limitations. Prerequisite: register the custom dimensions listed in
 [`README.md`](README.md) (event-scoped `entry, first_in_slot, is_new_user, outcome, feature, source, via, action, result_type,
-reason, method, day_kind, found_via, input, vs_last_time, in_session, session_state, was_logged, had_sets, start_adding_set, trigger, category`; user-scoped `sub_tier, quota_state, app_build`). The screen is the built-in "Screen name" dimension
+reason, method, day_kind, found_via, input, vs_last_time, in_session, session_state, was_logged, had_sets, start_adding_set, trigger, category, effort`; user-scoped `sub_tier, quota_state, app_build`). The screen is the built-in "Screen name" dimension
 (`firebase_screen`).
 
 Why these five: for a team that knows nothing about usage, the questions that change decisions are, in order: do new users reach

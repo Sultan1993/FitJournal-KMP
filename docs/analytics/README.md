@@ -93,7 +93,7 @@ is EU as well; mixing locations breaks joins), enable the **daily** export (stre
 
 - Event-scoped dimensions: `entry`, `first_in_slot`, `is_new_user`, `outcome`, `feature`, `source`, `via`, `action`,
   `result_type`, `reason`, `method`, `day_kind`, `found_via`, `input`, `vs_last_time`, `in_session`, `session_state`,
-  `was_logged`, `had_sets`, `start_adding_set`, `trigger`, `category`.
+  `was_logged`, `had_sets`, `start_adding_set`, `trigger`, `category`, `effort`.
 - User-scoped dimensions: `sub_tier`, `quota_state`, `app_build`.
 - The screen is the built-in **Screen name** dimension (`firebase_screen`); do not register it.
 

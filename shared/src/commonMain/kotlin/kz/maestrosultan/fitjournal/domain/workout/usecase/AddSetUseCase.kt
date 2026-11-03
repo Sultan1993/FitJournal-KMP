@@ -77,6 +77,7 @@ class AddSetUseCase(
                 input = input,
                 vsLastTime = vsLastTime(exercise, exercise.sets.size, topValue, bottomValue),
                 inSession = inSession,
+                effort = effort,
             ),
         )
     }

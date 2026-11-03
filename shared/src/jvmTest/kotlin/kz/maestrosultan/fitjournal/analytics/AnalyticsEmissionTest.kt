@@ -96,6 +96,22 @@ class AnalyticsEmissionTest {
     // ── set_logged ───────────────────────────────────────────────────────
 
     @Test
+    fun setLogged_carriesTheEffortTag_asLowercaseWire(): Unit = runBlocking {
+        val exerciseId = seedExercise()
+        repo.addExercisesToDate(USER, JOURNAL, DATE, 2, listOf(exerciseId))
+        val record = repo.getRecordsByDate(USER, JOURNAL, DATE, includeLastOccurrence = false).single()
+        val exercise = record.exercises.single()
+
+        AddSetUseCase(repo, sync, tracker, today)(
+            USER, JOURNAL, exercise, 50.0, 8, record.id, record.workoutNumber, SetInput.TYPED, false,
+            effort = SetEffort.HARD,
+        )
+        val event = tracker.events.single() as AnalyticsEvent.SetLogged
+        assertEquals(SetEffort.HARD, event.effort)
+        assertEquals("hard", event.params["effort"])
+    }
+
+    @Test
     fun setLogged_firesAfterSuccessfulWrite_notOnFailure(): Unit = runBlocking {
         val exerciseId = seedExercise()
         repo.addExercisesToDate(USER, JOURNAL, DATE, 2, listOf(exerciseId))
@@ -131,6 +147,7 @@ class AnalyticsEmissionTest {
                 input = SetInput.TYPED,
                 vsLastTime = VsLastTime.NONE,
                 inSession = false,
+                effort = SetEffort.NORMAL,
             ),
             added,
         )
