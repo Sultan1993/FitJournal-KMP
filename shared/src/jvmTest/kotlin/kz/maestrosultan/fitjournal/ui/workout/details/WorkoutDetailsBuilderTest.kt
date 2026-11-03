@@ -17,6 +17,7 @@ import kz.maestrosultan.fitjournal.domain.identifier.randomUuid
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.domain.workout.LastOccurrence
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
+import kz.maestrosultan.fitjournal.domain.workout.SetEffort
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSession
@@ -79,6 +80,7 @@ class WorkoutDetailsBuilderTest {
         distance: Double? = null,
         duration: Int? = null,
         resultType: ResultType = ResultType.WEIGHT_REPS,
+        effort: SetEffort = SetEffort.NORMAL,
     ) = WorkoutSet(
         id = randomUuid(),
         userId = USER,
@@ -89,6 +91,7 @@ class WorkoutDetailsBuilderTest {
         distance = distance,
         duration = duration,
         resultType = resultType,
+        effort = effort,
     )
 
     private fun cardioSet(distance: Double? = 5.0, duration: Int? = 30) =
@@ -533,6 +536,20 @@ class WorkoutDetailsBuilderTest {
         assertEquals("×8", row.sets[0].repsText, "set strip uses the design's tight form")
         assertEquals("70 кг", row.sets[1].valueText)
         assertEquals("—", row.sets[1].repsText)
+    }
+
+    @Test
+    fun setChips_carryEachSetsEffort() = runTest {
+        val we = workoutExercise(
+            sets = listOf(
+                set(effort = SetEffort.EASY),
+                set(),
+                set(effort = SetEffort.HARD),
+            ),
+        )
+        val row = build(listOf(record(exercises = listOf(we)))).singleExerciseRow()
+
+        assertEquals(listOf(SetEffort.EASY, SetEffort.NORMAL, SetEffort.HARD), row.sets.map { it.effort })
     }
 
     // ── NEW BEST (§6.1, beyond the enumerated §15 list, for completeness) ─

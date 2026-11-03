@@ -10,6 +10,7 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onLast
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -32,6 +33,7 @@ import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.exercise.Exercise
 import kz.maestrosultan.fitjournal.domain.workout.RepeatDestination
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
+import kz.maestrosultan.fitjournal.domain.workout.SetEffort
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.workout.repeat.RepeatPickerContract
 import kotlin.test.Test
@@ -416,6 +418,17 @@ class WorkoutDetailsScreenTest {
     }
 
     @Test
+    fun setChips_announceTheirEffort_inBothVariants() {
+        for (showActions in listOf(true, false)) runComposeUiTest {
+            setScreen(FakeViewModel(loadedWd1().copy(showActions = showActions)))
+
+            onNodeWithContentDescription("20 kg, ×12, Easy").assertExists()
+            onNodeWithContentDescription("12 kg, ×10, Hard").assertExists()
+            onNodeWithContentDescription("40 kg, ×10").assertExists() // untagged: no effort word
+        }
+    }
+
+    @Test
     fun summaryVariant_hidesActionButtons() = runComposeUiTest {
         setScreen(FakeViewModel(loadedWd1().copy(showActions = false)))
 
@@ -484,7 +497,7 @@ class WorkoutDetailsScreenTest {
                         volumeText = "2 950 kg",
                         delta = WorkoutDetailsContract.DeltaUi(positive = true, text = "+180 kg"),
                         sets = listOf(
-                            WorkoutDetailsContract.SetChip("20 kg", "×12"),
+                            WorkoutDetailsContract.SetChip("20 kg", "×12", SetEffort.EASY),
                             WorkoutDetailsContract.SetChip("40 kg", "×10"),
                         ),
                         comment = null,
@@ -510,7 +523,7 @@ class WorkoutDetailsScreenTest {
                         name = "Hammer Curl",
                         volumeText = "980 kg",
                         delta = WorkoutDetailsContract.DeltaUi(positive = false, text = "−40 kg"),
-                        sets = listOf(WorkoutDetailsContract.SetChip("12 kg", "×10")),
+                        sets = listOf(WorkoutDetailsContract.SetChip("12 kg", "×10", SetEffort.HARD)),
                         comment = null,
                     ),
                 ),

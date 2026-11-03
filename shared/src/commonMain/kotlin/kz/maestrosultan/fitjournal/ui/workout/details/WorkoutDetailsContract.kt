@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.exercise.Exercise
+import kz.maestrosultan.fitjournal.domain.workout.SetEffort
 import kz.maestrosultan.fitjournal.ui.workout.repeat.RepeatPickerContract
 
 /**
@@ -141,7 +142,8 @@ object WorkoutDetailsContract {
         val comment: String?, // read-only exercise note
     )
     data class DeltaUi(val positive: Boolean, val text: String) // "+180 kg" / "−0.4 km", formatted in VM
-    data class SetChip(val valueText: String, val repsText: String)
+    /** [effort] draws a dot after the reps: Easy/Hard only, never Normal. */
+    data class SetChip(val valueText: String, val repsText: String, val effort: SetEffort = SetEffort.NORMAL)
 
     data class NoteEditor(val workoutNumber: Int, val initialText: String)
 

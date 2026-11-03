@@ -36,11 +36,14 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.domain.workout.SetEffort
 import kz.maestrosultan.fitjournal.kmp.design.ColorTokens
 import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
 import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
@@ -49,6 +52,8 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_sk
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_tile_exercises
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.components.ExerciseAvatar
+import kz.maestrosultan.fitjournal.ui.workout.components.setEffortDotColor
+import kz.maestrosultan.fitjournal.ui.workout.components.setEffortLabel
 import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsContract
 import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsPreviewData
 import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsPreviewSurface
@@ -259,18 +264,32 @@ private fun SetStrip(
         horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s16.dp),
     ) {
         sets.forEach { chip ->
-            Column {
+            // One spoken unit per chip: "140 kg, ×5, Easy" (Normal adds no word).
+            val description = listOfNotNull(
+                chip.valueText,
+                chip.repsText.takeIf { it.isNotBlank() },
+                setEffortLabel(chip.effort),
+            ).joinToString(", ")
+            Column(modifier = Modifier.clearAndSetSemantics { contentDescription = description }) {
                 Text(
                     text = chip.valueText,
                     style = FjTheme.typography.body.copy(fontSize = TypeTokens.t14.sp),
                     color = FjTheme.colors.textSecondary,
                 )
                 if (chip.repsText.isNotBlank()) {
-                    Text(
-                        text = chip.repsText,
-                        style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t14.sp),
-                        color = FjTheme.colors.textTertiary,
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s4.dp),
+                    ) {
+                        Text(
+                            text = chip.repsText,
+                            style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t14.sp),
+                            color = FjTheme.colors.textTertiary,
+                        )
+                        if (chip.effort != SetEffort.NORMAL) {
+                            Box(Modifier.size(6.dp).clip(CircleShape).background(setEffortDotColor(chip.effort)))
+                        }
+                    }
                 }
             }
         }
@@ -352,6 +371,22 @@ private fun ExerciseRowListSupersetPreviewLight() {
 private fun ExerciseRowListSupersetPreviewDark() {
     WorkoutDetailsPreviewSurface(darkTheme = true) {
         ExerciseRowList(groups = WorkoutDetailsPreviewData.supersetGroups)
+    }
+}
+
+@Preview(name = "ExerciseRowList Effort Light")
+@Composable
+private fun ExerciseRowListEffortPreviewLight() {
+    WorkoutDetailsPreviewSurface(darkTheme = false) {
+        ExerciseRowList(groups = WorkoutDetailsPreviewData.effortGroups)
+    }
+}
+
+@Preview(name = "ExerciseRowList Effort Dark")
+@Composable
+private fun ExerciseRowListEffortPreviewDark() {
+    WorkoutDetailsPreviewSurface(darkTheme = true) {
+        ExerciseRowList(groups = WorkoutDetailsPreviewData.effortGroups)
     }
 }
 

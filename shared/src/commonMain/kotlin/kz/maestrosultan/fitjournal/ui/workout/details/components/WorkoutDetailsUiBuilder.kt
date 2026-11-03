@@ -422,6 +422,8 @@ private fun setChips(we: WorkoutExercise, units: WorkoutUnitLabels): List<Workou
         WorkoutDetailsContract.SetChip(
             valueText = WorkoutValueFormatter.value(set.displayValue, units.valueUnit(we.exercise.resultType)),
             repsText = WorkoutValueFormatter.reps(set.displayReps, we.exercise.resultType, units.minutes, spaced = false),
+            // Every chip is a logged set (hasOwnNumbers == isLogged), so its tag stands as-is.
+            effort = set.effort,
         )
     }
 

@@ -12,6 +12,7 @@ import kz.maestrosultan.fitjournal.domain.exercise.Category
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.exercise.Exercise
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
+import kz.maestrosultan.fitjournal.domain.workout.SetEffort
 import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
@@ -160,6 +161,23 @@ internal object WorkoutDetailsPreviewData {
     )
 
     /** Two members in one record — the violet superset rail plus the layers badge. */
+    /** Easy / Normal / Hard sets side by side: only the tagged two get a dot. */
+    val effortGroups = listOf(
+        WorkoutDetailsContract.ExerciseGroup(
+            recordId = "rec-6",
+            members = listOf(
+                press.copy(
+                    sets = listOf(
+                        WorkoutDetailsContract.SetChip("40 kg", "×10", SetEffort.EASY),
+                        WorkoutDetailsContract.SetChip("42.5 kg", "×8"),
+                        WorkoutDetailsContract.SetChip("42.5 kg", "×8", SetEffort.HARD),
+                        WorkoutDetailsContract.SetChip("40 kg", "×9", SetEffort.HARD),
+                    ),
+                ),
+            ),
+        ),
+    )
+
     val supersetGroups = listOf(
         WorkoutDetailsContract.ExerciseGroup(
             recordId = "rec-3",
