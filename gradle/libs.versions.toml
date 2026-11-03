@@ -2,17 +2,17 @@
 minSDK = "28"
 compileSDK = "37"
 compileSDKMinor = "2"
-androidGradlePlugin = "9.4.1"
-kotlin = "2.4.20"
+androidGradlePlugin = "9.5.0"
+kotlin = "2.4.21"
 sqldelight = "2.4.1"
 coroutines = "1.11.0"
-skie = "0.10.15"
-compose = "1.13.0-alpha02"
+skie = "0.10.16"
+compose = "1.13.0-beta01"
 # org.jetbrains.compose.material3:material3 tracks its OWN version line, not the
 # composeMultiplatform version (there is no material3:1.11.1). This is the version
-# the CMP 1.13.0-alpha02 release notes bundle — https://github.com/JetBrains/compose-multiplatform/releases/tag/v1.13.0-alpha02
-# (Runtime / UI / Foundation are all :1.13.0-alpha02, and so is Material3 this time).
-material3 = "1.13.0-alpha02"
+# the CMP 1.13.0-beta01 release notes bundle — https://github.com/JetBrains/compose-multiplatform/releases/tag/v1.13.0-beta01
+# (Runtime / UI / Foundation are all :1.13.0-beta01, and so is Material3 this time).
+material3 = "1.13.0-beta01"
 lifecycle = "2.11.0"
 calendar = "2.10.1"
 reorderable = "3.1.0"
@@ -21,7 +21,7 @@ reorderable = "3.1.0"
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib-common", version.ref = "kotlin" }
 kotlin-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version = "0.8.0" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
-kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.11.0" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.12.0" }
 sqldelight-android = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }
 sqldelight-native = { module = "app.cash.sqldelight:native-driver", version.ref = "sqldelight" }
 sqldelight-coroutines = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }
