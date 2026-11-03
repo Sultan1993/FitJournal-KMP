@@ -30,13 +30,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_a11y_timer_settings
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_a11y_timer_start
@@ -69,17 +71,17 @@ fun FocusRestTimerCard(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(RadiusTokens.card.dp))
             .background(FjTheme.colors.surface)
-            .padding(top = 16.dp, bottom = 16.dp, start = 16.dp, end = 16.dp),
+            .padding(top = SpaceTokens.s16.dp, bottom = SpaceTokens.s16.dp, start = SpaceTokens.s16.dp, end = SpaceTokens.s16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(SpaceTokens.s4.dp)) {
             Text(
                 text = stringResource(Res.string.focus_rest_timer).uppercase(),
                 // The natives diverge on this eyebrow's tracking (iOS still kerns 1.1,
                 // Android dropped it); CMP follows iOS, the visual reference.
-                style = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.1.em),
+                style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.1.em),
                 color = FjTheme.colors.textTertiary,
                 maxLines = 1,
             )
@@ -93,7 +95,7 @@ fun FocusRestTimerCard(
                 // tnum: Rubik's default figures are proportional, so without it the
                 // whole m:ss reflows on every 1 Hz tick.
                 style = FjTheme.typography.numberLarge.copy(
-                    fontSize = 24.sp,
+                    fontSize = TypeTokens.t24.sp,
                     fontWeight = FontWeight.Bold,
                     fontFeatureSettings = "tnum",
                 ),
@@ -104,7 +106,7 @@ fun FocusRestTimerCard(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s12.dp)) {
             RestTimerSettingsButton(onClick = onOpenSettings)
             RestTimerToggleButton(isRunning = state.isRunning, onClick = onToggle)
         }
@@ -149,7 +151,7 @@ private fun RestTimerToggleButton(isRunning: Boolean, onClick: () -> Unit) {
                 interactionSource = remember { MutableInteractionSource() },
                 // The default ripple tints from LocalContentColor — a dark smudge on
                 // the brand fill. White is what the press actually needs to read as.
-                indication = ripple(color = Color.White),
+                indication = ripple(color = FjTheme.colors.onBrand),
                 onClick = onClick,
             )
             .semantics { contentDescription = label },
@@ -160,8 +162,9 @@ private fun RestTimerToggleButton(isRunning: Boolean, onClick: () -> Unit) {
         // restarts once a second.
         Crossfade(targetState = isRunning, animationSpec = tween(durationMillis = 300), label = "restToggleIcon") { running ->
             if (running) {
-                Box(modifier = Modifier.size(14.dp).clip(RoundedCornerShape(4.dp)).background(Color.White))
+                Box(modifier = Modifier.size(14.dp).clip(RoundedCornerShape(RadiusTokens.bar.dp)).background(FjTheme.colors.onBrand))
             } else {
+                val glyphColor = FjTheme.colors.onBrand
                 Canvas(modifier = Modifier.size(14.dp).offset(x = 1.dp)) {
                     val path = Path().apply {
                         moveTo(0f, 0f)
@@ -169,7 +172,7 @@ private fun RestTimerToggleButton(isRunning: Boolean, onClick: () -> Unit) {
                         lineTo(0f, size.height)
                         close()
                     }
-                    drawPath(path = path, color = Color.White)
+                    drawPath(path = path, color = glyphColor)
                 }
             }
         }

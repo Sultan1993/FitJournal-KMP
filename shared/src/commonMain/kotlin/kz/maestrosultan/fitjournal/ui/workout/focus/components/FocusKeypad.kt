@@ -22,6 +22,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_a11y_backspace
 import org.jetbrains.compose.resources.stringResource
@@ -55,12 +58,12 @@ fun FocusKeypad(
 ) {
     Column(
         modifier = modifier.fillMaxWidth().wrapContentHeight(),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(SpaceTokens.s4.dp),
     ) {
         KEY_ROWS.forEach { row ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s4.dp),
             ) {
                 row.forEach { key ->
                     FocusKeypadKey(
@@ -79,7 +82,7 @@ private fun FocusKeypadKey(key: String, onClick: () -> Unit, modifier: Modifier 
     Row(
         modifier = modifier
             .height(46.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(RadiusTokens.chip.dp))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(color = FjTheme.colors.brandSubtle),
@@ -101,7 +104,7 @@ private fun FocusKeypadKey(key: String, onClick: () -> Unit, modifier: Modifier 
         } else {
             Text(
                 text = key,
-                style = FjTheme.typography.body.copy(fontSize = 24.sp, fontWeight = FontWeight.Medium),
+                style = FjTheme.typography.body.copy(fontSize = TypeTokens.t24.sp, fontWeight = FontWeight.Medium),
                 color = FjTheme.colors.textPrimary,
             )
         }

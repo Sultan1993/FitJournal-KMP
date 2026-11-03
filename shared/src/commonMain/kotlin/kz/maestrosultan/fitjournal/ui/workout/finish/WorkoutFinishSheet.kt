@@ -27,6 +27,9 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import kz.maestrosultan.fitjournal.analytics.ScreenName
 import kz.maestrosultan.fitjournal.analytics.TrackScreenView
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_confirm_eyebrow
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_confirm_finish
@@ -82,37 +85,37 @@ fun WorkoutFinishSheet(
     }
 
     Column(
-        modifier = modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 24.dp),
+        modifier = modifier.padding(start = SpaceTokens.s16.dp, top = SpaceTokens.s12.dp, end = SpaceTokens.s16.dp, bottom = SpaceTokens.s24.dp),
     ) {
         Grabber(Modifier.align(Alignment.CenterHorizontally))
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(SpaceTokens.s16.dp))
 
         Text(
             text = stringResource(Res.string.postworkout_confirm_title),
             style = FjTheme.typography.screenTitle.copy(
-                fontSize = 24.sp,
+                fontSize = TypeTokens.t24.sp,
                 fontWeight = FontWeight.Bold,
             ),
             color = FjTheme.colors.textPrimary,
         )
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(SpaceTokens.s16.dp))
 
         if (!state.loading) {
             SessionCard(state, Modifier.fillMaxWidth())
         }
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(SpaceTokens.s16.dp))
         FjPrimaryButton(
             text = stringResource(Res.string.postworkout_confirm_finish),
             onClick = onConfirmFinish,
             modifier = Modifier.fillMaxWidth(),
         )
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(SpaceTokens.s4.dp))
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp)
-                .clip(RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(RadiusTokens.control.dp))
                 .clickable(onClick = onKeepTraining),
             contentAlignment = Alignment.Center,
         ) {
@@ -131,7 +134,7 @@ private fun Grabber(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .size(width = 38.dp, height = 4.5.dp)
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RoundedCornerShape(RadiusTokens.bar.dp))
             .background(FjTheme.colors.border),
     )
 }
@@ -141,21 +144,21 @@ private fun Grabber(modifier: Modifier = Modifier) {
 private fun SessionCard(state: WorkoutFinishContract.ViewState, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(RadiusTokens.card.dp))
             .background(FjTheme.colors.brandSubtle)
-            .padding(vertical = 24.dp, horizontal = 24.dp),
+            .padding(vertical = SpaceTokens.s24.dp, horizontal = SpaceTokens.s24.dp),
     ) {
         Text(
             text = "${stringResource(Res.string.postworkout_confirm_eyebrow)} · ${state.dateText}".uppercase(),
             style = FjTheme.typography.eyebrow,
             color = FjTheme.colors.brand,
         )
-        Spacer(Modifier.height(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Spacer(Modifier.height(SpaceTokens.s12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp)) {
             Text(
                 text = state.tonnageValue,
                 style = FjTheme.typography.numberLarge.copy(
-                    fontSize = 36.sp,
+                    fontSize = TypeTokens.display36.sp,
                     fontWeight = FontWeight.Bold,
                 ),
                 color = FjTheme.colors.textPrimary,
@@ -168,8 +171,8 @@ private fun SessionCard(state: WorkoutFinishContract.ViewState, modifier: Modifi
                 modifier = Modifier.alignByBaseline(),
             )
         }
-        Spacer(Modifier.height(16.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+        Spacer(Modifier.height(SpaceTokens.s16.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s24.dp)) {
             SessionStat(state.durationText, stringResource(Res.string.postworkout_stat_duration))
             SessionStat(state.setsCount.toString(), stringResource(Res.string.postworkout_stat_sets))
             SessionStat(state.exercisesCount.toString(), stringResource(Res.string.postworkout_stat_exercises))
@@ -182,13 +185,13 @@ private fun SessionStat(value: String, label: String, modifier: Modifier = Modif
     Column(modifier = modifier) {
         Text(
             text = value,
-            style = FjTheme.typography.cardTitle.copy(fontSize = 20.sp),
+            style = FjTheme.typography.cardTitle.copy(fontSize = TypeTokens.t20.sp),
             color = FjTheme.colors.textPrimary,
         )
-        Spacer(Modifier.height(2.dp))
+        Spacer(Modifier.height(SpaceTokens.s2.dp))
         Text(
             text = label,
-            style = FjTheme.typography.label.copy(fontSize = 12.sp),
+            style = FjTheme.typography.label.copy(fontSize = TypeTokens.t12.sp),
             color = FjTheme.colors.textSecondary,
         )
     }

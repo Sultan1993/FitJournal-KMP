@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kz.maestrosultan.fitjournal.analytics.ScreenName
 import kz.maestrosultan.fitjournal.analytics.TrackScreenView
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
 import kz.maestrosultan.fitjournal.ui.common.PageDots
 import kz.maestrosultan.fitjournal.ui.common.TopFadeScrim
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
@@ -159,7 +160,7 @@ private fun WorkoutBody(
                     .fillMaxWidth()
                     // Above the bottom system inset — the host scaffold pads only the top.
                     .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))
-                    .padding(16.dp)
+                    .padding(SpaceTokens.s16.dp)
                     // 56dp add button + MW3's 16dp gap.
                     .padding(end = 72.dp),
             )
@@ -202,7 +203,7 @@ private fun WorkoutBody(
                 },
                 modifier = Modifier
                     .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))
-                    .padding(16.dp),
+                    .padding(SpaceTokens.s16.dp),
             )
         }
     }

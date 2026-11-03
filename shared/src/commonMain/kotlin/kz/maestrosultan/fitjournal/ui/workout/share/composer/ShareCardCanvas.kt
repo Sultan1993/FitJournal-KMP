@@ -70,6 +70,9 @@ import kotlin.math.roundToLong
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.domain.workout.summary.SessionSummary
+import kz.maestrosultan.fitjournal.kmp.design.ColorTokens
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.category_code_abs
 import kz.maestrosultan.fitjournal.shared.generated.resources.category_code_back
@@ -212,7 +215,7 @@ internal fun ShareCardCanvas(
         // be a hairline on the preview and invisible on the 1080-wide export.
         val shadow = if (bakeTextShadow) {
             Shadow(
-                color = Color.Black.copy(alpha = TextShadowAlpha),
+                color = Color(ColorTokens.shadow.light).copy(alpha = TextShadowAlpha),
                 offset = Offset(0f, TextShadowOffsetRef * scale),
                 blurRadius = TextShadowBlurRef * scale,
             )
@@ -320,11 +323,11 @@ private const val TextShadowBlurRef = 8f
  * preview. None of them is ever drawn in export mode.
  */
 private val TrashDiameter = 44.dp
-private val TrashBottomInset = 16.dp
-private val TrashLabelGap = 4.dp
+private val TrashBottomInset = SpaceTokens.s16.dp
+private val TrashLabelGap = SpaceTokens.s4.dp
 private val TrashIconSize = 17.dp
-private val SelectionInset = 12.dp
-private val SelectionRadius = 12.dp
+private val SelectionInset = SpaceTokens.s12.dp
+private val SelectionRadius = RadiusTokens.chip.dp
 private val SelectionStroke = 1.5.dp
 private val SelectionDash = 5.dp
 private val GuideStroke = 1.dp
@@ -337,13 +340,13 @@ private val GuideStroke = 1.dp
  * white, which is also the card's own text colour, so accent-coloured guides
  * would be nearly invisible against the very block they are aligning.
  */
-private val GuideColor = Color(0xFFFBEAB2).copy(alpha = 0.85f)
+private val GuideColor = Color(ColorTokens.accent.light).copy(alpha = 0.85f)
 
-private val TrashFill = Color(0xFF040415).copy(alpha = 0.55f)
-private val TrashBorder = Color.White.copy(alpha = 0.40f)
-private val TrashIconColor = Color.White
-private val TrashLabelColor = Color.White.copy(alpha = 0.70f)
-private val SelectionColor = Color.White.copy(alpha = 0.60f)
+private val TrashFill = Color(ColorTokens.textPrimary.light).copy(alpha = 0.55f)
+private val TrashBorder = Color(ColorTokens.onBrand.light).copy(alpha = 0.40f)
+private val TrashIconColor = Color(ColorTokens.onBrand.light)
+private val TrashLabelColor = Color(ColorTokens.onBrand.light).copy(alpha = 0.70f)
+private val SelectionColor = Color(ColorTokens.onBrand.light).copy(alpha = 0.60f)
 
 /** Alpha the block drops to while it hovers the trash target. */
 private const val OverTrashAlpha = 0.6f

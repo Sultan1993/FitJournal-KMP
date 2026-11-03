@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kz.maestrosultan.fitjournal.domain.exercise.Exercise
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_chart
 import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_delete
@@ -95,17 +96,17 @@ fun WorkoutExerciseMenu(
         sheetState = sheetState,
         containerColor = FjTheme.colors.sheet,
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(bottom = SpaceTokens.s8.dp)) {
             if (exerciseName != null) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                        .padding(start = SpaceTokens.s16.dp, end = SpaceTokens.s16.dp, bottom = SpaceTokens.s16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (exercise != null) {
                         ExerciseAvatar(exercise = exercise, size = 40.dp)
-                        Spacer(Modifier.width(16.dp))
+                        Spacer(Modifier.width(SpaceTokens.s16.dp))
                     }
                     Text(
                         text = exerciseName,

@@ -20,6 +20,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_exercise_count
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_set_count
@@ -77,9 +79,9 @@ fun WorkoutListDayRow(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = SpaceTokens.s16.dp, vertical = SpaceTokens.s12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s16.dp)
     ) {
         Column(
             modifier = Modifier.width(34.dp),
@@ -87,7 +89,7 @@ fun WorkoutListDayRow(
         ) {
             Text(
                 text = day.date.dayOfMonth.toString(),
-                style = FjTheme.typography.bodyStrong.copy(fontSize = 20.sp),
+                style = FjTheme.typography.bodyStrong.copy(fontSize = TypeTokens.t20.sp),
                 color = FjTheme.colors.textPrimary,
                 textAlign = TextAlign.Center,
             )
@@ -101,7 +103,7 @@ fun WorkoutListDayRow(
 
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+            verticalArrangement = Arrangement.spacedBy(SpaceTokens.s2.dp),
         ) {
             Text(
                 text = categoryTitle,
@@ -117,13 +119,13 @@ fun WorkoutListDayRow(
                     if (!cardioOnly) WorkoutValueFormatter.groupedTonnage(day.tonnage, units.weight) else null,
                     if (hasCardio) WorkoutValueFormatter.duration(day.durationMinutes, units.minutes) else null,
                 ).joinToString(" · "),
-                style = FjTheme.typography.bodyStrong.copy(fontSize = 24.sp),
+                style = FjTheme.typography.bodyStrong.copy(fontSize = TypeTokens.t24.sp),
                 color = FjTheme.colors.textPrimary,
             )
 
             Text(
                 text = metaLine,
-                style = FjTheme.typography.caption.copy(fontSize = 12.sp),
+                style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t12.sp),
                 color = FjTheme.colors.textSecondary,
             )
         }

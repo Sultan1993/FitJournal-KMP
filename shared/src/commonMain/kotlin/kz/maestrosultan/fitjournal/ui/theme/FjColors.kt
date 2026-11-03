@@ -18,6 +18,10 @@ data class FjColorScheme(
     val brandInk: Color,
     val brandInkSecondary: Color,
     val accent: Color,
+    val accentInk: Color,
+    val onBrand: Color,
+    val scrim: Color,
+    val shadow: Color,
     val background: Color,
     val sheet: Color,
     val card: Color,
@@ -35,20 +39,10 @@ data class FjColorScheme(
     val negativeSoft: Color,
     val negativeInk: Color,
     val isDark: Boolean,
-    val brandRamp: List<Color>,
 )
 
 /** 0xAARRGGBB Long → Compose Color, choosing the light or dark variant. */
 private fun ColorToken.compose(isDark: Boolean): Color = Color(if (isDark) dark else light)
-
-/** Same stops for light and dark — the bar track differentiates via surface. */
-private val brandRamp = listOf(
-    Color(0xFF7C72F2),
-    Color(0xFF9B93F6),
-    Color(0xFFB9B3F9),
-    Color(0xFFD3CFFB),
-    Color(0xFFE5E1FC),
-)
 
 fun fjColorScheme(dark: Boolean): FjColorScheme = with(ColorTokens) {
     FjColorScheme(
@@ -57,6 +51,10 @@ fun fjColorScheme(dark: Boolean): FjColorScheme = with(ColorTokens) {
         brandInk = brandInk.compose(dark),
         brandInkSecondary = brandInkSecondary.compose(dark),
         accent = accent.compose(dark),
+        accentInk = accentInk.compose(dark),
+        onBrand = onBrand.compose(dark),
+        scrim = scrim.compose(dark),
+        shadow = shadow.compose(dark),
         background = background.compose(dark),
         sheet = sheet.compose(dark),
         card = card.compose(dark),
@@ -74,7 +72,6 @@ fun fjColorScheme(dark: Boolean): FjColorScheme = with(ColorTokens) {
         negativeSoft = negativeSoft.compose(dark),
         negativeInk = negativeInk.compose(dark),
         isDark = dark,
-        brandRamp = brandRamp,
     )
 }
 

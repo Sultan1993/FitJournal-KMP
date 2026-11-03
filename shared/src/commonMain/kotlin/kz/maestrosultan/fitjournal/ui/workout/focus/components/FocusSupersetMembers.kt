@@ -25,6 +25,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.focus.FocusMemberItemUi
@@ -45,10 +48,10 @@ fun FocusSupersetMembers(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(28.dp))
+            .clip(RoundedCornerShape(RadiusTokens.sheet.dp))
             .background(FjTheme.colors.surface)
-            .padding(8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+            .padding(SpaceTokens.s8.dp),
+        verticalArrangement = Arrangement.spacedBy(SpaceTokens.s4.dp),
     ) {
         items.forEach { item ->
             FocusSupersetMemberRow(item = item, onClick = { onSelectExercise(item.workoutExerciseId) })
@@ -61,7 +64,7 @@ private fun FocusSupersetMemberRow(item: FocusMemberItemUi, onClick: () -> Unit)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(RadiusTokens.card.dp))
             .background(if (item.isActive) FjTheme.colors.surfaceElevated else Color.Transparent)
             // No ripple — iOS uses .buttonStyle(.plain), Android noRippleClickable.
             .clickable(
@@ -70,20 +73,20 @@ private fun FocusSupersetMemberRow(item: FocusMemberItemUi, onClick: () -> Unit)
                 onClick = onClick,
             )
             .semantics { selected = item.isActive }
-            .padding(vertical = 12.dp, horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+            .padding(vertical = SpaceTokens.s12.dp, horizontal = SpaceTokens.s16.dp),
+        horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         FocusMemberLetterBadge(letter = item.letter, isActive = item.isActive)
         Box(
-            modifier = Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(FjTheme.colors.surface),
+            modifier = Modifier.size(44.dp).clip(RoundedCornerShape(RadiusTokens.chip.dp)).background(FjTheme.colors.surface),
         ) {
-            FocusExerciseThumb(imageName = item.imageName, modifier = Modifier.padding(8.dp))
+            FocusExerciseThumb(imageName = item.imageName, modifier = Modifier.padding(SpaceTokens.s8.dp))
         }
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(SpaceTokens.s2.dp)) {
             Text(
                 text = item.name,
-                style = FjTheme.typography.body.copy(fontSize = 16.sp, fontWeight = FontWeight.SemiBold),
+                style = FjTheme.typography.body.copy(fontSize = TypeTokens.t16.sp, fontWeight = FontWeight.SemiBold),
                 color = if (item.isActive) FjTheme.colors.textPrimary else FjTheme.colors.textSecondary,
                 maxLines = 1,
             )
@@ -93,7 +96,7 @@ private fun FocusSupersetMemberRow(item: FocusMemberItemUi, onClick: () -> Unit)
             if (item.muscles.isNotEmpty()) {
                 Text(
                     text = item.muscles,
-                    style = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Medium),
+                    style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t12.sp, fontWeight = FontWeight.Medium),
                     color = FjTheme.colors.textTertiary,
                     maxLines = 1,
                 )
@@ -101,7 +104,7 @@ private fun FocusSupersetMemberRow(item: FocusMemberItemUi, onClick: () -> Unit)
         }
         Text(
             text = item.setCountText,
-            style = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Medium),
+            style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t12.sp, fontWeight = FontWeight.Medium),
             color = FjTheme.colors.textTertiary,
         )
     }
@@ -115,8 +118,8 @@ private fun FocusMemberLetterBadge(letter: String, isActive: Boolean) {
     ) {
         Text(
             text = letter,
-            style = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold),
-            color = if (isActive) Color.White else FjTheme.colors.brand,
+            style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t12.sp, fontWeight = FontWeight.Bold),
+            color = if (isActive) FjTheme.colors.onBrand else FjTheme.colors.brand,
         )
     }
 }

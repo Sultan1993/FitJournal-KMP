@@ -29,6 +29,10 @@ import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.ColorTokens
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_new_best
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
@@ -37,8 +41,7 @@ import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsPreviewSurfa
 import org.jetbrains.compose.resources.stringResource
 
 /** Literal inks, not theme tokens — the `accent` card fill is the same warm color in both themes, so `textPrimary` (which flips) can't be used. */
-private val NewBestLabelInk = Color(0xFF8A7326)
-private val NewBestTextInk = Color(0xFF040415)
+private val NewBestTextInk = Color(ColorTokens.textPrimary.light)
 
 /** [text] arrives fully formatted from the ViewModel; this composable only lays it out. */
 @Composable
@@ -46,9 +49,9 @@ fun NewBestCard(text: String, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .defaultMinSize(minHeight = SummaryBlockHeight)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(RadiusTokens.control.dp))
             .background(FjTheme.colors.accent)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = SpaceTokens.s16.dp, vertical = SpaceTokens.s12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -60,18 +63,18 @@ fun NewBestCard(text: String, modifier: Modifier = Modifier) {
         ) {
             TrophyGlyph()
         }
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(SpaceTokens.s12.dp))
         Column {
             Text(
                 text = stringResource(Res.string.workout_details_new_best),
                 // Overrides eyebrow's default 1.05sp letter-spacing to match design's 0.1em.
-                style = FjTheme.typography.eyebrow.copy(fontSize = 10.sp),
-                color = NewBestLabelInk,
+                style = FjTheme.typography.eyebrow.copy(fontSize = TypeTokens.t10.sp),
+                color = FjTheme.colors.accentInk,
             )
-            Spacer(Modifier.height(2.dp))
+            Spacer(Modifier.height(SpaceTokens.s2.dp))
             Text(
                 text = text,
-                style = FjTheme.typography.bodyStrong.copy(fontSize = 14.sp),
+                style = FjTheme.typography.bodyStrong.copy(fontSize = TypeTokens.t14.sp),
                 color = NewBestTextInk,
             )
         }

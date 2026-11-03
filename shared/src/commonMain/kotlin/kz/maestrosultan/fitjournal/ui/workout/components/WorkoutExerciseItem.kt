@@ -21,7 +21,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -30,6 +29,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_check
 import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_options
@@ -83,15 +84,15 @@ fun WorkoutExerciseItem(
 
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = SpaceTokens.s16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             ExerciseAvatar(exercise = exercise.exercise, size = 44.dp)
-            Spacer(Modifier.width(16.dp))
+            Spacer(Modifier.width(SpaceTokens.s16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = exercise.exercise.name,
-                    style = FjTheme.typography.body.copy(fontSize = 16.sp, fontWeight = FontWeight.SemiBold),
+                    style = FjTheme.typography.body.copy(fontSize = TypeTokens.t16.sp, fontWeight = FontWeight.SemiBold),
                     color = FjTheme.colors.textPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -100,7 +101,7 @@ fun WorkoutExerciseItem(
                     text = pluralStringResource(Res.plurals.postworkout_sets, exercise.sets.size, exercise.sets.size)
                         .uppercase(),
                     style = FjTheme.typography.caption.copy(
-                        fontSize = 12.sp,
+                        fontSize = TypeTokens.t12.sp,
                         fontWeight = FontWeight.SemiBold,
                     ),
                     color = FjTheme.colors.textTertiary,
@@ -119,7 +120,7 @@ fun WorkoutExerciseItem(
                             indication = ripple(bounded = false, radius = 20.dp),
                             onClick = onMenu,
                         )
-                        .padding(start = 8.dp, top = 8.dp, bottom = 8.dp, end = 4.dp)
+                        .padding(start = SpaceTokens.s8.dp, top = SpaceTokens.s8.dp, bottom = SpaceTokens.s8.dp, end = SpaceTokens.s4.dp)
                         .testTag("exercise_options"),
                 ) {
                     Icon(
@@ -134,20 +135,20 @@ fun WorkoutExerciseItem(
 
         if (note != null) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
+                modifier = Modifier.fillMaxWidth().padding(start = SpaceTokens.s16.dp, end = SpaceTokens.s16.dp, top = SpaceTokens.s12.dp),
+                verticalArrangement = Arrangement.spacedBy(SpaceTokens.s2.dp),
             ) {
                 Text(
                     text = stringResource(Res.string.workout_exercise_note_label).uppercase(),
                     style = FjTheme.typography.caption.copy(
-                        fontSize = 12.sp,
+                        fontSize = TypeTokens.t12.sp,
                         fontWeight = FontWeight.Bold,
                     ),
                     color = FjTheme.colors.textTertiary,
                 )
                 Text(
                     text = note,
-                    style = FjTheme.typography.caption.copy(fontSize = 14.sp, fontWeight = FontWeight.Medium),
+                    style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t14.sp, fontWeight = FontWeight.Medium),
                     color = FjTheme.colors.textSecondary,
                 )
             }
@@ -162,7 +163,7 @@ fun WorkoutExerciseItem(
             // Rail content sits at 18 (16 card + 2) so the dot column lines up with NOTE.
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = if (note == null) 8.dp else 0.dp, start = 18.dp, end = 18.dp),
+                .padding(top = if (note == null) SpaceTokens.s8.dp else 0.dp, start = SpaceTokens.s16.dp + SpaceTokens.s2.dp, end = SpaceTokens.s16.dp + SpaceTokens.s2.dp),
         )
     }
 }
@@ -184,7 +185,7 @@ private fun SelectionCircle(isSelected: Boolean) {
         Icon(
             painter = painterResource(if (isSelected) Res.drawable.ic_common_check else Res.drawable.ic_common_plus),
             contentDescription = null,
-            tint = if (isSelected) Color.White else FjTheme.colors.brand,
+            tint = if (isSelected) FjTheme.colors.onBrand else FjTheme.colors.brand,
             modifier = Modifier.size(16.dp),
         )
     }

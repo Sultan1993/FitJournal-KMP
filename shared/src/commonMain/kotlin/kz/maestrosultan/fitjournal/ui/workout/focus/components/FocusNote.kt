@@ -10,6 +10,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_exercise_note_label
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
@@ -28,7 +30,7 @@ fun FocusNote(
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(SpaceTokens.s4.dp),
     ) {
         Text(
             text = stringResource(Res.string.workout_exercise_note_label).uppercase(),
@@ -37,7 +39,7 @@ fun FocusNote(
         )
         Text(
             text = note,
-            style = FjTheme.typography.caption.copy(fontSize = 14.sp, fontWeight = FontWeight.Medium),
+            style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t14.sp, fontWeight = FontWeight.Medium),
             color = FjTheme.colors.textSecondary,
         )
     }

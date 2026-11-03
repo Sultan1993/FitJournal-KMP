@@ -7,6 +7,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.rubik_bold
 import kz.maestrosultan.fitjournal.shared.generated.resources.rubik_light
@@ -52,16 +53,16 @@ fun fjTypography(): FjTypography {
     )
     fun style(size: Int, weight: FontWeight) = style(size.toDouble(), weight)
     return FjTypography(
-        screenTitle = style(20, FontWeight.SemiBold),
-        sectionTitle = style(12, FontWeight.SemiBold),
-        cardTitle = style(16, FontWeight.Medium),
-        body = style(16, FontWeight.Normal),
-        bodyStrong = style(16, FontWeight.Medium),
-        caption = style(14, FontWeight.Normal),
-        label = style(12, FontWeight.Medium),
-        button = style(16, FontWeight.SemiBold),
-        numberLarge = style(16, FontWeight.SemiBold),
-        eyebrow = style(10, FontWeight.Bold),
+        screenTitle = style(TypeTokens.t20, FontWeight.SemiBold),
+        sectionTitle = style(TypeTokens.t12, FontWeight.SemiBold),
+        cardTitle = style(TypeTokens.t16, FontWeight.Medium),
+        body = style(TypeTokens.t16, FontWeight.Normal),
+        bodyStrong = style(TypeTokens.t16, FontWeight.Medium),
+        caption = style(TypeTokens.t14, FontWeight.Normal),
+        label = style(TypeTokens.t12, FontWeight.Medium),
+        button = style(TypeTokens.t16, FontWeight.SemiBold),
+        numberLarge = style(TypeTokens.t16, FontWeight.SemiBold),
+        eyebrow = style(TypeTokens.t10, FontWeight.Bold),
     )
 }
 

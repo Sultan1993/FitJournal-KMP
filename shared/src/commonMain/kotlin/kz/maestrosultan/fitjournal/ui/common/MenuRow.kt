@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -40,7 +41,7 @@ fun MenuRow(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 16.dp),
+            .padding(horizontal = SpaceTokens.s16.dp, vertical = SpaceTokens.s16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
@@ -49,7 +50,7 @@ fun MenuRow(
             tint = resolved,
             modifier = Modifier.size(20.dp),
         )
-        Spacer(Modifier.width(16.dp))
+        Spacer(Modifier.width(SpaceTokens.s16.dp))
         Text(text = text, style = FjTheme.typography.body, color = resolved, maxLines = 1)
     }
 }
@@ -61,7 +62,7 @@ fun MenuRow(
 @Composable
 fun MenuDivider(modifier: Modifier = Modifier) {
     HorizontalDivider(
-        modifier = modifier.padding(horizontal = 16.dp),
+        modifier = modifier.padding(horizontal = SpaceTokens.s16.dp),
         thickness = 1.dp,
         color = FjTheme.colors.textPrimary.copy(alpha = 0.08f),
     )

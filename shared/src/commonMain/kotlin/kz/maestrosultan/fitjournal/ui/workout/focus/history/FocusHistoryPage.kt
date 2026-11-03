@@ -17,6 +17,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_placeholder_title
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
@@ -55,10 +57,10 @@ private fun FocusHistoryEmpty(modifier: Modifier = Modifier) {
             text = stringResource(Res.string.history_placeholder_title),
             // 16sp Regular: `body` is 15sp and FjTypography has no 16-Regular
             // role. The 24dp inset is iOS's xib constant (Android has none).
-            style = FjTheme.typography.body.copy(fontSize = 16.sp),
+            style = FjTheme.typography.body.copy(fontSize = TypeTokens.t16.sp),
             color = FjTheme.colors.textSecondary,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 24.dp),
+            modifier = Modifier.padding(horizontal = SpaceTokens.s24.dp),
         )
     }
 }
@@ -78,7 +80,7 @@ private fun FocusHistoryLoaded(items: List<FocusHistoryItemUi>, modifier: Modifi
         // (iOS `ignoresSafeArea(.container, edges: .bottom)`), and the screen
         // takes no window insets of its own — the host owns them. Reading the
         // inset here made the two pages of one pager end at different heights.
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 44.dp),
+        contentPadding = PaddingValues(start = SpaceTokens.s16.dp, end = SpaceTokens.s16.dp, top = 0.dp, bottom = 44.dp),
     ) {
         items(items, key = { it.key }) { item ->
             FocusHistoryCell(item = item, modifier = Modifier.fillMaxWidth())
@@ -90,7 +92,7 @@ private fun FocusHistoryLoaded(items: List<FocusHistoryItemUi>, modifier: Modifi
 @Composable
 internal fun HistoryPreviewSurface(darkTheme: Boolean, content: @Composable () -> Unit) {
     FitJournalTheme(darkTheme = darkTheme) {
-        Box(modifier = Modifier.fillMaxWidth().background(FjTheme.colors.background).padding(16.dp)) {
+        Box(modifier = Modifier.fillMaxWidth().background(FjTheme.colors.background).padding(SpaceTokens.s16.dp)) {
             content()
         }
     }

@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 
 /**
@@ -35,7 +36,7 @@ fun PageDots(
 
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         repeat(count) { index ->

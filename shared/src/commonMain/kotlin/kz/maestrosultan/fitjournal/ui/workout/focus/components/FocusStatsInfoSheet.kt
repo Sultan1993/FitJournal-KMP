@@ -18,6 +18,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_est_1rm
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_max_set
@@ -66,12 +68,12 @@ private fun FocusStatsInfoContent(modifier: Modifier = Modifier) {
             // The de/ru copy runs 15–26% longer than en; scroll inside the
             // fixed height rather than silently clipping the tail.
             .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+            .padding(SpaceTokens.s24.dp),
+        verticalArrangement = Arrangement.spacedBy(SpaceTokens.s24.dp),
     ) {
         Text(
             text = stringResource(Res.string.focus_stats_info_title),
-            style = FjTheme.typography.cardTitle.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold),
+            style = FjTheme.typography.cardTitle.copy(fontSize = TypeTokens.t20.sp, fontWeight = FontWeight.Bold),
             color = FjTheme.colors.textPrimary,
         )
         FocusStatsInfoBlock(
@@ -91,12 +93,12 @@ private fun FocusStatsInfoBlock(
     body: String,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp)) {
         Text(
             // Brand ink, unlike the row's own tertiary label: here the metric
             // name is the block heading, not a caption on a number.
             text = title.uppercase(),
-            style = FjTheme.typography.eyebrow.copy(fontSize = 12.sp),
+            style = FjTheme.typography.eyebrow.copy(fontSize = TypeTokens.t12.sp),
             color = FjTheme.colors.brand,
         )
         Text(

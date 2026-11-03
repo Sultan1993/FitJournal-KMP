@@ -13,6 +13,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
+import kz.maestrosultan.fitjournal.kmp.design.ColorTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 
 /**
@@ -36,10 +38,10 @@ internal fun ScrimEditor(
         Text(
             text = "${(scrim.coerceIn(0f, 1f) * 100f).roundToInt()}%",
             style = FjTheme.typography.label.copy(
-                fontSize = 12.sp,
+                fontSize = TypeTokens.t12.sp,
                 fontWeight = FontWeight.SemiBold,
             ),
-            color = Color.White.copy(alpha = 0.85f),
+            color = Color(ColorTokens.onBrand.light).copy(alpha = 0.85f),
             modifier = Modifier.align(Alignment.End),
         )
         Slider(
@@ -50,7 +52,7 @@ internal fun ScrimEditor(
             colors = SliderDefaults.colors(
                 thumbColor = MaterialTheme.colorScheme.primary,
                 activeTrackColor = MaterialTheme.colorScheme.primary,
-                inactiveTrackColor = Color.White.copy(alpha = 0.18f),
+                inactiveTrackColor = Color(ColorTokens.onBrand.light).copy(alpha = 0.18f),
             ),
         )
     }

@@ -40,6 +40,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kz.maestrosultan.fitjournal.analytics.ScreenName
 import kz.maestrosultan.fitjournal.analytics.TrackScreenView
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_menu_remove_exercise
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_remove_exercise_message
@@ -71,7 +72,7 @@ import org.jetbrains.compose.resources.stringResource
  * between header and content (iOS `ExerciseFocusScreen.swift:33,70-71`,
  * Android `ExerciseFocusScreen.kt:438`).
  */
-private val PagerTopInset = 16.dp
+private val PagerTopInset = SpaceTokens.s16.dp
 
 /**
  * Root shared Focus screen (spec §4/§9) — the merged iOS `ExerciseFocusView` /
@@ -464,8 +465,8 @@ private fun FocusPageOne(
         // page dots' fade instead of stopping short of it. 44dp at the bottom
         // rather than a navigationBars inset: both pages deliberately run under
         // the home indicator (iOS `ignoresSafeArea(.container, edges: .bottom)`).
-        contentPadding = PaddingValues(start = 16.dp, top = PagerTopInset, end = 16.dp, bottom = 44.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(start = SpaceTokens.s16.dp, top = PagerTopInset, end = SpaceTokens.s16.dp, bottom = 44.dp),
+        verticalArrangement = Arrangement.spacedBy(SpaceTokens.s16.dp),
     ) {
         items(sectionKeys, key = { it }) { key ->
             val sectionModifier = if (key in AnimatedSections) SectionFade() else Modifier
@@ -555,7 +556,7 @@ private fun FocusPageOne(
                 SectionFinish -> FocusFinishButtonBar(
                     button = focus.finishButton,
                     onFinish = { dispatch(WorkoutFocusContract.ViewAction.FinishExercise) },
-                    modifier = sectionModifier.padding(top = 4.dp),
+                    modifier = sectionModifier.padding(top = SpaceTokens.s4.dp),
                 )
             }
         }

@@ -2,6 +2,7 @@ package kz.maestrosultan.fitjournal.ui.workout.share.composer
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
+import kz.maestrosultan.fitjournal.kmp.design.ColorTokens
 
 /**
  * Colors a share-card layout consumes. Deliberately NOT theme-reactive: the
@@ -24,20 +25,20 @@ internal data class CardPalette(
 ) {
     companion object {
         val PhotoWhite = CardPalette(
-            textPrimary = Color.White,
-            textSecondary = Color.White.copy(alpha = 0.78f),
-            textTertiary = Color.White.copy(alpha = 0.60f),
-            divider = Color.White.copy(alpha = 0.28f),
-            accent = Color.White,
+            textPrimary = Color(ColorTokens.onBrand.light),
+            textSecondary = Color(ColorTokens.onBrand.light).copy(alpha = 0.78f),
+            textTertiary = Color(ColorTokens.onBrand.light).copy(alpha = 0.60f),
+            divider = Color(ColorTokens.onBrand.light).copy(alpha = 0.28f),
+            accent = Color(ColorTokens.onBrand.light),
         )
 
         val DarkOnLight = CardPalette(
-            textPrimary = Color(0xFF040415),
-            textSecondary = Color(0xCC040415),
-            textTertiary = Color(0x99040415),
-            divider = Color(0x29040415),
-            // Brand purple — first stop of FjColors.brandRamp.
-            accent = Color(0xFF7C72F2),
+            textPrimary = Color(ColorTokens.textPrimary.light),
+            textSecondary = Color(ColorTokens.textPrimary.light).copy(alpha = 0.8f),
+            textTertiary = Color(ColorTokens.textPrimary.light).copy(alpha = 0.6f),
+            divider = Color(ColorTokens.textPrimary.light).copy(alpha = 0.16f),
+            // Brand purple (ColorTokens.brand).
+            accent = Color(ColorTokens.brand.light),
         )
     }
 }

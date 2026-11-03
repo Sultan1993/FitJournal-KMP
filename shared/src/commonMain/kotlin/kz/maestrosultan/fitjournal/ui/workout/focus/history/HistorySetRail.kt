@@ -22,6 +22,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_set_label
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
@@ -63,7 +65,7 @@ fun HistorySetRail(
         modifier = modifier
             // Same 2dp rail inset as the workout card (padding first, so the
             // connector draws in the inset box: dot-slot center at 6).
-            .padding(horizontal = 2.dp)
+            .padding(horizontal = SpaceTokens.s2.dp)
             .drawBehind {
                 // First-dot center → last-dot center (44dp rows → 22 insets).
                 // No add-set row here, so no 23dp branch.
@@ -84,13 +86,13 @@ fun HistorySetRail(
 
 @Composable
 private fun HistorySetRow(position: Int, set: SetDisplay) {
-    val bigStyle = FjTheme.typography.body.copy(fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
-    val smallStyle = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Medium)
+    val bigStyle = FjTheme.typography.body.copy(fontSize = TypeTokens.t20.sp, fontWeight = FontWeight.SemiBold)
+    val smallStyle = FjTheme.typography.caption.copy(fontSize = TypeTokens.t12.sp, fontWeight = FontWeight.Medium)
 
     Row(
         modifier = Modifier.fillMaxWidth().height(44.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s16.dp),
     ) {
         Box(modifier = Modifier.width(12.dp), contentAlignment = Alignment.Center) {
             // Colour alone marks the tag here (no pill on this page), so the
@@ -106,11 +108,11 @@ private fun HistorySetRow(position: Int, set: SetDisplay) {
         }
         Text(
             text = "${stringResource(Res.string.workout_set_label).uppercase()} $position",
-            style = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp),
+            style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp),
             color = FjTheme.colors.textTertiary,
             maxLines = 1,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s4.dp)) {
             Text(
                 set.number,
                 style = bigStyle,
@@ -125,7 +127,7 @@ private fun HistorySetRow(position: Int, set: SetDisplay) {
                 "×",
                 style = smallStyle,
                 color = FjTheme.colors.textTertiary,
-                modifier = Modifier.alignByBaseline().padding(horizontal = 4.dp),
+                modifier = Modifier.alignByBaseline().padding(horizontal = SpaceTokens.s4.dp),
             )
             Text(
                 set.repsNumber,

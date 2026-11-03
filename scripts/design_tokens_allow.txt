@@ -1,0 +1,56 @@
+# Deliberate design-token exceptions for scripts/design_tokens.py check.
+# Format: <path glob relative to the FitJournal folder>:<regex matched against the line>  # reason (required)
+# Keep this list short — every line here is drift we chose to keep.
+
+# Muscle-group chart palette is data, not theme (CategoryType.colorHex).
+Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/domain/exercise/CategoryType.kt:.  # category palette
+
+
+# Tracking and leading are not type sizes (TypeTokens are font sizes only). The lookaheads keep
+# a raw font size on the same line from hiding behind this rule.
+Multiplatform/shared/src/commonMain/*:^(?!.*fontSize = \d)(?:letterSpacing|.*[ (]letterSpacing|.*[ (]lineHeight) = [\d.]+\.sp(?:[,)]+)?$  # letterSpacing / lineHeight
+
+# Scroll clearances sized to the floating chrome they clear (geometry, not a gap).
+Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/main/WorkoutPageContent.kt:bottom = 140\.dp  # clears the floating session bar + add button
+Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/imports/ImportWorkoutScreen.kt:bottomInset \+ 86\.dp  # clears the floating Add button
+Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/main/WorkoutScreen.kt:padding\(end = 72\.dp\)  # 56dp add button + 16dp gap
+Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/focus/WorkoutFocusScreen.kt:bottom = 44\.dp  # fixed home-indicator clearance, must equal FocusHistoryPage's
+Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/focus/history/FocusHistoryPage.kt:bottom = 44\.dp  # fixed home-indicator clearance, must equal WorkoutFocusScreen's
+Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/details/components/ExerciseRowList.kt:Spacer\(Modifier\.width\(48\.dp\)\)  # lets the last chip clear the 44dp edge fade
+
+Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/focus/components/FocusExercisePicker.kt:CardEdgeMargin = 60\.dp  # dropdown card keeps 60dp clear of the screen edge (geometry)
+
+# Alpha masks: under BlendMode.DstIn only the alpha channel is read, so the colour is not a design value.
+Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/details/components/ExerciseRowList.kt:colors = listOf\(Color\.Black, Color\.Transparent\)  # DstIn edge-fade mask (alpha only)
+
+# iOS: the Live Activity extension links neither FitJournalKMP nor the app's colour catalog, and its Dynamic Island / lock-screen layout is fitted to Apple's system font.
+iOS/FitJournalWidgets/RestActivityWidget.swift:.  # Live Activity extension: no token access
+# iOS: Sign in with Apple / Google colours are fixed by Apple's and Google's button guidelines.
+iOS/FitJournal/Core/UI/*SignIn/FJ*SignInButton.*:(= \.(white|black)$|<color key="\w+" white="(0\.0|1)" alpha="1")  # sign-in brand guidelines
+iOS/FitJournal/Core/Extensions/UIFontExtensions.swift:case \.bold, \.black:  # UIFont.Weight.black, not a colour
+iOS/FitJournal/*:boldSystemFont\(ofSize: 0\.0\)  # 0pt font hides the chart's value labels, not a type size
+# iOS geometry, not tokens: icon masks, circles, glyphs, field clearances.
+iOS/FitJournal/Settings/Presentation/About/AboutAppViewController.swift:appIcon\.layer\.cornerRadius = 24$  # app-icon mask on the 200pt icon
+iOS/FitJournal/Exercises/List/Presentation/Cell/Category/CategoryCell.swift:cornerRadius = 10 // circle  # circle: half the 20pt count badge
+iOS/FitJournal/Workout/Session/Presentation/WorkoutSessionBarView.swift:RoundedRectangle\(cornerRadius: 2\)$  # corner of the 14pt stop-square glyph
+iOS/FitJournal/Workout/Focus/Presentation/Components/FocusHeaderView.swift:\.font\(\.system\(size: 18, weight: \.semibold\)\)  # SF Symbol chevron glyph size
+iOS/FitJournal/Workout/Main/Presentation/Cell/WorkoutExercise/WorkoutExerciseView.swift:\.font\(\.system\(size: 15, weight: \.semibold\)\)  # SF Symbol +/checkmark glyph size in the 36pt circle
+iOS/FitJournal/Calculator/Presentation/WeightConverter/WeightConverterViewController.swift:(left|right): 44\.0  # converter field-edge clearance (geometry)
+iOS/FitJournal/Core/UI/FJLineChartView.swift:static let circleRadius: CGFloat = 4\.0$  # chart data-point dot size (geometry, not a corner radius)
+
+# Muscle-group palette on iOS (CategoryType.colorHex from KMP).
+iOS/FitJournal/Core/Extensions/KMPDomainEnumExtensions.swift:UIColor\(hexString: colorHex\)  # category palette
+
+# Android: line height is leading, not a type size (TypeTokens are font sizes only).
+Android/*:^(?!.*fontSize = \d)(?:letterSpacing|.*[ (]letterSpacing|.*[ (]lineHeight) = [\d.]+\.sp(?:[,)]+)?$  # letterSpacing / lineHeight
+# Android: Sign in with Apple / Google colours are fixed by Apple's and Google's button guidelines.
+Android/common/compose/src/main/kotlin/kz/maestrosultan/fitjournal/common/compose/component/social/*SignInButton.kt:Color\.(White|Black)  # sign-in brand guidelines
+# Android: alpha mask under BlendMode.DstIn, only the alpha channel is read.
+Android/common/compose/src/main/kotlin/kz/maestrosultan/fitjournal/common/compose/component/numberpicker/FJNumberPicker.kt:0\.5f to Color\.Black,  # DstIn fading-edge mask (alpha only)
+# Android: app-icon mask on the 200dp logo (geometry), same as iOS AboutAppViewController.
+Android/feature/settings/src/main/kotlin/kz/maestrosultan/fitjournal/feature/settings/presentation/about/SettingsAboutScreen.kt:RoundedCornerShape\(24\.dp\)  # app-icon mask on the 200dp icon
+# Segmented control internals: 1dp/5dp pressed-track and segment insets are geometry of the control, not layout gaps.
+Android/common/compose/src/main/kotlin/kz/maestrosultan/fitjournal/common/compose/component/FJSegmentControl.kt:val (PRESSED_TRACK_PADDING|SEGMENT_PADDING) =  # control geometry
+# 1dp hairline gap between pie slices' legend rows (geometry).
+Android/common/compose/src/main/kotlin/kz/maestrosultan/fitjournal/common/compose/charts/pie/FJPieChart.kt:Spacer\(modifier = Modifier\.size\(1\.dp\)\)  # hairline
+iOS/FitJournal/Workout/Import/Presentation/Workout/ImportWorkoutViewController.xib:id="H8W-Jr-Dl8"  # selected-date overlay hidden at alpha 0 and faded in by code; clear background, not a scrim

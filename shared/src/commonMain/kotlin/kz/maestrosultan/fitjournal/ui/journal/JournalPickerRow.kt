@@ -26,6 +26,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_arrow_down
 import kz.maestrosultan.fitjournal.shared.generated.resources.ic_onboarding_image_4
@@ -62,7 +65,7 @@ fun JournalPickerRow(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(RadiusTokens.control.dp))
             .background(FjTheme.colors.surface)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
@@ -74,12 +77,12 @@ fun JournalPickerRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp)
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = SpaceTokens.s16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = if (isPersonal) stringResource(Res.string.journal_my_journal) else name,
-                style = FjTheme.typography.cardTitle.copy(fontSize = 20.sp),
+                style = FjTheme.typography.cardTitle.copy(fontSize = TypeTokens.t20.sp),
                 color = FjTheme.colors.brand,
                 modifier = Modifier.weight(1f),
             )
@@ -100,7 +103,7 @@ fun JournalPickerRow(
                     color = FjTheme.colors.textSecondary,
                     modifier = Modifier
                         .weight(1f)
-                        .padding(start = 16.dp, top = 16.dp, bottom = 16.dp),
+                        .padding(start = SpaceTokens.s16.dp, top = SpaceTokens.s16.dp, bottom = SpaceTokens.s16.dp),
                 )
                 Box(modifier = Modifier.fillMaxHeight()) {
                     Image(
@@ -118,7 +121,7 @@ fun JournalPickerRow(
 @Composable
 private fun JournalPickerRowCustomLight() {
     FitJournalTheme(darkTheme = false) {
-        Box(Modifier.fillMaxWidth().background(FjTheme.colors.background).padding(16.dp)) {
+        Box(Modifier.fillMaxWidth().background(FjTheme.colors.background).padding(SpaceTokens.s16.dp)) {
             JournalPickerRow(name = "Coaching · Alex", isPersonal = false, onClick = {})
         }
     }
@@ -128,7 +131,7 @@ private fun JournalPickerRowCustomLight() {
 @Composable
 private fun JournalPickerRowPersonalDark() {
     FitJournalTheme(darkTheme = true) {
-        Box(Modifier.fillMaxWidth().background(FjTheme.colors.background).padding(16.dp)) {
+        Box(Modifier.fillMaxWidth().background(FjTheme.colors.background).padding(SpaceTokens.s16.dp)) {
             JournalPickerRow(name = "ignored", isPersonal = true, onClick = {})
         }
     }
@@ -138,7 +141,7 @@ private fun JournalPickerRowPersonalDark() {
 @Composable
 private fun JournalPickerRowOnboardingLight() {
     FitJournalTheme(darkTheme = false) {
-        Box(Modifier.fillMaxWidth().background(FjTheme.colors.background).padding(16.dp)) {
+        Box(Modifier.fillMaxWidth().background(FjTheme.colors.background).padding(SpaceTokens.s16.dp)) {
             JournalPickerRow(name = "ignored", isPersonal = true, onClick = {}, showOnboarding = true)
         }
     }

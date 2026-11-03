@@ -21,6 +21,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.focus.FocusPreviewData
@@ -68,21 +70,21 @@ private fun FocusTitleRow(content: FocusTitleContent) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp),
     ) {
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(SpaceTokens.s4.dp),
         ) {
             Text(
                 text = title,
-                style = FjTheme.typography.screenTitle.copy(fontSize = 34.sp, fontWeight = FontWeight.Bold),
+                style = FjTheme.typography.screenTitle.copy(fontSize = TypeTokens.t34.sp, fontWeight = FontWeight.Bold),
                 color = FjTheme.colors.textPrimary,
             )
             if (muscles.isNotEmpty()) {
                 Text(
                     text = muscles,
-                    style = FjTheme.typography.caption.copy(fontSize = 14.sp, fontWeight = FontWeight.Medium),
+                    style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t14.sp, fontWeight = FontWeight.Medium),
                     color = FjTheme.colors.textTertiary,
                 )
             }

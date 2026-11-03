@@ -56,6 +56,9 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 import kz.maestrosultan.fitjournal.domain.workout.RepeatDestination
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_exercise_count
 import kz.maestrosultan.fitjournal.shared.generated.resources.repeat_picker_add
@@ -83,7 +86,7 @@ import org.jetbrains.compose.resources.stringResource
  * day row sat a little shorter than the options and its gap was wider than theirs.
  */
 private val PickerRowHeight = 64.dp
-private val PickerRowGap = 12.dp
+private val PickerRowGap = SpaceTokens.s12.dp
 
 /**
  * The Repeat destination picker — one sheet, two panes (design frames 1a/1d):
@@ -136,18 +139,18 @@ private fun DestinationPane(
     dispatch: (RepeatPickerContract.ViewAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxWidth().padding(bottom = 16.dp)) {
+    Column(modifier = modifier.fillMaxWidth().padding(bottom = SpaceTokens.s16.dp)) {
         Text(
             text = stringResource(Res.string.repeat_picker_title),
-            style = FjTheme.typography.cardTitle.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold),
+            style = FjTheme.typography.cardTitle.copy(fontSize = TypeTokens.t20.sp, fontWeight = FontWeight.Bold),
             color = FjTheme.colors.textPrimary,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = SpaceTokens.s16.dp, vertical = SpaceTokens.s8.dp),
         )
 
         DayRow(
             date = state.selectedDate,
             onChangeDay = { dispatch(RepeatPickerContract.ViewAction.ChangeDayTapped) },
-            modifier = Modifier.padding(horizontal = 16.dp),
+            modifier = Modifier.padding(horizontal = SpaceTokens.s16.dp),
         )
 
         // This gap belongs to whatever follows the day row, so it is emitted only when
@@ -160,12 +163,12 @@ private fun DestinationPane(
 
         when (val content = state.content) {
             RepeatPickerContract.Content.Loading ->
-                LoadingBlock(modifier = Modifier.padding(horizontal = 16.dp))
+                LoadingBlock(modifier = Modifier.padding(horizontal = SpaceTokens.s16.dp))
 
             RepeatPickerContract.Content.LoadFailed ->
                 LoadFailedBlock(
                     onRetry = { dispatch(RepeatPickerContract.ViewAction.RetryLoadTapped) },
-                    modifier = Modifier.padding(horizontal = 16.dp),
+                    modifier = Modifier.padding(horizontal = SpaceTokens.s16.dp),
                 )
 
             // Day holds no records: no list, just the day row above and the button below.
@@ -173,7 +176,7 @@ private fun DestinationPane(
 
             is RepeatPickerContract.Content.Choice -> {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = SpaceTokens.s16.dp),
                     verticalArrangement = Arrangement.spacedBy(PickerRowGap),
                 ) {
                     for (row in content.rows) {
@@ -189,7 +192,7 @@ private fun DestinationPane(
             }
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(SpaceTokens.s24.dp))
 
         // Label is always the static "Add" — never the destination's name, no quota
         // markers, no price tags, no page-number eyebrows (see contract docs).
@@ -197,7 +200,7 @@ private fun DestinationPane(
             text = stringResource(Res.string.repeat_picker_add),
             onClick = { dispatch(RepeatPickerContract.ViewAction.AddTapped) },
             enabled = state.canAdd,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = SpaceTokens.s16.dp),
         )
     }
 }
@@ -210,13 +213,13 @@ private fun CalendarPane(
 ) {
     val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
 
-    Column(modifier = modifier.fillMaxWidth().padding(bottom = 16.dp)) {
+    Column(modifier = modifier.fillMaxWidth().padding(bottom = SpaceTokens.s16.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = SpaceTokens.s16.dp, vertical = SpaceTokens.s8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s12.dp),
         ) {
             Box(
                 modifier = Modifier
@@ -233,7 +236,7 @@ private fun CalendarPane(
             }
             Text(
                 text = stringResource(Res.string.repeat_picker_choose_day),
-                style = FjTheme.typography.cardTitle.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold),
+                style = FjTheme.typography.cardTitle.copy(fontSize = TypeTokens.t20.sp, fontWeight = FontWeight.Bold),
                 color = FjTheme.colors.textPrimary,
             )
         }
@@ -268,15 +271,15 @@ private fun DayRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(RadiusTokens.chip.dp))
             .background(FjTheme.colors.surface)
             .clickable(onClick = onChangeDay)
             .height(PickerRowHeight)
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = SpaceTokens.s16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(SpaceTokens.s2.dp)) {
             Text(
                 text = stringResource(Res.string.repeat_picker_day_label),
                 style = FjTheme.typography.label,
@@ -292,7 +295,7 @@ private fun DayRow(
         }
         Text(
             text = stringResource(Res.string.repeat_picker_change_day),
-            style = FjTheme.typography.bodyStrong.copy(fontSize = 14.sp, fontWeight = FontWeight.Medium),
+            style = FjTheme.typography.bodyStrong.copy(fontSize = TypeTokens.t14.sp, fontWeight = FontWeight.Medium),
             color = FjTheme.colors.brand,
         )
     }
@@ -310,7 +313,7 @@ private fun DestinationRow(
 
     val base = modifier
         .fillMaxWidth()
-        .clip(RoundedCornerShape(16.dp))
+        .clip(RoundedCornerShape(RadiusTokens.control.dp))
         .then(
             if (isSelected) {
                 Modifier.background(FjTheme.colors.brandSubtle)
@@ -325,19 +328,19 @@ private fun DestinationRow(
         .clickable(onClick = onClick)
 
     Row(
-        modifier = base.height(PickerRowHeight).padding(horizontal = 16.dp),
+        modifier = base.height(PickerRowHeight).padding(horizontal = SpaceTokens.s16.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s16.dp),
     ) {
         SelectionCircle(isSelected = isSelected)
 
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(SpaceTokens.s4.dp),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp),
             ) {
                 Text(
                     text = row.title ?: stringResource(Res.string.repeat_picker_new_workout),
@@ -381,7 +384,7 @@ private fun SelectionCircle(isSelected: Boolean, modifier: Modifier = Modifier) 
         contentAlignment = Alignment.Center,
     ) {
         if (isSelected) {
-            CheckGlyph(size = 13.dp, color = Color.White)
+            CheckGlyph(size = 13.dp, color = FjTheme.colors.onBrand)
         }
     }
 }
@@ -390,9 +393,9 @@ private fun SelectionCircle(isSelected: Boolean, modifier: Modifier = Modifier) 
 private fun InProgressPill(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(99.dp))
+            .clip(CircleShape)
             .background(FjTheme.colors.accent.copy(alpha = 0.5f))
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = SpaceTokens.s8.dp, vertical = SpaceTokens.s4.dp),
     ) {
         Text(
             text = stringResource(Res.string.repeat_picker_in_progress),
@@ -415,9 +418,9 @@ private fun LoadingBlock(modifier: Modifier = Modifier) {
 @Composable
 private fun LoadFailedBlock(onRetry: () -> Unit, modifier: Modifier = Modifier) {
     Column(
-        modifier = modifier.fillMaxWidth().padding(vertical = 24.dp),
+        modifier = modifier.fillMaxWidth().padding(vertical = SpaceTokens.s24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(SpaceTokens.s12.dp),
     ) {
         Text(
             text = stringResource(Res.string.repeat_picker_load_failed),
@@ -429,7 +432,7 @@ private fun LoadFailedBlock(onRetry: () -> Unit, modifier: Modifier = Modifier) 
             text = stringResource(Res.string.repeat_picker_retry),
             style = FjTheme.typography.bodyStrong.copy(fontWeight = FontWeight.Medium),
             color = FjTheme.colors.brand,
-            modifier = Modifier.clickable(onClick = onRetry).padding(8.dp),
+            modifier = Modifier.clickable(onClick = onRetry).padding(SpaceTokens.s8.dp),
         )
     }
 }
@@ -564,7 +567,7 @@ private val previewLoadFailedState = RepeatPickerContract.ViewState(
 @Composable
 private fun RepeatPickerDestinationPanePreview(state: RepeatPickerContract.ViewState) {
     FitJournalTheme(darkTheme = false) {
-        Box(modifier = Modifier.background(FjTheme.colors.sheet).padding(vertical = 12.dp)) {
+        Box(modifier = Modifier.background(FjTheme.colors.sheet).padding(vertical = SpaceTokens.s12.dp)) {
             DestinationPane(
                 state = state,
                 dispatch = PreviewRepeatPickerViewModel(state)::dispatch,

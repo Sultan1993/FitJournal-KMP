@@ -43,6 +43,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kz.maestrosultan.fitjournal.analytics.ScreenName
 import kz.maestrosultan.fitjournal.analytics.TrackScreenView
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
 import kz.maestrosultan.fitjournal.ui.journal.JournalPickerRow
 import kz.maestrosultan.fitjournal.ui.quota.QuotaCard
 import kz.maestrosultan.fitjournal.ui.quota.QuotaCardContent
@@ -306,7 +307,7 @@ private fun WorkoutListList(
             // No horizontal contentPadding — day rows span full width so their
             // ripple runs edge-to-edge; other items self-inset.
             modifier = listModifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = bottomInset + 30.dp),
+            contentPadding = PaddingValues(bottom = bottomInset + SpaceTokens.s32.dp),
         ) {
             loaded.journalRow?.let { row ->
                 item(key = "journal") {
@@ -351,7 +352,7 @@ private fun WorkoutListList(
                     WorkoutListWeekHeader(
                         section = week,
                         measurementSystem = measurementSystem,
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 8.dp),
+                        modifier = Modifier.padding(start = SpaceTokens.s16.dp, end = SpaceTokens.s16.dp, top = SpaceTokens.s24.dp, bottom = SpaceTokens.s8.dp),
                     )
                 }
                 itemsIndexed(week.days, key = { _, day -> "day-${day.date}" }) { index, day ->
@@ -364,7 +365,7 @@ private fun WorkoutListList(
                         HorizontalDivider(
                             // Same span as the week header and the WorkoutDetails row
                             // divider — not inset past the date column.
-                            modifier = Modifier.padding(horizontal = 16.dp),
+                            modifier = Modifier.padding(horizontal = SpaceTokens.s16.dp),
                             color = FjTheme.colors.divider,
                         )
                     }

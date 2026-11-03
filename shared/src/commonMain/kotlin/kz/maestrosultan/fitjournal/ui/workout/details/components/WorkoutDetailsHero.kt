@@ -17,6 +17,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsContract
 import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsPreviewData
@@ -37,7 +39,7 @@ fun WorkoutDetailsHero(
     if (stats.isEmpty()) return
     Row(
         modifier = modifier.height(IntrinsicSize.Min),
-        horizontalArrangement = Arrangement.spacedBy(24.dp),
+        horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s24.dp),
     ) {
         stats.forEachIndexed { index, stat ->
             if (index > 0) {
@@ -58,17 +60,17 @@ fun WorkoutDetailsHero(
 @Composable
 private fun HeroStat(stat: WorkoutDetailsContract.HeroStat, modifier: Modifier = Modifier) {
     // Eyebrow label on top, big number below — the design's vertical order.
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(SpaceTokens.s4.dp)) {
         Text(
             text = stat.label.uppercase(),
-            style = FjTheme.typography.eyebrow.copy(fontSize = 10.sp),
+            style = FjTheme.typography.eyebrow.copy(fontSize = TypeTokens.t10.sp),
             color = FjTheme.colors.textTertiary,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s4.dp)) {
             Text(
                 text = stat.value,
                 style = FjTheme.typography.numberLarge.copy(
-                    fontSize = 36.sp,
+                    fontSize = TypeTokens.display36.sp,
                     fontWeight = FontWeight.Bold,
                 ),
                 color = FjTheme.colors.textPrimary,
@@ -77,7 +79,7 @@ private fun HeroStat(stat: WorkoutDetailsContract.HeroStat, modifier: Modifier =
             stat.unit?.let { unit ->
                 Text(
                     text = unit,
-                    style = FjTheme.typography.bodyStrong.copy(fontSize = 14.sp),
+                    style = FjTheme.typography.bodyStrong.copy(fontSize = TypeTokens.t14.sp),
                     color = FjTheme.colors.textTertiary,
                     modifier = Modifier.alignByBaseline(),
                 )

@@ -33,6 +33,9 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.plus
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_cardio
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_days_left
@@ -65,10 +68,10 @@ private const val MAX_BAR_DP = 72f
  */
 internal object WorkoutListHeroMetrics {
     /** Baseline-aligned gap between the number and its unit. */
-    val NumberUnitGap = 8.dp
-    val NumberSize = 34.sp
-    val UnitSize = 14.sp
-    val SubtitleSize = 12.5.sp
+    val NumberUnitGap = SpaceTokens.s8.dp
+    val NumberSize = TypeTokens.t34.sp
+    val UnitSize = TypeTokens.t14.sp
+    val SubtitleSize = TypeTokens.t12.sp
 
     /**
      * Nothing between the number row and the subtitle. Named rather than simply
@@ -76,10 +79,10 @@ internal object WorkoutListHeroMetrics {
      */
     val SubtitleTopGap = 0.dp
 
-    val ChartTopGap = 16.dp
+    val ChartTopGap = SpaceTokens.s16.dp
     val ChartHeight = CHART_HEIGHT_DP.dp
-    val BarGap = 4.dp
-    val BarRadius = 4.dp
+    val BarGap = SpaceTokens.s4.dp
+    val BarRadius = RadiusTokens.bar.dp
 }
 
 /**
@@ -126,7 +129,7 @@ fun WorkoutListHero(
                 )
             }
             if (hasCardio) {
-                val durationSize = if (showWeight) 22.sp else 34.sp
+                val durationSize = if (showWeight) TypeTokens.t24.sp else TypeTokens.t34.sp
                 Text(
                     text = WorkoutValueFormatter.duration(cardioMinutes, units.minutes),
                     style = FjTheme.typography.numberLarge.copy(
@@ -138,7 +141,7 @@ fun WorkoutListHero(
                 )
                 Text(
                     text = stringResource(Res.string.history_cardio),
-                    style = FjTheme.typography.bodyStrong.copy(fontSize = 14.sp),
+                    style = FjTheme.typography.bodyStrong.copy(fontSize = TypeTokens.t14.sp),
                     color = FjTheme.colors.textTertiary,
                     modifier = Modifier.alignByBaseline(),
                 )
@@ -160,7 +163,7 @@ fun WorkoutListHero(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(SpaceTokens.s8.dp))
         MonthLabelRow(labels = hero.monthLabels)
     }
 }
@@ -193,7 +196,7 @@ private fun MonthLabelRow(labels: List<WorkoutListContract.MonthLabel>, modifier
         labels.forEachIndexed { index, label ->
             Text(
                 text = LocaleFormatters.monthName(label.month1to12, NameStyle.Short),
-                style = FjTheme.typography.label.copy(fontSize = 10.sp),
+                style = FjTheme.typography.label.copy(fontSize = TypeTokens.t10.sp),
                 color = FjTheme.colors.textTertiary,
                 textAlign = if (index == labels.lastIndex) TextAlign.End else TextAlign.Start,
                 modifier = Modifier.weight(label.slotCount.toFloat()),

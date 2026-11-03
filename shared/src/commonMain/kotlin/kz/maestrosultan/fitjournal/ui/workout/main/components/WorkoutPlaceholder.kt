@@ -30,6 +30,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.ic_workout_placeholder
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_first_workout_hint
@@ -54,14 +56,14 @@ fun AnotherWorkoutPlaceholder(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 32.dp),
+            .padding(horizontal = SpaceTokens.s32.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
             modifier = Modifier
                 .size(96.dp)
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(RadiusTokens.card.dp))
                 .drawBehind {
                     val stroke = 1.5.dp.toPx()
                     val inset = stroke / 2f
@@ -100,7 +102,7 @@ fun AnotherWorkoutPlaceholder(
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(SpaceTokens.s24.dp))
 
         Text(
             text = title,
@@ -109,7 +111,7 @@ fun AnotherWorkoutPlaceholder(
             textAlign = TextAlign.Center,
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(SpaceTokens.s8.dp))
 
         Text(
             text = subtitle,
@@ -140,7 +142,7 @@ fun FirstWorkoutPlaceholder(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 32.dp),
+            .padding(horizontal = SpaceTokens.s32.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -153,7 +155,7 @@ fun FirstWorkoutPlaceholder(
                 .aspectRatio(258f / 176f),
         )
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(SpaceTokens.s24.dp))
 
         Text(
             text = text,

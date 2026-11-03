@@ -32,6 +32,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.ColorTokens
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_done
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_rail_backdrop
@@ -93,12 +97,12 @@ internal fun EditorSheet(
                     .background(EditorSheetDefaults.SurfaceColor)
                     // Own hit target so taps here don't fall through to the dismiss catcher beneath.
                     .pointerInput(Unit) { detectTapGestures { } }
-                    .padding(top = 12.dp, bottom = 24.dp),
+                    .padding(top = SpaceTokens.s12.dp, bottom = SpaceTokens.s24.dp),
             ) {
                 Grabber(Modifier.align(Alignment.CenterHorizontally))
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(SpaceTokens.s16.dp))
                 Header(title = title, onDone = onDone, modifier = Modifier.fillMaxWidth())
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(SpaceTokens.s16.dp))
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -114,20 +118,20 @@ internal fun EditorSheet(
 internal object EditorSheetDefaults {
 
     /** Panel surface — fixed dark regardless of app theme; the card behind it is dark too. */
-    val SurfaceColor: Color = Color(0xFF16161F)
+    val SurfaceColor: Color = Color(ColorTokens.card.dark)
 
     /** Fill for thumbnails, rows and chips sitting on [SurfaceColor]. */
-    val TileColor: Color = Color(0xFF26262E)
+    val TileColor: Color = Color(ColorTokens.surface.dark)
 
     /** The pinned lilac used by the Done action and text cursors on this surface. */
-    val AccentColor: Color = Color(0xFF9B93F6)
+    val AccentColor: Color = Color(ColorTokens.brandInk.dark)
 
-    val TopCornerRadius = 28.dp
+    val TopCornerRadius = RadiusTokens.sheet.dp
 
     val Shape = RoundedCornerShape(topStart = TopCornerRadius, topEnd = TopCornerRadius)
 
     /** Gutter the sheet already applies around [EditorSheet]'s content slot. */
-    val HorizontalPadding = 24.dp
+    val HorizontalPadding = SpaceTokens.s24.dp
 
     /** Slide/fade duration for both directions. */
     const val AnimationMillis: Int = 220
@@ -154,8 +158,8 @@ private fun Grabber(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .size(width = 38.dp, height = 4.5.dp)
-            .clip(RoundedCornerShape(4.dp))
-            .background(Color.White.copy(alpha = 0.22f)),
+            .clip(RoundedCornerShape(RadiusTokens.bar.dp))
+            .background(Color(ColorTokens.onBrand.light).copy(alpha = 0.22f)),
     )
 }
 
@@ -169,23 +173,23 @@ private fun Header(title: String, onDone: () -> Unit, modifier: Modifier = Modif
         Text(
             text = title,
             style = FjTheme.typography.cardTitle.copy(
-                fontSize = 16.sp,
+                fontSize = TypeTokens.t16.sp,
                 fontWeight = FontWeight.SemiBold,
             ),
-            color = Color.White,
+            color = Color(ColorTokens.onBrand.light),
             modifier = Modifier.weight(1f),
         )
         Text(
             text = stringResource(Res.string.postworkout_done),
             style = FjTheme.typography.button.copy(
-                fontSize = 14.sp,
+                fontSize = TypeTokens.t14.sp,
                 fontWeight = FontWeight.Medium,
             ),
             color = EditorSheetDefaults.AccentColor,
             modifier = Modifier
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(RadiusTokens.chip.dp))
                 .clickable(onClick = onDone)
-                .padding(horizontal = 8.dp, vertical = 4.dp),
+                .padding(horizontal = SpaceTokens.s8.dp, vertical = SpaceTokens.s4.dp),
         )
     }
 }

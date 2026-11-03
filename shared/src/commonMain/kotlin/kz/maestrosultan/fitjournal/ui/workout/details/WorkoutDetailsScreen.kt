@@ -34,7 +34,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -47,6 +46,7 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.isActive
 import kz.maestrosultan.fitjournal.analytics.ScreenName
 import kz.maestrosultan.fitjournal.analytics.TrackScreenView
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_achievements
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_delete
@@ -207,29 +207,29 @@ private fun WorkoutDetailsScrollBody(
     Column(
         modifier = modifier
             .verticalScroll(scrollState)
-            .padding(bottom = 40.dp),
+            .padding(bottom = SpaceTokens.s32.dp),
     ) {
         val multiWorkout = loaded.stack.isNotEmpty()
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(SpaceTokens.s16.dp))
         WorkoutDetailsHero(
             hero = loaded.hero,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = SpaceTokens.s16.dp)
         )
 
         if (loaded.stack.isNotEmpty()) {
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(SpaceTokens.s16.dp))
             WorkoutStackCard(
                 rows = loaded.stack,
                 focusedWorkoutNumber = loaded.focusedWorkoutNumber,
                 onSelect = { dispatch(WorkoutDetailsContract.ViewAction.SelectWorkout(it)) },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = SpaceTokens.s16.dp),
             )
         }
 
         // 8dp below the picker; 16dp straight from the hero when there's no picker.
-        Spacer(Modifier.height(if (multiWorkout) 8.dp else 16.dp))
+        Spacer(Modifier.height(if (multiWorkout) SpaceTokens.s8.dp else SpaceTokens.s16.dp))
         // Switching workouts in the picker crossfades + slides this whole block
         // (directional, by stack order) and eases its height change; the hero and
         // picker above stay put, so the header holds while the detail updates.
@@ -246,18 +246,18 @@ private fun WorkoutDetailsScrollBody(
             },
             label = "workoutSwitch",
         ) { workout ->
-            Column { FocusedWorkoutSections(workout = workout, multiWorkout = multiWorkout, dispatch = dispatch) }
+            Column { FocusedWorkoutSections(workout = workout, dispatch = dispatch) }
         }
 
         // Post-workout Summary hides Edit/Repeat/Delete — the finish flow's own
         // Close/Share chrome owns actions there.
         if (showActions) {
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(SpaceTokens.s24.dp))
             WorkoutActionButtons(
                 onRepeat = { dispatch(WorkoutDetailsContract.ViewAction.RepeatTapped) },
                 onEdit = { dispatch(WorkoutDetailsContract.ViewAction.EditTapped) },
                 onDelete = { dispatch(WorkoutDetailsContract.ViewAction.DeleteTapped) },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = SpaceTokens.s16.dp),
             )
         }
     }
@@ -271,58 +271,57 @@ private fun WorkoutDetailsScrollBody(
 @Composable
 private fun ColumnScope.FocusedWorkoutSections(
     workout: WorkoutDetailsContract.WorkoutUi,
-    multiWorkout: Boolean,
     dispatch: (WorkoutDetailsContract.ViewAction) -> Unit,
 ) {
     WorkoutStatTiles(
         durationText = workout.durationText,
         exerciseCount = workout.exerciseCount,
         setCount = workout.setCount,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = SpaceTokens.s16.dp),
     )
 
     // Note sits directly under the stats strip; every workout can hold one
     // (empty text renders the add-note placeholder).
-    Spacer(Modifier.height(8.dp))
+    Spacer(Modifier.height(SpaceTokens.s8.dp))
     SessionNoteCard(
         text = workout.note.text,
         onClick = { dispatch(WorkoutDetailsContract.ViewAction.NoteTapped) },
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = SpaceTokens.s16.dp),
     )
 
     // ACHIEVEMENTS — a section the NEW BEST card lives in (more can join later).
     workout.newBest?.let { newBest ->
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(SpaceTokens.s24.dp))
         Text(
             text = stringResource(Res.string.workout_details_achievements),
             style = FjTheme.typography.eyebrow,
             color = FjTheme.colors.textTertiary,
-            modifier = Modifier.padding(horizontal = 16.dp),
+            modifier = Modifier.padding(horizontal = SpaceTokens.s16.dp),
         )
-        Spacer(Modifier.height(12.dp))
-        NewBestCard(text = newBest.text, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp))
+        Spacer(Modifier.height(SpaceTokens.s12.dp))
+        NewBestCard(text = newBest.text, modifier = Modifier.fillMaxWidth().padding(horizontal = SpaceTokens.s16.dp))
     }
 
     if (workout.workload.isNotEmpty()) {
-        Spacer(Modifier.height(24.dp))
-        WorkloadSection(rows = workout.workload, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp))
+        Spacer(Modifier.height(SpaceTokens.s24.dp))
+        WorkloadSection(rows = workout.workload, modifier = Modifier.fillMaxWidth().padding(horizontal = SpaceTokens.s16.dp))
     }
 
     if (workout.exerciseGroups.isNotEmpty()) {
-        Spacer(Modifier.height(if (multiWorkout) 22.dp else 26.dp))
+        Spacer(Modifier.height(SpaceTokens.s24.dp))
         // Start inset only: rows bleed to the right edge (set strips run to the edge).
-        ExerciseRowList(groups = workout.exerciseGroups, modifier = Modifier.fillMaxWidth().padding(start = 16.dp))
+        ExerciseRowList(groups = workout.exerciseGroups, modifier = Modifier.fillMaxWidth().padding(start = SpaceTokens.s16.dp))
     }
 
     if (workout.skippedGroups.isNotEmpty()) {
         // 12 + the last performed row's own 14dp bottom padding = the same 26dp
         // section break the EXERCISES eyebrow gets after WORKLOAD.
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(SpaceTokens.s12.dp))
         // Name + avatar only, no dividers.
         ExerciseRowList(
             groups = workout.skippedGroups,
             skipped = true,
-            modifier = Modifier.fillMaxWidth().padding(start = 16.dp),
+            modifier = Modifier.fillMaxWidth().padding(start = SpaceTokens.s16.dp),
         )
     }
 }
@@ -354,16 +353,17 @@ private fun BottomFadeScrim(modifier: Modifier = Modifier) {
 
 @Composable
 private fun ShareGlyph() {
+    val color = FjTheme.colors.onBrand
     Canvas(Modifier.size(16.dp)) {
         val w = size.width
         val h = size.height
         val stroke = w * 0.14f
-        drawLine(Color.White, Offset(w * 0.5f, h * 0.12f), Offset(w * 0.5f, h * 0.64f), stroke, cap = StrokeCap.Round)
-        drawLine(Color.White, Offset(w * 0.28f, h * 0.34f), Offset(w * 0.5f, h * 0.12f), stroke, cap = StrokeCap.Round)
-        drawLine(Color.White, Offset(w * 0.72f, h * 0.34f), Offset(w * 0.5f, h * 0.12f), stroke, cap = StrokeCap.Round)
-        drawLine(Color.White, Offset(w * 0.18f, h * 0.62f), Offset(w * 0.18f, h * 0.88f), stroke, cap = StrokeCap.Round)
-        drawLine(Color.White, Offset(w * 0.82f, h * 0.62f), Offset(w * 0.82f, h * 0.88f), stroke, cap = StrokeCap.Round)
-        drawLine(Color.White, Offset(w * 0.18f, h * 0.88f), Offset(w * 0.82f, h * 0.88f), stroke, cap = StrokeCap.Round)
+        drawLine(color, Offset(w * 0.5f, h * 0.12f), Offset(w * 0.5f, h * 0.64f), stroke, cap = StrokeCap.Round)
+        drawLine(color, Offset(w * 0.28f, h * 0.34f), Offset(w * 0.5f, h * 0.12f), stroke, cap = StrokeCap.Round)
+        drawLine(color, Offset(w * 0.72f, h * 0.34f), Offset(w * 0.5f, h * 0.12f), stroke, cap = StrokeCap.Round)
+        drawLine(color, Offset(w * 0.18f, h * 0.62f), Offset(w * 0.18f, h * 0.88f), stroke, cap = StrokeCap.Round)
+        drawLine(color, Offset(w * 0.82f, h * 0.62f), Offset(w * 0.82f, h * 0.88f), stroke, cap = StrokeCap.Round)
+        drawLine(color, Offset(w * 0.18f, h * 0.88f), Offset(w * 0.82f, h * 0.88f), stroke, cap = StrokeCap.Round)
     }
 }
 

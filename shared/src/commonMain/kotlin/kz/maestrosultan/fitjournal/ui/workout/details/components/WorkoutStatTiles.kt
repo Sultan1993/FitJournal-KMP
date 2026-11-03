@@ -17,6 +17,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_tile_duration
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_tile_exercises
@@ -53,7 +56,7 @@ fun WorkoutStatTiles(
         exercisesLabel to exerciseCount.toString(),
         setsLabel to setCount.toString(),
     )
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp)) {
         tiles.forEach { (label, value) ->
             StatTile(eyebrow = label, value = value, modifier = Modifier.weight(1f))
         }
@@ -65,20 +68,20 @@ private fun StatTile(eyebrow: String, value: String, modifier: Modifier = Modifi
     Column(
         modifier = modifier
             .defaultMinSize(minHeight = SummaryBlockHeight)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(RadiusTokens.control.dp))
             .background(FjTheme.colors.card)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = SpaceTokens.s16.dp, vertical = SpaceTokens.s12.dp),
         verticalArrangement = Arrangement.Center,
     ) {
         Text(
             text = eyebrow,
-            style = FjTheme.typography.eyebrow.copy(fontSize = 10.sp),
+            style = FjTheme.typography.eyebrow.copy(fontSize = TypeTokens.t10.sp),
             color = FjTheme.colors.textTertiary,
         )
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(SpaceTokens.s4.dp))
         Text(
             text = value,
-            style = FjTheme.typography.cardTitle.copy(fontSize = 20.sp),
+            style = FjTheme.typography.cardTitle.copy(fontSize = TypeTokens.t20.sp),
             color = FjTheme.colors.textPrimary,
         )
     }

@@ -18,6 +18,8 @@ import androidx.compose.ui.unit.dp
 import kotlinx.datetime.TimeZone
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSession
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_duration_hours_minutes
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_duration_minutes
@@ -67,12 +69,12 @@ fun WorkoutSessionCard(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .clip(RoundedCornerShape(20.dp))
+            .padding(horizontal = SpaceTokens.s16.dp)
+            .clip(RoundedCornerShape(RadiusTokens.card.dp))
             .background(FjTheme.colors.surface)
             // After clip/background so the ripple stays inside the card's corners.
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = SpaceTokens.s16.dp, vertical = SpaceTokens.s12.dp),
     ) {
         Text(
             text = eyebrow,
@@ -81,7 +83,7 @@ fun WorkoutSessionCard(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(SpaceTokens.s4.dp))
         Text(
             text = muscles,
             style = FjTheme.typography.screenTitle,

@@ -11,6 +11,7 @@ import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.domain.calculation.WorkloadMuscleEntry
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 
@@ -202,7 +203,7 @@ internal fun WorkoutListPreviewSurface(
     content: @Composable () -> Unit,
 ) {
     FitJournalTheme(darkTheme = darkTheme) {
-        Box(modifier = Modifier.fillMaxWidth().background(FjTheme.colors.background).padding(20.dp)) {
+        Box(modifier = Modifier.fillMaxWidth().background(FjTheme.colors.background).padding(SpaceTokens.s16.dp)) {
             content()
         }
     }

@@ -10,6 +10,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 
 private const val SEPARATOR = " • "
@@ -41,6 +42,6 @@ fun WorkoutMuscleHeader(
         overflow = TextOverflow.Ellipsis,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp),
+            .padding(horizontal = SpaceTokens.s24.dp),
     )
 }

@@ -33,6 +33,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_history
 import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_plus
@@ -70,7 +73,7 @@ fun WorkoutAddDial(
                 Icon(
                     painter = painterResource(Res.drawable.ic_common_history),
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = FjTheme.colors.onBrand,
                     modifier = Modifier.size(20.dp),
                 )
             },
@@ -80,7 +83,7 @@ fun WorkoutAddDial(
             delayIndex = 0,
             label = stringResource(Res.string.workout_add_from_list),
             onClick = onFromList,
-            glyph = { ListGlyph(size = 20.dp, color = Color.White) },
+            glyph = { ListGlyph(size = 20.dp, color = FjTheme.colors.onBrand) },
         )
         AddButton(expanded = expanded, onClick = onToggle)
     }
@@ -111,23 +114,23 @@ private fun DialOption(
     ) {
         Row(
             // end = 4dp centres the 48dp square under the 56dp + button.
-            modifier = Modifier.padding(end = 4.dp, bottom = 12.dp),
+            modifier = Modifier.padding(end = SpaceTokens.s4.dp, bottom = SpaceTokens.s12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = label,
-                style = FjTheme.typography.bodyStrong.copy(fontSize = 14.sp, fontWeight = FontWeight.Medium),
+                style = FjTheme.typography.bodyStrong.copy(fontSize = TypeTokens.t14.sp, fontWeight = FontWeight.Medium),
                 color = FjTheme.colors.textPrimary,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(RadiusTokens.chip.dp))
                     .background(FjTheme.colors.card)
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(horizontal = SpaceTokens.s12.dp, vertical = SpaceTokens.s8.dp),
             )
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(SpaceTokens.s12.dp))
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(RadiusTokens.control.dp))
                     .background(FjTheme.colors.brand)
                     .clickable(onClick = onClick),
                 contentAlignment = Alignment.Center,
@@ -149,7 +152,7 @@ private fun AddButton(expanded: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .size(56.dp)
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(RadiusTokens.card.dp))
             .background(FjTheme.colors.brandSubtle)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,

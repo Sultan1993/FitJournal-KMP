@@ -10,6 +10,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
 import kz.maestrosultan.fitjournal.ui.workout.components.WorkoutRecordCard
 
 /**
@@ -36,7 +37,7 @@ fun ImportRecordCard(
         modifier = modifier
             .fillMaxWidth()
             .testTag("import_record_card")
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(RadiusTokens.card.dp))
             .clickable(onClick = onToggle),
     )
 }

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,6 +23,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.abs
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_last_week
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_this_week
@@ -62,11 +66,11 @@ fun WorkoutListWeekHeader(
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp),
         ) {
             Text(
                 text = title,
-                style = FjTheme.typography.cardTitle.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold),
+                style = FjTheme.typography.cardTitle.copy(fontSize = TypeTokens.t16.sp, fontWeight = FontWeight.Bold),
                 color = FjTheme.colors.textPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -74,12 +78,12 @@ fun WorkoutListWeekHeader(
             )
             Text(
                 text = summary,
-                style = FjTheme.typography.caption.copy(fontSize = 12.sp),
+                style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t12.sp),
                 color = FjTheme.colors.textSecondary,
             )
             section.delta?.let { WorkoutListDeltaPill(delta = it, measurementSystem = measurementSystem) }
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(SpaceTokens.s8.dp))
         MuscleSplitBar(entries = section.muscleSplit)
     }
 }
@@ -94,14 +98,14 @@ private fun MuscleSplitBar(
     if (visible.isEmpty()) return
     Row(
         modifier = modifier.fillMaxWidth().height(5.dp),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s2.dp),
     ) {
         visible.forEach { entry ->
             Spacer(
                 modifier = Modifier
                     .weight(entry.percentage.toFloat())
                     .fillMaxHeight()
-                    .clip(RoundedCornerShape(4.dp))
+                    .clip(RoundedCornerShape(RadiusTokens.bar.dp))
                     .background(entry.category.composeColor()),
             )
         }
@@ -121,12 +125,12 @@ internal fun WorkoutListDeltaPill(
     val sign = if (positive) "+" else "−"
     Text(
         text = "$sign${WorkoutValueFormatter.groupedTonnage(abs(delta), units.weight)}",
-        style = FjTheme.typography.label.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold),
+        style = FjTheme.typography.label.copy(fontSize = TypeTokens.t12.sp, fontWeight = FontWeight.Bold),
         color = tone,
         modifier = modifier
-            .clip(RoundedCornerShape(99.dp))
+            .clip(CircleShape)
             .background(tone.copy(alpha = 0.16f))
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = SpaceTokens.s8.dp, vertical = SpaceTokens.s4.dp),
     )
 }
 

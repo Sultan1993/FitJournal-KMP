@@ -19,6 +19,7 @@ import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 import kz.maestrosultan.fitjournal.domain.workout.isSuperset
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_another_workout_subtitle
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_another_workout_title
@@ -92,7 +93,7 @@ fun WorkoutPageContent(
         modifier = modifier.fillMaxSize(),
         state = lazyListState,
         // Clear the pinned page dots + top fade so the header starts just below them.
-        contentPadding = PaddingValues(top = 24.dp, bottom = 140.dp),
+        contentPadding = PaddingValues(top = SpaceTokens.s24.dp, bottom = 140.dp),
     ) {
         item {
             // Finished + timed workout gets the 4b card (times, duration); else the plain title.
@@ -106,10 +107,10 @@ fun WorkoutPageContent(
                 // 6dp — the same as a record card's own vertical padding, so the gap
                 // below the card matches the 6+6 between two records. The plain title
                 // (below) keeps its wider 16dp breathing room.
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(SpaceTokens.s8.dp))
             } else {
                 WorkoutMuscleHeader(orderedRecords)
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(SpaceTokens.s16.dp))
             }
         }
         items(orderedRecords, key = { it.id }) { record ->
@@ -131,7 +132,7 @@ fun WorkoutPageContent(
                         }
                     },
                     modifier = Modifier
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .padding(horizontal = SpaceTokens.s16.dp, vertical = SpaceTokens.s8.dp)
                         // Long-press to drag so the card's set taps / menu still fire.
                         .longPressDraggableHandle(
                             onDragStopped = {

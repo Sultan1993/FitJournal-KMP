@@ -21,6 +21,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_empty_body
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_empty_this_week
@@ -58,14 +60,14 @@ fun WorkoutListEmptyState(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 32.dp, start = 24.dp, end = 24.dp),
+                .padding(top = SpaceTokens.s32.dp, start = SpaceTokens.s24.dp, end = SpaceTokens.s24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(SpaceTokens.s12.dp),
         ) {
             Text(
                 text = stringResource(Res.string.history_empty_title),
                 style = FjTheme.typography.body.copy(
-                    fontSize = 20.sp,
+                    fontSize = TypeTokens.t20.sp,
                     fontWeight = FontWeight.Medium,
                 ),
                 color = FjTheme.colors.textPrimary,
@@ -74,7 +76,7 @@ fun WorkoutListEmptyState(
             Text(
                 text = stringResource(Res.string.history_empty_body),
                 style = FjTheme.typography.body.copy(
-                    fontSize = 14.sp,
+                    fontSize = TypeTokens.t14.sp,
                     fontWeight = FontWeight.Normal,
                 ),
                 color = FjTheme.colors.textSecondary,
@@ -125,7 +127,7 @@ private fun GhostHero(measurementSystem: MeasurementSystem) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 12.dp)
+            .padding(top = SpaceTokens.s12.dp)
             .height(1.dp)
             .background(FjTheme.colors.divider),
     )
@@ -178,7 +180,7 @@ private val GHOST_BAR_HEIGHTS = listOf(46, 38, 52, 44, 60, 34, 56, 48, 64, 42, 5
 @Composable
 private fun WorkoutListEmptyStatePreview() {
     FitJournalTheme {
-        Box(modifier = Modifier.background(FjTheme.colors.background).padding(16.dp)) {
+        Box(modifier = Modifier.background(FjTheme.colors.background).padding(SpaceTokens.s16.dp)) {
             WorkoutListEmptyState(measurementSystem = MeasurementSystem.KG_KM)
         }
     }

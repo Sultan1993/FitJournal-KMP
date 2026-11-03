@@ -12,9 +12,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 
 /**
@@ -38,20 +39,20 @@ fun FjPrimaryButton(
     Box(
         modifier = modifier
             .height(54.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(RadiusTokens.control.dp))
             .background(if (enabled) FjTheme.colors.brand else FjTheme.colors.brand.copy(alpha = 0.4f))
             .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp),
         ) {
             leadingIcon?.invoke()
             Text(
                 text = text,
                 style = FjTheme.typography.button.copy(fontWeight = FontWeight.Medium),
-                color = Color.White,
+                color = FjTheme.colors.onBrand,
             )
         }
     }

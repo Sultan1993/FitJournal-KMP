@@ -12,6 +12,7 @@ import kz.maestrosultan.fitjournal.domain.exercise.Category
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.exercise.Exercise
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 
@@ -271,7 +272,7 @@ internal fun WorkoutDetailsPreviewSurface(
     content: @Composable () -> Unit,
 ) {
     FitJournalTheme(darkTheme = darkTheme) {
-        Box(modifier = Modifier.fillMaxWidth().background(FjTheme.colors.background).padding(20.dp)) {
+        Box(modifier = Modifier.fillMaxWidth().background(FjTheme.colors.background).padding(SpaceTokens.s16.dp)) {
             content()
         }
     }

@@ -28,7 +28,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -38,6 +37,9 @@ import androidx.compose.ui.unit.sp
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.coroutines.delay
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.ui.format.formatDuration
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_end
@@ -47,7 +49,7 @@ import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.main.SessionBarState
 import org.jetbrains.compose.resources.stringResource
 
-private val BarShape = RoundedCornerShape(16.dp)
+private val BarShape = RoundedCornerShape(RadiusTokens.control.dp)
 
 /**
  * Bottom Start/End bar, per design MW3 — the slot holds exactly one thing, and
@@ -99,14 +101,14 @@ private fun StartPill(onStart: () -> Unit, modifier: Modifier) {
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp),
         ) {
             // Same live dot as the running bar, white against the brand fill.
-            Box(Modifier.size(9.dp).clip(CircleShape).background(Color.White))
+            Box(Modifier.size(9.dp).clip(CircleShape).background(FjTheme.colors.onBrand))
             Text(
                 text = stringResource(Res.string.workout_start),
                 style = FjTheme.typography.button.copy(fontWeight = FontWeight.Medium),
-                color = Color.White,
+                color = FjTheme.colors.onBrand,
             )
         }
     }
@@ -125,9 +127,9 @@ private fun RunningBar(runningSince: Instant?, onEnd: () -> Unit, modifier: Modi
             .height(56.dp)
             .clip(BarShape)
             .background(FjTheme.colors.brandSubtle)
-            .padding(start = 16.dp, end = 8.dp),
+            .padding(start = SpaceTokens.s16.dp, end = SpaceTokens.s8.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s12.dp),
     ) {
         // Live "recording" dot — the brand accent marking an active session.
         Box(Modifier.size(8.dp).clip(CircleShape).background(FjTheme.colors.brand))
@@ -136,7 +138,7 @@ private fun RunningBar(runningSince: Instant?, onEnd: () -> Unit, modifier: Modi
             Text(
                 text = stringResource(Res.string.workout_session_label).uppercase(),
                 style = FjTheme.typography.caption.copy(
-                    fontSize = 10.sp,
+                    fontSize = TypeTokens.t10.sp,
                     fontWeight = FontWeight.Bold,
                 ),
                 color = FjTheme.colors.brand,
@@ -145,7 +147,7 @@ private fun RunningBar(runningSince: Instant?, onEnd: () -> Unit, modifier: Modi
             Text(
                 text = elapsedText(runningSince),
                 style = FjTheme.typography.numberLarge.copy(
-                    fontSize = 20.sp,
+                    fontSize = TypeTokens.t20.sp,
                     fontWeight = FontWeight.Medium,
                 ),
                 color = FjTheme.colors.textPrimary,
@@ -158,13 +160,13 @@ private fun RunningBar(runningSince: Instant?, onEnd: () -> Unit, modifier: Modi
         Box(
             modifier = Modifier
                 .size(44.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(RadiusTokens.chip.dp))
                 .background(FjTheme.colors.brand)
                 .clickable(onClick = onEnd)
                 .semantics { contentDescription = endLabel },
             contentAlignment = Alignment.Center,
         ) {
-            Box(Modifier.size(14.dp).clip(RoundedCornerShape(4.dp)).background(Color.White))
+            Box(Modifier.size(14.dp).clip(RoundedCornerShape(RadiusTokens.bar.dp)).background(FjTheme.colors.onBrand))
         }
     }
 }

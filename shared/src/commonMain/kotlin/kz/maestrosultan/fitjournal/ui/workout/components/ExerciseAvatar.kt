@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kz.maestrosultan.fitjournal.domain.exercise.Exercise
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.theme.assetFolder
@@ -45,8 +46,8 @@ fun ExerciseAvatar(
     Box(
         modifier = modifier
             .size(size)
-            .border(width = 1.dp, shape = RoundedCornerShape(12.dp), color = category.composeColor())
-            .clip(RoundedCornerShape(12.dp))
+            .border(width = 1.dp, shape = RoundedCornerShape(RadiusTokens.chip.dp), color = category.composeColor())
+            .clip(RoundedCornerShape(RadiusTokens.chip.dp))
             .background(FjTheme.colors.textTertiary),
         contentAlignment = Alignment.Center,
     ) {

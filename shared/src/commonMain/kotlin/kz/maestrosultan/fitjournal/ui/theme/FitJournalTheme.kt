@@ -9,7 +9,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.graphics.Color
 
 /**
  * Root theme for all shared Compose UI. Resolves the [ColorTokens][FjColorScheme]
@@ -47,7 +46,7 @@ object FjTheme {
 private fun FjColorScheme.toMaterialColorScheme() = if (isDark) {
     darkColorScheme(
         primary = brand,
-        onPrimary = Color.White,
+        onPrimary = onBrand,
         secondary = accent,
         background = background,
         onBackground = textPrimary,
@@ -62,7 +61,7 @@ private fun FjColorScheme.toMaterialColorScheme() = if (isDark) {
 } else {
     lightColorScheme(
         primary = brand,
-        onPrimary = Color.White,
+        onPrimary = onBrand,
         secondary = accent,
         background = background,
         onBackground = textPrimary,

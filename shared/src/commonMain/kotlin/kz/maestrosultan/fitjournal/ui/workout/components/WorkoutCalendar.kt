@@ -44,6 +44,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.YearMonth
 import kotlinx.datetime.todayIn
 import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
 import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
 import kz.maestrosultan.fitjournal.ui.format.NameStyle
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
@@ -107,8 +108,8 @@ fun WorkoutCalendar(
     Column(
         modifier = modifier
             .background(containerColor)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(horizontal = SpaceTokens.s16.dp, vertical = SpaceTokens.s12.dp),
+        verticalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp),
     ) {
         // Swipe changes the month; no arrow buttons.
         Text(
@@ -169,7 +170,7 @@ private fun DayCell(
     val todayTint = if (FjTheme.colors.isDark) FjTheme.colors.accent else FjTheme.colors.brand
     val numberColor by animateColorAsState(
         targetValue = when {
-            isSelected -> Color.White
+            isSelected -> FjTheme.colors.onBrand
             isDisabled -> FjTheme.colors.textTertiary
             isToday && isMonthDate -> todayTint
             isMonthDate -> FjTheme.colors.textPrimary
@@ -217,8 +218,8 @@ private fun DayCell(
         // Unselected in-month days only — the selection circle would cover the dots.
         if (isMonthDate && categories.isNotEmpty() && !isSelected) {
             Row(
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = SpaceTokens.s4.dp),
+                horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s2.dp),
             ) {
                 categories.take(4).forEach { category ->
                     Box(

@@ -47,6 +47,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.ceil
 import kotlin.math.min
+import kz.maestrosultan.fitjournal.kmp.design.ColorTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_close
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_composer_title
@@ -138,7 +141,7 @@ internal fun ShareComposerScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black),
+            .background(Color(ColorTokens.background.dark)),
     ) {
         Box(
             modifier = Modifier
@@ -369,7 +372,7 @@ private fun ComposerBackdrop(
 /** "No background" preview: 8.dp squares at 10% white over black. */
 @Composable
 private fun TransparentCheckerboard(modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier.background(Color.Black)) {
+    Canvas(modifier = modifier.background(Color(ColorTokens.background.dark))) {
         val square = CheckerboardSquare.toPx()
         if (square <= 0f) return@Canvas
         val columns = ceil(size.width / square).toInt()
@@ -475,7 +478,7 @@ private fun ComposerChrome(
                     chip = chip,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+                        .padding(start = SpaceTokens.s16.dp, end = SpaceTokens.s16.dp, bottom = SpaceTokens.s12.dp),
                 )
             }
         }
@@ -486,7 +489,7 @@ private fun ComposerChrome(
 @Composable
 private fun TopChrome(onCloseRequested: () -> Unit, modifier: Modifier = Modifier) {
     val closeLabel = stringResource(Res.string.postworkout_close)
-    Box(modifier = modifier.padding(horizontal = ChromeEdgeInset, vertical = 12.dp)) {
+    Box(modifier = modifier.padding(horizontal = ChromeEdgeInset, vertical = SpaceTokens.s12.dp)) {
         Box(
             modifier = Modifier
                 .align(Alignment.CenterStart)
@@ -506,7 +509,7 @@ private fun TopChrome(onCloseRequested: () -> Unit, modifier: Modifier = Modifie
         Text(
             text = stringResource(Res.string.postworkout_composer_title),
             style = FjTheme.typography.bodyStrong.copy(fontWeight = FontWeight.SemiBold),
-            color = Color.White,
+            color = Color(ColorTokens.onBrand.light),
             modifier = Modifier.align(Alignment.Center),
         )
     }
@@ -550,15 +553,15 @@ private fun RailButton(
         ) {
             icon()
         }
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(SpaceTokens.s4.dp))
         Text(
             text = label,
             style = FjTheme.typography.label.copy(
-                fontSize = 10.sp,
+                fontSize = TypeTokens.t10.sp,
                 fontWeight = FontWeight.SemiBold,
                 shadow = RailLabelShadow,
             ),
-            color = Color.White,
+            color = Color(ColorTokens.onBrand.light),
         )
     }
 }
@@ -566,7 +569,7 @@ private fun RailButton(
 @Composable
 private fun BottomBar(onSave: () -> Unit, onShare: () -> Unit, modifier: Modifier = Modifier) {
     Row(
-        modifier = modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 24.dp),
+        modifier = modifier.padding(start = SpaceTokens.s16.dp, top = SpaceTokens.s16.dp, end = SpaceTokens.s16.dp, bottom = SpaceTokens.s24.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -597,10 +600,10 @@ private fun SharePill(onShare: () -> Unit, modifier: Modifier = Modifier) {
         modifier = modifier
             .testTag(ComposerTestTags.Share)
             .clip(CircleShape)
-            .background(Color.White)
+            .background(Color(ColorTokens.onBrand.light))
             .clickable(onClick = onShare)
-            .padding(vertical = 12.dp, horizontal = 24.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(vertical = SpaceTokens.s12.dp, horizontal = SpaceTokens.s24.dp),
+        horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -620,12 +623,12 @@ private fun ComposerChipOverlay(chip: ComposerChip, modifier: Modifier = Modifie
             .testTag(ComposerTestTags.Chip)
             .clip(CircleShape)
             .background(ChromeInk.copy(alpha = 0.9f))
-            .padding(vertical = 8.dp, horizontal = 16.dp),
+            .padding(vertical = SpaceTokens.s8.dp, horizontal = SpaceTokens.s16.dp),
     ) {
         Text(
             text = stringResource(chip.message),
             style = FjTheme.typography.caption,
-            color = Color.White,
+            color = Color(ColorTokens.onBrand.light),
         )
     }
 }
@@ -659,14 +662,14 @@ private fun RailGlyph(editor: ComposerEditor, modifier: Modifier = Modifier) {
         ComposerEditor.Title -> Text(
             text = "Aa",
             style = FjTheme.typography.bodyStrong.copy(fontWeight = FontWeight.SemiBold),
-            color = Color.White,
+            color = Color(ColorTokens.onBrand.light),
             modifier = modifier,
         )
 
         ComposerEditor.Layout -> Canvas(modifier.size(GlyphSize)) {
             outlineFrame()
             drawRoundRect(
-                color = Color.White,
+                color = Color(ColorTokens.onBrand.light),
                 topLeft = Offset(size.width * 0.22f, size.height * 0.56f),
                 size = Size(size.width * 0.56f, size.height * 0.18f),
                 cornerRadius = CornerRadius(1.5.dp.toPx()),
@@ -676,7 +679,7 @@ private fun RailGlyph(editor: ComposerEditor, modifier: Modifier = Modifier) {
         ComposerEditor.Backdrop -> Canvas(modifier.size(GlyphSize)) {
             outlineFrame()
             drawCircle(
-                color = Color.White,
+                color = Color(ColorTokens.onBrand.light),
                 radius = 1.6.dp.toPx(),
                 center = Offset(size.width * 0.34f, size.height * 0.36f),
             )
@@ -686,7 +689,7 @@ private fun RailGlyph(editor: ComposerEditor, modifier: Modifier = Modifier) {
                 lineTo(size.width * 0.72f, size.height * 0.74f)
                 close()
             }
-            drawPath(peak, Color.White)
+            drawPath(peak, Color(ColorTokens.onBrand.light))
         }
 
         ComposerEditor.Stats -> Canvas(modifier.size(GlyphSize)) {
@@ -696,7 +699,7 @@ private fun RailGlyph(editor: ComposerEditor, modifier: Modifier = Modifier) {
             fractions.forEachIndexed { index, fraction ->
                 val barHeight = (bottom - size.height * 0.16f) * fraction
                 drawRoundRect(
-                    color = Color.White,
+                    color = Color(ColorTokens.onBrand.light),
                     topLeft = Offset(size.width * (0.16f + index * 0.28f), bottom - barHeight),
                     size = Size(barWidth, barHeight),
                     cornerRadius = CornerRadius(barWidth / 2f),
@@ -707,9 +710,9 @@ private fun RailGlyph(editor: ComposerEditor, modifier: Modifier = Modifier) {
         ComposerEditor.Scrim -> Canvas(modifier.size(GlyphSize)) {
             val stroke = GlyphStroke.toPx()
             val radius = (size.minDimension - stroke) / 2f
-            drawCircle(color = Color.White, radius = radius, style = Stroke(width = stroke))
+            drawCircle(color = Color(ColorTokens.onBrand.light), radius = radius, style = Stroke(width = stroke))
             drawArc(
-                color = Color.White,
+                color = Color(ColorTokens.onBrand.light),
                 startAngle = 0f,
                 sweepAngle = 180f,
                 useCenter = true,
@@ -724,7 +727,7 @@ private fun RailGlyph(editor: ComposerEditor, modifier: Modifier = Modifier) {
 private fun DrawScope.outlineFrame() {
     val stroke = GlyphStroke.toPx()
     drawRoundRect(
-        color = Color.White,
+        color = Color(ColorTokens.onBrand.light),
         topLeft = Offset(stroke / 2f, stroke / 2f),
         size = Size(size.width - stroke, size.height - stroke),
         cornerRadius = CornerRadius(4.dp.toPx()),
@@ -737,14 +740,14 @@ private fun CloseGlyph(modifier: Modifier = Modifier) {
     Canvas(modifier.size(13.dp)) {
         val stroke = 1.8.dp.toPx()
         drawLine(
-            color = Color.White,
+            color = Color(ColorTokens.onBrand.light),
             start = Offset(0f, 0f),
             end = Offset(size.width, size.height),
             strokeWidth = stroke,
             cap = StrokeCap.Round,
         )
         drawLine(
-            color = Color.White,
+            color = Color(ColorTokens.onBrand.light),
             start = Offset(size.width, 0f),
             end = Offset(0f, size.height),
             strokeWidth = stroke,
@@ -761,28 +764,28 @@ private fun SaveGlyph(modifier: Modifier = Modifier) {
         val centerX = size.width / 2f
         val arrowTip = size.height * 0.62f
         drawLine(
-            color = Color.White,
+            color = Color(ColorTokens.onBrand.light),
             start = Offset(centerX, size.height * 0.12f),
             end = Offset(centerX, arrowTip),
             strokeWidth = stroke,
             cap = StrokeCap.Round,
         )
         drawLine(
-            color = Color.White,
+            color = Color(ColorTokens.onBrand.light),
             start = Offset(size.width * 0.28f, size.height * 0.42f),
             end = Offset(centerX, arrowTip),
             strokeWidth = stroke,
             cap = StrokeCap.Round,
         )
         drawLine(
-            color = Color.White,
+            color = Color(ColorTokens.onBrand.light),
             start = Offset(size.width * 0.72f, size.height * 0.42f),
             end = Offset(centerX, arrowTip),
             strokeWidth = stroke,
             cap = StrokeCap.Round,
         )
         drawLine(
-            color = Color.White,
+            color = Color(ColorTokens.onBrand.light),
             start = Offset(size.width * 0.18f, size.height * 0.86f),
             end = Offset(size.width * 0.82f, size.height * 0.86f),
             strokeWidth = stroke,
@@ -797,11 +800,11 @@ private fun SaveGlyph(modifier: Modifier = Modifier) {
 private const val CanvasAspectRatio = 9f / 16f
 
 /** The design's chrome ink, `#040415` — always used with an explicit alpha. */
-private val ChromeInk = Color(0xFF040415)
+private val ChromeInk = Color(ColorTokens.textPrimary.light)
 
 /**
  * Brand backdrop fill: the LIGHT brand surface (`brandSubtle`, the last
- * `brandRamp` stop), pinned as a literal so exports stay theme-independent.
+ * ColorTokens.brandInk dark value), pinned as a literal so exports stay theme-independent.
  *
  * Not the saturated `#7C72F2` brand: spec §7.4 renders this backdrop with the
  * `DarkOnLight` palette, whose ink is `#040415` and whose dots/bars ARE
@@ -810,9 +813,9 @@ private val ChromeInk = Color(0xFF040415)
  * surface is what "dark on light" means, and it matches the confirm sheet's
  * `brandSubtle` session card. Open for design review.
  */
-private val BrandBackdropFill = Color(0xFFE5E1FC)
+private val BrandBackdropFill = Color(ColorTokens.brandSubtle.light)
 
-private val CheckerboardTint = Color.White.copy(alpha = 0.10f)
+private val CheckerboardTint = Color(ColorTokens.onBrand.light).copy(alpha = 0.10f)
 private val CheckerboardSquare = 8.dp
 
 private val TopScrimInk = ChromeInk.copy(alpha = 0.55f)
@@ -822,17 +825,17 @@ private val TopScrimHeight = 130.dp
 private const val FreeformScrimFactor = 0.32f
 private const val FreeformScrimMaxAlpha = 0.6f
 
-private val ChromeEdgeInset = 16.dp
+private val ChromeEdgeInset = SpaceTokens.s16.dp
 private val CloseChipSize = 38.dp
-private val RailEdgeInset = 16.dp
-private val RailGap = 16.dp
-private val RailTopGap = 12.dp
+private val RailEdgeInset = SpaceTokens.s16.dp
+private val RailGap = SpaceTokens.s16.dp
+private val RailTopGap = SpaceTokens.s12.dp
 private val RailButtonSize = 44.dp
 private val GlyphSize = 20.dp
 private val GlyphStroke: Dp = 1.6.dp
 
 private val RailLabelShadow = Shadow(
-    color = Color(0x99040415),
+    color = ChromeInk.copy(alpha = 0.6f),
     offset = Offset(0f, 1f),
     blurRadius = 3f,
 )

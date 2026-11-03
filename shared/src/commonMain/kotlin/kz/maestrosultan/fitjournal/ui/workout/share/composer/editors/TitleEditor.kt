@@ -30,6 +30,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.ColorTokens
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_title_fallback
 import kz.maestrosultan.fitjournal.ui.workout.share.composer.ShareComposerContract
@@ -71,9 +75,9 @@ internal fun TitleEditor(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(FieldHeight)
-                .clip(RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(RadiusTokens.control.dp))
                 .background(EditorSheetDefaults.TileColor)
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = SpaceTokens.s16.dp),
             contentAlignment = Alignment.CenterStart,
         ) {
             BasicTextField(
@@ -81,9 +85,9 @@ internal fun TitleEditor(
                 onValueChange = { onTitleChange(it.take(maxLength)) },
                 modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
                 textStyle = FjTheme.typography.body.copy(
-                    fontSize = 16.sp,
+                    fontSize = TypeTokens.t16.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color.White,
+                    color = Color(ColorTokens.onBrand.light),
                 ),
                 cursorBrush = SolidColor(EditorSheetDefaults.AccentColor),
                 singleLine = true,
@@ -99,8 +103,8 @@ internal fun TitleEditor(
                         if (title.isBlank()) {
                             Text(
                                 text = stringResource(Res.string.postworkout_title_fallback),
-                                style = FjTheme.typography.body.copy(fontSize = 16.sp),
-                                color = Color.White.copy(alpha = 0.32f),
+                                style = FjTheme.typography.body.copy(fontSize = TypeTokens.t16.sp),
+                                color = Color(ColorTokens.onBrand.light).copy(alpha = 0.32f),
                             )
                         }
                         innerTextField()
@@ -109,11 +113,11 @@ internal fun TitleEditor(
             )
         }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(SpaceTokens.s8.dp))
         Text(
             text = "${title.length}/$maxLength",
             style = FjTheme.typography.caption,
-            color = Color.White.copy(alpha = 0.38f),
+            color = Color(ColorTokens.onBrand.light).copy(alpha = 0.38f),
             modifier = Modifier.align(Alignment.End),
         )
     }

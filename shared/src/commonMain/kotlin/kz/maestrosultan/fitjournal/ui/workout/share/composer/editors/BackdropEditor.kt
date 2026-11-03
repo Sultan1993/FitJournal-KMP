@@ -21,6 +21,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.ColorTokens
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_backdrop_brand
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_backdrop_photo
@@ -30,7 +34,7 @@ import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import org.jetbrains.compose.resources.stringResource
 
 private val RowHeight = 52.dp
-private val RowShape = RoundedCornerShape(12.dp)
+private val RowShape = RoundedCornerShape(RadiusTokens.chip.dp)
 
 /**
  * Body of the Backdrop panel: three rows, one per [BackdropKind].
@@ -49,7 +53,7 @@ internal fun BackdropEditor(
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp),
     ) {
         BackdropRow(
             label = stringResource(Res.string.postworkout_backdrop_photo),
@@ -85,16 +89,16 @@ private fun BackdropRow(
             .clip(RowShape)
             .background(EditorSheetDefaults.TileColor)
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = SpaceTokens.s16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = label,
             style = FjTheme.typography.bodyStrong.copy(
-                fontSize = 16.sp,
+                fontSize = TypeTokens.t16.sp,
                 fontWeight = FontWeight.Medium,
             ),
-            color = Color.White.copy(alpha = if (selected) 1f else 0.78f),
+            color = Color(ColorTokens.onBrand.light).copy(alpha = if (selected) 1f else 0.78f),
             modifier = Modifier.weight(1f),
         )
         if (selected) {

@@ -25,6 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_est_1rm
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_max_set
@@ -43,8 +45,8 @@ private const val VALUE_PLACEHOLDER = "—"
 private const val ValueFadeMillis = 180
 
 /** `eyebrow` size, and iOS's 0.7 minimumScaleFactor of it. */
-private val LabelMaxFontSize = 10.5.sp
-private val LabelMinFontSize = 7.35.sp
+private val LabelMaxFontSize = TypeTokens.t10.sp
+private val LabelMinFontSize = LabelMaxFontSize * 0.7f
 
 /**
  * EST 1RM / MAX SET two-cell row separated by a hairline — 1:1 with iOS's
@@ -79,7 +81,7 @@ fun FocusStatsRow(
             modifier = Modifier
                 // The 20dp gutter lives here, not on the cells — cell content
                 // stays flush with the page gutter as on both natives.
-                .padding(horizontal = 16.dp, vertical = 2.dp)
+                .padding(horizontal = SpaceTokens.s16.dp, vertical = SpaceTokens.s2.dp)
                 .width(1.dp)
                 .fillMaxHeight()
                 // Both natives hairline at textPrimary @ 8%, a touch lighter
@@ -106,7 +108,7 @@ private fun FocusStatCell(
     onValueTap: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(SpaceTokens.s4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = label.uppercase(),
@@ -125,10 +127,10 @@ private fun FocusStatCell(
                 contentDescription = null,
                 tint = FjTheme.colors.textTertiary,
                 modifier = Modifier
-                    .padding(start = 2.dp)
+                    .padding(start = SpaceTokens.s2.dp)
                     .clickable(onClick = onInfo)
                     // Padding inside the clickable: a 12dp glyph, a 20dp target.
-                    .padding(4.dp)
+                    .padding(SpaceTokens.s4.dp)
                     .size(12.dp),
             )
         }
@@ -148,20 +150,20 @@ private fun FocusStatCell(
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
                     text = shown.value ?: VALUE_PLACEHOLDER,
-                    style = FjTheme.typography.numberLarge.copy(fontSize = 24.sp, fontWeight = FontWeight.Bold),
+                    style = FjTheme.typography.numberLarge.copy(fontSize = TypeTokens.t24.sp, fontWeight = FontWeight.Bold),
                     color = FjTheme.colors.textPrimary,
                     modifier = Modifier.alignByBaseline(),
                 )
                 Text(
                     text = shown.unit,
-                    style = FjTheme.typography.label.copy(fontSize = 12.sp, fontWeight = FontWeight.Medium),
+                    style = FjTheme.typography.label.copy(fontSize = TypeTokens.t12.sp, fontWeight = FontWeight.Medium),
                     color = FjTheme.colors.textTertiary,
                     // Baseline-aligned, not bottom-aligned: Rubik's descenders make
                     // a bottom edge sit off the 26sp value's baseline, and the gap
                     // would drift with any font-size change.
                     modifier = Modifier
                         .alignByBaseline()
-                        .padding(start = 4.dp),
+                        .padding(start = SpaceTokens.s4.dp),
                 )
             }
         }

@@ -34,6 +34,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_add_note
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_note
@@ -65,27 +68,27 @@ private fun FilledNoteCard(text: String, onClick: () -> Unit, modifier: Modifier
     Row(
         modifier = modifier
             .defaultMinSize(minHeight = SummaryBlockHeight)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(RadiusTokens.control.dp))
             .background(FjTheme.colors.card)
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 16.dp),
+            .padding(horizontal = SpaceTokens.s16.dp, vertical = SpaceTokens.s16.dp),
         verticalAlignment = Alignment.Top,
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = stringResource(Res.string.workout_details_note),
-                style = FjTheme.typography.eyebrow.copy(fontSize = 10.sp),
+                style = FjTheme.typography.eyebrow.copy(fontSize = TypeTokens.t10.sp),
                 color = FjTheme.colors.textTertiary,
             )
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(SpaceTokens.s4.dp))
             Text(
                 text = text,
-                style = FjTheme.typography.body.copy(fontSize = 14.sp),
+                style = FjTheme.typography.body.copy(fontSize = TypeTokens.t14.sp),
                 color = FjTheme.colors.textSecondary,
             )
         }
-        Spacer(Modifier.width(12.dp))
-        PencilGlyph(size = 14.dp, color = FjTheme.colors.textTertiary, modifier = Modifier.padding(top = 4.dp))
+        Spacer(Modifier.width(SpaceTokens.s12.dp))
+        PencilGlyph(size = 14.dp, color = FjTheme.colors.textTertiary, modifier = Modifier.padding(top = SpaceTokens.s4.dp))
     }
 }
 
@@ -96,17 +99,17 @@ private fun EmptyNoteButton(onClick: () -> Unit, modifier: Modifier = Modifier) 
         modifier = modifier
             .fillMaxWidth()
             .height(SummaryBlockHeight)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(RadiusTokens.control.dp))
             .drawBehind { drawDashedBorder(border, radius = 16.dp) }
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = SpaceTokens.s16.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp),
     ) {
         PencilGlyph(size = 15.dp, color = FjTheme.colors.textSecondary)
         Text(
             text = stringResource(Res.string.workout_details_add_note),
-            style = FjTheme.typography.bodyStrong.copy(fontSize = 16.sp, fontWeight = FontWeight.Medium),
+            style = FjTheme.typography.bodyStrong.copy(fontSize = TypeTokens.t16.sp, fontWeight = FontWeight.Medium),
             color = FjTheme.colors.textSecondary,
         )
     }

@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,6 +41,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.ColorTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_skipped
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_tile_exercises
@@ -53,10 +55,10 @@ import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsPreviewSurfa
 import org.jetbrains.compose.resources.stringResource
 
 private val AvatarSize = 44.dp
-private val AvatarGap = 16.dp
+private val AvatarGap = SpaceTokens.s16.dp
 
 /** Symmetric, so a divider sits midway between two rows rather than hugging the one above. */
-private val RowPadding = 16.dp
+private val RowPadding = SpaceTokens.s16.dp
 
 /** Row top padding + half the avatar — the avatar's vertical center, where the rail meets it. */
 private val RailInset = RowPadding + AvatarSize / 2
@@ -80,13 +82,13 @@ fun ExerciseRowList(
             style = FjTheme.typography.eyebrow,
             color = FjTheme.colors.textTertiary,
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(SpaceTokens.s8.dp))
         groups.forEachIndexed { index, group ->
             // Skipped list has no dividers; relies on each row's own top spacing.
             if (index > 0 && !skipped) {
                 HorizontalDivider(
                     // Full-bleed left, not inset under the text.
-                    modifier = Modifier.padding(end = 16.dp),
+                    modifier = Modifier.padding(end = SpaceTokens.s16.dp),
                     color = FjTheme.colors.divider,
                 )
             }
@@ -119,7 +121,7 @@ private fun SupersetGroup(
     skipped: Boolean = false,
 ) {
     // Fixed color, not a theme token — same violet in both themes (Assumption 1).
-    val rail = Color(0xFFA79EFF)
+    val rail = Color(ColorTokens.brandInk.dark)
     val background = FjTheme.colors.background
     Column(
         modifier = modifier
@@ -152,8 +154,7 @@ private fun SupersetGroup(
                     Box(
                         modifier = Modifier
                             .align(Alignment.CenterStart)
-                            .offset(y = RailInset)
-                            .padding(start = AvatarSize / 2 - 13.dp)
+                            .offset(x = AvatarSize / 2 - 13.dp, y = RailInset)
                             .size(26.dp)
                             .clip(CircleShape)
                             .background(background),
@@ -184,12 +185,12 @@ private fun ExerciseRowContent(
             modifier = if (skipped) Modifier.alpha(0.5f) else Modifier,
         )
         Spacer(Modifier.width(AvatarGap))
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp)) {
             Text(
                 text = row.name,
-                style = FjTheme.typography.cardTitle.copy(fontSize = 16.sp),
+                style = FjTheme.typography.cardTitle.copy(fontSize = TypeTokens.t16.sp),
                 color = if (skipped) FjTheme.colors.textSecondary else FjTheme.colors.textPrimary,
-                modifier = Modifier.padding(end = 16.dp),
+                modifier = Modifier.padding(end = SpaceTokens.s16.dp),
             )
             // Skipped shows name + avatar only — no volume/delta/sets/comment (for now).
             if (!skipped) {
@@ -199,12 +200,12 @@ private fun ExerciseRowContent(
                 // hanging below the number by the pill's padding + descender.
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(end = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp),
+                    modifier = Modifier.padding(end = SpaceTokens.s16.dp),
                 ) {
                     Text(
                         text = volume,
-                        style = FjTheme.typography.bodyStrong.copy(fontSize = 24.sp),
+                        style = FjTheme.typography.bodyStrong.copy(fontSize = TypeTokens.t24.sp),
                         color = FjTheme.colors.textPrimary,
                     )
                     row.delta?.let { DeltaPill(delta = it) }
@@ -216,13 +217,13 @@ private fun ExerciseRowContent(
             row.comment?.let { comment ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(end = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp),
+                    modifier = Modifier.padding(end = SpaceTokens.s16.dp),
                 ) {
                     PencilGlyph(size = 13.dp, color = FjTheme.colors.textSecondary)
                     Text(
                         text = comment,
-                        style = FjTheme.typography.caption.copy(fontSize = 14.sp),
+                        style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t14.sp),
                         color = FjTheme.colors.textSecondary,
                     )
                 }
@@ -255,19 +256,19 @@ private fun SetStrip(
                 )
             }
             .horizontalScroll(scrollState),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s16.dp),
     ) {
         sets.forEach { chip ->
             Column {
                 Text(
                     text = chip.valueText,
-                    style = FjTheme.typography.body.copy(fontSize = 14.sp),
+                    style = FjTheme.typography.body.copy(fontSize = TypeTokens.t14.sp),
                     color = FjTheme.colors.textSecondary,
                 )
                 if (chip.repsText.isNotBlank()) {
                     Text(
                         text = chip.repsText,
-                        style = FjTheme.typography.caption.copy(fontSize = 14.sp),
+                        style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t14.sp),
                         color = FjTheme.colors.textTertiary,
                     )
                 }
@@ -292,12 +293,12 @@ private fun DeltaPill(
     val tone = if (delta.positive) FjTheme.colors.positive else FjTheme.colors.negative
     Text(
         text = delta.text,
-        style = FjTheme.typography.label.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold),
+        style = FjTheme.typography.label.copy(fontSize = TypeTokens.t12.sp, fontWeight = FontWeight.Bold),
         color = tone,
         modifier = modifier
-            .clip(RoundedCornerShape(99.dp))
+            .clip(CircleShape)
             .background(tone.copy(alpha = 0.16f))
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = SpaceTokens.s8.dp, vertical = SpaceTokens.s4.dp),
     )
 }
 

@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import kz.maestrosultan.fitjournal.kmp.design.ColorTokens
 import kz.maestrosultan.fitjournal.ui.workout.share.composer.CardSpacer
 import kz.maestrosultan.fitjournal.ui.workout.share.composer.ShareCardScope
 import kz.maestrosultan.fitjournal.ui.workout.share.composer.ShareNewBest
@@ -25,7 +26,7 @@ import kz.maestrosultan.fitjournal.ui.workout.share.composer.ShareNewBest
  * palette's accent fill (white over a photo, brand purple on a light surface),
  * and `#040415` is the one ink that stays legible on both.
  */
-private val BadgeInk = Color(0xFF040415)
+private val BadgeInk = Color(ColorTokens.textPrimary.light)
 
 /** Trophy glyph on the badge — a mark, not an icon asset. */
 private const val TrophyGlyph = "🏆"

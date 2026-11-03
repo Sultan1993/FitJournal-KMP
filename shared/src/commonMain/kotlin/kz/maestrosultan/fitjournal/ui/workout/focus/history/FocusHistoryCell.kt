@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_calendar
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
@@ -37,12 +39,12 @@ fun FocusHistoryCell(item: FocusHistoryItemUi, modifier: Modifier = Modifier) {
             // 16 top AND bottom per day section → 32 between consecutive
             // sections; the page's contentPadding top inset is 0 so the first
             // section brings its own 16 (see FocusHistoryPage's comment).
-            .padding(vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(vertical = SpaceTokens.s16.dp),
+        verticalArrangement = Arrangement.spacedBy(SpaceTokens.s12.dp),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp),
         ) {
             Icon(
                 painter = painterResource(Res.drawable.ic_common_calendar),
@@ -61,12 +63,12 @@ fun FocusHistoryCell(item: FocusHistoryItemUi, modifier: Modifier = Modifier) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(RadiusTokens.card.dp))
                     .background(FjTheme.colors.surface),
             ) {
                 HistorySetRail(
                     sets = occurrence.sets,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = SpaceTokens.s16.dp, vertical = SpaceTokens.s8.dp),
                 )
             }
         }

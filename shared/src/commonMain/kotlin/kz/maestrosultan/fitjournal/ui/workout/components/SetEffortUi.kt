@@ -25,6 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kz.maestrosultan.fitjournal.domain.workout.SetEffort
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.set_effort_easy
 import kz.maestrosultan.fitjournal.shared.generated.resources.set_effort_hard
@@ -69,13 +71,13 @@ fun SetEffortPill(effort: SetEffort, modifier: Modifier = Modifier) {
     val tone = effortTone(effort)
     Text(
         text = label,
-        style = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold),
+        style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t12.sp, fontWeight = FontWeight.Bold),
         color = tone.ink,
         maxLines = 1,
         modifier = modifier
             .clip(CircleShape)
             .background(tone.soft)
-            .padding(horizontal = 12.dp, vertical = 4.dp),
+            .padding(horizontal = SpaceTokens.s12.dp, vertical = SpaceTokens.s4.dp),
     )
 }
 
@@ -95,7 +97,7 @@ fun SetEffortChips(
     // EffortChip), so a tap changes colour and weight but never size.
     Row(
         modifier = modifier.width(IntrinsicSize.Max),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         EffortChip(SetEffort.EASY, selected == SetEffort.EASY, onToggle, Modifier.weight(1f))
@@ -112,15 +114,15 @@ private fun EffortChip(
 ) {
     val tone = effortTone(effort)
     val label = setEffortLabel(effort).orEmpty()
-    val labelStyle = FjTheme.typography.caption.copy(fontSize = 12.sp)
+    val labelStyle = FjTheme.typography.caption.copy(fontSize = TypeTokens.t12.sp)
     Row(
         modifier = modifier
             .height(28.dp)
             .clip(CircleShape)
             .background(if (isSelected) tone.soft else FjTheme.colors.surfaceElevated)
             .toggleable(value = isSelected, role = Role.Checkbox, onValueChange = { onToggle(effort) })
-            .padding(horizontal = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            .padding(horizontal = SpaceTokens.s12.dp),
+        horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(

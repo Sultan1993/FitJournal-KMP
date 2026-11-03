@@ -22,6 +22,9 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_ai_coach
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
@@ -41,19 +44,19 @@ fun FocusCoachCard(segments: List<FocusCoachSegmentUi>, modifier: Modifier = Mod
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(RadiusTokens.card.dp))
             .background(FjTheme.colors.brandSubtle)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(SpaceTokens.s16.dp),
+        verticalArrangement = Arrangement.spacedBy(SpaceTokens.s12.dp),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp),
         ) {
             Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(FjTheme.colors.brand))
             Text(
                 text = stringResource(Res.string.focus_ai_coach).uppercase(),
-                style = FjTheme.typography.eyebrow.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                style = FjTheme.typography.eyebrow.copy(fontSize = TypeTokens.t10.sp, fontWeight = FontWeight.Bold),
                 color = FjTheme.colors.brand,
             )
         }
@@ -75,7 +78,7 @@ fun FocusCoachCard(segments: List<FocusCoachSegmentUi>, modifier: Modifier = Mod
         }
         Text(
             text = annotated,
-            style = FjTheme.typography.body.copy(fontSize = 16.sp, lineHeight = 21.sp),
+            style = FjTheme.typography.body.copy(fontSize = TypeTokens.t16.sp, lineHeight = 21.sp),
         )
     }
 }

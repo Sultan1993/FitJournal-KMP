@@ -38,6 +38,9 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_note_placeholder
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_note_save
@@ -129,13 +132,13 @@ private fun NoteEditorBody(
         modifier = modifier
             .fillMaxWidth()
             .windowInsetsPadding(WindowInsets.ime)
-            .padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
+            .padding(start = SpaceTokens.s16.dp, end = SpaceTokens.s16.dp, bottom = SpaceTokens.s24.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = stringResource(Res.string.workout_details_note_title),
                 style = FjTheme.typography.screenTitle.copy(
-                    fontSize = 20.sp,
+                    fontSize = TypeTokens.t20.sp,
                     fontWeight = FontWeight.Bold,
                 ),
                 color = FjTheme.colors.textPrimary,
@@ -148,12 +151,12 @@ private fun NoteEditorBody(
                 // Padding grows the touch target leftward/vertically; the label
                 // itself stays flush with the title's right margin.
                 modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(RadiusTokens.chip.dp))
                     .clickable(enabled = canSave) { onSave(value.text) }
-                    .padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
+                    .padding(start = SpaceTokens.s16.dp, top = SpaceTokens.s8.dp, bottom = SpaceTokens.s8.dp),
             )
         }
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(SpaceTokens.s12.dp))
         BasicTextField(
             value = value,
             onValueChange = { value = it },
@@ -162,7 +165,7 @@ private fun NoteEditorBody(
                 .heightIn(min = NoteFieldMinHeight, max = NoteFieldMaxHeight)
                 .focusRequester(focusRequester),
             textStyle = FjTheme.typography.body.copy(
-                fontSize = 16.sp,
+                fontSize = TypeTokens.t16.sp,
                 color = FjTheme.colors.textPrimary,
             ),
             cursorBrush = SolidColor(FjTheme.colors.brand),
@@ -171,7 +174,7 @@ private fun NoteEditorBody(
                 if (value.text.isEmpty()) {
                     Text(
                         text = stringResource(Res.string.workout_details_note_placeholder),
-                        style = FjTheme.typography.body.copy(fontSize = 16.sp),
+                        style = FjTheme.typography.body.copy(fontSize = TypeTokens.t16.sp),
                         color = FjTheme.colors.textTertiary,
                     )
                 }
@@ -219,7 +222,7 @@ private fun NoteEditorSheetPreviewSurface(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(FjTheme.colors.sheet)
-                .padding(top = 24.dp),
+                .padding(top = SpaceTokens.s24.dp),
         ) {
             content()
         }

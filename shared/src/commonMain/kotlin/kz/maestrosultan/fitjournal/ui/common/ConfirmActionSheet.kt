@@ -20,6 +20,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.common_cancel
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
@@ -53,26 +56,26 @@ fun ConfirmActionSheet(
         Column(
             modifier = modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                .padding(start = SpaceTokens.s16.dp, end = SpaceTokens.s16.dp, bottom = SpaceTokens.s16.dp)
         ) {
             Text(
                 text = title,
-                style = FjTheme.typography.cardTitle.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold),
+                style = FjTheme.typography.cardTitle.copy(fontSize = TypeTokens.t20.sp, fontWeight = FontWeight.Bold),
                 color = FjTheme.colors.textPrimary,
-                modifier = Modifier.padding(bottom = 8.dp),
+                modifier = Modifier.padding(bottom = SpaceTokens.s8.dp),
             )
             Text(
                 text = message,
-                style = FjTheme.typography.body.copy(fontSize = 14.sp),
+                style = FjTheme.typography.body.copy(fontSize = TypeTokens.t14.sp),
                 color = FjTheme.colors.textSecondary,
-                modifier = Modifier.padding(bottom = 24.dp),
+                modifier = Modifier.padding(bottom = SpaceTokens.s24.dp),
             )
             SheetButton(
                 text = confirmLabel,
                 container = FjTheme.colors.negative,
-                content = Color.White,
+                content = FjTheme.colors.onBrand,
                 onClick = { close(onConfirm) },
-                modifier = Modifier.padding(bottom = 12.dp),
+                modifier = Modifier.padding(bottom = SpaceTokens.s12.dp),
             )
             SheetButton(
                 text = cancelLabel,
@@ -97,7 +100,7 @@ private fun SheetButton(
         modifier = modifier
             .fillMaxWidth()
             .height(54.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(RadiusTokens.control.dp))
             .background(container)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,

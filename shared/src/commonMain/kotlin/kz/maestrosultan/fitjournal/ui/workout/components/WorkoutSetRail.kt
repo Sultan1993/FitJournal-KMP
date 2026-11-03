@@ -29,6 +29,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_add_set
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_set_label
@@ -93,28 +96,28 @@ fun WorkoutSetRail(
 
 @Composable
 private fun WorkoutSetItem(position: Int, set: SetDisplay, onClick: (() -> Unit)?) {
-    val bigStyle = FjTheme.typography.body.copy(fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
-    val smallStyle = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Medium)
+    val bigStyle = FjTheme.typography.body.copy(fontSize = TypeTokens.t20.sp, fontWeight = FontWeight.SemiBold)
+    val smallStyle = FjTheme.typography.caption.copy(fontSize = TypeTokens.t12.sp, fontWeight = FontWeight.Medium)
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(44.dp)
             // clip + clickable only when tappable — an import (null-onClick) row is fully inert.
-            .then(if (onClick != null) Modifier.clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick) else Modifier)
+            .then(if (onClick != null) Modifier.clip(RoundedCornerShape(RadiusTokens.chip.dp)).clickable(onClick = onClick) else Modifier)
             .testTag("set_row"),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s16.dp),
     ) {
         Dot(color = setEffortDotColor(set.effort))
         Text(
             text = "${stringResource(Res.string.workout_set_label).uppercase()} $position",
-            style = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold),
+            style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t12.sp, fontWeight = FontWeight.Bold),
             color = FjTheme.colors.textTertiary,
             maxLines = 1,
         )
         Row(
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s4.dp),
             modifier = Modifier.weight(1f).alpha(if (set.isLogged) 1f else 0.3f),
         ) {
             Text(set.number, style = bigStyle, color = FjTheme.colors.textPrimary, modifier = Modifier.alignByBaseline())
@@ -125,7 +128,7 @@ private fun WorkoutSetItem(position: Int, set: SetDisplay, onClick: (() -> Unit)
                 "×",
                 style = smallStyle,
                 color = FjTheme.colors.textTertiary,
-                modifier = Modifier.alignByBaseline().padding(horizontal = 4.dp),
+                modifier = Modifier.alignByBaseline().padding(horizontal = SpaceTokens.s4.dp),
             )
             Text(set.repsNumber, style = bigStyle, color = FjTheme.colors.textPrimary, modifier = Modifier.alignByBaseline())
             if (set.repsUnit.isNotEmpty()) {
@@ -142,11 +145,11 @@ private fun AddSetRow(onAddSet: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .height(46.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(RadiusTokens.chip.dp))
             .clickable(onClick = onAddSet)
             .testTag("add_set_row"),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s16.dp),
     ) {
         Box(modifier = Modifier.width(12.dp), contentAlignment = Alignment.Center) {
             Box(
@@ -159,7 +162,7 @@ private fun AddSetRow(onAddSet: () -> Unit) {
         }
         Text(
             text = "+ ${stringResource(Res.string.workout_add_set)}",
-            style = FjTheme.typography.caption.copy(fontSize = 14.sp, fontWeight = FontWeight.SemiBold),
+            style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t14.sp, fontWeight = FontWeight.SemiBold),
             color = FjTheme.colors.brand,
         )
     }

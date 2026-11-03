@@ -28,6 +28,9 @@ import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 import kz.maestrosultan.fitjournal.domain.workout.isSuperset
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.ic_workout_superset
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_superset
@@ -58,16 +61,16 @@ fun WorkoutRecordCard(
         // 14 above / 8 below; children carry no external top/bottom so nothing double-stacks.
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(RadiusTokens.card.dp))
             .background(FjTheme.colors.surface)
             .then(if (onOpen != null) Modifier.clickable(onClick = onOpen) else Modifier)
-            .padding(top = 16.dp, bottom = 8.dp),
+            .padding(top = SpaceTokens.s16.dp, bottom = SpaceTokens.s8.dp),
     ) {
         if (record.isSuperset) {
             Row(
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+                modifier = Modifier.padding(start = SpaceTokens.s16.dp, end = SpaceTokens.s16.dp, bottom = SpaceTokens.s12.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp),
             ) {
                 Icon(
                     painter = painterResource(Res.drawable.ic_workout_superset),
@@ -78,7 +81,7 @@ fun WorkoutRecordCard(
                 Text(
                     text = stringResource(Res.string.workout_superset).uppercase(),
                     style = FjTheme.typography.caption.copy(
-                        fontSize = 12.sp,
+                        fontSize = TypeTokens.t12.sp,
                         fontWeight = FontWeight.Bold,
                     ),
                     color = FjTheme.colors.brand,
@@ -98,7 +101,7 @@ fun WorkoutRecordCard(
             )
             if (index != record.exercises.lastIndex) {
                 DashedDivider(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = SpaceTokens.s16.dp),
                 )
             }
         }

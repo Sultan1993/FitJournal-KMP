@@ -31,6 +31,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.ColorTokens
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_layout_muscles
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_layout_new_best
@@ -42,7 +46,7 @@ import kz.maestrosultan.fitjournal.ui.workout.share.composer.ShareLayoutKind
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import org.jetbrains.compose.resources.stringResource
 
-private val ThumbShape = RoundedCornerShape(12.dp)
+private val ThumbShape = RoundedCornerShape(RadiusTokens.chip.dp)
 private const val ThumbAspect = 9f / 14f
 private val SelectedBorderWidth = 2.5.dp
 
@@ -70,7 +74,7 @@ internal fun LayoutEditor(
     val kinds = ShareLayoutKind.entries.filter { showNewBest || it != ShareLayoutKind.NewBest }
 
     Column(modifier = modifier.fillMaxWidth()) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s12.dp)) {
             kinds.forEach { kind ->
                 LayoutThumb(
                     kind = kind,
@@ -80,7 +84,7 @@ internal fun LayoutEditor(
                 )
             }
         }
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(SpaceTokens.s16.dp))
         ResetRow(onClick = onResetLayout, modifier = Modifier.fillMaxWidth())
     }
 }
@@ -121,14 +125,14 @@ private fun LayoutThumb(
         ) {
             LayoutSketch(kind = kind, modifier = Modifier.fillMaxSize())
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(SpaceTokens.s8.dp))
         Text(
             text = label,
             style = FjTheme.typography.label.copy(
-                fontSize = 12.sp,
+                fontSize = TypeTokens.t12.sp,
                 fontWeight = FontWeight.SemiBold,
             ),
-            color = Color.White.copy(alpha = if (selected) 1f else 0.6f),
+            color = Color(ColorTokens.onBrand.light).copy(alpha = if (selected) 1f else 0.6f),
             textAlign = TextAlign.Center,
             maxLines = 1,
         )
@@ -141,7 +145,7 @@ private fun ResetRow(onClick: () -> Unit, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .height(46.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(RadiusTokens.chip.dp))
             .background(EditorSheetDefaults.TileColor)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -149,10 +153,10 @@ private fun ResetRow(onClick: () -> Unit, modifier: Modifier = Modifier) {
         Text(
             text = stringResource(Res.string.postworkout_reset_layout),
             style = FjTheme.typography.button.copy(
-                fontSize = 14.sp,
+                fontSize = TypeTokens.t14.sp,
                 fontWeight = FontWeight.Medium,
             ),
-            color = Color.White.copy(alpha = 0.82f),
+            color = Color(ColorTokens.onBrand.light).copy(alpha = 0.82f),
         )
     }
 }
@@ -163,8 +167,8 @@ private fun ResetRow(onClick: () -> Unit, modifier: Modifier = Modifier) {
  */
 @Composable
 private fun LayoutSketch(kind: ShareLayoutKind, modifier: Modifier = Modifier) {
-    val faint = Color.White.copy(alpha = 0.26f)
-    val strong = Color.White.copy(alpha = 0.58f)
+    val faint = Color(ColorTokens.onBrand.light).copy(alpha = 0.26f)
+    val strong = Color(ColorTokens.onBrand.light).copy(alpha = 0.58f)
     Canvas(modifier = modifier) {
         val inset = size.width * 0.16f
         val innerWidth = size.width - inset * 2f

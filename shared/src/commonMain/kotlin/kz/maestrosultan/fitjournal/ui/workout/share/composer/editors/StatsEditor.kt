@@ -22,6 +22,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.ColorTokens
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_stat_best_set
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_stat_duration
@@ -34,7 +38,7 @@ import org.jetbrains.compose.resources.stringResource
 
 private const val ChipsPerRow = 3
 private val ChipHeight = 40.dp
-private val ChipShape = RoundedCornerShape(12.dp)
+private val ChipShape = RoundedCornerShape(RadiusTokens.chip.dp)
 
 /**
  * Body of the Stats panel: a chip per [StatKind], laid out three to a row.
@@ -53,10 +57,10 @@ internal fun StatsEditor(
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp),
     ) {
         StatKind.entries.chunked(ChipsPerRow).forEach { rowKinds ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp)) {
                 rowKinds.forEach { kind ->
                     StatChip(
                         label = kind.label(),
@@ -95,16 +99,16 @@ private fun StatChip(
             // selectable, not clickable: on/off state is otherwise carried only by
             // color + weight, invisible to screen readers (and tests).
             .selectable(selected = selected, onClick = onClick)
-            .padding(horizontal = 8.dp),
+            .padding(horizontal = SpaceTokens.s8.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = label,
             style = FjTheme.typography.label.copy(
-                fontSize = 14.sp,
+                fontSize = TypeTokens.t14.sp,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
             ),
-            color = Color.White.copy(alpha = if (selected) 1f else 0.66f),
+            color = Color(ColorTokens.onBrand.light).copy(alpha = if (selected) 1f else 0.66f),
             textAlign = TextAlign.Center,
             maxLines = 1,
         )

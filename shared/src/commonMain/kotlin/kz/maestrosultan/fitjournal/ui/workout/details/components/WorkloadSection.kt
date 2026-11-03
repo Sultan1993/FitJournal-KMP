@@ -24,6 +24,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_workload
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
@@ -49,10 +51,10 @@ fun WorkloadSection(
             style = FjTheme.typography.eyebrow,
             color = FjTheme.colors.textTertiary,
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(SpaceTokens.s12.dp))
         WorkloadBar(rows = rows, modifier = Modifier.fillMaxWidth())
-        Spacer(Modifier.height(16.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Spacer(Modifier.height(SpaceTokens.s16.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(SpaceTokens.s12.dp)) {
             rows.forEach { row -> WorkloadRow(row = row, modifier = Modifier.fillMaxWidth()) }
         }
     }
@@ -68,7 +70,7 @@ private fun WorkloadBar(
     if (visible.isEmpty()) return
     Row(
         modifier = modifier.height(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s4.dp),
     ) {
         visible.forEachIndexed { index, row ->
             val start = if (index == 0) 6.dp else 3.dp
@@ -92,25 +94,25 @@ private fun WorkloadRow(
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s12.dp),
     ) {
         Box(Modifier.size(8.dp).clip(CircleShape).background(row.category.composeColor()))
         Text(
             text = stringResource(row.category.nameRes),
-            style = FjTheme.typography.body.copy(fontSize = 14.sp),
+            style = FjTheme.typography.body.copy(fontSize = TypeTokens.t14.sp),
             color = FjTheme.colors.textPrimary,
             modifier = Modifier.weight(1f),
         )
         row.amountText?.let { amount ->
             Text(
                 text = amount,
-                style = FjTheme.typography.caption.copy(fontSize = 14.sp),
+                style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t14.sp),
                 color = FjTheme.colors.textTertiary,
             )
         }
         Text(
             text = "${row.percentage.roundToInt()}%",
-            style = FjTheme.typography.bodyStrong.copy(fontSize = 16.sp, fontWeight = FontWeight.Medium),
+            style = FjTheme.typography.bodyStrong.copy(fontSize = TypeTokens.t16.sp, fontWeight = FontWeight.Medium),
             color = FjTheme.colors.textPrimary,
             textAlign = TextAlign.End,
             modifier = Modifier.width(40.dp),

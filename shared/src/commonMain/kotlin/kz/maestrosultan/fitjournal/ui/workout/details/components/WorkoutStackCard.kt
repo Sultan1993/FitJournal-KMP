@@ -26,13 +26,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.ColorTokens
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsContract
 import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsPreviewData
 import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsPreviewSurface
 
 /** Fixed shadow color, not a theme token (design-sanctioned literal). */
-private val FocusedRowShadow = Color.Black.copy(alpha = 0.35f)
+private val FocusedRowShadow = Color(ColorTokens.shadow.light).copy(alpha = 0.35f)
 
 /**
  * Rendered only on a WD3 day. Tapping a row dispatches [onSelect], which
@@ -51,10 +55,10 @@ fun WorkoutStackCard(
     // nested inside the container instead of bulging against it.
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(RadiusTokens.card.dp))
             .background(FjTheme.colors.card)
-            .padding(8.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+            .padding(SpaceTokens.s8.dp),
+        verticalArrangement = Arrangement.spacedBy(SpaceTokens.s2.dp),
     ) {
         rows.forEach { row ->
             StackRow(
@@ -74,7 +78,7 @@ private fun StackRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(RadiusTokens.control.dp)
     // The highlight (background + lift + text colors) crossfades between rows on
     // select, so it glides to the tapped row instead of blinking there.
     // surfaceElevated, NOT surface: surface and the container's `card` are the
@@ -100,30 +104,30 @@ private fun StackRow(
             .clip(shape)
             .background(background)
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = SpaceTokens.s16.dp, vertical = SpaceTokens.s12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = row.title,
-                style = FjTheme.typography.cardTitle.copy(fontSize = 16.sp, fontWeight = FontWeight.SemiBold),
+                style = FjTheme.typography.cardTitle.copy(fontSize = TypeTokens.t16.sp, fontWeight = FontWeight.SemiBold),
                 color = titleColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            Spacer(Modifier.height(2.dp))
+            Spacer(Modifier.height(SpaceTokens.s2.dp))
             Text(
                 text = row.subtitle,
-                style = FjTheme.typography.caption.copy(fontSize = 12.sp),
+                style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t12.sp),
                 color = FjTheme.colors.textTertiary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(SpaceTokens.s12.dp))
         Text(
             text = row.volumeText,
-            style = FjTheme.typography.bodyStrong.copy(fontSize = 14.sp, fontWeight = FontWeight.Medium),
+            style = FjTheme.typography.bodyStrong.copy(fontSize = TypeTokens.t14.sp, fontWeight = FontWeight.Medium),
             color = volumeColor,
         )
     }

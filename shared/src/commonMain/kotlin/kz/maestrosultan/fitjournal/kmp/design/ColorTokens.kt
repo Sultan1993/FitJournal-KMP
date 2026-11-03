@@ -35,6 +35,20 @@ object ColorTokens {
     val brand = ColorToken(0xFF7C72F2, 0xFF7C72F2)
     val brandSubtle = ColorToken(0xFFE5E1FC, 0xFF2B2650)
     val accent = ColorToken(0xFFFBEAB2, 0xFFFBEAB2)
+    /** Warm ink for text on an [accent] fill (e.g. the NEW BEST label); fixed in both modes like [accent]. */
+    val accentInk = ColorToken(0xFF8A7326, 0xFF8A7326)
+    /** Text and icons on a solid [brand], [positive] or [negative] fill (button labels, avatar initials). */
+    val onBrand = ColorToken(0xFFFFFFFF, 0xFFFFFFFF)
+    /** The ONE overlay dim behind sheets, menus, pickers and modals (black @ 32%, both modes). Use as-is — never change its alpha. */
+    val scrim = ColorToken(0x52000000, 0x52000000)
+    /** Base for drop shadows only (not overlays); callers set the shadow alpha. */
+    val shadow = ColorToken(0xFF000000, 0xFF000000)
+
+    // Sign-in screen (always dark, both apps): the floor of the auth hero photo so it fades into the
+    // screen without a seam, plus its two text greys. Fixed in both modes.
+    val authInk = ColorToken(0xFF0E0D12, 0xFF0E0D12)
+    val authTextSecondary = ColorToken(0xFFC3C0CF, 0xFFC3C0CF)
+    val authTextTertiary = ColorToken(0xFF8C889A, 0xFF8C889A)
 
     /**
      * Brand-coloured INK for content drawn on [brandSubtle], not on the page.

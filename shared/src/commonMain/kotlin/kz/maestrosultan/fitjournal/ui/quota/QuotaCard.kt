@@ -15,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -26,6 +25,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Text
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.quota_cta_renew
 import kz.maestrosultan.fitjournal.shared.generated.resources.quota_cta_restore
@@ -110,13 +111,13 @@ fun QuotaCard(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(RadiusTokens.card.dp))
             .background(
                 if (content is QuotaCardContent.Lapsed) FjTheme.colors.surface
                 else FjTheme.colors.brandSubtle
             )
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+            .padding(SpaceTokens.s16.dp),
+        verticalArrangement = Arrangement.spacedBy(SpaceTokens.s16.dp),
     ) {
         when (content) {
             is QuotaCardContent.Remaining -> RemainingBody(content, onUpgradeClick)
@@ -144,7 +145,7 @@ private fun RemainingBody(content: QuotaCardContent.Remaining, onUpgradeClick: (
         )
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(SpaceTokens.s12.dp)) {
         QuotaHeadline(
             formatted = pluralStringResource(
                 Res.plurals.quota_workouts_left,
@@ -171,7 +172,7 @@ private fun RemainingBody(content: QuotaCardContent.Remaining, onUpgradeClick: (
 
 @Composable
 private fun ExhaustedBody(content: QuotaCardContent.Exhausted, onUpgradeClick: () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp)) {
         Text(
             text = stringResource(Res.string.quota_eyebrow),
             style = eyebrowStyle(),
@@ -207,7 +208,7 @@ private fun LapsedBody(
     onRenewClick: () -> Unit,
     onRestoreClick: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp)) {
         Text(
             text = stringResource(Res.string.quota_lapsed_eyebrow),
             style = eyebrowStyle(),
@@ -228,16 +229,16 @@ private fun LapsedBody(
             color = FjTheme.colors.textSecondary,
         )
     }
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(SpaceTokens.s12.dp)) {
         QuotaButton(text = stringResource(Res.string.quota_cta_renew), onClick = onRenewClick)
         // Secondary, unfilled: a returning subscriber whose purchase simply did not
         // restore must not have to pay twice to get back in.
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(RadiusTokens.chip.dp))
                 .clickable(role = Role.Button) { onRestoreClick() }
-                .padding(horizontal = 16.dp, vertical = 16.dp),
+                .padding(horizontal = SpaceTokens.s16.dp, vertical = SpaceTokens.s16.dp),
         ) {
             Text(
                 modifier = Modifier.fillMaxWidth().align(Alignment.Center),
@@ -333,7 +334,7 @@ private fun QuotaMeter(used: Int, limit: Int) {
             )
         }
     } else {
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s4.dp)) {
             repeat(limit.coerceAtLeast(0)) { index ->
                 Box(
                     modifier = Modifier
@@ -357,16 +358,16 @@ private fun QuotaButton(text: String, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(RadiusTokens.chip.dp))
             .background(FjTheme.colors.brand)
             .clickable(role = Role.Button) { onClick() }
-            .padding(horizontal = 16.dp, vertical = 16.dp),
+            .padding(horizontal = SpaceTokens.s16.dp, vertical = SpaceTokens.s16.dp),
     ) {
         Text(
             modifier = Modifier.fillMaxWidth().align(Alignment.Center),
             text = text,
             style = cardStyle(16.0, FontWeight.Medium),
-            color = Color.White,
+            color = FjTheme.colors.onBrand,
             textAlign = TextAlign.Center,
         )
     }
@@ -383,7 +384,7 @@ private const val MAX_SEGMENTS = 12
 @Composable
 private fun QuotaCardPreview(dark: Boolean, content: QuotaCardContent) {
     FitJournalTheme(darkTheme = dark) {
-        Box(modifier = Modifier.background(FjTheme.colors.background).padding(16.dp)) {
+        Box(modifier = Modifier.background(FjTheme.colors.background).padding(SpaceTokens.s16.dp)) {
             QuotaCard(content = content, onUpgradeClick = {}, onRestoreClick = {})
         }
     }

@@ -52,6 +52,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_add_another_set
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_delete_set_title
@@ -112,8 +115,8 @@ private const val MinEditorFontSize = 24f
 /** Non-snapshot latch — see [FocusAccordionRow]. */
 private class EditorLatch(var value: FocusEditorUi)
 
-private val CollapsedRadius = 16.dp
-private val ExpandedRadius = 20.dp
+private val CollapsedRadius = RadiusTokens.control.dp
+private val ExpandedRadius = RadiusTokens.card.dp
 private val CommitRevealWidth = 80.dp
 
 // Non-translatable glyphs (multiplication sign, plus) — kept as named
@@ -160,7 +163,7 @@ fun FocusSetStack(
      */
     onExpandedRowPositioned: (String, LayoutCoordinates) -> Unit = { _, _ -> },
 ) {
-    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp)) {
         FocusSetStackHeader(setDots)
         // KEYED. A Column matches children by POSITION, and this list changes
         // shape underneath itself: logging from the add-another row turns the
@@ -199,7 +202,7 @@ fun FocusSetStack(
 @Composable
 private fun FocusSetStackHeader(setDots: List<FocusSetDotUi>) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, bottom = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(start = SpaceTokens.s2.dp, end = SpaceTokens.s2.dp, bottom = SpaceTokens.s4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -209,14 +212,14 @@ private fun FocusSetStackHeader(setDots: List<FocusSetDotUi>) {
             // follows iOS, its stated visual reference — and follows it everywhere,
             // so the eyebrows on one page can't track differently from each other.
             style = FjTheme.typography.caption.copy(
-                fontSize = 12.sp,
+                fontSize = TypeTokens.t12.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.1.sp,
             ),
             color = FjTheme.colors.textTertiary,
         )
         Spacer(modifier = Modifier.weight(1f))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp)) {
             setDots.forEach { dot ->
                 val (fill, border) = when (dot.kind) {
                     FocusSetDotUi.Kind.Done -> FjTheme.colors.brand to null
@@ -532,8 +535,8 @@ private fun rowBackground(slot: FocusSetSlotUi, expanded: Boolean): Color = when
 @Composable
 private fun FocusAddAnotherHeader() {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = SpaceTokens.s16.dp, vertical = SpaceTokens.s16.dp),
+        horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s12.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -544,13 +547,13 @@ private fun FocusAddAnotherHeader() {
         ) {
             Text(
                 text = GlyphPlus,
-                style = FjTheme.typography.caption.copy(fontSize = 14.sp, fontWeight = FontWeight.Bold),
+                style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t14.sp, fontWeight = FontWeight.Bold),
                 color = FjTheme.colors.textTertiary,
             )
         }
         Text(
             text = stringResource(Res.string.focus_add_another_set),
-            style = FjTheme.typography.body.copy(fontSize = 14.sp, fontWeight = FontWeight.SemiBold),
+            style = FjTheme.typography.body.copy(fontSize = TypeTokens.t14.sp, fontWeight = FontWeight.SemiBold),
             color = FjTheme.colors.textTertiary,
         )
     }
@@ -576,14 +579,14 @@ private fun FocusSetHeaderRow(
                 top = if (expanded) 12.dp else 18.dp,
                 bottom = if (expanded) 4.dp else 18.dp,
             ),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         FocusSetStatusIndicator(kind = slot.kind, size = if (expanded) 30.dp else 36.dp)
         Text(
             text = "${stringResource(Res.string.workout_set_label).uppercase()} ${slot.number}",
             style = FjTheme.typography.caption.copy(
-                fontSize = 12.sp,
+                fontSize = TypeTokens.t12.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 0.8.sp,
             ),
@@ -599,7 +602,7 @@ private fun FocusSetHeaderRow(
             editor.lastHint?.let {
                 Text(
                     text = it,
-                    style = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Medium),
+                    style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t12.sp, fontWeight = FontWeight.Medium),
                     color = FjTheme.colors.textTertiary,
                     maxLines = 1,
                 )
@@ -612,7 +615,7 @@ private fun FocusSetHeaderRow(
                 Text(
                     text = stringResource(Res.string.focus_target).uppercase(),
                     style = FjTheme.typography.caption.copy(
-                        fontSize = 12.sp,
+                        fontSize = TypeTokens.t12.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp,
                     ),
@@ -637,7 +640,7 @@ private fun FocusSetHeaderRow(
                         indication = ripple(bounded = false, radius = 20.dp),
                         onClick = onMenu,
                     )
-                    .padding(12.dp)
+                    .padding(SpaceTokens.s12.dp)
                     .testTag("focus_set_options"),
             ) {
                 Icon(
@@ -660,7 +663,7 @@ private fun FocusSetHeaderRow(
 
 @Composable
 private fun FocusInlineValues(slot: FocusSetSlotUi, modifier: Modifier = Modifier) {
-    val valueSize = if (slot.kind == FocusSetSlotUi.Kind.Finished) 21.sp else 20.sp
+    val valueSize = TypeTokens.t20.sp
     val valueColor = when (slot.kind) {
         FocusSetSlotUi.Kind.Finished -> FjTheme.colors.textPrimary
         FocusSetSlotUi.Kind.Active -> FjTheme.colors.textSecondary
@@ -668,7 +671,7 @@ private fun FocusInlineValues(slot: FocusSetSlotUi, modifier: Modifier = Modifie
     }
     val repsColor = if (slot.kind == FocusSetSlotUi.Kind.Target) FjTheme.colors.textTertiary else FjTheme.colors.textSecondary
     val repsNumber = slot.repsText.removePrefix("× ")
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp)) {
         Text(
             text = slot.valueText,
             style = FjTheme.typography.body.copy(fontSize = valueSize, fontWeight = FontWeight.Bold),
@@ -678,13 +681,13 @@ private fun FocusInlineValues(slot: FocusSetSlotUi, modifier: Modifier = Modifie
         )
         Text(
             text = slot.valueUnit,
-            style = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Medium),
+            style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t12.sp, fontWeight = FontWeight.Medium),
             color = FjTheme.colors.textTertiary,
             modifier = Modifier.alignByBaseline(),
         )
         Text(
             text = GlyphTimes,
-            style = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Medium),
+            style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t12.sp, fontWeight = FontWeight.Medium),
             color = FjTheme.colors.textTertiary,
             modifier = Modifier.alignByBaseline(),
         )
@@ -708,7 +711,7 @@ private fun FocusSetStatusIndicator(kind: FocusSetSlotUi.Kind, size: Dp) {
             Icon(
                 painter = painterResource(Res.drawable.ic_common_check),
                 contentDescription = null,
-                tint = Color.White,
+                tint = FjTheme.colors.onBrand,
                 modifier = Modifier.size(size * 0.44f),
             )
         }
@@ -736,8 +739,8 @@ private fun FocusEditorBody(
     onCommit: () -> Unit,
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 8.dp, bottom = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = SpaceTokens.s16.dp).padding(top = SpaceTokens.s8.dp, bottom = SpaceTokens.s16.dp),
+        verticalArrangement = Arrangement.spacedBy(SpaceTokens.s12.dp),
     ) {
         // The two fields take their natural width and the whole group centers —
         // weighted halves would pin the × off the optical centre.
@@ -746,7 +749,7 @@ private fun FocusEditorBody(
         // height pin below can join the baseline group without earning a gap
         // of its own.
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = SpaceTokens.s4.dp),
             horizontalArrangement = Arrangement.Center,
         ) {
             // HEIGHT + BASELINE PIN. The two fields cross on a focus swap —
@@ -789,14 +792,14 @@ private fun FocusEditorBody(
                 onClick = { onFocusField(FocusInputField.Value) },
                 modifier = Modifier.alignByBaseline(),
             )
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(SpaceTokens.s12.dp))
             Text(
                 text = GlyphTimes,
-                style = FjTheme.typography.body.copy(fontSize = 24.sp, fontWeight = FontWeight.Medium),
+                style = FjTheme.typography.body.copy(fontSize = TypeTokens.t24.sp, fontWeight = FontWeight.Medium),
                 color = FjTheme.colors.border,
                 modifier = Modifier.alignByBaseline(),
             )
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(SpaceTokens.s12.dp))
             FocusEditorField(
                 text = editor.repsText,
                 unit = editor.repsUnit,
@@ -820,10 +823,10 @@ private fun FocusEditorBody(
         Button(
             onClick = onCommit,
             modifier = Modifier.fillMaxWidth().height(52.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = FjTheme.colors.brand, contentColor = Color.White),
+            shape = RoundedCornerShape(RadiusTokens.control.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = FjTheme.colors.brand, contentColor = FjTheme.colors.onBrand),
         ) {
-            Text(title, style = FjTheme.typography.button.copy(fontSize = 16.sp, fontWeight = FontWeight.SemiBold))
+            Text(title, style = FjTheme.typography.button.copy(fontSize = TypeTokens.t16.sp, fontWeight = FontWeight.SemiBold))
         }
     }
 }
@@ -845,7 +848,7 @@ private fun FocusEditorField(text: String, unit: String, focused: Boolean, onCli
             indication = null,
             onClick = onClick,
         ),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s4.dp),
     ) {
         Text(
             text = text.ifEmpty { "0" },
@@ -878,7 +881,7 @@ private fun FocusEditorField(text: String, unit: String, focused: Boolean, onCli
         )
         Text(
             text = unit,
-            style = FjTheme.typography.caption.copy(fontSize = 14.sp, fontWeight = FontWeight.SemiBold),
+            style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t14.sp, fontWeight = FontWeight.SemiBold),
             color = FjTheme.colors.textTertiary,
             modifier = Modifier.alignByBaseline(),
         )
@@ -892,15 +895,15 @@ private fun FocusSwipeCommit(width: Dp, modifier: Modifier = Modifier) {
         modifier = modifier
             .width(width)
             .fillMaxHeight()
-            .padding(vertical = 8.dp)
-            .clip(RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp))
+            .padding(vertical = SpaceTokens.s8.dp)
+            .clip(RoundedCornerShape(topStart = RadiusTokens.chip.dp, bottomStart = RadiusTokens.chip.dp))
             .background(FjTheme.colors.brand),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             painter = painterResource(Res.drawable.ic_common_check),
             contentDescription = null,
-            tint = Color.White,
+            tint = FjTheme.colors.onBrand,
             modifier = Modifier.size(18.dp),
         )
     }

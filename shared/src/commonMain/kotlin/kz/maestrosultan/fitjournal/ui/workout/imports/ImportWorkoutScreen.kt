@@ -38,13 +38,14 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kz.maestrosultan.fitjournal.analytics.ScreenName
 import kz.maestrosultan.fitjournal.analytics.TrackScreenView
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.import_workout_add
 import kz.maestrosultan.fitjournal.shared.generated.resources.import_workout_empty
@@ -125,7 +126,7 @@ private fun ImportWorkoutBody(
                     .fillMaxWidth()
                     // Host scaffold only pads the top, so add the bottom inset here.
                     .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))
-                    .padding(16.dp),
+                    .padding(SpaceTokens.s16.dp),
             )
         }
     }
@@ -190,11 +191,11 @@ private fun ImportPager(
                 modifier = Modifier.fillMaxSize(),
                 // Top clears the pinned page dots + fade; bottom clears the floating
                 // Add button + its inset.
-                contentPadding = PaddingValues(top = 24.dp, bottom = bottomInset + 86.dp),
+                contentPadding = PaddingValues(top = SpaceTokens.s24.dp, bottom = bottomInset + 86.dp),
             ) {
                 item {
                     WorkoutMuscleHeader(page.records)
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(SpaceTokens.s12.dp))
                 }
                 items(page.records, key = { it.id }) { record ->
                     ImportRecordCard(
@@ -202,7 +203,7 @@ private fun ImportPager(
                         measurementSystem = measurementSystem,
                         isSelected = record.id in loaded.selectedRecordIds,
                         onToggle = { dispatch(ImportWorkoutContract.ViewAction.ToggleRecord(record.id)) },
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(horizontal = SpaceTokens.s16.dp, vertical = SpaceTokens.s8.dp),
                     )
                 }
             }
@@ -239,14 +240,14 @@ internal fun ImportButton(
         modifier = modifier
             .height(54.dp)
             .testTag("import_button")
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(RadiusTokens.control.dp))
             .background(if (brandFill) FjTheme.colors.brand else FjTheme.colors.surfaceElevated)
             .clickable(enabled = canImport && !importInProgress, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         if (importInProgress) {
             CircularProgressIndicator(
-                color = Color.White,
+                color = FjTheme.colors.onBrand,
                 strokeWidth = 2.5.dp,
                 modifier = Modifier.size(22.dp).testTag("import_button_spinner"),
             )
@@ -254,7 +255,7 @@ internal fun ImportButton(
             Text(
                 text = stringResource(Res.string.import_workout_add),
                 style = FjTheme.typography.button.copy(fontWeight = FontWeight.Medium),
-                color = if (canImport) Color.White else FjTheme.colors.textTertiary,
+                color = if (canImport) FjTheme.colors.onBrand else FjTheme.colors.textTertiary,
                 modifier = Modifier.testTag("import_button_label"),
             )
         }

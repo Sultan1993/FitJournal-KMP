@@ -12,6 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_menu_clear_set
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_menu_delete_set
@@ -66,18 +68,18 @@ internal fun FocusSetMenuSheet(
         sheetState = sheetState,
         containerColor = FjTheme.colors.sheet,
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(bottom = SpaceTokens.s8.dp)) {
             // Says WHICH set you opened. The sheet covers the stack, so without
             // it there is nothing on screen tying these actions to a row.
             Text(
                 text = "${stringResource(Res.string.workout_set_label).uppercase()} $setNumber",
                 style = FjTheme.typography.caption.copy(
-                    fontSize = 12.sp,
+                    fontSize = TypeTokens.t12.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.8.sp,
                 ),
                 color = FjTheme.colors.textTertiary,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+                modifier = Modifier.padding(start = SpaceTokens.s16.dp, end = SpaceTokens.s16.dp, bottom = SpaceTokens.s12.dp),
             )
 
             if (canLogSet) {

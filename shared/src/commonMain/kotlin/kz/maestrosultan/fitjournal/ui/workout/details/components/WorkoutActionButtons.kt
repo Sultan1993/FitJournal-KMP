@@ -29,6 +29,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_delete
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_edit
@@ -47,7 +50,7 @@ fun WorkoutActionButtons(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(SpaceTokens.s12.dp)) {
         ActionRow(
             label = stringResource(Res.string.workout_details_repeat),
             tint = FjTheme.colors.textPrimary,
@@ -81,19 +84,19 @@ private fun ActionRow(
         modifier = modifier
             .fillMaxWidth()
             .height(52.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(RadiusTokens.control.dp))
             .background(FjTheme.colors.card)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s8.dp),
         ) {
             glyph()
             Text(
                 text = label,
-                style = FjTheme.typography.button.copy(fontSize = 16.sp, fontWeight = FontWeight.Medium),
+                style = FjTheme.typography.button.copy(fontSize = TypeTokens.t16.sp, fontWeight = FontWeight.Medium),
                 color = tint,
             )
         }

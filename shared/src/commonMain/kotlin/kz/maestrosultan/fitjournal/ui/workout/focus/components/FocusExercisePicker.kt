@@ -56,6 +56,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
+import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
+import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_done
 import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_plus
@@ -110,7 +113,7 @@ fun FocusExercisePicker(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.28f))
+                    .background(FjTheme.colors.scrim)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
@@ -173,17 +176,17 @@ private fun FocusPickerCard(
 
         Column(
             modifier = Modifier
-                .padding(top = topAnchor, start = 16.dp, end = 16.dp)
+                .padding(top = topAnchor, start = SpaceTokens.s16.dp, end = SpaceTokens.s16.dp)
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(RadiusTokens.card.dp))
                 .background(FjTheme.colors.surfaceElevated)
-                .border(width = 1.dp, color = FjTheme.colors.textPrimary.copy(alpha = 0.08f), shape = RoundedCornerShape(20.dp))
+                .border(width = 1.dp, color = FjTheme.colors.textPrimary.copy(alpha = 0.08f), shape = RoundedCornerShape(RadiusTokens.card.dp))
                 .heightIn(max = maxCardHeight)
                 // Inset OUTSIDE the scroll viewport, otherwise the 8dp top gap
                 // scrolls away and the first row touches the rounded edge.
-                .padding(8.dp)
+                .padding(SpaceTokens.s8.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+            verticalArrangement = Arrangement.spacedBy(SpaceTokens.s2.dp),
         ) {
             order.forEachIndexed { index, item ->
                 val isDragged = item.id == draggingId
@@ -340,7 +343,7 @@ private fun FocusPickerRow(item: FocusStripItemUi, onClick: () -> Unit, modifier
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(RadiusTokens.chip.dp))
             .background(if (item.isActive) FjTheme.colors.brandSubtle else Color.Transparent)
             // No ripple — iOS uses .buttonStyle(.plain), Android noRippleClickable.
             .clickable(
@@ -348,15 +351,15 @@ private fun FocusPickerRow(item: FocusStripItemUi, onClick: () -> Unit, modifier
                 indication = null,
                 onClick = onClick,
             )
-            .padding(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(SpaceTokens.s12.dp),
+        horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         FocusPickerThumbnail(item)
         Text(
             text = if (item.isSuperset) stringResource(Res.string.workout_superset) else item.name,
             style = FjTheme.typography.body.copy(
-                fontSize = 16.sp,
+                fontSize = TypeTokens.t16.sp,
                 fontWeight = if (item.isActive) FontWeight.SemiBold else FontWeight.Medium,
             ),
             color = FjTheme.colors.textPrimary,
@@ -385,7 +388,7 @@ private fun FocusPickerThumbnail(item: FocusStripItemUi) {
                         .background(FjTheme.colors.background)
                         .border(2.dp, if (item.isActive) FjTheme.colors.brandSubtle else FjTheme.colors.surfaceElevated, CircleShape),
                 ) {
-                    FocusExerciseThumb(imageName = name, modifier = Modifier.padding(4.dp))
+                    FocusExerciseThumb(imageName = name, modifier = Modifier.padding(SpaceTokens.s4.dp))
                 }
             }
         }
@@ -393,10 +396,10 @@ private fun FocusPickerThumbnail(item: FocusStripItemUi) {
         Box(
             modifier = Modifier
                 .size(30.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(RadiusTokens.chip.dp))
                 .background(if (item.isActive) FjTheme.colors.background else FjTheme.colors.surface),
         ) {
-            FocusExerciseThumb(imageName = item.imageNames.firstOrNull(), modifier = Modifier.padding(4.dp))
+            FocusExerciseThumb(imageName = item.imageNames.firstOrNull(), modifier = Modifier.padding(SpaceTokens.s4.dp))
         }
     }
 }
@@ -404,17 +407,17 @@ private fun FocusPickerThumbnail(item: FocusStripItemUi) {
 @Composable
 private fun FocusSupersetCountBadge(count: Int) {
     Row(
-        modifier = Modifier.clip(RoundedCornerShape(50)).background(FjTheme.colors.brand).padding(horizontal = 8.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.clip(RoundedCornerShape(50)).background(FjTheme.colors.brand).padding(horizontal = SpaceTokens.s8.dp, vertical = SpaceTokens.s4.dp),
+        horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
             painter = painterResource(Res.drawable.ic_workout_superset),
             contentDescription = null,
-            tint = Color.White,
+            tint = FjTheme.colors.onBrand,
             modifier = Modifier.size(12.dp),
         )
-        Text(count.toString(), style = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold), color = Color.White)
+        Text(count.toString(), style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t12.sp, fontWeight = FontWeight.Bold), color = FjTheme.colors.onBrand)
     }
 }
 
@@ -424,7 +427,7 @@ private fun FocusPickerTrailingStatus(item: FocusStripItemUi) {
         item.isActive -> Box(modifier = Modifier.size(9.dp).clip(CircleShape).background(FjTheme.colors.brand))
         item.isCompleted -> Text(
             text = stringResource(Res.string.focus_done),
-            style = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold),
+            style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t12.sp, fontWeight = FontWeight.Bold),
             color = FjTheme.colors.positive,
         )
     }
@@ -435,14 +438,14 @@ private fun FocusAddExerciseRow(onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(RadiusTokens.chip.dp))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = onClick,
             )
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(horizontal = SpaceTokens.s12.dp, vertical = SpaceTokens.s8.dp),
+        horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -458,7 +461,7 @@ private fun FocusAddExerciseRow(onClick: () -> Unit) {
         }
         Text(
             text = stringResource(Res.string.workout_add_exercise),
-            style = FjTheme.typography.body.copy(fontSize = 16.sp, fontWeight = FontWeight.SemiBold),
+            style = FjTheme.typography.body.copy(fontSize = TypeTokens.t16.sp, fontWeight = FontWeight.SemiBold),
             color = FjTheme.colors.brand,
             modifier = Modifier.weight(1f),
         )
