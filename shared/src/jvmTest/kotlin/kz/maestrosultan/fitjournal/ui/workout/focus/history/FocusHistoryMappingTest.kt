@@ -90,7 +90,7 @@ class FocusHistoryMappingTest {
     fun noLoggedSets_producesNoCard() = runTest {
         val ex = exercise(
             id = "we1",
-            sets = listOf(set("s1", reps = 5), set("s2", reps = 8), set("s3", reps = 3)),
+            sets = listOf(set("s1"), set("s2"), set("s3")),
         )
         val result = mapFocusHistory(listOf(ex), MeasurementSystem.KG_KM, LocaleFormatters, strings)
         assertTrue(result.isEmpty(), "no logged set on the occurrence must produce no history card")

@@ -30,6 +30,22 @@ class WorkoutFinishSheetTest {
     }
 
     @Test
+    fun statLabels_agreeWithTheirCount() = runComposeUiTest {
+        // Was "1 Exercises": the labels were plain strings under a number.
+        setSheet(loadedState().copy(setsCount = 1, exercisesCount = 1))
+        onNodeWithText("Set").assertExists()
+        onNodeWithText("Exercise").assertExists()
+        onNodeWithText("Exercises").assertDoesNotExist()
+    }
+
+    @Test
+    fun statLabels_pluralForMany() = runComposeUiTest {
+        setSheet(loadedState())
+        onNodeWithText("Sets").assertExists()
+        onNodeWithText("Exercises").assertExists()
+    }
+
+    @Test
     fun loading_rendersFrameWithoutSessionCard() = runComposeUiTest {
         setSheet(WorkoutFinishContract.ViewState.initial())
 

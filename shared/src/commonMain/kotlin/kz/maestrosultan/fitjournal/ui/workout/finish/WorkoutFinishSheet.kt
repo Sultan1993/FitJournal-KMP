@@ -36,11 +36,12 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_confir
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_confirm_keep_training
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_confirm_title
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_stat_duration
-import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_stat_exercises
-import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_stat_sets
+import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_stat_exercises_label
+import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_stat_sets_label
 import kz.maestrosultan.fitjournal.ui.common.FjPrimaryButton
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
+import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -174,8 +175,14 @@ private fun SessionCard(state: WorkoutFinishContract.ViewState, modifier: Modifi
         Spacer(Modifier.height(SpaceTokens.s16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s24.dp)) {
             SessionStat(state.durationText, stringResource(Res.string.postworkout_stat_duration))
-            SessionStat(state.setsCount.toString(), stringResource(Res.string.postworkout_stat_sets))
-            SessionStat(state.exercisesCount.toString(), stringResource(Res.string.postworkout_stat_exercises))
+            SessionStat(
+                state.setsCount.toString(),
+                pluralStringResource(Res.plurals.postworkout_stat_sets_label, state.setsCount),
+            )
+            SessionStat(
+                state.exercisesCount.toString(),
+                pluralStringResource(Res.plurals.postworkout_stat_exercises_label, state.exercisesCount),
+            )
         }
     }
 }

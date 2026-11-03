@@ -105,4 +105,21 @@ class WorkoutFocusEffortTest {
             assertEquals(SetEffort.NORMAL, storedSets(bed).single().effort, "an unfilled target has no effort")
         }
     }
+
+    @Test
+    fun resettingASet_leavesNoNumbers_soItIsATargetAgain() {
+        // Reps alone now mean "logged", so a reset that kept the reps as a goal
+        // would leave the row looking done.
+        val record = exerciseWith(focusSet("s1", 80.0, 10))
+        focusTest(listOf(record)) { bed ->
+            val vm = bed.viewModel(recordId = "r1", exerciseId = "we-1")
+            vm.awaitLoaded()
+            vm.dispatch(WorkoutFocusContract.ViewAction.ResetSet("s1"))
+            focusNow(vm)
+
+            val stored = storedSets(bed).single()
+            assertEquals(listOf<Any?>(null, null, null, null), listOf(stored.weight, stored.reps, stored.distance, stored.duration))
+            assertEquals(false, stored.isLogged)
+        }
+    }
 }

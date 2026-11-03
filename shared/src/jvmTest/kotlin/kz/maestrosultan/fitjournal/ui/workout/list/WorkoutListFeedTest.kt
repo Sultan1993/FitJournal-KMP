@@ -225,7 +225,7 @@ class WorkoutListFeedTest {
         val filledPlusUnfilled = exercise(
             TODAY,
             CategoryType.CHEST,
-            listOf(set(TODAY, 60.0, 8), set(TODAY, weight = null, reps = 8)), // 2nd set is unfilled
+            listOf(set(TODAY, 60.0, 8), set(TODAY, weight = null, reps = null)), // 2nd set is unfilled
         )
         val second = exercise(TODAY, CategoryType.BACK, listOf(set(TODAY, 50.0, 8)))
         val loaded = loaded(
@@ -237,8 +237,28 @@ class WorkoutListFeedTest {
         val day = loaded.weeks.first().days.single { it.date == TODAY }
         assertEquals(2, day.workoutCount, "two distinct workoutNumbers")
         assertEquals(2, day.exerciseCount)
-        assertEquals(2, day.setCount, "only the two filled sets count; the null-weight set does not")
+        assertEquals(2, day.setCount, "only the two filled sets count; the empty set does not")
         assertEquals(2, loaded.hero.workoutCount, "hero workoutCount is distinct (date, workoutNumber) this week")
+    }
+
+    @Test
+    fun dayRow_countsPerformedExercisesOnly_plannedRowsDoNot() {
+        // Today in the seeded demo: five exercises on the page, only bench has
+        // logged sets. The row used to say "5 exercises · 2 sets" while Details
+        // and the finish sheet said 1 — they now share performedCounts.
+        val bench = exercise(TODAY, CategoryType.CHEST, listOf(set(TODAY, 82.5, 8), set(TODAY, 82.5, 7), set(TODAY, null, null)))
+        val planned = listOf(CategoryType.SHOULDERS, CategoryType.CHEST, CategoryType.SHOULDERS, CategoryType.TRICEPS)
+            .map { exercise(TODAY, it, List(3) { set(TODAY, null, null) }) }
+        val loaded = loaded(
+            listOf(
+                record(TODAY, exercises = listOf(bench)),
+                record(TODAY, exercises = planned.take(2)),
+                record(TODAY, exercises = planned.drop(2)), // a superset of two planned members
+            ),
+        )
+        val day = loaded.weeks.first().days.single { it.date == TODAY }
+        assertEquals(1, day.exerciseCount)
+        assertEquals(2, day.setCount)
     }
 
     @Test

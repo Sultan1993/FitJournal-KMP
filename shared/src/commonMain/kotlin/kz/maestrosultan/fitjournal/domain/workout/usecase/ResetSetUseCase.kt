@@ -4,18 +4,17 @@ import kz.maestrosultan.fitjournal.domain.sync.SyncReason
 import kz.maestrosultan.fitjournal.domain.sync.SyncTrigger
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
 import kz.maestrosultan.fitjournal.domain.workout.SetEffort
-import kz.maestrosultan.fitjournal.domain.workout.ResultType
 import kz.maestrosultan.fitjournal.domain.workout.SetNotFoundException
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSet
-import kz.maestrosultan.fitjournal.domain.workout.resultType
 
 /**
- * Clears a set's logged value (weight / distance → null) while keeping its
- * rep-goal (reps / duration), turning a finished set back into an unfilled
- * TARGET — the same shape a repeat-workout target has. Unlike
- * [UpdateSetUseCase] this deliberately writes a NULL value (that use case
- * coerces null → 0, which would leave a filled 0-value set).
+ * Clears ALL of a set's numbers, turning a finished set back into an unfilled
+ * TARGET — the same shape a repeat-workout target has. Reps used to survive as
+ * a rep-goal, but reps alone now mean "logged" ([WorkoutSet.isLogged]), so that
+ * left the row looking done; the editor re-seeds from last time instead. Unlike
+ * [UpdateSetUseCase] this deliberately writes NULLs (that use case coerces
+ * null → 0, which would leave a filled 0-value set).
  *
  * @throws SetNotFoundException if the set was gone by write time.
  */
@@ -29,16 +28,15 @@ class ResetSetUseCase(
         set: WorkoutSet,
         exercise: WorkoutExercise,
     ): Boolean {
-        val cardio = exercise.resultType == ResultType.DISTANCE_DURATION
         val updated = recordRepository.updateSet(
             userId = userId,
             journalId = journalId,
             workoutExerciseId = exercise.id,
             setId = set.id,
             weight = null,
-            reps = if (cardio) null else set.reps,
+            reps = null,
             distance = null,
-            duration = if (cardio) set.duration else null,
+            duration = null,
             // An unfilled target has no effort to tag.
             effort = SetEffort.NORMAL,
         )

@@ -342,9 +342,10 @@ class WorkoutAnalyticsEmissionTest {
     }
 
     @Test
-    fun commitTarget_logsActionCommitTarget_forAllFourSeedSources() = focusTest(
+    fun commitTarget_logsActionCommitTarget_forEveryReachableSeedSource() = focusTest(
         listOf(
-            // OWN: a reps-only target has numbers of its own.
+            // Not a target: reps alone are a logged set, so committing it is a no-op
+            // (OWN can no longer seed a commit — a target has no numbers of its own).
             focusRecord("rOwn", 0, listOf(focusMember("we-own", focusCatalog("Own"), listOf(focusSet("o1", reps = 8))))),
             // LAST_TIME: WorkoutFocusCommitTargetTest's last-session fixture.
             focusRecord(
@@ -376,7 +377,6 @@ class WorkoutAnalyticsEmissionTest {
         assertTrue(logged.all { it.action == SetAction.COMMIT_TARGET }, "every swipe-commit is commit_target: $logged")
         assertEquals(
             listOf(
-                "ex-Own" to SetInput.UNCHANGED,
                 "ex-Last" to SetInput.PREFILL_LAST_TIME,
                 "ex-Prev" to SetInput.PREFILL_PREVIOUS_SET,
                 "ex-None" to SetInput.DEFAULT,

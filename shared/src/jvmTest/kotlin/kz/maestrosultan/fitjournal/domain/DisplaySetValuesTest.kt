@@ -193,13 +193,11 @@ class DisplaySetValuesTest {
     // ── isLogged / hasLoggedSets — what history is allowed to render ──────
 
     @Test
-    fun aSetIsLoggedOnlyWhenItsDefiningValueIsPresent() {
-        // weight for WEIGHT_REPS, distance for DISTANCE_DURATION.
+    fun aSetIsLoggedWhenItHasAnyOfItsOwnNumbers() {
         assertEquals(false, set("empty").isLogged)
         assertEquals(true, set("w", weight = 100.0).isLogged)
-        // Reps alone is NOT a logged set. "12 reps of Leg Press" with no load
-        // recorded is an unfinished row, not history — it renders "— × 12".
-        assertEquals(false, set("r", reps = 8).isLogged)
+        // Reps alone IS a logged set: bodyweight work (pull-ups × 11) records no load.
+        assertEquals(true, set("r", reps = 8).isLogged)
     }
 
     @Test
@@ -220,13 +218,14 @@ class DisplaySetValuesTest {
     }
 
     @Test
-    fun isLoggedAndHasOwnNumbersAreDifferentQuestions() {
-        // These two were briefly the same definition, which made Rule 1 below
-        // start treating a reps-only row as empty and blend a ghost weight into
-        // it — the "22 kg x 12" bug. Pinned apart on purpose.
+    fun isLogged_isExactlyHasOwnNumbers() {
+        // A reps-only row is its own (Rule 1 below) AND history: one definition.
         val repsOnly = set("r", reps = 12)
-        assertEquals(true, repsOnly.hasOwnNumbers, "it does have a number of its own")
-        assertEquals(false, repsOnly.isLogged, "but not the one that makes it history")
+        assertEquals(true, repsOnly.hasOwnNumbers)
+        assertEquals(true, repsOnly.isLogged)
+        val empty = set("e")
+        assertEquals(false, empty.hasOwnNumbers)
+        assertEquals(false, empty.isLogged)
     }
 
     @Test
@@ -249,21 +248,26 @@ class DisplaySetValuesTest {
     fun cardioSetReadsDistance_notWeight() {
         val cardio = set("c", distance = 5.0, resultType = ResultType.DISTANCE_DURATION)
         assertEquals(true, cardio.isLogged)
-        // Weight on a cardio row is not what it displays, so it does not qualify.
+        // Weight on a cardio row is not one of its numbers (nothing would render it).
         val mislabelled = set("m", weight = 100.0, resultType = ResultType.DISTANCE_DURATION)
         assertEquals(false, mislabelled.isLogged)
-        // Duration without distance is an unfinished cardio row by the same rule.
+        // Duration is: a timed effort with no distance (plank, bike) is logged.
         val durationOnly = set("d", duration = 1800, resultType = ResultType.DISTANCE_DURATION)
-        assertEquals(false, durationOnly.isLogged)
+        assertEquals(true, durationOnly.isLogged)
     }
 
     @Test
     fun occurrenceWithNoValuesAnywhere_hasNothingToShow() {
-        // The reported bug: history filtered on `sets.isNotEmpty()`, so three
-        // rows carrying only rep counts rendered a card of "— x 12" rows.
-        val ex = exercise(sets = listOf(set("s1"), set("s2", reps = 12), set("s3", reps = 10)))
-        assertEquals(3, ex.sets.size, "the rows are real; none records a load")
+        // History filtered on `sets.isNotEmpty()` once, rendering cards of "— × —".
+        val ex = exercise(sets = listOf(set("s1"), set("s2"), set("s3")))
+        assertEquals(3, ex.sets.size, "the rows are real; none records a number")
         assertEquals(false, ex.hasLoggedSets, "so there is nothing to render")
+    }
+
+    @Test
+    fun bodyweightOccurrence_repsOnly_isWorthShowing() {
+        val ex = exercise(sets = listOf(set("s1", reps = 11), set("s2", reps = 10)))
+        assertEquals(true, ex.hasLoggedSets)
     }
 
     @Test
@@ -278,7 +282,7 @@ class DisplaySetValuesTest {
         // FULL sets list. Render the logged rows but renumber the lookup and
         // every row after a gap reads its neighbour's numbers.
         val ex = exercise(
-            sets = listOf(set("s1", reps = 5), set("s2", weight = 60.0, reps = 10)),
+            sets = listOf(set("s1"), set("s2", weight = 60.0, reps = 10)),
         )
         val logged = ex.sets.withIndex().filter { it.value.isLogged }
         assertEquals(1, logged.size)
@@ -293,6 +297,6 @@ class DisplaySetValuesTest {
         // Wrong: look up by the filtered position — reads the unlogged row.
         val wrong = ex.displayValuesAt(0, false)
         assertNull(wrong.value, "index 0 is the unfinished row, not the logged set")
-        assertEquals(5, wrong.reps)
+        assertNull(wrong.reps)
     }
 }

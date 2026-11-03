@@ -336,10 +336,10 @@ class WorkoutFinishViewModelTest {
         updatedDate = T0,
     )
 
-    /** Bench 2/2 logged (60×10, 60×8), Squat 1/2 (100×5 + a planned reps-only row). */
+    /** Bench 2/2 logged (60×10, 60×8), Squat 1/2 (100×5 + an empty planned row). */
     private fun sampleRecords() = listOf(
         record(0, listOf(workoutExercise("Bench Press", listOf(set(60.0, 10), set(60.0, 8))))),
-        record(1, listOf(workoutExercise("Squat", listOf(set(100.0, 5), set(null, 12))))),
+        record(1, listOf(workoutExercise("Squat", listOf(set(100.0, 5), set(null, null))))),
     )
 
     private inner class TestBed(records: List<WorkoutRecord>) {
@@ -407,7 +407,7 @@ class WorkoutFinishViewModelTest {
         assertEquals(
             "1,580",
             state.tonnageValue,
-            "60×10 + 60×8 + 100×5; the planned reps-only set adds nothing. Grouped, per design W4",
+            "60×10 + 60×8 + 100×5; the empty planned set adds nothing. Grouped, per design W4",
         )
         assertEquals("kg", state.tonnageUnit)
         assertEquals(3, state.setsCount)

@@ -58,7 +58,7 @@ fun WorkoutSessionCard(
     val timeZone = TimeZone.currentSystemDefault()
     val start = LocaleFormatters.formatTimeShort(session.startedAt, timeZone)
     val end = LocaleFormatters.formatTimeShort(endedAt, timeZone)
-    val totalMinutes = maxOf(1L, session.durationSec(endedAt) / 60)
+    val totalMinutes = maxOf(1L, session.clockMinutes(endedAt))
     val duration = if (totalMinutes >= 60) {
         stringResource(Res.string.workout_duration_hours_minutes, (totalMinutes / 60).toInt(), (totalMinutes % 60).toInt())
     } else {

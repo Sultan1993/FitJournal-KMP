@@ -95,31 +95,43 @@ class BuildSessionSummaryUseCaseTest {
         repo.addSet(userId, journalId, benchWe, 60.0, 10, null, null)
         repo.addSet(userId, journalId, squatWe, 100.0, 5, null, null)
         repo.addSet(userId, journalId, squatWe, 100.0, 5, null, null)
-        repo.addSet(userId, journalId, squatWe, null, 12, null, null) // planned — must not rank
+        repo.addSet(userId, journalId, squatWe, null, null, null, null) // planned — must not rank
 
         val summary = summarize()
 
         assertEquals(
             listOf(MuscleLoad(CategoryType.QUADRICEPS, 2), MuscleLoad(CategoryType.CHEST, 1)),
             summary.muscles,
-            "ranked desc by LOGGED sets; the reps-only set contributes nothing",
+            "ranked desc by LOGGED sets; the empty planned set contributes nothing",
         )
     }
 
-    // ─── Logged vs planned (WorkoutSet.isLogged, not hasOwnNumbers) ───────
+    // ─── Logged vs planned (WorkoutSet.isLogged: any own number) ──────────
 
     @Test
-    fun repsOnlySet_isPlannedNotLogged(): Unit = runBlocking {
+    fun emptySet_isPlannedNotLogged(): Unit = runBlocking {
         val we = addOccurrence(seedExercise("Leg Press", CategoryType.QUADRICEPS), date)
-        repo.addSet(userId, journalId, we, null, 12, null, null)
+        repo.addSet(userId, journalId, we, null, null, null, null)
 
         val summary = summarize()
 
-        assertEquals(0, summary.loggedSets, "reps without a weight is an unfinished set, not a logged one")
+        assertEquals(0, summary.loggedSets, "a row with no numbers is planned, not logged")
         val line = summary.exercises.single()
         assertEquals(0, line.loggedSets)
         assertEquals(1, line.totalSets)
         assertTrue(summary.muscles.isEmpty(), "a muscle with zero logged sets must not rank")
+    }
+
+    @Test
+    fun repsOnlySet_isLogged_bodyweight(): Unit = runBlocking {
+        val we = addOccurrence(seedExercise("Pull-ups", CategoryType.BACK), date)
+        repo.addSet(userId, journalId, we, null, 11, null, null)
+
+        val summary = summarize()
+
+        assertEquals(1, summary.loggedSets, "pull-ups × 11 is work done")
+        assertEquals(1, summary.exerciseCount)
+        assertEquals(listOf(MuscleLoad(CategoryType.BACK, 1)), summary.muscles)
     }
 
     @Test
@@ -162,7 +174,7 @@ class BuildSessionSummaryUseCaseTest {
         val we = addOccurrence(seedExercise("Squat", CategoryType.QUADRICEPS), date)
         repo.addSet(userId, journalId, we, 100.0, 5, null, null)
         repo.addSet(userId, journalId, we, 80.0, 8, null, null)
-        repo.addSet(userId, journalId, we, null, 12, null, null) // planned — excluded
+        repo.addSet(userId, journalId, we, null, null, null, null) // planned — excluded
 
         val summary = summarize()
 
@@ -308,7 +320,7 @@ class BuildSessionSummaryUseCaseTest {
         val squatWe = addOccurrence(seedExercise("Squat", CategoryType.QUADRICEPS), date)
         val benchWe = addOccurrence(seedExercise("Bench Press", CategoryType.CHEST), date)
         repo.addSet(userId, journalId, squatWe, 100.0, 5, null, null)
-        repo.addSet(userId, journalId, benchWe, null, 12, null, null) // planned only
+        repo.addSet(userId, journalId, benchWe, null, null, null, null) // planned only
 
         val summary = summarize()
 

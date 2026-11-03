@@ -12,9 +12,8 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutSession
  *
  * "Logged" throughout this package is exactly
  * [kz.maestrosultan.fitjournal.domain.workout.WorkoutSet.isLogged] — the set
- * recorded its defining number (weight for WEIGHT_REPS, distance for
- * DISTANCE_DURATION; null is unrecorded, 0 is a value). Planned/unfinished rows
- * count toward [ExerciseLine.totalSets] only.
+ * carries any number of its own (reps alone count; null is unrecorded, 0 is a
+ * value). Empty planned rows count toward [ExerciseLine.totalSets] only.
  */
 data class SessionSummary(
     val session: WorkoutSession,

@@ -584,6 +584,26 @@ class WorkoutDetailsBuilderTest {
         assertEquals(2, workout.skippedGroups.single().members.size)
     }
 
+    /** The 31 Oct pull day: bodyweight pull-ups (reps only) are performed work. */
+    @Test
+    fun bodyweightRepsOnly_isListed_withDashWeight_andCounted() = runTest {
+        val pullUps = workoutExercise(
+            category = CategoryType.BACK,
+            name = "Pull-ups",
+            sets = listOf(set(null, 11), set(null, 10), set(null, 9)),
+        )
+        val row = record(exercises = listOf(workoutExercise(name = "Deadlift", sets = listOf(set(120.0, 5)))))
+        val workout = build(listOf(row, record(position = 1, exercises = listOf(pullUps)))).workouts.single()
+
+        val listed = workout.exerciseGroups.flatMap { it.members }.single { it.name == "Pull-ups" }
+        assertEquals(listOf("—", "—", "—"), listed.sets.map { it.valueText })
+        assertEquals(listOf("×11", "×10", "×9"), listed.sets.map { it.repsText })
+        assertNull(listed.volumeText, "no load moved: no \"0 kg\"")
+        assertTrue(workout.skippedGroups.isEmpty())
+        assertEquals(2, workout.exerciseCount)
+        assertEquals(4, workout.setCount)
+    }
+
     private fun WorkoutDetailsContract.Content.Loaded.singleExerciseRow() =
         workouts.single().exerciseGroups.single().members.single()
 

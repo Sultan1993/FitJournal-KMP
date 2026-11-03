@@ -112,7 +112,7 @@ object WorkoutListContract {
         /** Distinct (date, workoutNumber) count. Rendered only when > 1. */
         val workoutCount: Int,
         val exerciseCount: Int,
-        /** Filled sets only: weight != null || distance != null (workout-subtitle rule). */
+        /** Logged sets — [kz.maestrosultan.fitjournal.domain.workout.summary.performedCounts]. */
         val setCount: Int,
         /** Total cardio minutes that day (0 when none). */
         val durationMinutes: Int,

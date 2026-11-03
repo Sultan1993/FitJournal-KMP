@@ -7,6 +7,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlin.time.Clock
 import kz.maestrosultan.fitjournal.data.exercise.datasource.CategoriesDBDataSource
 import kz.maestrosultan.fitjournal.data.exercise.datasource.ExercisesDBDataSource
 import kz.maestrosultan.fitjournal.data.exercise.mapper.ExerciseDBMapper
@@ -159,6 +162,48 @@ class RecordRepositoryTest {
         val sets = copied.exercises.single().sets
         assertEquals(2, sets.size, "set count is preserved")
         assertTrue(sets.all { it.weight == null && it.reps == null }, "values are cleared into a template")
+    }
+
+    /**
+     * Reps alone now make a set logged, so a copied/repeated/imported row that
+     * kept ANY number would look done. Every entry point into
+     * insertCopiedRecords must land rows with no numbers at all — bodyweight
+     * reps and cardio duration included.
+     */
+    @Test
+    fun everyCopyPath_landsRowsWithNoNumbers_soNoneLooksLogged(): Unit = runBlocking {
+        val liftId = seedCatalogExercise()
+        val cardioCat = UUID.randomUUID().toString()
+        catDs.createCategory(cardioCat, cardioCat, "Cardio", "Кардио", "Кардіо", CategoryType.CARDIO.id, null)
+        val runId = UUID.randomUUID().toString()
+        exRepo.createExercise(runId, userId, "Run", cardioCat, ResultType.DISTANCE_DURATION)
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(liftId, runId))
+        val (lift, run) = repo.getRecordsByDate(userId, journalId, date).flatMap { it.exercises }
+        repo.addSet(userId, journalId, lift.id, null, 11, null, null) // bodyweight: reps only
+        repo.addSet(userId, journalId, lift.id, 100.0, 5, null, null)
+        repo.addSet(userId, journalId, run.id, null, null, 5.0, 30)
+        repo.addSet(userId, journalId, run.id, null, null, null, 20) // duration only
+        val source = repo.getRecordsByDate(userId, journalId, date)
+        assertTrue(source.flatMap { it.exercises }.flatMap { it.sets }.all { it.isLogged }, "precondition: all four source sets are logged")
+
+        val toDate = LocalDate(2026, 2, 1)
+        val toWorkout = LocalDate(2026, 2, 2)
+        val copyTarget = LocalDate(2026, 2, 3)
+        repo.addRecordsToDate(userId, journalId, toDate, source)
+        repo.addRecordsToWorkout(userId, journalId, toWorkout, 2, source)
+        assertTrue(repo.copyWorkoutTo(userId, journalId, date, 1, copyTarget, 1))
+        repo.addRecordsFromDateToToday(userId, journalId, date)
+        val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+
+        for (day in listOf(toDate, toWorkout, copyTarget, today)) {
+            val sets = repo.getRecordsByDate(userId, journalId, day).flatMap { it.exercises }.flatMap { it.sets }
+            assertEquals(4, sets.size, "$day keeps the set count")
+            assertTrue(
+                sets.all { it.weight == null && it.reps == null && it.distance == null && it.duration == null },
+                "$day: copied rows carry no numbers",
+            )
+            assertTrue(sets.none { it.isLogged }, "$day: no copied row looks logged")
+        }
     }
 
     @Test

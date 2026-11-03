@@ -98,7 +98,9 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_sets
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_stat_best_set
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_stat_duration
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_stat_exercises
+import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_stat_exercises_label
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_stat_sets
+import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_stat_sets_label
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_stat_total_reps
 import kz.maestrosultan.fitjournal.ui.workout.share.composer.layouts.MusclesLayout
 import kz.maestrosultan.fitjournal.ui.workout.share.composer.layouts.NewBestLayout
@@ -956,7 +958,12 @@ internal fun shareCardData(
                     // populated for weighted work too, not bodyweight only.
                     StatKind.TotalReps -> summary.exercises.sumOf { it.totalReps ?: 0 }.toString()
                 },
-                label = stringResource(kind.labelRes),
+                // Sets/Exercises sit under their number, so they agree with it ("1 / Set").
+                label = when (kind) {
+                    StatKind.Sets -> pluralStringResource(Res.plurals.postworkout_stat_sets_label, summary.loggedSets)
+                    StatKind.Exercises -> pluralStringResource(Res.plurals.postworkout_stat_exercises_label, summary.exerciseCount)
+                    StatKind.Duration, StatKind.BestSet, StatKind.TotalReps -> stringResource(kind.labelRes)
+                },
             )
         },
         exercises = summary.exercises.map { line ->

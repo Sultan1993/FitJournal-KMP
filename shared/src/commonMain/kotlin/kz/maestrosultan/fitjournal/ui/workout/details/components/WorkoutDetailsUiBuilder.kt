@@ -14,6 +14,7 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSession
 import kz.maestrosultan.fitjournal.domain.workout.summary.MuscleLoad
 import kz.maestrosultan.fitjournal.domain.workout.summary.SessionBest
+import kz.maestrosultan.fitjournal.domain.workout.summary.performedCounts
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_cardio
 import kz.maestrosultan.fitjournal.shared.generated.resources.history_exercise_count
@@ -238,7 +239,7 @@ private suspend fun buildStackRow(
     val title = muscleTitleFormatter.title(rankedMuscles(workoutExercises))
     val subtitle = listOfNotNull(
         timeRangeText(session, timeZone, now),
-        strings.exerciseCount(performedExerciseCount(workoutExercises)),
+        strings.exerciseCount(performedCounts(workoutExercises).exercises),
     ).joinToString(" · ")
     return WorkoutDetailsContract.StackRow(
         workoutNumber = workoutNumber,
@@ -272,7 +273,7 @@ private fun buildWorkoutUi(
     units: WorkoutUnitLabels,
     now: Instant,
 ): WorkoutDetailsContract.WorkoutUi {
-    val workoutExercises = workoutRecords.flatMap { it.exercises }
+    val counts = performedCounts(workoutRecords.flatMap { it.exercises })
     // Skipped = every member logged no sets. A partial superset (>=1 member
     // logged) stays whole in exerciseGroups.
     val (skipped, performed) = workoutRecords
@@ -286,8 +287,8 @@ private fun buildWorkoutUi(
     return WorkoutDetailsContract.WorkoutUi(
         workoutNumber = workoutNumber,
         durationText = session?.let { formatDuration(it.durationSec(now)) },
-        exerciseCount = performedExerciseCount(workoutExercises),
-        setCount = loggedSetCount(workoutExercises),
+        exerciseCount = counts.exercises,
+        setCount = counts.sets,
         newBest = best?.let { newBestUi(it, units) },
         // Always present: any workout can carry a note, keyed by its page. Blank/absent
         // text renders the add-note placeholder.
@@ -359,11 +360,14 @@ private fun exerciseRow(we: WorkoutExercise, units: WorkoutUnitLabels) = Workout
 )
 
 /** Tonnage for WEIGHT_REPS, else logged distance (falling back to logged duration
- *  when nothing was covered) — null when nothing was logged. */
+ *  when nothing was covered) — null when nothing was logged, or when no load was
+ *  moved (bodyweight reps): "0 kg" next to "Pull-ups" tells the reader nothing. */
 private fun exerciseVolumeText(we: WorkoutExercise, units: WorkoutUnitLabels): String? {
     if (!we.hasLoggedSets) return null
     return when (we.exercise.resultType) {
-        ResultType.WEIGHT_REPS -> WorkoutValueFormatter.groupedTonnage(TonnageCalculator.forExercise(we), units.weight)
+        ResultType.WEIGHT_REPS -> TonnageCalculator.forExercise(we)
+            .takeIf { it > 0.0 }
+            ?.let { WorkoutValueFormatter.groupedTonnage(it, units.weight) }
         ResultType.DISTANCE_DURATION -> {
             val logged = we.sets.filter { it.isLogged }
             val distance = logged.sumOf { it.distance ?: 0.0 }
@@ -427,21 +431,6 @@ private fun cardioDistance(records: List<WorkoutRecord>): Double =
     records.flatMap { it.exercises }.flatMap { it.sets }
         .filter { it.resultType == ResultType.DISTANCE_DURATION }
         .sumOf { it.distance ?: 0.0 }
-
-/**
- * Matches `SessionSummary.exerciseCount`: merges occurrences by exercise uuid
- * first, then counts groups with at least one logged set — so the same
- * exercise split across two records in one workout still counts once.
- */
-private fun performedExerciseCount(workoutExercises: List<WorkoutExercise>): Int {
-    val byExercise = LinkedHashMap<String, MutableList<WorkoutExercise>>()
-    workoutExercises.forEach { byExercise.getOrPut(it.exercise.uuid) { mutableListOf() }.add(it) }
-    return byExercise.values.count { occurrences -> occurrences.any { it.hasLoggedSets } }
-}
-
-/** SETS tile / total: logged sets ([kz.maestrosultan.fitjournal.domain.workout.WorkoutSet.isLogged]), no merging needed. */
-private fun loggedSetCount(workoutExercises: List<WorkoutExercise>): Int =
-    workoutExercises.sumOf { we -> we.sets.count { it.isLogged } }
 
 /** Logged sets per muscle, ranked desc; ties keep day order (matches `SessionSummary.muscles`). */
 internal fun rankedMuscles(workoutExercises: List<WorkoutExercise>): List<MuscleLoad> {

@@ -18,4 +18,17 @@ data class WorkoutSession(
     /** Elapsed seconds: (endedAt ?: now) - startedAt, clamped to >= 0 (clock-skew safe). */
     fun durationSec(now: Instant): Long =
         ((endedAt ?: now) - startedAt).inWholeSeconds.coerceAtLeast(0L)
+
+    /**
+     * Whole minutes between the start and end as a clock shows them (h:mm,
+     * seconds dropped), clamped to >= 0 — the rule for every session duration
+     * shown in minutes. It always agrees with the "3:37 PM – 4:23 PM" beside
+     * it (46). Flooring [durationSec] gave 45 for 45:56; rounding would still
+     * disagree for 3:37:59 → 4:23:00 (45:01).
+     */
+    fun clockMinutes(now: Instant): Long =
+        ((endedAt ?: now).epochSeconds.floorDiv(SECONDS_PER_MINUTE) - startedAt.epochSeconds.floorDiv(SECONDS_PER_MINUTE))
+            .coerceAtLeast(0L)
 }
+
+private const val SECONDS_PER_MINUTE = 60L

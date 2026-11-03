@@ -54,6 +54,7 @@ class BuildSessionSummaryUseCase(
         val sessionRecordUuids: Set<String> = sessionRecords.mapTo(LinkedHashSet()) { it.id }
         val dayOrder = sessionRecords.flatMap { it.exercises }
         val exercises = exerciseLines(dayOrder)
+        val counts = performedCounts(dayOrder)
 
         val best = if (includeBest) {
             detectSessionBest(
@@ -73,13 +74,10 @@ class BuildSessionSummaryUseCase(
             muscles = muscleLoads(dayOrder),
             exercises = exercises,
             tonnageKg = TonnageCalculator.forSets(dayOrder.flatMap { it.sets }.filter { it.isLogged }),
-            loggedSets = dayOrder.sumOf { workoutExercise -> workoutExercise.sets.count { it.isLogged } },
-            // Exercises actually PERFORMED, not everything on the day's list.
-            // Every other figure here already counts logged work only —
-            // loggedSets, tonnage, the muscle ranking — so counting planned-but-
-            // skipped rows here made the one metric that disagreed, and made a
-            // celebration screen claim work that never happened.
-            exerciseCount = exercises.count { it.loggedSets > 0 },
+            // Exercises actually PERFORMED, not everything on the day's list —
+            // the same rule as every other summary surface (performedCounts).
+            loggedSets = counts.sets,
+            exerciseCount = counts.exercises,
             weekOrdinal = weekOrdinal(session),
             best = best,
             sessionRecordUuids = sessionRecordUuids,

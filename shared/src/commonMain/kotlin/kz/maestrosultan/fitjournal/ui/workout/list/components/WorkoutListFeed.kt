@@ -12,6 +12,7 @@ import kz.maestrosultan.fitjournal.domain.exercise.CategoryType
 import kz.maestrosultan.fitjournal.domain.journal.Journal
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
+import kz.maestrosultan.fitjournal.domain.workout.summary.performedCounts
 import kz.maestrosultan.fitjournal.ui.workout.list.WorkoutListContract
 
 /** Weeks in the hero rail — 11 consecutive calendar weeks ending at the current one. */
@@ -143,13 +144,14 @@ private fun dayRows(weekRecords: List<WorkoutRecord>): List<WorkoutListContract.
                 .sortedWith(compareByDescending<Map.Entry<CategoryType, Int>> { it.value }.thenBy { it.key.id })
                 .take(3)
                 .map { it.key }
+            val counts = performedCounts(exercises)
             WorkoutListContract.DayRow(
                 date = date,
                 topCategories = topCategories,
                 tonnage = TonnageCalculator.forRecords(dayRecords),
                 workoutCount = dayRecords.map { it.workoutNumber }.distinct().size,
-                exerciseCount = exercises.size,
-                setCount = exercises.sumOf { ex -> ex.sets.count { it.weight != null || it.distance != null } },
+                exerciseCount = counts.exercises,
+                setCount = counts.sets,
                 durationMinutes = cardioMinutes(dayRecords),
                 distance = cardioDistance(dayRecords),
             )

@@ -55,10 +55,9 @@ data class WorkoutExercise(
      */
     fun seedValuesAt(position: Int, fallBackToPreviousSet: Boolean): SeededSetValues {
         val own = sets.getOrNull(position)
-        // Rule 1. [WorkoutSet.hasOwnNumbers], NOT `isLogged`: reps alone counts
-        // here, so a reps-only row renders from itself and never gets topped up
-        // with someone else's weight. (`isLogged` is the stricter "worth showing
-        // at all" test and belongs to the read-only surfaces, not to this.)
+        // Rule 1. Reps alone count, so a reps-only row renders from itself and
+        // never gets topped up with someone else's weight. ([WorkoutSet.isLogged]
+        // is the same predicate.)
         if (own != null && own.hasOwnNumbers) {
             return SeededSetValues(value = own.displayValue, reps = own.displayReps, source = SeedSource.OWN)
         }
@@ -75,13 +74,12 @@ data class WorkoutExercise(
     }
 
     /**
-     * True when at least one set recorded its defining number — see
-     * [WorkoutSet.isLogged].
+     * True when at least one set was performed — see [WorkoutSet.isLogged].
      *
      * The test for "is this occurrence worth showing in history". Note it is NOT
-     * `sets.isNotEmpty()`, which both platforms used to filter on: an occurrence
-     * can hold several sets and still record nothing, which is how history ended
-     * up rendering rows of "— × 12" for sessions with no load on them.
+     * `sets.isNotEmpty()`, which both platforms used to filter on: a set row
+     * exists from the moment it is added, so an occurrence can hold several
+     * empty targets and record nothing ("— × —" cards).
      */
     val hasLoggedSets: Boolean
         get() = sets.any { it.isLogged }

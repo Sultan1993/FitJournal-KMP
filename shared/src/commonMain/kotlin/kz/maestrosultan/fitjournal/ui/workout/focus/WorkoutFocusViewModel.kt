@@ -896,6 +896,7 @@ class WorkoutFocusViewModel internal constructor(
         val resolved = focusEditorSeed(owner, set)
         // The target inherits whatever the row showed; say which rule supplied it.
         val input = when (resolved.source) {
+            // Unreachable since isLogged == hasOwnNumbers (returned above); kept for exhaustiveness.
             SeedSource.OWN -> SetInput.UNCHANGED
             SeedSource.LAST_TIME -> SetInput.PREFILL_LAST_TIME
             SeedSource.PREVIOUS_SET -> SetInput.PREFILL_PREVIOUS_SET

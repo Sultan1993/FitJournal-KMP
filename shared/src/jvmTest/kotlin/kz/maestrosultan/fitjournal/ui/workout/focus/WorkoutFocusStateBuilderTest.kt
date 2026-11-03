@@ -147,6 +147,25 @@ class WorkoutFocusStateBuilderTest {
         strings = strings,
     )
 
+    /** Bodyweight: pull-ups × 11 with no weight is a done set, not a target. */
+    @Test
+    fun repsOnlySet_isFinished_notATarget() = runTest {
+        val exercise = member(
+            id = "we-1",
+            catalog = catalog("Pull-ups", CategoryType.BACK),
+            sets = listOf(set("s1", null, 11), set("s2", null, null)),
+        )
+        val record = record("r1", position = 1, members = listOf(exercise))
+
+        val focus = build(listOf(record), record)
+
+        assertEquals(
+            listOf(FocusSetSlotUi.Kind.Finished, FocusSetSlotUi.Kind.Active),
+            focus.slots.filterNot { it.isAddAnother }.map { it.kind },
+        )
+        assertEquals(listOf(FocusSetDotUi.Kind.Done, FocusSetDotUi.Kind.Current), focus.setDots.map { it.kind })
+    }
+
     // ── 17 ──────────────────────────────────────────────────────────────
 
     /**
