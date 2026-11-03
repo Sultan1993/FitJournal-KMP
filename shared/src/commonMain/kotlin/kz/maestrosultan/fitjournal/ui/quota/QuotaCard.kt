@@ -159,7 +159,7 @@ private fun RemainingBody(content: QuotaCardContent.Remaining, onUpgradeClick: (
     content.monthlyPrice?.let { price ->
         Text(
             text = stringResource(Res.string.quota_few_left_subtitle, price),
-            style = cardStyle(13.0, FontWeight.Normal),
+            style = cardStyle(14.0, FontWeight.Normal),
             color = FjTheme.colors.brandInkSecondary,
         )
     }
@@ -284,7 +284,7 @@ private fun eyebrowStyle() = cardStyle(10.0, FontWeight.Bold)
 private fun QuotaHeadline(formatted: String, number: Int) {
     Text(
         text = emphasiseNumeral(formatted, number),
-        style = cardStyle(22.0, FontWeight.Medium),
+        style = cardStyle(20.0, FontWeight.Medium),
         color = FjTheme.colors.textPrimary,
     )
 }
