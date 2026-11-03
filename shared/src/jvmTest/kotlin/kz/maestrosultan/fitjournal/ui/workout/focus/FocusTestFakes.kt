@@ -1,6 +1,7 @@
 package kz.maestrosultan.fitjournal.ui.workout.focus
 
 import kotlin.time.Instant
+import kz.maestrosultan.fitjournal.domain.workout.SetEffort
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -111,6 +112,7 @@ fun focusSet(
     weight: Double? = null,
     reps: Int? = null,
     resultType: ResultType = ResultType.WEIGHT_REPS,
+    effort: SetEffort = SetEffort.NORMAL,
 ): WorkoutSet = WorkoutSet(
     id = id,
     userId = FOCUS_USER_ID,
@@ -121,7 +123,11 @@ fun focusSet(
     distance = null,
     duration = null,
     resultType = resultType,
+    effort = effort,
 )
+
+/** Call-log suffix, only for a tagged write so untagged call strings stay as they were. */
+private fun effortSuffix(effort: SetEffort): String = if (effort == SetEffort.NORMAL) "" else ",effort=$effort"
 
 fun focusMember(
     id: String,
@@ -383,8 +389,9 @@ class RecordingRecordRepository(
         reps: Int?,
         distance: Double?,
         duration: Int?,
+        effort: SetEffort,
     ): Boolean {
-        calls += "addSet($workoutExerciseId,weight=$weight,reps=$reps)"
+        calls += "addSet($workoutExerciseId,weight=$weight,reps=$reps${effortSuffix(effort)})"
         addSetGate?.await()
         failNextWrite?.let { failNextWrite = null; throw it }
         val owner = day.flatMap { it.exercises }.firstOrNull { it.id == workoutExerciseId } ?: return false
@@ -398,6 +405,7 @@ class RecordingRecordRepository(
             distance = distance,
             duration = duration,
             resultType = owner.exercise.resultType,
+            effort = effort,
         )
         mutateExercise(workoutExerciseId) { it.copy(sets = it.sets + appended) }
         return true
@@ -412,8 +420,9 @@ class RecordingRecordRepository(
         reps: Int?,
         distance: Double?,
         duration: Int?,
+        effort: SetEffort,
     ): Boolean {
-        calls += "updateSet($workoutExerciseId,$setId,weight=$weight,reps=$reps)"
+        calls += "updateSet($workoutExerciseId,$setId,weight=$weight,reps=$reps${effortSuffix(effort)})"
         updateSetGate?.await()
         failNextWrite?.let { failNextWrite = null; throw it }
         if (!writesFindTheSet) return false
@@ -425,7 +434,7 @@ class RecordingRecordRepository(
                         set
                     } else {
                         found = true
-                        set.copy(weight = weight, reps = reps, distance = distance, duration = duration)
+                        set.copy(weight = weight, reps = reps, distance = distance, duration = duration, effort = effort)
                     }
                 },
             )

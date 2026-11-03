@@ -8,8 +8,14 @@ CREATE TABLE workoutSets (
     reps INTEGER,
     distance REAL,
     duration INTEGER,
+    -- Legacy FJ1.x tag (Light/Medium/Hard). Unread and never written: the
+    -- Easy/Hard tags that replaced it start fresh in `effort`. Left in place
+    -- because dropping a column needs a table rebuild.
     difficultyType INTEGER NOT NULL DEFAULT 0,
-    completed INTEGER AS Boolean NOT NULL DEFAULT 1
+    completed INTEGER AS Boolean NOT NULL DEFAULT 1,
+    -- SetEffort.id: 0 Normal (untagged), 1 Easy, 2 Hard. Last because 11.sqm
+    -- adds it with ADD COLUMN, which appends.
+    effort INTEGER NOT NULL DEFAULT 0
 );
 
 -- Composite (workoutExerciseUuid, position) so
@@ -177,11 +183,10 @@ WHERE wr.userId = ? AND wr.journalId = ?
 -- handled by the parent record's DELETE-and-reinsert step plus FK
 -- CASCADE.
 createWorkoutSet:
--- difficultyType is omitted deliberately: the column survives for old rows
--- (dropping it needs a migration) but nothing reads it since the set-difficulty
--- UI was removed. NOT NULL DEFAULT 0 covers the omission.
-INSERT INTO workoutSets(uuid, workoutExerciseUuid, position, weight, reps, distance, duration, completed)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+-- difficultyType is omitted deliberately (legacy, see the table); its
+-- NOT NULL DEFAULT 0 covers the omission.
+INSERT INTO workoutSets(uuid, workoutExerciseUuid, position, weight, reps, distance, duration, completed, effort)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- Full wipe used on FJ1.x → FJ2.0 upgrade before hydration.
 wipeAll:

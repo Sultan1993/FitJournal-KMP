@@ -87,6 +87,9 @@ import androidx.compose.ui.unit.IntOffset
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
+import kz.maestrosultan.fitjournal.ui.workout.components.SetEffortChips
+import kz.maestrosultan.fitjournal.ui.workout.components.SetEffortPill
+import kz.maestrosultan.fitjournal.domain.workout.SetEffort
 import kz.maestrosultan.fitjournal.ui.workout.focus.FocusEditorUi
 import kz.maestrosultan.fitjournal.ui.workout.focus.FocusInputField
 import kz.maestrosultan.fitjournal.ui.workout.focus.FocusPreviewData
@@ -141,6 +144,7 @@ fun FocusSetStack(
     onFocusField: (FocusInputField) -> Unit,
     onKeypadDigit: (String) -> Unit,
     onKeypadBackspace: () -> Unit,
+    onToggleEffort: (SetEffort) -> Unit,
     onLogSet: () -> Unit,
     onSaveSet: () -> Unit,
     onDeleteSet: (String) -> Unit,
@@ -179,6 +183,7 @@ fun FocusSetStack(
                     onFocusField = onFocusField,
                     onKeypadDigit = onKeypadDigit,
                     onKeypadBackspace = onKeypadBackspace,
+                    onToggleEffort = onToggleEffort,
                     onLogSet = onLogSet,
                     onSaveSet = onSaveSet,
                     onDeleteSet = onDeleteSet,
@@ -240,6 +245,7 @@ private fun FocusAccordionRow(
     onFocusField: (FocusInputField) -> Unit,
     onKeypadDigit: (String) -> Unit,
     onKeypadBackspace: () -> Unit,
+    onToggleEffort: (SetEffort) -> Unit,
     onLogSet: () -> Unit,
     onSaveSet: () -> Unit,
     onDeleteSet: (String) -> Unit,
@@ -450,6 +456,7 @@ private fun FocusAccordionRow(
                     onFocusField = onFocusField,
                     onKeypadDigit = onKeypadDigit,
                     onKeypadBackspace = onKeypadBackspace,
+                    onToggleEffort = onToggleEffort,
                     onCommit = { if (lastEditor.editsExistingSet) onSaveSet() else onLogSet() },
                 )
             }
@@ -599,6 +606,8 @@ private fun FocusSetHeaderRow(
             }
         } else {
             FocusInlineValues(slot = slot, modifier = Modifier.weight(1f))
+            // The check circle stays brand; the soft pill alone marks the tag.
+            SetEffortPill(slot.effort)
             if (slot.kind == FocusSetSlotUi.Kind.Target) {
                 Text(
                     text = stringResource(Res.string.focus_target).uppercase(),
@@ -723,6 +732,7 @@ private fun FocusEditorBody(
     onFocusField: (FocusInputField) -> Unit,
     onKeypadDigit: (String) -> Unit,
     onKeypadBackspace: () -> Unit,
+    onToggleEffort: (SetEffort) -> Unit,
     onCommit: () -> Unit,
 ) {
     Column(
@@ -795,6 +805,12 @@ private fun FocusEditorBody(
                 modifier = Modifier.alignByBaseline(),
             )
         }
+        // Directly under the readout: the tag describes the numbers above it.
+        SetEffortChips(
+            selected = editor.effort,
+            onToggle = onToggleEffort,
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        )
         FocusKeypad(onDigit = onKeypadDigit, onBackspace = onKeypadBackspace)
         val title = if (editor.isEditing) {
             stringResource(Res.string.focus_save_changes)
@@ -919,6 +935,7 @@ private fun FocusSetStackPreviewLight() {
             onFocusField = {},
             onKeypadDigit = {},
             onKeypadBackspace = {},
+            onToggleEffort = {},
             onLogSet = {},
             onSaveSet = {},
             onDeleteSet = {},
@@ -943,6 +960,7 @@ private fun FocusSetStackPreviewDark() {
             onFocusField = {},
             onKeypadDigit = {},
             onKeypadBackspace = {},
+            onToggleEffort = {},
             onLogSet = {},
             onSaveSet = {},
             onDeleteSet = {},

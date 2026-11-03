@@ -3,6 +3,7 @@ package kz.maestrosultan.fitjournal.ui.workout.focus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.datetime.LocalDate
+import kz.maestrosultan.fitjournal.domain.workout.SetEffort
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 import kz.maestrosultan.fitjournal.ui.workout.focus.history.FocusHistoryItemUi
@@ -51,6 +52,8 @@ object WorkoutFocusContract {
         data class FocusField(val field: FocusInputField) : ViewAction
         data class KeypadDigit(val digit: String) : ViewAction
         data object KeypadBackspace : ViewAction
+        /** Easy/Hard chip tap. Tapping the selected chip clears it back to Normal. */
+        data class ToggleEffort(val effort: SetEffort) : ViewAction
         data object LogSet : ViewAction
         data object SaveSet : ViewAction
         data class DeleteSet(val setId: String) : ViewAction
@@ -213,6 +216,8 @@ data class FocusEditorUi(
     val unit: String,
     val repsUnit: String,
     val focusedField: FocusInputField,
+    /** The draft's Easy/Hard tag; [SetEffort.NORMAL] = neither chip selected. */
+    val effort: SetEffort = SetEffort.NORMAL,
     /** True when editing an already-FILLED set → button reads "Save changes". */
     val isEditing: Boolean,
     /**
@@ -240,6 +245,11 @@ data class FocusSetSlotUi(
     /** Reps display including the leading ×, e.g. "× 10" / "× —". */
     val repsText: String,
     val isExpanded: Boolean,
+    /**
+     * The row's stored tag, shown as a pill on a collapsed Finished row.
+     * Always [SetEffort.NORMAL] for a target and the add-another row.
+     */
+    val effort: SetEffort = SetEffort.NORMAL,
     /**
      * "Last: 62.5 kg × 10" for THIS row's position.
      *

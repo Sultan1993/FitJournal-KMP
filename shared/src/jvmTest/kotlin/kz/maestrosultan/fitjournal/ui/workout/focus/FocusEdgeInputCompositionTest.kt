@@ -314,6 +314,7 @@ class FocusEdgeInputCompositionTest {
             onFocusField = {},
             onKeypadDigit = {},
             onKeypadBackspace = {},
+            onToggleEffort = {},
             onLogSet = {},
             onSaveSet = {},
             onDeleteSet = {},

@@ -89,4 +89,11 @@ object ColorTokens {
     // Feedback
     val positive = ColorToken(0xFF2D9E64, 0xFF2D9E64)
     val negative = ColorToken(0xFFEB6363, 0xFFEB6363)
+
+    // Soft pill fill + its text, for an Easy (positive) / Hard (negative) set tag.
+    // Dark fills are the feedback colour at 16% over the card.
+    val positiveSoft = ColorToken(0xFFE6F7EC, 0x292D9E64)
+    val positiveInk = ColorToken(0xFF1E9444, 0xFF4FBF7E)
+    val negativeSoft = ColorToken(0xFFFDEAEA, 0x29EB6363)
+    val negativeInk = ColorToken(0xFFD64545, 0xFFF0918F)
 }

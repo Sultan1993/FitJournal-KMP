@@ -1,6 +1,7 @@
 package kz.maestrosultan.fitjournal.ui.workout.focus
 
 import kz.maestrosultan.fitjournal.analytics.SetInput
+import kz.maestrosultan.fitjournal.domain.workout.SetEffort
 
 /**
  * Single source of truth for the accordion + edit target (iOS
@@ -54,7 +55,16 @@ data class FocusInputState(
     val seedInput: SetInput = SetInput.DEFAULT,
     /** True once the user typed into either field since the last (re)seed. */
     val edited: Boolean = false,
+    /**
+     * Easy/Hard tag for the set being entered. A new set always starts
+     * [SetEffort.NORMAL] — tags never carry over to the next set.
+     */
+    val effort: SetEffort = SetEffort.NORMAL,
 ) {
+
+    /** Chips are mutually exclusive; tapping the selected one clears it. */
+    fun toggleEffort(tapped: SetEffort): FocusInputState =
+        copy(effort = if (effort == tapped) SetEffort.NORMAL else tapped)
 
     fun focusedText(): String = when (focusedField) {
         FocusInputField.Value -> valueText

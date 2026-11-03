@@ -303,6 +303,9 @@
     <string name="focus_menu_log_set">Записать подход</string>
     <string name="focus_menu_clear_set">Очистить подход</string>
     <string name="focus_menu_delete_set">Удалить подход</string>
+    <!-- Set effort tag (chip in the Focus editor, pill on logged sets). Worded as effort, not load. -->
+    <string name="set_effort_easy">Легко</string>
+    <string name="set_effort_hard">Тяжело</string>
     <string name="focus_clear_set_title">Очистить подход %1$d?</string>
     <string name="focus_clear_set_message">Записанные значения будут удалены. Подход останется на месте — его можно записать заново.</string>
     <string name="focus_clear">Очистить</string>

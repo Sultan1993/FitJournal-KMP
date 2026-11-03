@@ -284,6 +284,9 @@
     <string name="focus_menu_log_set">Log this set</string>
     <string name="focus_menu_clear_set">Clear set</string>
     <string name="focus_menu_delete_set">Delete set</string>
+    <!-- Set effort tag (chip in the Focus editor, pill on logged sets). Worded as effort, not load. -->
+    <string name="set_effort_easy">Easy</string>
+    <string name="set_effort_hard">Hard</string>
     <string name="focus_clear_set_title">Clear set %1$d?</string>
     <string name="focus_clear_set_message">The values you logged are removed. The set stays in place, ready to log again.</string>
     <string name="focus_clear">Clear</string>

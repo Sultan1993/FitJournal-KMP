@@ -105,5 +105,6 @@ private fun toSetDisplay(
         repsNumber = display.reps?.toString() ?: WorkoutValueFormatter.EMPTY,
         repsUnit = units.companionUnit(resultType),
         isLogged = true,
+        effort = set.effort,
     )
 }

@@ -1,6 +1,7 @@
 package kz.maestrosultan.fitjournal.data.record.payload
 
 import kotlinx.serialization.Serializable
+import kz.maestrosultan.fitjournal.domain.workout.SetEffort
 
 /**
  * One set performed for a workout exercise.
@@ -41,4 +42,11 @@ data class WorkoutSetPayload(
 
     /** False = planned but not yet performed (e.g., from a template). */
     val completed: Boolean = true,
+
+    /**
+     * Easy/Hard tag. Omitted when NORMAL (encodeDefaults = false). A new key on
+     * purpose — the legacy `difficultyType` values still sitting in old blobs
+     * are ignored (ignoreUnknownKeys), not revived.
+     */
+    val effort: SetEffort = SetEffort.NORMAL,
 )

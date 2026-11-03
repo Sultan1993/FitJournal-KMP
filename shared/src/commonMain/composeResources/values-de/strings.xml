@@ -283,6 +283,9 @@
     <string name="focus_menu_log_set">Diesen Satz eintragen</string>
     <string name="focus_menu_clear_set">Satz leeren</string>
     <string name="focus_menu_delete_set">Satz löschen</string>
+    <!-- Set effort tag (chip in the Focus editor, pill on logged sets). Worded as effort, not load. -->
+    <string name="set_effort_easy">Locker</string>
+    <string name="set_effort_hard">Hart</string>
     <string name="focus_clear_set_title">Satz %1$d leeren?</string>
     <string name="focus_clear_set_message">Die eingetragenen Werte werden entfernt. Der Satz bleibt bestehen und kann neu eingetragen werden.</string>
     <string name="focus_clear">Leeren</string>

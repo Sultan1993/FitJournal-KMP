@@ -536,6 +536,7 @@ private fun FocusPageOne(
                     onFocusField = { dispatch(WorkoutFocusContract.ViewAction.FocusField(it)) },
                     onKeypadDigit = { dispatch(WorkoutFocusContract.ViewAction.KeypadDigit(it)) },
                     onKeypadBackspace = { dispatch(WorkoutFocusContract.ViewAction.KeypadBackspace) },
+                    onToggleEffort = { dispatch(WorkoutFocusContract.ViewAction.ToggleEffort(it)) },
                     onLogSet = { dispatch(WorkoutFocusContract.ViewAction.LogSet) },
                     onSaveSet = { dispatch(WorkoutFocusContract.ViewAction.SaveSet) },
                     onDeleteSet = { dispatch(WorkoutFocusContract.ViewAction.DeleteSet(it)) },

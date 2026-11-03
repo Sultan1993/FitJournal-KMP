@@ -37,6 +37,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_plus
 import kz.maestrosultan.fitjournal.shared.generated.resources.postworkout_sets
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_exercise_note_label
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
+import kz.maestrosultan.fitjournal.domain.workout.SetEffort
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutValueFormatter
 import kz.maestrosultan.fitjournal.ui.workout.rememberWorkoutUnitLabels
 import org.jetbrains.compose.resources.painterResource
@@ -76,6 +77,7 @@ fun WorkoutExerciseItem(
             repsUnit = WorkoutValueFormatter.repsUnit(resultType, units.minutes),
             // Styled off the set's OWN logged state, not the displayed (possibly ghost) value.
             isLogged = set.isLogged,
+            effort = if (set.isLogged) set.effort else SetEffort.NORMAL,
         )
     }
 

@@ -34,6 +34,7 @@ import kz.maestrosultan.fitjournal.domain.timer.RestTimerState
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
+import kz.maestrosultan.fitjournal.domain.workout.SetEffort
 import kz.maestrosultan.fitjournal.domain.workout.SeedSource
 import kz.maestrosultan.fitjournal.domain.workout.SetNotFoundException
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
@@ -351,6 +352,7 @@ class WorkoutFocusViewModel internal constructor(
             is WorkoutFocusContract.ViewAction.FocusField -> handleFocusField(action.field)
             is WorkoutFocusContract.ViewAction.KeypadDigit -> handleKeypad { it.applyDigit(action.digit) }
             is WorkoutFocusContract.ViewAction.KeypadBackspace -> handleKeypad { it.applyBackspace() }
+            is WorkoutFocusContract.ViewAction.ToggleEffort -> handleKeypad { it.toggleEffort(action.effort) }
             is WorkoutFocusContract.ViewAction.LogSet -> handleLogSet()
             is WorkoutFocusContract.ViewAction.SaveSet -> handleSaveSet()
             is WorkoutFocusContract.ViewAction.DeleteSet -> handleDeleteSet(action.setId)
@@ -633,6 +635,9 @@ class WorkoutFocusViewModel internal constructor(
                 SeedSource.NONE -> SetInput.DEFAULT
             },
             edited = false,
+            // Editing keeps the row's tag; an add-mode prefill borrows numbers
+            // from today's last row but never its tag.
+            effort = if (mode == SeedMode.EDIT) set.effort else SetEffort.NORMAL,
         )
     }
 
@@ -713,6 +718,7 @@ class WorkoutFocusViewModel internal constructor(
                         workoutNumber = workoutNumberOf(loggedRecordId),
                         input = input.setInput(),
                         inSession = isInSession(loggedRecordId),
+                        effort = input.effort,
                     )
                 }
                 if (written.isFailure) {
@@ -747,6 +753,7 @@ class WorkoutFocusViewModel internal constructor(
                         focusedField = FocusInputField.Value,
                         seedInput = SetInput.PREFILL_PREVIOUS_SET,
                         edited = false,
+                        effort = SetEffort.NORMAL,
                     )
                 syncActiveExpansion()
                 republish()
@@ -804,6 +811,7 @@ class WorkoutFocusViewModel internal constructor(
                         action = SetAction.UPDATE,
                         input = input.setInput(),
                         inSession = isInSession(recordIdOwning(exercise.id)),
+                        effort = input.effort,
                     )
                 }.fold(
                     onSuccess = {
@@ -911,6 +919,7 @@ class WorkoutFocusViewModel internal constructor(
                         action = SetAction.COMMIT_TARGET,
                         input = input,
                         inSession = isInSession(recordIdOwning(owner.id)),
+                        effort = set.effort,
                     )
                 }
                 if (written.isFailure) {

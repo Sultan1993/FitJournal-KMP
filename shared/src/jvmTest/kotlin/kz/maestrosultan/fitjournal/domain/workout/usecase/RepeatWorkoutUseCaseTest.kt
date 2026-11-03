@@ -1,6 +1,7 @@
 package kz.maestrosultan.fitjournal.domain.workout.usecase
 
 import kotlin.test.AfterTest
+import kz.maestrosultan.fitjournal.domain.workout.SetEffort
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -156,6 +157,7 @@ private class FakeRecordRepository : RecordRepository {
         reps: Int?,
         distance: Double?,
         duration: Int?,
+        effort: SetEffort,
     ): Boolean = unsupported()
     override suspend fun updateSet(
         userId: String,
@@ -166,6 +168,7 @@ private class FakeRecordRepository : RecordRepository {
         reps: Int?,
         distance: Double?,
         duration: Int?,
+        effort: SetEffort,
     ): Boolean = unsupported()
     override suspend fun deleteSet(userId: String, journalId: String, workoutExerciseId: String, setId: String): Boolean = unsupported()
 }

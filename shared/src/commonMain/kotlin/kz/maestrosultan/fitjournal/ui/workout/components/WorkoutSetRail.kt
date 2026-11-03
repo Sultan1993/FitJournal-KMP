@@ -33,6 +33,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_add_set
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_set_label
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
+import kz.maestrosultan.fitjournal.domain.workout.SetEffort
 import org.jetbrains.compose.resources.stringResource
 
 private const val EM_DASH = "—"
@@ -46,6 +47,8 @@ data class SetDisplay(
     val repsUnit: String,   // "" (weight×reps) or "min" (distance/duration)
     // Styling decided by the set's OWN logged state, not the displayed (possibly ghost) number.
     val isLogged: Boolean,
+    // The set's own tag — NORMAL for an unlogged row, never last time's.
+    val effort: SetEffort = SetEffort.NORMAL,
 )
 
 /**
@@ -103,7 +106,7 @@ private fun WorkoutSetItem(position: Int, set: SetDisplay, onClick: (() -> Unit)
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Dot(color = FjTheme.colors.brand)
+        Dot(color = setEffortDotColor(set.effort))
         Text(
             text = "${stringResource(Res.string.workout_set_label).uppercase()} $position",
             style = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold),
@@ -112,7 +115,7 @@ private fun WorkoutSetItem(position: Int, set: SetDisplay, onClick: (() -> Unit)
         )
         Row(
             horizontalArrangement = Arrangement.spacedBy(5.dp),
-            modifier = Modifier.alpha(if (set.isLogged) 1f else 0.3f),
+            modifier = Modifier.weight(1f).alpha(if (set.isLogged) 1f else 0.3f),
         ) {
             Text(set.number, style = bigStyle, color = FjTheme.colors.textPrimary, modifier = Modifier.alignByBaseline())
             if (set.unit.isNotEmpty() && set.number != EM_DASH) {
@@ -129,6 +132,7 @@ private fun WorkoutSetItem(position: Int, set: SetDisplay, onClick: (() -> Unit)
                 Text(set.repsUnit, style = smallStyle, color = FjTheme.colors.textTertiary, modifier = Modifier.alignByBaseline())
             }
         }
+        SetEffortPill(set.effort)
     }
 }
 

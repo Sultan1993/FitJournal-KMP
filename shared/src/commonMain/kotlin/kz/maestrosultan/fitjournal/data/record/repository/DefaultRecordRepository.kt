@@ -23,6 +23,7 @@ import kotlinx.datetime.toLocalDateTime
 import kz.maestrosultan.fitjournal.domain.exercise.Exercise
 import kz.maestrosultan.fitjournal.domain.workout.LastOccurrence
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
+import kz.maestrosultan.fitjournal.domain.workout.SetEffort
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSet
@@ -246,6 +247,7 @@ class DefaultRecordRepository(
                 distance = set.distance,
                 duration = set.duration,
                 resultType = ResultType.WEIGHT_REPS,
+                effort = SetEffort.fromId(set.effort),
             )
         }
     }
@@ -520,6 +522,8 @@ class DefaultRecordRepository(
                                 distance = null,
                                 duration = null,
                                 completed = false,
+                                // A template: tags describe a performance, not a plan.
+                                effort = SetEffort.NORMAL.id,
                             )
                         },
                     )
@@ -1003,6 +1007,7 @@ class DefaultRecordRepository(
         reps: Int?,
         distance: Double?,
         duration: Int?,
+        effort: SetEffort,
     ): Boolean {
         val tree = findTreeContainingExercise(userId, journalId, workoutExerciseId) ?: return false
         val updatedExercises = tree.exercises.map { exWithSets ->
@@ -1016,6 +1021,7 @@ class DefaultRecordRepository(
                 distance = distance,
                 duration = duration,
                 completed = true,
+                effort = effort.id,
             )
             exWithSets.copy(sets = exWithSets.sets + newSet)
         }
@@ -1037,6 +1043,7 @@ class DefaultRecordRepository(
         reps: Int?,
         distance: Double?,
         duration: Int?,
+        effort: SetEffort,
     ): Boolean {
         val tree = findTreeContainingExercise(userId, journalId, workoutExerciseId) ?: return false
         var matched = false
@@ -1052,6 +1059,7 @@ class DefaultRecordRepository(
                         reps = reps,
                         distance = distance,
                         duration = duration,
+                        effort = effort.id,
                     )
                 }
             }
@@ -1315,6 +1323,7 @@ class DefaultRecordRepository(
         distance = set.distance,
         duration = set.duration,
         resultType = resultType,
+        effort = SetEffort.fromId(set.effort),
     )
 
     // ─── Helpers ──────────────────────────────────────────────────────

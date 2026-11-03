@@ -25,6 +25,8 @@ data class WorkoutSet(
     val distance: Double?,
     val duration: Int?,
     val resultType: ResultType,
+    /** The user's Easy/Hard tag; untagged is [SetEffort.NORMAL]. */
+    val effort: SetEffort = SetEffort.NORMAL,
 ) {
 
     /** The big number: weight for WEIGHT_REPS, distance for DISTANCE_DURATION. */

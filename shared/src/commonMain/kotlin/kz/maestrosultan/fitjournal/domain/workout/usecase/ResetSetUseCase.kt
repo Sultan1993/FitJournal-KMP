@@ -3,6 +3,7 @@ package kz.maestrosultan.fitjournal.domain.workout.usecase
 import kz.maestrosultan.fitjournal.domain.sync.SyncReason
 import kz.maestrosultan.fitjournal.domain.sync.SyncTrigger
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
+import kz.maestrosultan.fitjournal.domain.workout.SetEffort
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
 import kz.maestrosultan.fitjournal.domain.workout.SetNotFoundException
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
@@ -38,6 +39,8 @@ class ResetSetUseCase(
             reps = if (cardio) null else set.reps,
             distance = null,
             duration = if (cardio) set.duration else null,
+            // An unfilled target has no effort to tag.
+            effort = SetEffort.NORMAL,
         )
         if (!updated) {
             throw SetNotFoundException()

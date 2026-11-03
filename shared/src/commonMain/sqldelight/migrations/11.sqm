@@ -1,0 +1,10 @@
+-- v11 -> v12: per-set effort tag (Easy / Hard; untagged = Normal).
+--
+-- A fresh column rather than a revival of the legacy `difficultyType`: the old
+-- Light/Medium/Hard tags survive only partly (sets are deleted and reinserted on
+-- every sibling edit, and nothing has written that column since FJ 2.0), so
+-- reusing it would resurface a random subset of them. Every existing set starts
+-- Normal. Must match the `effort` column in WorkoutSets.sq — verifyMigrations is
+-- off (see CLAUDE.md), so this is hand-verified.
+
+ALTER TABLE workoutSets ADD COLUMN effort INTEGER NOT NULL DEFAULT 0;

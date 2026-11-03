@@ -12,6 +12,7 @@ import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.domain.sync.SyncReason
 import kz.maestrosultan.fitjournal.domain.sync.SyncTrigger
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
+import kz.maestrosultan.fitjournal.domain.workout.SetEffort
 import kz.maestrosultan.fitjournal.domain.workout.SetNotFoundException
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutSet
@@ -46,6 +47,7 @@ class UpdateSetUseCase(
         action: SetAction,
         input: SetInput,
         inSession: Boolean,
+        effort: SetEffort = SetEffort.NORMAL,
     ): Boolean {
         val fields = setFieldsFor(
             resultType = exercise.resultType,
@@ -61,6 +63,7 @@ class UpdateSetUseCase(
             reps = fields.reps,
             distance = fields.distance,
             duration = fields.duration,
+            effort = effort,
         )
         if (!updated) {
             throw SetNotFoundException()

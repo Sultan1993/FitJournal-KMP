@@ -60,6 +60,8 @@ data class DBWorkoutSetObject(
     val distance: Double?,
     val duration: Int?,
     val completed: Boolean,
+    /** [kz.maestrosultan.fitjournal.domain.workout.SetEffort.id]. */
+    val effort: Int = 0,
 )
 
 /** A workoutExercise with its child sets, ordered by position. */
@@ -113,4 +115,5 @@ fun WorkoutSets.map(): DBWorkoutSetObject = DBWorkoutSetObject(
     distance = distance,
     duration = duration?.toInt(),
     completed = completed,
+    effort = effort.toInt(),
 )

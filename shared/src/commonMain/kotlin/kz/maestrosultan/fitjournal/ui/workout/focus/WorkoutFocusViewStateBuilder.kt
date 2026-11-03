@@ -6,6 +6,7 @@ import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.domain.workout.DisplaySetValues
 import kz.maestrosultan.fitjournal.domain.workout.ResultType
 import kz.maestrosultan.fitjournal.domain.workout.SeedSource
+import kz.maestrosultan.fitjournal.domain.workout.SetEffort
 import kz.maestrosultan.fitjournal.domain.workout.SeededSetValues
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
@@ -204,6 +205,7 @@ private suspend fun buildSlots(
             // `FocusViewStateBuilder.kt:262`), never "× —".
             repsText = "× ${display.reps?.toString() ?: WorkoutValueFormatter.EMPTY}",
             isExpanded = set.id == expandedId,
+            effort = if (set.isLogged) set.effort else SetEffort.NORMAL,
             lastHint = lastHintAt(exercise, index, units, strings),
         )
     }
@@ -222,6 +224,7 @@ private suspend fun buildSlots(
         valueUnit = unit,
         repsText = "× ${input.repsText.ifEmpty { WorkoutValueFormatter.EMPTY }}",
         isExpanded = expandedId == FocusEditorMode.NEW_SET_ID,
+        effort = SetEffort.NORMAL,
         lastHint = lastHintAt(exercise, exercise.sets.size, units, strings),
     )
 
@@ -286,6 +289,7 @@ private suspend fun buildEditor(
         unit = unit,
         repsUnit = (if (isCardio) strings.minutesUnit() else strings.repsUnit()).lowercase(),
         focusedField = input.focusedField,
+        effort = input.effort,
         // "Save changes" only for an already-FILLED set …
         isEditing = editedSet?.isLogged == true,
         // … while ANY existing row — filled or an unfilled target — commits

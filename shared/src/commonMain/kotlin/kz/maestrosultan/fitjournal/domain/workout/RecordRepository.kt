@@ -389,6 +389,7 @@ interface RecordRepository {
         reps: Int?,
         distance: Double?,
         duration: Int?,
+        effort: SetEffort = SetEffort.NORMAL,
     ): Boolean
 
     /** @return true if the target set existed and was updated; false if it
@@ -403,6 +404,7 @@ interface RecordRepository {
         reps: Int?,
         distance: Double?,
         duration: Int?,
+        effort: SetEffort = SetEffort.NORMAL,
     ): Boolean
 
     /** @return true if the target set existed and was deleted; false if it

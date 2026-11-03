@@ -30,6 +30,10 @@ data class FjColorScheme(
     val divider: Color,
     val positive: Color,
     val negative: Color,
+    val positiveSoft: Color,
+    val positiveInk: Color,
+    val negativeSoft: Color,
+    val negativeInk: Color,
     val isDark: Boolean,
     val brandRamp: List<Color>,
 )
@@ -65,6 +69,10 @@ fun fjColorScheme(dark: Boolean): FjColorScheme = with(ColorTokens) {
         divider = divider.compose(dark),
         positive = positive.compose(dark),
         negative = negative.compose(dark),
+        positiveSoft = positiveSoft.compose(dark),
+        positiveInk = positiveInk.compose(dark),
+        negativeSoft = negativeSoft.compose(dark),
+        negativeInk = negativeInk.compose(dark),
         isDark = dark,
         brandRamp = brandRamp,
     )

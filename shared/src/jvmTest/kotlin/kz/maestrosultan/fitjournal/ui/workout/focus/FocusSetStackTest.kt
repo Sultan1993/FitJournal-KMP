@@ -286,6 +286,7 @@ class FocusSetStackTest {
             onFocusField = {},
             onKeypadDigit = {},
             onKeypadBackspace = {},
+            onToggleEffort = {},
             onLogSet = {},
             onSaveSet = {},
             onDeleteSet = onDeleteSet,

@@ -12,6 +12,7 @@ import kotlinx.datetime.LocalDate
 import kz.maestrosultan.fitjournal.domain.sync.SyncReason
 import kz.maestrosultan.fitjournal.domain.sync.SyncTrigger
 import kz.maestrosultan.fitjournal.domain.workout.RecordRepository
+import kz.maestrosultan.fitjournal.domain.workout.SetEffort
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
 import kz.maestrosultan.fitjournal.domain.workout.resultType
 import kz.maestrosultan.fitjournal.domain.workout.setFieldsFor
@@ -41,6 +42,7 @@ class AddSetUseCase(
         workoutNumber: Int,
         input: SetInput,
         inSession: Boolean,
+        effort: SetEffort = SetEffort.NORMAL,
     ) {
         val fields = setFieldsFor(
             resultType = exercise.resultType,
@@ -55,6 +57,7 @@ class AddSetUseCase(
             reps = fields.reps,
             distance = fields.distance,
             duration = fields.duration,
+            effort = effort,
         )
         syncTrigger.requestTick(SyncReason.PostWrite.WorkoutRecord)
         // The exercise may be gone (nothing written): that is not a logged set.

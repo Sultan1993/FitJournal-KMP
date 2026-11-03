@@ -197,7 +197,7 @@ class WorkoutsDBDataSource(
                 journalId = journalId,
                 date = from,
                 date_ = to,
-            ) { uuid, weUuid, position, weight, reps, distance, duration, _, completed, recordDate, weComment ->
+            ) { uuid, weUuid, position, weight, reps, distance, duration, _, completed, effort, recordDate, weComment ->
                 mapper(
                     DBWorkoutSetObject(
                         uuid = uuid,
@@ -208,6 +208,7 @@ class WorkoutsDBDataSource(
                         distance = distance,
                         duration = duration?.toInt(),
                         completed = completed,
+                        effort = effort.toInt(),
                     ),
                     recordDate,
                     weComment,
@@ -535,6 +536,7 @@ class WorkoutsDBDataSource(
                     distance = set.distance,
                     duration = set.duration?.toLong(),
                     completed = set.completed,
+                    effort = set.effort.toLong(),
                 )
             }
         }

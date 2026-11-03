@@ -1,6 +1,7 @@
 package kz.maestrosultan.fitjournal.analytics
 
 import java.util.UUID
+import kz.maestrosultan.fitjournal.domain.workout.SetEffort
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -105,7 +106,7 @@ class AnalyticsEmissionTest {
         val failingRepo = object : RecordRepository by repo {
             override suspend fun addSet(
                 userId: String, journalId: String, workoutExerciseId: String,
-                weight: Double?, reps: Int?, distance: Double?, duration: Int?,
+                weight: Double?, reps: Int?, distance: Double?, duration: Int?, effort: SetEffort,
             ): Boolean = throw IllegalStateException("disk full")
         }
         assertFailsWith<IllegalStateException> {
@@ -150,7 +151,7 @@ class AnalyticsEmissionTest {
         val rejectingRepo = object : RecordRepository by repo {
             override suspend fun updateSet(
                 userId: String, journalId: String, workoutExerciseId: String, setId: String,
-                weight: Double?, reps: Int?, distance: Double?, duration: Int?,
+                weight: Double?, reps: Int?, distance: Double?, duration: Int?, effort: SetEffort,
             ): Boolean = false
         }
         assertFailsWith<SetNotFoundException> {

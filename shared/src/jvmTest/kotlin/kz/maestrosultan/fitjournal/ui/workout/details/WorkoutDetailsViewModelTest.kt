@@ -1,6 +1,7 @@
 package kz.maestrosultan.fitjournal.ui.workout.details
 
 import kotlin.test.AfterTest
+import kz.maestrosultan.fitjournal.domain.workout.SetEffort
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -856,6 +857,7 @@ class WorkoutDetailsViewModelTest {
             reps: Int?,
             distance: Double?,
             duration: Int?,
+            effort: SetEffort,
         ): Boolean = unsupported()
 
         override suspend fun updateSet(
@@ -867,6 +869,7 @@ class WorkoutDetailsViewModelTest {
             reps: Int?,
             distance: Double?,
             duration: Int?,
+            effort: SetEffort,
         ): Boolean = unsupported()
 
         override suspend fun deleteSet(userId: String, journalId: String, workoutExerciseId: String, setId: String): Boolean = unsupported()

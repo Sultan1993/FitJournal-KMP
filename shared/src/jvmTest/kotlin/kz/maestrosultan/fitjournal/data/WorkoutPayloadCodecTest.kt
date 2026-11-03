@@ -1,6 +1,7 @@
 package kz.maestrosultan.fitjournal.data
 
 import kz.maestrosultan.fitjournal.data.record.payload.WorkoutExercisePayload
+import kz.maestrosultan.fitjournal.domain.workout.SetEffort
 import kz.maestrosultan.fitjournal.data.record.payload.WorkoutPayloadCodec
 import kz.maestrosultan.fitjournal.data.record.payload.WorkoutSetPayload
 import kotlin.test.Test
@@ -112,5 +113,34 @@ class WorkoutPayloadCodecTest {
         )
         val back = WorkoutPayloadCodec.decode(WorkoutPayloadCodec.encode(original))
         assertEquals(original, back)
+    }
+
+    @Test
+    fun effortIsWrittenByName_omittedWhenNormal_andLegacyDifficultyIsNotRevived() {
+        val json = WorkoutPayloadCodec.encode(
+            listOf(
+                WorkoutExercisePayload(
+                    id = "we-1",
+                    exerciseId = "ex-1",
+                    sets = listOf(
+                        WorkoutSetPayload(id = "s1", weight = 100.0, reps = 5, effort = SetEffort.HARD),
+                        WorkoutSetPayload(id = "s2", weight = 100.0, reps = 5),
+                    ),
+                ),
+            ),
+        )
+        assertTrue(json.contains("\"effort\":\"HARD\""), json)
+        assertEquals(1, Regex("\"effort\"").findAll(json).count(), "NORMAL is omitted: $json")
+        assertEquals(
+            listOf(SetEffort.HARD, SetEffort.NORMAL),
+            WorkoutPayloadCodec.decode(json).single().sets.map { it.effort },
+        )
+
+        // Fresh start: an old blob's difficultyType (HARD on s2) must not resurface as a tag.
+        assertTrue(WorkoutPayloadCodec.decode(legacyJson).single().sets.all { it.effort == SetEffort.NORMAL })
+
+        // An unknown future tag reads as Normal rather than failing the whole pull.
+        val future = """[{"id":"we-1","exerciseId":"ex-1","sets":[{"id":"s1","effort":"MAX"}]}]"""
+        assertEquals(SetEffort.NORMAL, WorkoutPayloadCodec.decode(future).single().sets.single().effort)
     }
 }

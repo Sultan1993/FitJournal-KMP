@@ -90,6 +90,7 @@ class FocusEditorFieldSizeTest {
                     onFocusField = {},
                     onKeypadDigit = {},
                     onKeypadBackspace = {},
+                    onToggleEffort = {},
                     onLogSet = {},
                     onSaveSet = {},
                     onDeleteSet = {},

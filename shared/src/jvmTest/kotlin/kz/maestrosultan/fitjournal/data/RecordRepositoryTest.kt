@@ -1,6 +1,7 @@
 package kz.maestrosultan.fitjournal.data
 
 import kotlinx.coroutines.Dispatchers
+import kz.maestrosultan.fitjournal.domain.workout.SetEffort
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -262,6 +263,33 @@ class RecordRepositoryTest {
 
         repo.deleteSet(userId, journalId, weId, set.id)
         assertEquals(0, repo.getRecordsByDate(userId, journalId, date).single().exercises.single().sets.size)
+    }
+
+    @Test
+    fun effort_survivesSiblingWrites_aSyncPull_andIsClearedOnCopy(): Unit = runBlocking {
+        val exId = seedCatalogExercise()
+        repo.addExercisesToDate(userId, journalId, date, 1, listOf(exId))
+        val weId = repo.getRecordsByDate(userId, journalId, date).single().exercises.single().id
+        fun sets() = runBlocking { repo.getRecordsByDate(userId, journalId, date).single().exercises.single().sets }
+
+        repo.addSet(userId, journalId, weId, 60.0, 12, null, null, effort = SetEffort.EASY)
+        // Every set write deletes and reinserts the whole tree — the sibling's tag must ride along.
+        repo.addSet(userId, journalId, weId, 100.0, 5, null, null)
+        repo.addSet(userId, journalId, weId, 110.0, 3, null, null, effort = SetEffort.HARD)
+        assertEquals(listOf(SetEffort.EASY, SetEffort.NORMAL, SetEffort.HARD), sets().map { it.effort })
+
+        val hard = sets().last()
+        repo.updateSet(userId, journalId, weId, hard.id, 110.0, 4, null, null, effort = SetEffort.NORMAL)
+        assertEquals(listOf(SetEffort.EASY, SetEffort.NORMAL, SetEffort.NORMAL), sets().map { it.effort })
+
+        // A sync pull re-applies the tree through the remote upsert (the workoutNumber trap).
+        val tree = workoutsDB.getWorkoutRecordById(repo.getRecordsByDate(userId, journalId, date).single().id)!!
+        workoutsDB.replaceWorkoutRecordFromRemote(tree)
+        assertEquals(SetEffort.EASY, sets().first().effort, "a pull must not reset the tag")
+
+        assertTrue(repo.copyWorkoutTo(userId, journalId, date, 1, LocalDate(2026, 5, 2), 1))
+        val copied = repo.getRecordsByDate(userId, journalId, LocalDate(2026, 5, 2)).single().exercises.single().sets
+        assertTrue(copied.all { it.effort == SetEffort.NORMAL }, "a copied template carries no tags")
     }
 
     @Test

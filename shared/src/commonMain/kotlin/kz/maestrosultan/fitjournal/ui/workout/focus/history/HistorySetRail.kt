@@ -25,6 +25,10 @@ import androidx.compose.ui.unit.dp
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_set_label
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
+import kz.maestrosultan.fitjournal.ui.workout.components.setEffortDotColor
+import kz.maestrosultan.fitjournal.ui.workout.components.setEffortLabel
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import kz.maestrosultan.fitjournal.ui.workout.components.SetDisplay
 import org.jetbrains.compose.resources.stringResource
 
@@ -89,7 +93,16 @@ private fun HistorySetRow(position: Int, set: SetDisplay) {
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Box(modifier = Modifier.width(12.dp), contentAlignment = Alignment.Center) {
-            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(FjTheme.colors.brand))
+            // Colour alone marks the tag here (no pill on this page), so the
+            // dot carries the label for a screen reader.
+            val effortLabel = setEffortLabel(set.effort)
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(setEffortDotColor(set.effort))
+                    .then(if (effortLabel != null) Modifier.semantics { contentDescription = effortLabel } else Modifier),
+            )
         }
         Text(
             text = "${stringResource(Res.string.workout_set_label).uppercase()} $position",
