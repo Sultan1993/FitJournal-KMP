@@ -121,7 +121,10 @@ private fun EffortChip(effort: SetEffort, isSelected: Boolean, onToggle: (SetEff
             text = setEffortLabel(effort).orEmpty(),
             style = FjTheme.typography.caption.copy(
                 fontSize = 12.sp,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                // One weight in both states: a bolder selected label is wider,
+                // so the chip grew on tap and the centred pair shifted. Fill,
+                // dot and ink already carry the selection.
+                fontWeight = FontWeight.SemiBold,
             ),
             color = if (isSelected) tone.ink else FjTheme.colors.textSecondary,
             maxLines = 1,
