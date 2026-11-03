@@ -1,7 +1,7 @@
 <resources>
     <!-- Workout pager / placeholder -->
     <string name="workout_another_workout_title">Записати ще одне тренування</string>
-    <string name="workout_another_workout_subtitle">Натисніть +, щоб додати вправи — вони запишуться як окреме тренування.</string>
+    <string name="workout_another_workout_subtitle">Натисніть +, щоб додати вправи — вони запишуться як окреме тренування</string>
 
     <!-- Session bar -->
     <string name="workout_start">Почати тренування</string>
@@ -234,7 +234,7 @@
     <string name="quota_exhausted_subtitle">Усе, що ви записали, залишиться з вами. Оформіть підписку, щоб записувати нові тренування.</string>
     <string name="quota_cta_upgrade">Оформити підписку</string>
     <string name="quota_cta_see_plans">Переглянути тарифи</string>
-    <string name="quota_few_left_subtitle">Необмежені тренування, від %1$s / місяць.</string>
+    <string name="quota_few_left_subtitle">Необмежені тренування, від %1$s / місяць</string>
     <string name="quota_exhausted_subtitle_priced">Усе, що ви записали, залишиться з вами. Оформіть підписку, щоб записувати нові — від %1$s / місяць.</string>
     <string name="quota_lapsed_eyebrow">ПІДПИСКА ЗАВЕРШЕНА</string>
     <plurals name="quota_lapsed_title">
@@ -286,10 +286,10 @@
     <string name="focus_est_1rm">Розрах. 1ПМ</string>
     <string name="focus_stats_info_est_1rm">Розрахунковий максимум на одне повторення — найбільша вага, яку ви могли б підняти один раз, оцінена за вашим найкращим підходом. Натисніть, щоб відкрити калькулятор.</string>
     <string name="focus_max_set">Макс. підхід</string>
-    <string name="focus_stats_info_max_set">Ваш найважчий записаний підхід у цій вправі — найбільша вага та кількість повторень.</string>
+    <string name="focus_stats_info_max_set">Ваш найважчий записаний підхід у цій вправі — найбільша вага та кількість повторень</string>
     <string name="focus_menu_remove_exercise">Видалити вправу</string>
     <string name="focus_remove_exercise_title">Видалити %1$s?</string>
-    <string name="focus_remove_exercise_message">Вправу та її записані підходи буде видалено з цього тренування.</string>
+    <string name="focus_remove_exercise_message">Вправу та її записані підходи буде видалено з цього тренування</string>
     <string name="focus_minutes">хв</string>
     <string name="focus_reps">Повтори</string>
     <string name="focus_finish_workout">Завершити тренування</string>

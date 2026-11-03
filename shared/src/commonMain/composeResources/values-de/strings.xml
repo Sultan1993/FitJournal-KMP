@@ -1,7 +1,7 @@
 <resources>
     <!-- Workout pager / placeholder -->
     <string name="workout_another_workout_title">Weiteres Training erfassen</string>
-    <string name="workout_another_workout_subtitle">Tippe auf +, um Übungen hinzuzufügen – sie werden als separates Training erfasst.</string>
+    <string name="workout_another_workout_subtitle">Tippe auf +, um Übungen hinzuzufügen – sie werden als separates Training erfasst</string>
 
     <!-- Session bar -->
     <string name="workout_start">Training starten</string>
@@ -212,7 +212,7 @@
     <string name="quota_exhausted_subtitle">Alles, was du protokolliert hast, bleibt erhalten. Mit einem Upgrade kannst du weiter protokollieren.</string>
     <string name="quota_cta_upgrade">Unbegrenzt freischalten</string>
     <string name="quota_cta_see_plans">Tarife ansehen</string>
-    <string name="quota_few_left_subtitle">Unbegrenzte Workouts, ab %1$s / Monat.</string>
+    <string name="quota_few_left_subtitle">Unbegrenzte Workouts, ab %1$s / Monat</string>
     <string name="quota_exhausted_subtitle_priced">Alles, was du protokolliert hast, bleibt erhalten. Mit einem Upgrade kannst du weiter protokollieren — ab %1$s / Monat.</string>
     <string name="quota_lapsed_eyebrow">ABO BEENDET</string>
     <plurals name="quota_lapsed_title">
@@ -262,10 +262,10 @@
     <string name="focus_est_1rm">Ca. 1RM</string>
     <string name="focus_stats_info_est_1rm">Geschätztes Ein-Wiederholungs-Maximum – das schwerste Gewicht, das du für eine Wiederholung heben könntest, geschätzt aus deinem besten Satz. Tippe darauf, um den Rechner zu öffnen.</string>
     <string name="focus_max_set">Max. Satz</string>
-    <string name="focus_stats_info_max_set">Dein schwerster erfasster Satz für diese Übung – das höchste Gewicht und die Wiederholungen, die du aufgezeichnet hast.</string>
+    <string name="focus_stats_info_max_set">Dein schwerster erfasster Satz für diese Übung – das höchste Gewicht und die Wiederholungen, die du aufgezeichnet hast</string>
     <string name="focus_menu_remove_exercise">Übung entfernen</string>
     <string name="focus_remove_exercise_title">%1$s entfernen?</string>
-    <string name="focus_remove_exercise_message">Die Übung und ihre erfassten Sätze werden aus diesem Training gelöscht.</string>
+    <string name="focus_remove_exercise_message">Die Übung und ihre erfassten Sätze werden aus diesem Training gelöscht</string>
     <string name="focus_minutes">Min</string>
     <string name="focus_reps">Wdh.</string>
     <string name="focus_finish_workout">Training beenden</string>

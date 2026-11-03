@@ -1,7 +1,7 @@
 <resources>
     <!-- Workout pager / placeholder -->
     <string name="workout_another_workout_title">Записать ещё одну тренировку</string>
-    <string name="workout_another_workout_subtitle">Нажмите +, чтобы добавить упражнения — они запишутся как отдельная тренировка.</string>
+    <string name="workout_another_workout_subtitle">Нажмите +, чтобы добавить упражнения — они запишутся как отдельная тренировка</string>
 
     <!-- Session bar -->
     <string name="workout_start">Начать тренировку</string>
@@ -234,7 +234,7 @@
     <string name="quota_exhausted_subtitle">Всё, что вы записали, останется с вами. Оформите подписку, чтобы записывать новые тренировки.</string>
     <string name="quota_cta_upgrade">Оформить подписку</string>
     <string name="quota_cta_see_plans">Посмотреть тарифы</string>
-    <string name="quota_few_left_subtitle">Неограниченные тренировки, от %1$s / месяц.</string>
+    <string name="quota_few_left_subtitle">Неограниченные тренировки, от %1$s / месяц</string>
     <string name="quota_exhausted_subtitle_priced">Всё, что вы записали, останется с вами. Оформите подписку, чтобы записывать новые — от %1$s / месяц.</string>
     <string name="quota_lapsed_eyebrow">ПОДПИСКА ЗАВЕРШЕНА</string>
     <plurals name="quota_lapsed_title">
@@ -286,10 +286,10 @@
     <string name="focus_est_1rm">Расч. 1ПМ</string>
     <string name="focus_stats_info_est_1rm">Расчётный максимум на одно повторение — наибольший вес, который вы могли бы поднять один раз, оценённый по вашему лучшему подходу. Нажмите, чтобы открыть калькулятор.</string>
     <string name="focus_max_set">Макс. подход</string>
-    <string name="focus_stats_info_max_set">Ваш самый тяжёлый записанный подход в этом упражнении — наибольший вес и число повторений.</string>
+    <string name="focus_stats_info_max_set">Ваш самый тяжёлый записанный подход в этом упражнении — наибольший вес и число повторений</string>
     <string name="focus_menu_remove_exercise">Удалить упражнение</string>
     <string name="focus_remove_exercise_title">Удалить %1$s?</string>
-    <string name="focus_remove_exercise_message">Упражнение и его записанные подходы будут удалены из этой тренировки.</string>
+    <string name="focus_remove_exercise_message">Упражнение и его записанные подходы будут удалены из этой тренировки</string>
     <string name="focus_minutes">мин</string>
     <string name="focus_reps">Повторы</string>
     <string name="focus_finish_workout">Завершить тренировку</string>

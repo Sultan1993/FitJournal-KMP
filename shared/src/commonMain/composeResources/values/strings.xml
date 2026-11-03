@@ -1,7 +1,7 @@
 <resources>
     <!-- Workout pager / placeholder -->
     <string name="workout_another_workout_title">Log another workout</string>
-    <string name="workout_another_workout_subtitle">Press + to add exercises — they're logged as a separate workout.</string>
+    <string name="workout_another_workout_subtitle">Press + to add exercises — they're logged as a separate workout</string>
 
     <!-- Session bar -->
     <string name="workout_start">Start workout</string>
@@ -213,7 +213,7 @@
     <string name="quota_exhausted_subtitle">Everything you've logged stays. Upgrade to keep logging new ones.</string>
     <string name="quota_cta_upgrade">Upgrade for unlimited</string>
     <string name="quota_cta_see_plans">See plans</string>
-    <string name="quota_few_left_subtitle">Unlimited workouts, from %1$s / month.</string>
+    <string name="quota_few_left_subtitle">Unlimited workouts, from %1$s / month</string>
     <string name="quota_exhausted_subtitle_priced">Everything you've logged stays. Upgrade to keep logging new ones — from %1$s / month.</string>
     <string name="quota_lapsed_eyebrow">SUBSCRIPTION ENDED</string>
     <plurals name="quota_lapsed_title">
@@ -263,10 +263,10 @@
     <string name="focus_est_1rm">Est 1RM</string>
     <string name="focus_stats_info_est_1rm">Estimated one-rep max — the heaviest weight you could lift for a single rep, estimated from your best logged set. Tap it to open the calculator.</string>
     <string name="focus_max_set">Max set</string>
-    <string name="focus_stats_info_max_set">Your heaviest logged set for this exercise — the top weight and reps you've recorded.</string>
+    <string name="focus_stats_info_max_set">Your heaviest logged set for this exercise — the top weight and reps you've recorded</string>
     <string name="focus_menu_remove_exercise">Remove exercise</string>
     <string name="focus_remove_exercise_title">Remove %1$s?</string>
-    <string name="focus_remove_exercise_message">The exercise and its logged sets will be deleted from this workout.</string>
+    <string name="focus_remove_exercise_message">The exercise and its logged sets will be deleted from this workout</string>
     <string name="focus_minutes">Min</string>
     <string name="focus_reps">Reps</string>
     <string name="focus_finish_workout">Finish workout</string>
