@@ -76,7 +76,7 @@ private fun FocusTitleRow(content: FocusTitleContent) {
         ) {
             Text(
                 text = title,
-                style = FjTheme.typography.screenTitle.copy(fontSize = 32.sp, fontWeight = FontWeight.Bold),
+                style = FjTheme.typography.screenTitle.copy(fontSize = 34.sp, fontWeight = FontWeight.Bold),
                 color = FjTheme.colors.textPrimary,
             )
             if (muscles.isNotEmpty()) {

@@ -65,7 +65,7 @@ private const val MAX_BAR_DP = 72f
  */
 internal object WorkoutListHeroMetrics {
     /** Baseline-aligned gap between the number and its unit. */
-    val NumberUnitGap = 9.dp
+    val NumberUnitGap = 8.dp
     val NumberSize = 34.sp
     val UnitSize = 14.sp
     val SubtitleSize = 12.5.sp
@@ -78,8 +78,8 @@ internal object WorkoutListHeroMetrics {
 
     val ChartTopGap = 16.dp
     val ChartHeight = CHART_HEIGHT_DP.dp
-    val BarGap = 5.dp
-    val BarRadius = 3.dp
+    val BarGap = 4.dp
+    val BarRadius = 4.dp
 }
 
 /**
@@ -160,7 +160,7 @@ fun WorkoutListHero(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        Spacer(Modifier.height(7.dp))
+        Spacer(Modifier.height(8.dp))
         MonthLabelRow(labels = hero.monthLabels)
     }
 }
@@ -193,7 +193,7 @@ private fun MonthLabelRow(labels: List<WorkoutListContract.MonthLabel>, modifier
         labels.forEachIndexed { index, label ->
             Text(
                 text = LocaleFormatters.monthName(label.month1to12, NameStyle.Short),
-                style = FjTheme.typography.label.copy(fontSize = 10.5.sp),
+                style = FjTheme.typography.label.copy(fontSize = 10.sp),
                 color = FjTheme.colors.textTertiary,
                 textAlign = if (index == labels.lastIndex) TextAlign.End else TextAlign.Start,
                 modifier = Modifier.weight(label.slotCount.toFloat()),

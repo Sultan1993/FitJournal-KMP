@@ -70,7 +70,7 @@ internal fun LayoutEditor(
     val kinds = ShareLayoutKind.entries.filter { showNewBest || it != ShareLayoutKind.NewBest }
 
     Column(modifier = modifier.fillMaxWidth()) {
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             kinds.forEach { kind ->
                 LayoutThumb(
                     kind = kind,
@@ -121,11 +121,11 @@ private fun LayoutThumb(
         ) {
             LayoutSketch(kind = kind, modifier = Modifier.fillMaxSize())
         }
-        Spacer(Modifier.height(7.dp))
+        Spacer(Modifier.height(8.dp))
         Text(
             text = label,
             style = FjTheme.typography.label.copy(
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
             ),
             color = Color.White.copy(alpha = if (selected) 1f else 0.6f),
@@ -141,7 +141,7 @@ private fun ResetRow(onClick: () -> Unit, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .height(46.dp)
-            .clip(RoundedCornerShape(13.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(EditorSheetDefaults.TileColor)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,

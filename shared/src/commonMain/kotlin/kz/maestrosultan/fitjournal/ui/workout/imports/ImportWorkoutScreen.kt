@@ -202,7 +202,7 @@ private fun ImportPager(
                         measurementSystem = measurementSystem,
                         isSelected = record.id in loaded.selectedRecordIds,
                         onToggle = { dispatch(ImportWorkoutContract.ViewAction.ToggleRecord(record.id)) },
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     )
                 }
             }
@@ -239,7 +239,7 @@ internal fun ImportButton(
         modifier = modifier
             .height(54.dp)
             .testTag("import_button")
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(if (brandFill) FjTheme.colors.brand else FjTheme.colors.surfaceElevated)
             .clickable(enabled = canImport && !importInProgress, onClick = onClick),
         contentAlignment = Alignment.Center,

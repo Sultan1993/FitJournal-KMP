@@ -106,7 +106,7 @@ fun WorkoutPageContent(
                 // 6dp — the same as a record card's own vertical padding, so the gap
                 // below the card matches the 6+6 between two records. The plain title
                 // (below) keeps its wider 16dp breathing room.
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(8.dp))
             } else {
                 WorkoutMuscleHeader(orderedRecords)
                 Spacer(Modifier.height(16.dp))
@@ -131,7 +131,7 @@ fun WorkoutPageContent(
                         }
                     },
                     modifier = Modifier
-                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
                         // Long-press to drag so the card's set taps / menu still fire.
                         .longPressDraggableHandle(
                             onDragStopped = {

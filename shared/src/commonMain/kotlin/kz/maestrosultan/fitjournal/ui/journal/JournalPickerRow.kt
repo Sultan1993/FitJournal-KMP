@@ -118,7 +118,7 @@ fun JournalPickerRow(
 @Composable
 private fun JournalPickerRowCustomLight() {
     FitJournalTheme(darkTheme = false) {
-        Box(Modifier.fillMaxWidth().background(FjTheme.colors.background).padding(20.dp)) {
+        Box(Modifier.fillMaxWidth().background(FjTheme.colors.background).padding(16.dp)) {
             JournalPickerRow(name = "Coaching · Alex", isPersonal = false, onClick = {})
         }
     }
@@ -128,7 +128,7 @@ private fun JournalPickerRowCustomLight() {
 @Composable
 private fun JournalPickerRowPersonalDark() {
     FitJournalTheme(darkTheme = true) {
-        Box(Modifier.fillMaxWidth().background(FjTheme.colors.background).padding(20.dp)) {
+        Box(Modifier.fillMaxWidth().background(FjTheme.colors.background).padding(16.dp)) {
             JournalPickerRow(name = "ignored", isPersonal = true, onClick = {})
         }
     }
@@ -138,7 +138,7 @@ private fun JournalPickerRowPersonalDark() {
 @Composable
 private fun JournalPickerRowOnboardingLight() {
     FitJournalTheme(darkTheme = false) {
-        Box(Modifier.fillMaxWidth().background(FjTheme.colors.background).padding(20.dp)) {
+        Box(Modifier.fillMaxWidth().background(FjTheme.colors.background).padding(16.dp)) {
             JournalPickerRow(name = "ignored", isPersonal = true, onClick = {}, showOnboarding = true)
         }
     }

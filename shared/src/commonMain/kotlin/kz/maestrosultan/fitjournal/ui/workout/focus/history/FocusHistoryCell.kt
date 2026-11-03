@@ -66,7 +66,7 @@ fun FocusHistoryCell(item: FocusHistoryItemUi, modifier: Modifier = Modifier) {
             ) {
                 HistorySetRail(
                     sets = occurrence.sets,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                 )
             }
         }

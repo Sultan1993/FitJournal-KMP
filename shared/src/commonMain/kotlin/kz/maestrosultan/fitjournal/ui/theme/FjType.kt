@@ -52,16 +52,16 @@ fun fjTypography(): FjTypography {
     )
     fun style(size: Int, weight: FontWeight) = style(size.toDouble(), weight)
     return FjTypography(
-        screenTitle = style(18, FontWeight.SemiBold),
+        screenTitle = style(20, FontWeight.SemiBold),
         sectionTitle = style(12, FontWeight.SemiBold),
         cardTitle = style(16, FontWeight.Medium),
-        body = style(15, FontWeight.Normal),
-        bodyStrong = style(15, FontWeight.Medium),
-        caption = style(13, FontWeight.Normal),
-        label = style(11, FontWeight.Medium),
+        body = style(16, FontWeight.Normal),
+        bodyStrong = style(16, FontWeight.Medium),
+        caption = style(14, FontWeight.Normal),
+        label = style(12, FontWeight.Medium),
         button = style(16, FontWeight.SemiBold),
-        numberLarge = style(17, FontWeight.SemiBold),
-        eyebrow = style(10.5, FontWeight.Bold),
+        numberLarge = style(16, FontWeight.SemiBold),
+        eyebrow = style(10, FontWeight.Bold),
     )
 }
 

@@ -30,7 +30,7 @@ import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import org.jetbrains.compose.resources.stringResource
 
 private val RowHeight = 52.dp
-private val RowShape = RoundedCornerShape(14.dp)
+private val RowShape = RoundedCornerShape(12.dp)
 
 /**
  * Body of the Backdrop panel: three rows, one per [BackdropKind].
@@ -91,7 +91,7 @@ private fun BackdropRow(
         Text(
             text = label,
             style = FjTheme.typography.bodyStrong.copy(
-                fontSize = 15.sp,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
             ),
             color = Color.White.copy(alpha = if (selected) 1f else 0.78f),

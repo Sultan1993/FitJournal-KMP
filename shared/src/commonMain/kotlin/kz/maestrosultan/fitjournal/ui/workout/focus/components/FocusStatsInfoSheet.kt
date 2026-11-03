@@ -67,7 +67,7 @@ private fun FocusStatsInfoContent(modifier: Modifier = Modifier) {
             // fixed height rather than silently clipping the tail.
             .verticalScroll(rememberScrollState())
             .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(22.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         Text(
             text = stringResource(Res.string.focus_stats_info_title),
@@ -91,7 +91,7 @@ private fun FocusStatsInfoBlock(
     body: String,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             // Brand ink, unlike the row's own tertiary label: here the metric
             // name is the block heading, not a caption on a number.

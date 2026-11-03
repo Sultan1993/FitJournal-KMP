@@ -41,10 +41,10 @@ fun FocusCoachCard(segments: List<FocusCoachSegmentUi>, modifier: Modifier = Mod
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(20.dp))
             .background(FjTheme.colors.brandSubtle)
-            .padding(18.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -53,7 +53,7 @@ fun FocusCoachCard(segments: List<FocusCoachSegmentUi>, modifier: Modifier = Mod
             Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(FjTheme.colors.brand))
             Text(
                 text = stringResource(Res.string.focus_ai_coach).uppercase(),
-                style = FjTheme.typography.eyebrow.copy(fontSize = 10.5.sp, fontWeight = FontWeight.Bold),
+                style = FjTheme.typography.eyebrow.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
                 color = FjTheme.colors.brand,
             )
         }
@@ -75,7 +75,7 @@ fun FocusCoachCard(segments: List<FocusCoachSegmentUi>, modifier: Modifier = Mod
         }
         Text(
             text = annotated,
-            style = FjTheme.typography.body.copy(fontSize = 15.sp, lineHeight = 21.sp),
+            style = FjTheme.typography.body.copy(fontSize = 16.sp, lineHeight = 21.sp),
         )
     }
 }

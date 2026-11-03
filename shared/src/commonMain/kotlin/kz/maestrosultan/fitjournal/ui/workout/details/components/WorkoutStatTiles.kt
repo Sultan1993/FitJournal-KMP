@@ -78,7 +78,7 @@ private fun StatTile(eyebrow: String, value: String, modifier: Modifier = Modifi
         Spacer(Modifier.height(4.dp))
         Text(
             text = value,
-            style = FjTheme.typography.cardTitle.copy(fontSize = 19.sp),
+            style = FjTheme.typography.cardTitle.copy(fontSize = 20.sp),
             color = FjTheme.colors.textPrimary,
         )
     }

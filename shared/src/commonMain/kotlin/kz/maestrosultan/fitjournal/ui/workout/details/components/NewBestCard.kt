@@ -60,7 +60,7 @@ fun NewBestCard(text: String, modifier: Modifier = Modifier) {
         ) {
             TrophyGlyph()
         }
-        Spacer(Modifier.width(13.dp))
+        Spacer(Modifier.width(12.dp))
         Column {
             Text(
                 text = stringResource(Res.string.workout_details_new_best),
@@ -71,7 +71,7 @@ fun NewBestCard(text: String, modifier: Modifier = Modifier) {
             Spacer(Modifier.height(2.dp))
             Text(
                 text = text,
-                style = FjTheme.typography.bodyStrong.copy(fontSize = 14.5.sp),
+                style = FjTheme.typography.bodyStrong.copy(fontSize = 14.sp),
                 color = NewBestTextInk,
             )
         }

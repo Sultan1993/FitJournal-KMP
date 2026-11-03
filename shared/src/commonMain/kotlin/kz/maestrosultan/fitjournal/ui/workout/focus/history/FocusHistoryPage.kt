@@ -90,7 +90,7 @@ private fun FocusHistoryLoaded(items: List<FocusHistoryItemUi>, modifier: Modifi
 @Composable
 internal fun HistoryPreviewSurface(darkTheme: Boolean, content: @Composable () -> Unit) {
     FitJournalTheme(darkTheme = darkTheme) {
-        Box(modifier = Modifier.fillMaxWidth().background(FjTheme.colors.background).padding(20.dp)) {
+        Box(modifier = Modifier.fillMaxWidth().background(FjTheme.colors.background).padding(16.dp)) {
             content()
         }
     }

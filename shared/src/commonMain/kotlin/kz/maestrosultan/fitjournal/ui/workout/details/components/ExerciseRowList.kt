@@ -53,10 +53,10 @@ import kz.maestrosultan.fitjournal.ui.workout.details.WorkoutDetailsPreviewSurfa
 import org.jetbrains.compose.resources.stringResource
 
 private val AvatarSize = 44.dp
-private val AvatarGap = 14.dp
+private val AvatarGap = 16.dp
 
 /** Symmetric, so a divider sits midway between two rows rather than hugging the one above. */
-private val RowPadding = 14.dp
+private val RowPadding = 16.dp
 
 /** Row top padding + half the avatar — the avatar's vertical center, where the rail meets it. */
 private val RailInset = RowPadding + AvatarSize / 2
@@ -80,7 +80,7 @@ fun ExerciseRowList(
             style = FjTheme.typography.eyebrow,
             color = FjTheme.colors.textTertiary,
         )
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(8.dp))
         groups.forEachIndexed { index, group ->
             // Skipped list has no dividers; relies on each row's own top spacing.
             if (index > 0 && !skipped) {
@@ -184,7 +184,7 @@ private fun ExerciseRowContent(
             modifier = if (skipped) Modifier.alpha(0.5f) else Modifier,
         )
         Spacer(Modifier.width(AvatarGap))
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
                 text = row.name,
                 style = FjTheme.typography.cardTitle.copy(fontSize = 16.sp),
@@ -199,12 +199,12 @@ private fun ExerciseRowContent(
                 // hanging below the number by the pill's padding + descender.
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(9.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.padding(end = 16.dp),
                 ) {
                     Text(
                         text = volume,
-                        style = FjTheme.typography.bodyStrong.copy(fontSize = 22.sp),
+                        style = FjTheme.typography.bodyStrong.copy(fontSize = 24.sp),
                         color = FjTheme.colors.textPrimary,
                     )
                     row.delta?.let { DeltaPill(delta = it) }
@@ -222,7 +222,7 @@ private fun ExerciseRowContent(
                     PencilGlyph(size = 13.dp, color = FjTheme.colors.textSecondary)
                     Text(
                         text = comment,
-                        style = FjTheme.typography.caption.copy(fontSize = 13.sp),
+                        style = FjTheme.typography.caption.copy(fontSize = 14.sp),
                         color = FjTheme.colors.textSecondary,
                     )
                 }
@@ -261,13 +261,13 @@ private fun SetStrip(
             Column {
                 Text(
                     text = chip.valueText,
-                    style = FjTheme.typography.body.copy(fontSize = 15.sp),
+                    style = FjTheme.typography.body.copy(fontSize = 14.sp),
                     color = FjTheme.colors.textSecondary,
                 )
                 if (chip.repsText.isNotBlank()) {
                     Text(
                         text = chip.repsText,
-                        style = FjTheme.typography.caption.copy(fontSize = 13.sp),
+                        style = FjTheme.typography.caption.copy(fontSize = 14.sp),
                         color = FjTheme.colors.textTertiary,
                     )
                 }
@@ -297,7 +297,7 @@ private fun DeltaPill(
         modifier = modifier
             .clip(RoundedCornerShape(99.dp))
             .background(tone.copy(alpha = 0.16f))
-            .padding(horizontal = 9.dp, vertical = 3.dp),
+            .padding(horizontal = 8.dp, vertical = 4.dp),
     )
 }
 

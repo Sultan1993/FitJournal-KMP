@@ -55,12 +55,12 @@ fun FocusKeypad(
 ) {
     Column(
         modifier = modifier.fillMaxWidth().wrapContentHeight(),
-        verticalArrangement = Arrangement.spacedBy(5.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         KEY_ROWS.forEach { row ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 row.forEach { key ->
                     FocusKeypadKey(
@@ -79,7 +79,7 @@ private fun FocusKeypadKey(key: String, onClick: () -> Unit, modifier: Modifier 
     Row(
         modifier = modifier
             .height(46.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(12.dp))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(color = FjTheme.colors.brandSubtle),

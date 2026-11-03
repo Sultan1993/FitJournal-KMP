@@ -42,7 +42,7 @@ fun FocusFinishButtonBar(
         modifier = modifier
             .fillMaxWidth()
             .defaultMinSize(minHeight = 64.dp)
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(FjTheme.colors.brand)
             // No press highlight — iOS uses `.buttonStyle(.plain)`, Android
             // `noRippleClickable`; a Material ripple here would be CMP-only.
@@ -56,13 +56,13 @@ fun FocusFinishButtonBar(
     ) {
         Text(
             text = button.title,
-            style = FjTheme.typography.button.copy(fontSize = 17.sp, fontWeight = FontWeight.Bold),
+            style = FjTheme.typography.button.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold),
             color = Color.White,
         )
         if (button.subtitle != null) {
             Text(
                 text = button.subtitle,
-                style = FjTheme.typography.caption.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold),
+                style = FjTheme.typography.caption.copy(fontSize = 14.sp, fontWeight = FontWeight.SemiBold),
                 color = Color.White.copy(alpha = 0.85f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

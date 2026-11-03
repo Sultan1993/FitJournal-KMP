@@ -58,10 +58,10 @@ fun WorkoutRecordCard(
         // 14 above / 8 below; children carry no external top/bottom so nothing double-stacks.
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(20.dp))
             .background(FjTheme.colors.surface)
             .then(if (onOpen != null) Modifier.clickable(onClick = onOpen) else Modifier)
-            .padding(top = 14.dp, bottom = 8.dp),
+            .padding(top = 16.dp, bottom = 8.dp),
     ) {
         if (record.isSuperset) {
             Row(

@@ -101,7 +101,7 @@ private fun StatChip(
         Text(
             text = label,
             style = FjTheme.typography.label.copy(
-                fontSize = 13.sp,
+                fontSize = 14.sp,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
             ),
             color = Color.White.copy(alpha = if (selected) 1f else 0.66f),

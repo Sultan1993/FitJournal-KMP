@@ -58,14 +58,14 @@ fun WorkoutListEmptyState(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 34.dp, start = 28.dp, end = 28.dp),
+                .padding(top = 32.dp, start = 24.dp, end = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
                 text = stringResource(Res.string.history_empty_title),
                 style = FjTheme.typography.body.copy(
-                    fontSize = 19.sp,
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Medium,
                 ),
                 color = FjTheme.colors.textPrimary,
@@ -74,7 +74,7 @@ fun WorkoutListEmptyState(
             Text(
                 text = stringResource(Res.string.history_empty_body),
                 style = FjTheme.typography.body.copy(
-                    fontSize = 14.5.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Normal,
                 ),
                 color = FjTheme.colors.textSecondary,
@@ -125,7 +125,7 @@ private fun GhostHero(measurementSystem: MeasurementSystem) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 10.dp)
+            .padding(top = 12.dp)
             .height(1.dp)
             .background(FjTheme.colors.divider),
     )

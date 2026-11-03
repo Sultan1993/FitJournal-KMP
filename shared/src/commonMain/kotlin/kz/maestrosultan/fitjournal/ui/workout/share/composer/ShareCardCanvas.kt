@@ -320,11 +320,11 @@ private const val TextShadowBlurRef = 8f
  * preview. None of them is ever drawn in export mode.
  */
 private val TrashDiameter = 44.dp
-private val TrashBottomInset = 18.dp
-private val TrashLabelGap = 5.dp
+private val TrashBottomInset = 16.dp
+private val TrashLabelGap = 4.dp
 private val TrashIconSize = 17.dp
-private val SelectionInset = 10.dp
-private val SelectionRadius = 14.dp
+private val SelectionInset = 12.dp
+private val SelectionRadius = 12.dp
 private val SelectionStroke = 1.5.dp
 private val SelectionDash = 5.dp
 private val GuideStroke = 1.dp

@@ -99,7 +99,7 @@ private fun StartPill(onStart: () -> Unit, modifier: Modifier) {
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(9.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             // Same live dot as the running bar, white against the brand fill.
             Box(Modifier.size(9.dp).clip(CircleShape).background(Color.White))
@@ -125,7 +125,7 @@ private fun RunningBar(runningSince: Instant?, onEnd: () -> Unit, modifier: Modi
             .height(56.dp)
             .clip(BarShape)
             .background(FjTheme.colors.brandSubtle)
-            .padding(start = 16.dp, end = 6.dp),
+            .padding(start = 16.dp, end = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -145,7 +145,7 @@ private fun RunningBar(runningSince: Instant?, onEnd: () -> Unit, modifier: Modi
             Text(
                 text = elapsedText(runningSince),
                 style = FjTheme.typography.numberLarge.copy(
-                    fontSize = 19.sp,
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Medium,
                 ),
                 color = FjTheme.colors.textPrimary,
@@ -158,13 +158,13 @@ private fun RunningBar(runningSince: Instant?, onEnd: () -> Unit, modifier: Modi
         Box(
             modifier = Modifier
                 .size(44.dp)
-                .clip(RoundedCornerShape(13.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(FjTheme.colors.brand)
                 .clickable(onClick = onEnd)
                 .semantics { contentDescription = endLabel },
             contentAlignment = Alignment.Center,
         ) {
-            Box(Modifier.size(14.dp).clip(RoundedCornerShape(3.dp)).background(Color.White))
+            Box(Modifier.size(14.dp).clip(RoundedCornerShape(4.dp)).background(Color.White))
         }
     }
 }

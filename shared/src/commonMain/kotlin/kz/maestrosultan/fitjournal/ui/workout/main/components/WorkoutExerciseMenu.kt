@@ -105,7 +105,7 @@ fun WorkoutExerciseMenu(
                 ) {
                     if (exercise != null) {
                         ExerciseAvatar(exercise = exercise, size = 40.dp)
-                        Spacer(Modifier.width(14.dp))
+                        Spacer(Modifier.width(16.dp))
                     }
                     Text(
                         text = exerciseName,

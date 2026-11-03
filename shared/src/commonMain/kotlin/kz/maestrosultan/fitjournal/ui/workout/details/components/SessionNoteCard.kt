@@ -68,7 +68,7 @@ private fun FilledNoteCard(text: String, onClick: () -> Unit, modifier: Modifier
             .clip(RoundedCornerShape(16.dp))
             .background(FjTheme.colors.card)
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalAlignment = Alignment.Top,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -77,15 +77,15 @@ private fun FilledNoteCard(text: String, onClick: () -> Unit, modifier: Modifier
                 style = FjTheme.typography.eyebrow.copy(fontSize = 10.sp),
                 color = FjTheme.colors.textTertiary,
             )
-            Spacer(Modifier.height(5.dp))
+            Spacer(Modifier.height(4.dp))
             Text(
                 text = text,
-                style = FjTheme.typography.body.copy(fontSize = 14.5.sp),
+                style = FjTheme.typography.body.copy(fontSize = 14.sp),
                 color = FjTheme.colors.textSecondary,
             )
         }
-        Spacer(Modifier.width(10.dp))
-        PencilGlyph(size = 14.dp, color = FjTheme.colors.textTertiary, modifier = Modifier.padding(top = 3.dp))
+        Spacer(Modifier.width(12.dp))
+        PencilGlyph(size = 14.dp, color = FjTheme.colors.textTertiary, modifier = Modifier.padding(top = 4.dp))
     }
 }
 
@@ -101,12 +101,12 @@ private fun EmptyNoteButton(onClick: () -> Unit, modifier: Modifier = Modifier) 
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(9.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         PencilGlyph(size = 15.dp, color = FjTheme.colors.textSecondary)
         Text(
             text = stringResource(Res.string.workout_details_add_note),
-            style = FjTheme.typography.bodyStrong.copy(fontSize = 15.sp, fontWeight = FontWeight.Medium),
+            style = FjTheme.typography.bodyStrong.copy(fontSize = 16.sp, fontWeight = FontWeight.Medium),
             color = FjTheme.colors.textSecondary,
         )
     }

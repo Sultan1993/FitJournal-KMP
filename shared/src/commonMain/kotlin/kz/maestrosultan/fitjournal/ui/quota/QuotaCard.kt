@@ -115,7 +115,7 @@ fun QuotaCard(
                 if (content is QuotaCardContent.Lapsed) FjTheme.colors.surface
                 else FjTheme.colors.brandSubtle
             )
-            .padding(20.dp),
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         when (content) {
@@ -144,7 +144,7 @@ private fun RemainingBody(content: QuotaCardContent.Remaining, onUpgradeClick: (
         )
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         QuotaHeadline(
             formatted = pluralStringResource(
                 Res.plurals.quota_workouts_left,
@@ -228,7 +228,7 @@ private fun LapsedBody(
             color = FjTheme.colors.textSecondary,
         )
     }
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         QuotaButton(text = stringResource(Res.string.quota_cta_renew), onClick = onRenewClick)
         // Secondary, unfilled: a returning subscriber whose purchase simply did not
         // restore must not have to pay twice to get back in.
@@ -237,7 +237,7 @@ private fun LapsedBody(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
                 .clickable(role = Role.Button) { onRestoreClick() }
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(horizontal = 16.dp, vertical = 16.dp),
         ) {
             Text(
                 modifier = Modifier.fillMaxWidth().align(Alignment.Center),
@@ -360,7 +360,7 @@ private fun QuotaButton(text: String, onClick: () -> Unit) {
             .clip(RoundedCornerShape(12.dp))
             .background(FjTheme.colors.brand)
             .clickable(role = Role.Button) { onClick() }
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = 16.dp, vertical = 16.dp),
     ) {
         Text(
             modifier = Modifier.fillMaxWidth().align(Alignment.Center),

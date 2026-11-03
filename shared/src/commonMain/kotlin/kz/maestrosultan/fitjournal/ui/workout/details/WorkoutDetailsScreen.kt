@@ -252,7 +252,7 @@ private fun WorkoutDetailsScrollBody(
         // Post-workout Summary hides Edit/Repeat/Delete — the finish flow's own
         // Close/Share chrome owns actions there.
         if (showActions) {
-            Spacer(Modifier.height(26.dp))
+            Spacer(Modifier.height(24.dp))
             WorkoutActionButtons(
                 onRepeat = { dispatch(WorkoutDetailsContract.ViewAction.RepeatTapped) },
                 onEdit = { dispatch(WorkoutDetailsContract.ViewAction.EditTapped) },

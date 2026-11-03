@@ -82,10 +82,10 @@ fun WorkoutFinishSheet(
     }
 
     Column(
-        modifier = modifier.padding(start = 20.dp, top = 10.dp, end = 20.dp, bottom = 26.dp),
+        modifier = modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 24.dp),
     ) {
         Grabber(Modifier.align(Alignment.CenterHorizontally))
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(16.dp))
 
         Text(
             text = stringResource(Res.string.postworkout_confirm_title),
@@ -101,7 +101,7 @@ fun WorkoutFinishSheet(
             SessionCard(state, Modifier.fillMaxWidth())
         }
 
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(16.dp))
         FjPrimaryButton(
             text = stringResource(Res.string.postworkout_confirm_finish),
             onClick = onConfirmFinish,
@@ -112,7 +112,7 @@ fun WorkoutFinishSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp)
-                .clip(RoundedCornerShape(14.dp))
+                .clip(RoundedCornerShape(16.dp))
                 .clickable(onClick = onKeepTraining),
             contentAlignment = Alignment.Center,
         ) {
@@ -131,7 +131,7 @@ private fun Grabber(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .size(width = 38.dp, height = 4.5.dp)
-            .clip(RoundedCornerShape(3.dp))
+            .clip(RoundedCornerShape(4.dp))
             .background(FjTheme.colors.border),
     )
 }
@@ -141,21 +141,21 @@ private fun Grabber(modifier: Modifier = Modifier) {
 private fun SessionCard(state: WorkoutFinishContract.ViewState, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(20.dp))
             .background(FjTheme.colors.brandSubtle)
-            .padding(vertical = 20.dp, horizontal = 22.dp),
+            .padding(vertical = 24.dp, horizontal = 24.dp),
     ) {
         Text(
             text = "${stringResource(Res.string.postworkout_confirm_eyebrow)} · ${state.dateText}".uppercase(),
             style = FjTheme.typography.eyebrow,
             color = FjTheme.colors.brand,
         )
-        Spacer(Modifier.height(10.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
                 text = state.tonnageValue,
                 style = FjTheme.typography.numberLarge.copy(
-                    fontSize = 42.sp,
+                    fontSize = 36.sp,
                     fontWeight = FontWeight.Bold,
                 ),
                 color = FjTheme.colors.textPrimary,
@@ -168,8 +168,8 @@ private fun SessionCard(state: WorkoutFinishContract.ViewState, modifier: Modifi
                 modifier = Modifier.alignByBaseline(),
             )
         }
-        Spacer(Modifier.height(14.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) {
+        Spacer(Modifier.height(16.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
             SessionStat(state.durationText, stringResource(Res.string.postworkout_stat_duration))
             SessionStat(state.setsCount.toString(), stringResource(Res.string.postworkout_stat_sets))
             SessionStat(state.exercisesCount.toString(), stringResource(Res.string.postworkout_stat_exercises))
@@ -188,7 +188,7 @@ private fun SessionStat(value: String, label: String, modifier: Modifier = Modif
         Spacer(Modifier.height(2.dp))
         Text(
             text = label,
-            style = FjTheme.typography.label.copy(fontSize = 11.5.sp),
+            style = FjTheme.typography.label.copy(fontSize = 12.sp),
             color = FjTheme.colors.textSecondary,
         )
     }

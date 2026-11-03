@@ -62,11 +62,11 @@ fun WorkoutListWeekHeader(
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(9.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
                 text = title,
-                style = FjTheme.typography.cardTitle.copy(fontSize = 15.sp, fontWeight = FontWeight.Bold),
+                style = FjTheme.typography.cardTitle.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold),
                 color = FjTheme.colors.textPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -74,12 +74,12 @@ fun WorkoutListWeekHeader(
             )
             Text(
                 text = summary,
-                style = FjTheme.typography.caption.copy(fontSize = 12.5.sp),
+                style = FjTheme.typography.caption.copy(fontSize = 12.sp),
                 color = FjTheme.colors.textSecondary,
             )
             section.delta?.let { WorkoutListDeltaPill(delta = it, measurementSystem = measurementSystem) }
         }
-        Spacer(Modifier.height(9.dp))
+        Spacer(Modifier.height(8.dp))
         MuscleSplitBar(entries = section.muscleSplit)
     }
 }
@@ -101,7 +101,7 @@ private fun MuscleSplitBar(
                 modifier = Modifier
                     .weight(entry.percentage.toFloat())
                     .fillMaxHeight()
-                    .clip(RoundedCornerShape(3.dp))
+                    .clip(RoundedCornerShape(4.dp))
                     .background(entry.category.composeColor()),
             )
         }
@@ -121,12 +121,12 @@ internal fun WorkoutListDeltaPill(
     val sign = if (positive) "+" else "−"
     Text(
         text = "$sign${WorkoutValueFormatter.groupedTonnage(abs(delta), units.weight)}",
-        style = FjTheme.typography.label.copy(fontSize = 11.5.sp, fontWeight = FontWeight.Bold),
+        style = FjTheme.typography.label.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold),
         color = tone,
         modifier = modifier
             .clip(RoundedCornerShape(99.dp))
             .background(tone.copy(alpha = 0.16f))
-            .padding(horizontal = 8.dp, vertical = 3.dp),
+            .padding(horizontal = 8.dp, vertical = 4.dp),
     )
 }
 

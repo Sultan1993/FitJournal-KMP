@@ -57,22 +57,22 @@ fun ConfirmActionSheet(
         ) {
             Text(
                 text = title,
-                style = FjTheme.typography.cardTitle.copy(fontSize = 22.sp, fontWeight = FontWeight.Bold),
+                style = FjTheme.typography.cardTitle.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold),
                 color = FjTheme.colors.textPrimary,
                 modifier = Modifier.padding(bottom = 8.dp),
             )
             Text(
                 text = message,
-                style = FjTheme.typography.body.copy(fontSize = 15.sp),
+                style = FjTheme.typography.body.copy(fontSize = 14.sp),
                 color = FjTheme.colors.textSecondary,
-                modifier = Modifier.padding(bottom = 20.dp),
+                modifier = Modifier.padding(bottom = 24.dp),
             )
             SheetButton(
                 text = confirmLabel,
                 container = FjTheme.colors.negative,
                 content = Color.White,
                 onClick = { close(onConfirm) },
-                modifier = Modifier.padding(bottom = 10.dp),
+                modifier = Modifier.padding(bottom = 12.dp),
             )
             SheetButton(
                 text = cancelLabel,

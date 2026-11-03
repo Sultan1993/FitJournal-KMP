@@ -51,8 +51,8 @@ fun WorkloadSection(
         )
         Spacer(Modifier.height(12.dp))
         WorkloadBar(rows = rows, modifier = Modifier.fillMaxWidth())
-        Spacer(Modifier.height(14.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(11.dp)) {
+        Spacer(Modifier.height(16.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             rows.forEach { row -> WorkloadRow(row = row, modifier = Modifier.fillMaxWidth()) }
         }
     }
@@ -68,7 +68,7 @@ private fun WorkloadBar(
     if (visible.isEmpty()) return
     Row(
         modifier = modifier.height(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(3.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         visible.forEachIndexed { index, row ->
             val start = if (index == 0) 6.dp else 3.dp
@@ -92,7 +92,7 @@ private fun WorkloadRow(
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Box(Modifier.size(8.dp).clip(CircleShape).background(row.category.composeColor()))
         Text(
@@ -104,13 +104,13 @@ private fun WorkloadRow(
         row.amountText?.let { amount ->
             Text(
                 text = amount,
-                style = FjTheme.typography.caption.copy(fontSize = 13.sp),
+                style = FjTheme.typography.caption.copy(fontSize = 14.sp),
                 color = FjTheme.colors.textTertiary,
             )
         }
         Text(
             text = "${row.percentage.roundToInt()}%",
-            style = FjTheme.typography.bodyStrong.copy(fontSize = 15.sp, fontWeight = FontWeight.Medium),
+            style = FjTheme.typography.bodyStrong.copy(fontSize = 16.sp, fontWeight = FontWeight.Medium),
             color = FjTheme.colors.textPrimary,
             textAlign = TextAlign.End,
             modifier = Modifier.width(40.dp),

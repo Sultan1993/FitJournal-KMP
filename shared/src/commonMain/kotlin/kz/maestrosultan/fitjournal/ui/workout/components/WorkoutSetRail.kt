@@ -114,7 +114,7 @@ private fun WorkoutSetItem(position: Int, set: SetDisplay, onClick: (() -> Unit)
             maxLines = 1,
         )
         Row(
-            horizontalArrangement = Arrangement.spacedBy(5.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
             modifier = Modifier.weight(1f).alpha(if (set.isLogged) 1f else 0.3f),
         ) {
             Text(set.number, style = bigStyle, color = FjTheme.colors.textPrimary, modifier = Modifier.alignByBaseline())

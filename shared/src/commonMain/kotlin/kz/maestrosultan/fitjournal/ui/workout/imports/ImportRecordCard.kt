@@ -36,7 +36,7 @@ fun ImportRecordCard(
         modifier = modifier
             .fillMaxWidth()
             .testTag("import_record_card")
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(20.dp))
             .clickable(onClick = onToggle),
     )
 }

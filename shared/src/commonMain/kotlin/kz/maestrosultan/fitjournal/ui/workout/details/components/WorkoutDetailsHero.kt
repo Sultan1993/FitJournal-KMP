@@ -61,14 +61,14 @@ private fun HeroStat(stat: WorkoutDetailsContract.HeroStat, modifier: Modifier =
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
             text = stat.label.uppercase(),
-            style = FjTheme.typography.eyebrow.copy(fontSize = 10.5.sp),
+            style = FjTheme.typography.eyebrow.copy(fontSize = 10.sp),
             color = FjTheme.colors.textTertiary,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 text = stat.value,
                 style = FjTheme.typography.numberLarge.copy(
-                    fontSize = 38.sp,
+                    fontSize = 36.sp,
                     fontWeight = FontWeight.Bold,
                 ),
                 color = FjTheme.colors.textPrimary,

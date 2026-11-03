@@ -351,7 +351,7 @@ private fun WorkoutListList(
                     WorkoutListWeekHeader(
                         section = week,
                         measurementSystem = measurementSystem,
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 22.dp, bottom = 8.dp),
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 8.dp),
                     )
                 }
                 itemsIndexed(week.days, key = { _, day -> "day-${day.date}" }) { index, day ->

@@ -38,14 +38,14 @@ fun FjPrimaryButton(
     Box(
         modifier = modifier
             .height(54.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(if (enabled) FjTheme.colors.brand else FjTheme.colors.brand.copy(alpha = 0.4f))
             .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(9.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             leadingIcon?.invoke()
             Text(

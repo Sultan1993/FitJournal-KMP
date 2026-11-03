@@ -78,7 +78,7 @@ private fun FocusSupersetMemberRow(item: FocusMemberItemUi, onClick: () -> Unit)
         Box(
             modifier = Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(FjTheme.colors.surface),
         ) {
-            FocusExerciseThumb(imageName = item.imageName, modifier = Modifier.padding(6.dp))
+            FocusExerciseThumb(imageName = item.imageName, modifier = Modifier.padding(8.dp))
         }
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(

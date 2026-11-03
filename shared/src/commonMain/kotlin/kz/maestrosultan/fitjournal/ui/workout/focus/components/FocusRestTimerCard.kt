@@ -71,15 +71,15 @@ fun FocusRestTimerCard(
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .background(FjTheme.colors.surface)
-            .padding(top = 14.dp, bottom = 14.dp, start = 18.dp, end = 14.dp),
+            .padding(top = 16.dp, bottom = 16.dp, start = 16.dp, end = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 text = stringResource(Res.string.focus_rest_timer).uppercase(),
                 // The natives diverge on this eyebrow's tracking (iOS still kerns 1.1,
                 // Android dropped it); CMP follows iOS, the visual reference.
-                style = FjTheme.typography.caption.copy(fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.1.em),
+                style = FjTheme.typography.caption.copy(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.1.em),
                 color = FjTheme.colors.textTertiary,
                 maxLines = 1,
             )
@@ -104,7 +104,7 @@ fun FocusRestTimerCard(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             RestTimerSettingsButton(onClick = onOpenSettings)
             RestTimerToggleButton(isRunning = state.isRunning, onClick = onToggle)
         }
@@ -160,7 +160,7 @@ private fun RestTimerToggleButton(isRunning: Boolean, onClick: () -> Unit) {
         // restarts once a second.
         Crossfade(targetState = isRunning, animationSpec = tween(durationMillis = 300), label = "restToggleIcon") { running ->
             if (running) {
-                Box(modifier = Modifier.size(14.dp).clip(RoundedCornerShape(2.dp)).background(Color.White))
+                Box(modifier = Modifier.size(14.dp).clip(RoundedCornerShape(4.dp)).background(Color.White))
             } else {
                 Canvas(modifier = Modifier.size(14.dp).offset(x = 1.dp)) {
                     val path = Path().apply {

@@ -340,7 +340,7 @@ private fun FocusPickerRow(item: FocusStripItemUi, onClick: () -> Unit, modifier
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(13.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(if (item.isActive) FjTheme.colors.brandSubtle else Color.Transparent)
             // No ripple — iOS uses .buttonStyle(.plain), Android noRippleClickable.
             .clickable(
@@ -348,7 +348,7 @@ private fun FocusPickerRow(item: FocusStripItemUi, onClick: () -> Unit, modifier
                 indication = null,
                 onClick = onClick,
             )
-            .padding(10.dp),
+            .padding(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -393,7 +393,7 @@ private fun FocusPickerThumbnail(item: FocusStripItemUi) {
         Box(
             modifier = Modifier
                 .size(30.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(if (item.isActive) FjTheme.colors.background else FjTheme.colors.surface),
         ) {
             FocusExerciseThumb(imageName = item.imageNames.firstOrNull(), modifier = Modifier.padding(4.dp))
@@ -404,7 +404,7 @@ private fun FocusPickerThumbnail(item: FocusStripItemUi) {
 @Composable
 private fun FocusSupersetCountBadge(count: Int) {
     Row(
-        modifier = Modifier.clip(RoundedCornerShape(50)).background(FjTheme.colors.brand).padding(horizontal = 9.dp, vertical = 3.dp),
+        modifier = Modifier.clip(RoundedCornerShape(50)).background(FjTheme.colors.brand).padding(horizontal = 8.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -435,13 +435,13 @@ private fun FocusAddExerciseRow(onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(13.dp))
+            .clip(RoundedCornerShape(12.dp))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = onClick,
             )
-            .padding(horizontal = 10.dp, vertical = 9.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

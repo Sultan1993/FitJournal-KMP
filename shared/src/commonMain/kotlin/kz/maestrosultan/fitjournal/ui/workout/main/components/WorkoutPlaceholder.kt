@@ -61,7 +61,7 @@ fun AnotherWorkoutPlaceholder(
         Box(
             modifier = Modifier
                 .size(96.dp)
-                .clip(RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(20.dp))
                 .drawBehind {
                     val stroke = 1.5.dp.toPx()
                     val inset = stroke / 2f
@@ -100,7 +100,7 @@ fun AnotherWorkoutPlaceholder(
             }
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         Text(
             text = title,
@@ -153,7 +153,7 @@ fun FirstWorkoutPlaceholder(
                 .aspectRatio(258f / 176f),
         )
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(24.dp))
 
         Text(
             text = text,

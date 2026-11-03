@@ -51,7 +51,7 @@ fun WorkoutStackCard(
     // nested inside the container instead of bulging against it.
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(20.dp))
             .background(FjTheme.colors.card)
             .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -123,7 +123,7 @@ private fun StackRow(
         Spacer(Modifier.width(12.dp))
         Text(
             text = row.volumeText,
-            style = FjTheme.typography.bodyStrong.copy(fontSize = 14.5.sp, fontWeight = FontWeight.Medium),
+            style = FjTheme.typography.bodyStrong.copy(fontSize = 14.sp, fontWeight = FontWeight.Medium),
             color = volumeColor,
         )
     }

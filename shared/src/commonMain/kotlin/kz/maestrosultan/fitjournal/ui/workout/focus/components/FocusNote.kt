@@ -28,7 +28,7 @@ fun FocusNote(
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(5.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(
             text = stringResource(Res.string.workout_exercise_note_label).uppercase(),

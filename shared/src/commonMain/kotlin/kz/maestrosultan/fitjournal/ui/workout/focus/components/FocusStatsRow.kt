@@ -79,7 +79,7 @@ fun FocusStatsRow(
             modifier = Modifier
                 // The 20dp gutter lives here, not on the cells — cell content
                 // stays flush with the page gutter as on both natives.
-                .padding(horizontal = 20.dp, vertical = 2.dp)
+                .padding(horizontal = 16.dp, vertical = 2.dp)
                 .width(1.dp)
                 .fillMaxHeight()
                 // Both natives hairline at textPrimary @ 8%, a touch lighter
@@ -148,7 +148,7 @@ private fun FocusStatCell(
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
                     text = shown.value ?: VALUE_PLACEHOLDER,
-                    style = FjTheme.typography.numberLarge.copy(fontSize = 26.sp, fontWeight = FontWeight.Bold),
+                    style = FjTheme.typography.numberLarge.copy(fontSize = 24.sp, fontWeight = FontWeight.Bold),
                     color = FjTheme.colors.textPrimary,
                     modifier = Modifier.alignByBaseline(),
                 )
@@ -161,7 +161,7 @@ private fun FocusStatCell(
                     // would drift with any font-size change.
                     modifier = Modifier
                         .alignByBaseline()
-                        .padding(start = 5.dp),
+                        .padding(start = 4.dp),
                 )
             }
         }

@@ -47,7 +47,7 @@ fun WorkoutActionButtons(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         ActionRow(
             label = stringResource(Res.string.workout_details_repeat),
             tint = FjTheme.colors.textPrimary,
@@ -88,7 +88,7 @@ private fun ActionRow(
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(9.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             glyph()
             Text(

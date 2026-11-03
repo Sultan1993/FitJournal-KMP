@@ -93,12 +93,12 @@ internal fun EditorSheet(
                     .background(EditorSheetDefaults.SurfaceColor)
                     // Own hit target so taps here don't fall through to the dismiss catcher beneath.
                     .pointerInput(Unit) { detectTapGestures { } }
-                    .padding(top = 10.dp, bottom = 22.dp),
+                    .padding(top = 12.dp, bottom = 24.dp),
             ) {
                 Grabber(Modifier.align(Alignment.CenterHorizontally))
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(16.dp))
                 Header(title = title, onDone = onDone, modifier = Modifier.fillMaxWidth())
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(16.dp))
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -122,12 +122,12 @@ internal object EditorSheetDefaults {
     /** The pinned lilac used by the Done action and text cursors on this surface. */
     val AccentColor: Color = Color(0xFF9B93F6)
 
-    val TopCornerRadius = 26.dp
+    val TopCornerRadius = 28.dp
 
     val Shape = RoundedCornerShape(topStart = TopCornerRadius, topEnd = TopCornerRadius)
 
     /** Gutter the sheet already applies around [EditorSheet]'s content slot. */
-    val HorizontalPadding = 20.dp
+    val HorizontalPadding = 24.dp
 
     /** Slide/fade duration for both directions. */
     const val AnimationMillis: Int = 220
@@ -154,7 +154,7 @@ private fun Grabber(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .size(width = 38.dp, height = 4.5.dp)
-            .clip(RoundedCornerShape(3.dp))
+            .clip(RoundedCornerShape(4.dp))
             .background(Color.White.copy(alpha = 0.22f)),
     )
 }
@@ -169,7 +169,7 @@ private fun Header(title: String, onDone: () -> Unit, modifier: Modifier = Modif
         Text(
             text = title,
             style = FjTheme.typography.cardTitle.copy(
-                fontSize = 17.sp,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
             ),
             color = Color.White,
@@ -183,7 +183,7 @@ private fun Header(title: String, onDone: () -> Unit, modifier: Modifier = Modif
             ),
             color = EditorSheetDefaults.AccentColor,
             modifier = Modifier
-                .clip(RoundedCornerShape(10.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .clickable(onClick = onDone)
                 .padding(horizontal = 8.dp, vertical = 4.dp),
         )

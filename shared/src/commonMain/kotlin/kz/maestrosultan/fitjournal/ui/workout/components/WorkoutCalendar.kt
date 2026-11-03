@@ -217,7 +217,7 @@ private fun DayCell(
         // Unselected in-month days only — the selection circle would cover the dots.
         if (isMonthDate && categories.isNotEmpty() && !isSelected) {
             Row(
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 5.dp),
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 categories.take(4).forEach { category ->

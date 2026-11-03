@@ -475,7 +475,7 @@ private fun ComposerChrome(
                     chip = chip,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(start = 20.dp, end = 20.dp, bottom = 10.dp),
+                        .padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
                 )
             }
         }
@@ -486,7 +486,7 @@ private fun ComposerChrome(
 @Composable
 private fun TopChrome(onCloseRequested: () -> Unit, modifier: Modifier = Modifier) {
     val closeLabel = stringResource(Res.string.postworkout_close)
-    Box(modifier = modifier.padding(horizontal = ChromeEdgeInset, vertical = 10.dp)) {
+    Box(modifier = modifier.padding(horizontal = ChromeEdgeInset, vertical = 12.dp)) {
         Box(
             modifier = Modifier
                 .align(Alignment.CenterStart)
@@ -566,7 +566,7 @@ private fun RailButton(
 @Composable
 private fun BottomBar(onSave: () -> Unit, onShare: () -> Unit, modifier: Modifier = Modifier) {
     Row(
-        modifier = modifier.padding(start = 20.dp, top = 14.dp, end = 20.dp, bottom = 24.dp),
+        modifier = modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 24.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -599,7 +599,7 @@ private fun SharePill(onShare: () -> Unit, modifier: Modifier = Modifier) {
             .clip(CircleShape)
             .background(Color.White)
             .clickable(onClick = onShare)
-            .padding(vertical = 12.dp, horizontal = 22.dp),
+            .padding(vertical = 12.dp, horizontal = 24.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -620,7 +620,7 @@ private fun ComposerChipOverlay(chip: ComposerChip, modifier: Modifier = Modifie
             .testTag(ComposerTestTags.Chip)
             .clip(CircleShape)
             .background(ChromeInk.copy(alpha = 0.9f))
-            .padding(vertical = 9.dp, horizontal = 16.dp),
+            .padding(vertical = 8.dp, horizontal = 16.dp),
     ) {
         Text(
             text = stringResource(chip.message),
@@ -822,11 +822,11 @@ private val TopScrimHeight = 130.dp
 private const val FreeformScrimFactor = 0.32f
 private const val FreeformScrimMaxAlpha = 0.6f
 
-private val ChromeEdgeInset = 14.dp
+private val ChromeEdgeInset = 16.dp
 private val CloseChipSize = 38.dp
-private val RailEdgeInset = 14.dp
-private val RailGap = 18.dp
-private val RailTopGap = 10.dp
+private val RailEdgeInset = 16.dp
+private val RailGap = 16.dp
+private val RailTopGap = 12.dp
 private val RailButtonSize = 44.dp
 private val GlyphSize = 20.dp
 private val GlyphStroke: Dp = 1.6.dp

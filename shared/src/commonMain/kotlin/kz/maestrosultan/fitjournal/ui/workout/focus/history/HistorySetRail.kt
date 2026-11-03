@@ -110,7 +110,7 @@ private fun HistorySetRow(position: Int, set: SetDisplay) {
             color = FjTheme.colors.textTertiary,
             maxLines = 1,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 set.number,
                 style = bigStyle,

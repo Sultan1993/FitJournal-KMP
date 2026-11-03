@@ -129,13 +129,13 @@ private fun NoteEditorBody(
         modifier = modifier
             .fillMaxWidth()
             .windowInsetsPadding(WindowInsets.ime)
-            .padding(start = 20.dp, end = 20.dp, bottom = 20.dp),
+            .padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = stringResource(Res.string.workout_details_note_title),
                 style = FjTheme.typography.screenTitle.copy(
-                    fontSize = 22.sp,
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                 ),
                 color = FjTheme.colors.textPrimary,
@@ -148,7 +148,7 @@ private fun NoteEditorBody(
                 // Padding grows the touch target leftward/vertically; the label
                 // itself stays flush with the title's right margin.
                 modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .clickable(enabled = canSave) { onSave(value.text) }
                     .padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
             )
@@ -219,7 +219,7 @@ private fun NoteEditorSheetPreviewSurface(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(FjTheme.colors.sheet)
-                .padding(top = 20.dp),
+                .padding(top = 24.dp),
         ) {
             content()
         }

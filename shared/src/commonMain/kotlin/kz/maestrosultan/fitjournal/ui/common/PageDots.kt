@@ -35,7 +35,7 @@ fun PageDots(
 
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(7.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         repeat(count) { index ->

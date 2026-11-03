@@ -71,7 +71,7 @@ internal fun TitleEditor(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(FieldHeight)
-                .clip(RoundedCornerShape(14.dp))
+                .clip(RoundedCornerShape(16.dp))
                 .background(EditorSheetDefaults.TileColor)
                 .padding(horizontal = 16.dp),
             contentAlignment = Alignment.CenterStart,

@@ -87,7 +87,7 @@ fun WorkoutListDayRow(
         ) {
             Text(
                 text = day.date.dayOfMonth.toString(),
-                style = FjTheme.typography.bodyStrong.copy(fontSize = 19.sp),
+                style = FjTheme.typography.bodyStrong.copy(fontSize = 20.sp),
                 color = FjTheme.colors.textPrimary,
                 textAlign = TextAlign.Center,
             )
@@ -117,13 +117,13 @@ fun WorkoutListDayRow(
                     if (!cardioOnly) WorkoutValueFormatter.groupedTonnage(day.tonnage, units.weight) else null,
                     if (hasCardio) WorkoutValueFormatter.duration(day.durationMinutes, units.minutes) else null,
                 ).joinToString(" · "),
-                style = FjTheme.typography.bodyStrong.copy(fontSize = 22.sp),
+                style = FjTheme.typography.bodyStrong.copy(fontSize = 24.sp),
                 color = FjTheme.colors.textPrimary,
             )
 
             Text(
                 text = metaLine,
-                style = FjTheme.typography.caption.copy(fontSize = 12.5.sp),
+                style = FjTheme.typography.caption.copy(fontSize = 12.sp),
                 color = FjTheme.colors.textSecondary,
             )
         }
