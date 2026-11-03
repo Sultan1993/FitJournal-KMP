@@ -311,36 +311,42 @@ private fun newBestUi(best: SessionBest, units: WorkoutUnitLabels): WorkoutDetai
 }
 
 /**
- * Every trained category gets its own row (`showOther = false`): this screen is a
- * single workout, where the collapsed OTHER bucket hid whole exercises — a lone
- * cardio slot read as "Other 10%". [WorkloadCalculator] still decides order and
- * percentage; this only attaches the kg amount. OTHER appears only when it is a
- * real category on an exercise, never as a remainder.
+ * Every trained category gets its own row (`groupTail = false`): this screen is a
+ * single workout, where a collapsed remainder hid whole exercises — a lone
+ * cardio slot read as "Other 10%". [WorkloadCalculator] decides order and share
+ * (logged sets only, so a planned-but-untouched exercise gets no row); this only
+ * attaches the amount. Unlogged sets carry no numbers, so summing every set
+ * below equals summing the logged ones.
  */
 private fun workloadRows(
     workoutRecords: List<WorkoutRecord>,
     units: WorkoutUnitLabels,
 ): List<WorkoutDetailsContract.WorkloadRow> {
-    val entries = WorkloadCalculator.calculate(workoutRecords, showOther = false)
-    if (entries.isEmpty()) return emptyList()
-
     val exercisesByCategory: Map<CategoryType, List<WorkoutExercise>> =
         workoutRecords.flatMap { it.exercises }.groupBy { it.exercise.primaryCategory.type }
 
-    return entries.map { entry ->
-        val exercises = exercisesByCategory[entry.category].orEmpty()
+    return WorkloadCalculator.calculate(workoutRecords, groupTail = false).mapNotNull { entry ->
+        val category = entry.category ?: return@mapNotNull null // never null without groupTail
+        val exercises = exercisesByCategory[category].orEmpty()
         val tonnage = exercises.sumOf { we -> TonnageCalculator.forExercise(we) }
         // Cardio buckets carry no tonnage, so they report their logged minutes
         // instead of an empty amount column. WorkoutSet.duration is in minutes.
         val minutes = exercises
             .filter { it.exercise.resultType == ResultType.DISTANCE_DURATION }
             .sumOf { we -> we.sets.sumOf { it.duration ?: 0 } }
+        // Bodyweight work (pull-ups, dips) moves no load: "0 kg" says nothing,
+        // so it reports its reps — the share itself is by sets, like every row.
+        val reps = exercises
+            .filter { it.exercise.resultType == ResultType.WEIGHT_REPS }
+            .sumOf { we -> we.sets.sumOf { it.reps ?: 0 } }
         WorkoutDetailsContract.WorkloadRow(
-            category = entry.category,
-            percentage = entry.percentage,
+            category = category,
+            percent = entry.percent,
+            percentText = entry.percentText,
             amountText = when {
                 tonnage > 0.0 -> WorkoutValueFormatter.groupedTonnage(tonnage, units.weight)
                 minutes > 0 -> WorkoutValueFormatter.duration(minutes, units.minutes)
+                reps > 0 -> "$reps ${units.reps}"
                 else -> null
             },
         )

@@ -23,7 +23,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlin.math.roundToInt
 import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
 import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
@@ -37,7 +36,7 @@ import kz.maestrosultan.fitjournal.ui.workout.nameRes
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * Bar segments and the "%" label both read the same [WorkloadRow.percentage] so
+ * Bar segments and the "%" label both read the same [WorkloadRow.percent] so
  * they can't disagree. Rendered only when [rows] is non-empty (caller hoists that check).
  */
 @Composable
@@ -66,7 +65,7 @@ private fun WorkloadBar(
     modifier: Modifier = Modifier,
 ) {
     // weight(0f) is illegal, so drop zero-share buckets (invisible anyway).
-    val visible = rows.filter { it.percentage > 0.0 }
+    val visible = rows.filter { it.percent > 0 }
     if (visible.isEmpty()) return
     Row(
         modifier = modifier.height(12.dp),
@@ -77,7 +76,7 @@ private fun WorkloadBar(
             val end = if (index == visible.lastIndex) 6.dp else 3.dp
             Spacer(
                 modifier = Modifier
-                    .weight(row.percentage.toFloat())
+                    .weight(row.percent.toFloat())
                     .fillMaxHeight()
                     .clip(RoundedCornerShape(topStart = start, bottomStart = start, topEnd = end, bottomEnd = end))
                     .background(row.category.composeColor()),
@@ -111,7 +110,7 @@ private fun WorkloadRow(
             )
         }
         Text(
-            text = "${row.percentage.roundToInt()}%",
+            text = row.percentText,
             style = FjTheme.typography.bodyStrong.copy(fontSize = TypeTokens.t16.sp, fontWeight = FontWeight.Medium),
             color = FjTheme.colors.textPrimary,
             textAlign = TextAlign.End,

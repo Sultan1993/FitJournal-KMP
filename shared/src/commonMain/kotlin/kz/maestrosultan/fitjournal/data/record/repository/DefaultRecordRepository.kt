@@ -107,7 +107,7 @@ class DefaultRecordRepository(
     ): List<WorkoutRecord> {
         val exerciseLookup = exerciseLookupForRead(userId)
         val trees = workoutsDB.getWorkoutRecordsByJournal(userId, journalId)
-        // Only unbounded read in the app; consumers (workload aggregate,
+        // Only unbounded read in the app; consumers (workout lookups,
         // comment editor) don't render hints, so skip the whole computation.
         return toDomainList(trees, exerciseLookup, includeLastOccurrence = false)
     }

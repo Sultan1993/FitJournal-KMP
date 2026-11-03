@@ -120,9 +120,11 @@ object WorkoutDetailsContract {
 
     data class WorkloadRow(
         val category: CategoryType, // color + localized name via existing CategoryType extensions
-        val percentage: Double, // 0..100 (WorkloadCalculator), bar weight + "%"
+        val percent: Int, // whole 0..100 (WorkloadCalculator, sums to 100): bar weight
+        val percentText: String, // "44%" — WorkloadCalculator.percentText, same label as Home/Workload
         // "9 330 kg", or total minutes for a cardio bucket ("30 min") since cardio
-        // carries no tonnage; null when the bucket has neither.
+        // carries no tonnage, or total reps for bodyweight work ("20 reps");
+        // null only when the logged sets carry none of those (e.g. weight-only).
         val amountText: String?,
     )
 

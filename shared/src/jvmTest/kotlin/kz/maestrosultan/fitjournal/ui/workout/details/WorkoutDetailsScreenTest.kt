@@ -470,8 +470,8 @@ class WorkoutDetailsScreenTest {
         newBest: WorkoutDetailsContract.NewBestUi? = WorkoutDetailsContract.NewBestUi("Machine Bench Press · 100 kg × 10"),
         note: WorkoutDetailsContract.NoteUi = WorkoutDetailsContract.NoteUi(1, "Felt strong today"),
         workload: List<WorkoutDetailsContract.WorkloadRow> = listOf(
-            WorkoutDetailsContract.WorkloadRow(CategoryType.CHEST, 62.0, "6 500 kg"),
-            WorkoutDetailsContract.WorkloadRow(CategoryType.BICEPS, 38.0, "3 980 kg"),
+            WorkoutDetailsContract.WorkloadRow(CategoryType.CHEST, 62, "62%", "6 500 kg"),
+            WorkoutDetailsContract.WorkloadRow(CategoryType.BICEPS, 38, "38%", "3 980 kg"),
         ),
         exerciseGroups: List<WorkoutDetailsContract.ExerciseGroup> = listOf(
             WorkoutDetailsContract.ExerciseGroup(

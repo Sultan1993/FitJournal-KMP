@@ -326,10 +326,10 @@ class WorkoutDetailsBuilderTest {
 
         assertEquals(2, workload.size)
         val chestRow = workload.first { it.category == CategoryType.CHEST }
-        assertEquals(93.75, chestRow.percentage)
+        assertEquals(94, chestRow.percent)
         assertEquals("750 кг", chestRow.amountText)
         val backRow = workload.first { it.category == CategoryType.BACK }
-        assertEquals(6.25, backRow.percentage)
+        assertEquals(6, backRow.percent)
         assertEquals("100 кг", backRow.amountText)
         assertTrue(workload.none { it.category == CategoryType.OTHER }, "no synthetic OTHER bucket")
     }
@@ -347,7 +347,7 @@ class WorkoutDetailsBuilderTest {
         val workload = build(listOf(record(exercises = listOf(chest, cardio)))).workouts.single().workload
 
         val cardioRow = workload.first { it.category == CategoryType.CARDIO }
-        assertEquals(25.0, cardioRow.percentage)
+        assertEquals(25, cardioRow.percent)
         assertEquals("40 мин", cardioRow.amountText, "2 sets x 20 min")
     }
 
@@ -362,6 +362,32 @@ class WorkoutDetailsBuilderTest {
         val workload = build(listOf(record(exercises = listOf(chest, cardio)))).workouts.single().workload
 
         assertNull(workload.first { it.category == CategoryType.CARDIO }.amountText)
+    }
+
+    @Test
+    fun workload_unloggedSets_getNoShare_everyRowShowsItsKg() = runTest {
+        // 3 Nov: only chest was logged; shoulders + triceps stayed planned and
+        // used to read "Shoulders 38%" / "Triceps 19%" with no kg.
+        val chest = workoutExercise(category = CategoryType.CHEST, sets = List(3) { set(40.0, 10) }) // 1 200
+        val shoulders = workoutExercise(category = CategoryType.SHOULDERS, sets = List(3) { set(null, null) })
+        val triceps = workoutExercise(category = CategoryType.TRICEPS, sets = List(2) { set(null, null) })
+        val workload = build(listOf(record(exercises = listOf(chest, shoulders, triceps)))).workouts.single().workload
+
+        assertEquals(listOf(CategoryType.CHEST), workload.map { it.category })
+        assertEquals(100, workload.single().percent)
+        assertEquals("100%", workload.single().percentText)
+        assertNotNull(workload.single().amountText)
+    }
+
+    @Test
+    fun workload_bodyweightBucket_sharesBySets_andShowsTotalReps() = runTest {
+        val chest = workoutExercise(category = CategoryType.CHEST, sets = List(2) { set(10.0, 5) })
+        val pullUps = workoutExercise(category = CategoryType.BACK, sets = listOf(set(null, 11), set(null, 9)))
+        val workload = build(listOf(record(exercises = listOf(chest, pullUps)))).workouts.single().workload
+
+        val backRow = workload.first { it.category == CategoryType.BACK }
+        assertEquals(50, backRow.percent)
+        assertEquals("20 повт.", backRow.amountText)
     }
 
     // ── sessionless workout: no duration, but note + share still work ─────

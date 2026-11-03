@@ -94,7 +94,7 @@ private fun MuscleSplitBar(
     modifier: Modifier = Modifier,
 ) {
     // weight(0f) is illegal, so drop zero-share segments (they'd be invisible anyway).
-    val visible = entries.filter { it.percentage > 0.0 }
+    val visible = entries.filter { it.percent > 0 }
     if (visible.isEmpty()) return
     Row(
         modifier = modifier.fillMaxWidth().height(5.dp),
@@ -103,10 +103,11 @@ private fun MuscleSplitBar(
         visible.forEach { entry ->
             Spacer(
                 modifier = Modifier
-                    .weight(entry.percentage.toFloat())
+                    .weight(entry.percent.toFloat())
                     .fillMaxHeight()
                     .clip(RoundedCornerShape(RadiusTokens.bar.dp))
-                    .background(entry.category.composeColor()),
+                    // The grouped tail (null) is neutral, never the OTHER category's colour.
+                    .background(entry.category?.composeColor() ?: FjTheme.colors.border),
             )
         }
     }

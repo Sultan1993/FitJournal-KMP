@@ -94,7 +94,7 @@ fun buildWorkoutListFeed(
             tonnage = tonnageOf(s),
             durationMinutes = cardioMinutes(weekRecords),
             delta = delta(s),
-            muscleSplit = WorkloadCalculator.calculate(weekRecords, showOther = true),
+            muscleSplit = WorkloadCalculator.calculate(weekRecords, groupTail = true),
             titleShowsYear = endInclusive.year != today.year,
             days = dayRows(weekRecords),
         )

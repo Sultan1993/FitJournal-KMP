@@ -60,9 +60,9 @@ internal object WorkoutListPreviewData {
         durationMinutes = 65,
         delta = 1000.0,
         muscleSplit = listOf(
-            WorkloadMuscleEntry(category = CategoryType.CHEST, setCount = 18, percentage = 42.0),
-            WorkloadMuscleEntry(category = CategoryType.BACK, setCount = 14, percentage = 33.0),
-            WorkloadMuscleEntry(category = CategoryType.SHOULDERS, setCount = 11, percentage = 25.0),
+            WorkloadMuscleEntry(category = CategoryType.CHEST, setCount = 18, percent = 42),
+            WorkloadMuscleEntry(category = CategoryType.BACK, setCount = 14, percent = 33),
+            WorkloadMuscleEntry(category = CategoryType.SHOULDERS, setCount = 11, percent = 25),
         ),
         titleShowsYear = false,
         days = listOf(
@@ -110,9 +110,9 @@ internal object WorkoutListPreviewData {
         // Negative -> exercises the "negative" delta-pill tone.
         delta = -1800.0,
         muscleSplit = listOf(
-            WorkloadMuscleEntry(category = CategoryType.QUADRICEPS, setCount = 20, percentage = 40.0),
-            WorkloadMuscleEntry(category = CategoryType.HAMSTRINGS, setCount = 15, percentage = 30.0),
-            WorkloadMuscleEntry(category = CategoryType.GLUTES, setCount = 15, percentage = 30.0),
+            WorkloadMuscleEntry(category = CategoryType.QUADRICEPS, setCount = 20, percent = 40),
+            WorkloadMuscleEntry(category = CategoryType.HAMSTRINGS, setCount = 15, percent = 30),
+            WorkloadMuscleEntry(category = CategoryType.GLUTES, setCount = 15, percent = 30),
         ),
         titleShowsYear = false,
         days = listOf(
@@ -148,8 +148,8 @@ internal object WorkoutListPreviewData {
         durationMinutes = 30,
         delta = 900.0,
         muscleSplit = listOf(
-            WorkloadMuscleEntry(category = CategoryType.BICEPS, setCount = 12, percentage = 55.0),
-            WorkloadMuscleEntry(category = CategoryType.TRICEPS, setCount = 10, percentage = 45.0),
+            WorkloadMuscleEntry(category = CategoryType.BICEPS, setCount = 12, percent = 55),
+            WorkloadMuscleEntry(category = CategoryType.TRICEPS, setCount = 10, percent = 45),
         ),
         titleShowsYear = false,
         days = listOf(

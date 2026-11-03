@@ -58,10 +58,10 @@ internal object WorkoutDetailsPreviewData {
     val emptyNote = WorkoutDetailsContract.NoteUi(workoutNumber = 1, text = null)
 
     val workload = listOf(
-        WorkoutDetailsContract.WorkloadRow(CategoryType.SHOULDERS, percentage = 42.0, amountText = "2 780 kg"),
-        WorkoutDetailsContract.WorkloadRow(CategoryType.TRICEPS, percentage = 31.0, amountText = "2 060 kg"),
-        WorkoutDetailsContract.WorkloadRow(CategoryType.CHEST, percentage = 17.0, amountText = "1 798 kg"),
-        WorkoutDetailsContract.WorkloadRow(CategoryType.CARDIO, percentage = 10.0, amountText = "30 min"),
+        WorkoutDetailsContract.WorkloadRow(CategoryType.SHOULDERS, percent = 42, percentText = "42%", amountText = "2 780 kg"),
+        WorkoutDetailsContract.WorkloadRow(CategoryType.TRICEPS, percent = 31, percentText = "31%", amountText = "2 060 kg"),
+        WorkoutDetailsContract.WorkloadRow(CategoryType.CHEST, percent = 17, percentText = "17%", amountText = "1 798 kg"),
+        WorkoutDetailsContract.WorkloadRow(CategoryType.CARDIO, percent = 10, percentText = "10%", amountText = "30 min"),
     )
 
     private fun category(type: CategoryType) = Category(

@@ -95,7 +95,7 @@ object WorkoutListContract {
         val durationMinutes: Int,
         /** null iff no earlier week has any data. */
         val delta: Double?,
-        /** WorkloadCalculator.calculate(weekRecords, showOther = true), ranked. */
+        /** WorkloadCalculator.calculate(weekRecords, groupTail = true), ranked. */
         val muscleSplit: List<WorkloadMuscleEntry>,
         /** endInclusive.year != today.year, computed by the feed. */
         val titleShowsYear: Boolean,
