@@ -323,4 +323,5 @@
     <string name="focus_clear_set_message">Записані значення буде видалено. Підхід залишиться на місці — його можна записати знову.</string>
     <string name="focus_clear">Очистити</string>
     <string name="focus_delete_set_message">Підхід буде видалено з тренування. Наступні підходи зсунуться вгору.</string>
+    <string name="common_sheet_drag_handle">Маркер переміщення</string>
 </resources>

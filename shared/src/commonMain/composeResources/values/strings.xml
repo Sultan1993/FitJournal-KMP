@@ -300,4 +300,5 @@
     <string name="focus_clear_set_message">The values you logged are removed. The set stays in place, ready to log again.</string>
     <string name="focus_clear">Clear</string>
     <string name="focus_delete_set_message">This set is removed from the workout. The sets after it move up.</string>
+    <string name="common_sheet_drag_handle">Drag handle</string>
 </resources>

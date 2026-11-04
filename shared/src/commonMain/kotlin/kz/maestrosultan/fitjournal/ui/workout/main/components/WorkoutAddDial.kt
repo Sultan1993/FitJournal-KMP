@@ -91,15 +91,15 @@ fun WorkoutAddDial(
     }
 }
 
+private val LabelShape = RoundedCornerShape(RadiusTokens.chip.dp)
+private val LabelShadow = Color(ColorTokens.shadow.light).copy(alpha = 0.35f)
+
 /**
  * [delayIndex] counts up from the + button, so the nearest option leads on open.
  * The exit is un-staggered and quicker — a collapse that cascades reads as lag.
  * The 12dp bottom padding lives INSIDE the animated content so the gap collapses
  * with it; a Column `spacedBy` would hold the + off the bottom while closed.
  */
-private val LabelShape = RoundedCornerShape(RadiusTokens.chip.dp)
-private val LabelShadow = Color(ColorTokens.shadow.light).copy(alpha = 0.35f)
-
 @Composable
 private fun DialOption(
     expanded: Boolean,

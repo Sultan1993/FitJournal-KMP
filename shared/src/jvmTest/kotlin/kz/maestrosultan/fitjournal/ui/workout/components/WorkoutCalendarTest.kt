@@ -1,5 +1,8 @@
 package kz.maestrosultan.fitjournal.ui.workout.components
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.onNodeWithText
@@ -98,5 +101,29 @@ class WorkoutCalendarTest {
         waitForIdle()
 
         assertEquals(listOf(today.year to today.month.ordinal + 1), months)
+    }
+
+    @Test
+    fun selectionInAnotherMonth_keepsTheOpeningMonth() = runComposeUiTest {
+        val months = mutableListOf<Pair<Int, Int>>()
+        var selection by mutableStateOf<LocalDate?>(selectedDate)
+
+        setContent {
+            FitJournalTheme(darkTheme = false) {
+                WorkoutCalendar(
+                    selectedDate = selection,
+                    workoutDays = emptyMap(),
+                    onDateSelected = {},
+                    onMonthChanged = { year, month -> months += year to month },
+                    monthRange = 6,
+                )
+            }
+        }
+        waitForIdle()
+        selection = LocalDate(2026, 10, 15)
+        waitForIdle()
+
+        // Re-anchoring on the selection rebuilt the state and re-fired onMonthChanged.
+        assertEquals(listOf(2026 to 8), months)
     }
 }

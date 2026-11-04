@@ -70,7 +70,9 @@ import kz.maestrosultan.fitjournal.ui.theme.composeColor
  *   "repeat" picker that cannot offer future days). `null` (default) changes nothing.
  * @param markedDays days marked with a single brand dot (e.g. days with a progress
  *   photo); [workoutDays] dots win where both are set.
- * @param monthRange how many months either side of the opening month can be paged to.
+ * @param monthRange how many months either side of the month the calendar opened
+ *   on ([selectedDate]'s, else today's) can be paged to. The window is fixed when the
+ *   calendar enters composition; later selections don't move it.
  */
 @Composable
 fun WorkoutCalendar(
@@ -89,8 +91,11 @@ fun WorkoutCalendar(
     val firstDayOfWeek = weekDays.first()
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
 
-    val anchorDate = selectedDate ?: today
-    val anchorMonth = remember(anchorDate) { YearMonth(anchorDate.year, anchorDate.month) }
+    // The month the calendar opened on, fixed for its lifetime: re-keying on the
+    // selection would rebuild the state on a tap in another month, shifting the
+    // paging window and re-firing onMonthChanged. Every caller re-composes the
+    // calendar when it reopens, so a fresh open still lands on the selection.
+    val anchorMonth = remember { (selectedDate ?: today).let { YearMonth(it.year, it.month) } }
     val startMonth = remember(anchorMonth, monthRange) { anchorMonth.offsetMonths(-monthRange) }
     val endMonth = remember(anchorMonth, monthRange) { anchorMonth.offsetMonths(monthRange) }
 
