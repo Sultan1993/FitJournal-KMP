@@ -56,7 +56,8 @@ import kz.maestrosultan.fitjournal.ui.theme.composeColor
  * iOS — every type here is either Compose Multiplatform, kotlinx.datetime, or
  * the calendar library's own multiplatform surface.
  *
- * @param selectedDate the highlighted day (filled brand circle, white number).
+ * @param selectedDate the highlighted day (filled brand circle, white number), or
+ *   `null` for none yet (the grid then opens on today's month).
  * @param workoutDays workout days mapped to the muscle-group categories trained
  *   that day — each marked with up to four category-coloured dots below the number.
  * @param onDateSelected fired when an in-month day is tapped.
@@ -67,14 +68,19 @@ import kz.maestrosultan.fitjournal.ui.theme.composeColor
  *   own colour or the grid punches a black rectangle through it in dark mode.
  * @param maxDate when set, days after it render disabled and untappable (e.g. a
  *   "repeat" picker that cannot offer future days). `null` (default) changes nothing.
+ * @param markedDays days marked with a single brand dot (e.g. days with a progress
+ *   photo); [workoutDays] dots win where both are set.
+ * @param monthRange how many months either side of the opening month can be paged to.
  */
 @Composable
 fun WorkoutCalendar(
-    selectedDate: LocalDate,
+    selectedDate: LocalDate?,
     workoutDays: Map<LocalDate, List<CategoryType>>,
     onDateSelected: (LocalDate) -> Unit,
     onMonthChanged: (year: Int, month: Int) -> Unit,
     maxDate: LocalDate? = null,
+    markedDays: Set<LocalDate> = emptySet(),
+    monthRange: Int = RANGE_MONTHS,
     containerColor: Color = FjTheme.colors.background,
     modifier: Modifier = Modifier,
 ) {
@@ -83,9 +89,10 @@ fun WorkoutCalendar(
     val firstDayOfWeek = weekDays.first()
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
 
-    val anchorMonth = remember(selectedDate) { YearMonth(selectedDate.year, selectedDate.month) }
-    val startMonth = remember(anchorMonth) { anchorMonth.offsetMonths(-RANGE_MONTHS) }
-    val endMonth = remember(anchorMonth) { anchorMonth.offsetMonths(RANGE_MONTHS) }
+    val anchorDate = selectedDate ?: today
+    val anchorMonth = remember(anchorDate) { YearMonth(anchorDate.year, anchorDate.month) }
+    val startMonth = remember(anchorMonth, monthRange) { anchorMonth.offsetMonths(-monthRange) }
+    val endMonth = remember(anchorMonth, monthRange) { anchorMonth.offsetMonths(monthRange) }
 
     val state = rememberCalendarState(
         startMonth = startMonth,
@@ -141,7 +148,8 @@ fun WorkoutCalendar(
                     isSelected = day.position == DayPosition.MonthDate && day.date == selectedDate,
                     isToday = day.date == today,
                     isDisabled = maxDate != null && day.date > maxDate,
-                    categories = workoutDays[day.date].orEmpty(),
+                    dots = workoutDays[day.date]?.map { it.composeColor() }
+                        ?: if (day.date in markedDays) listOf(FjTheme.colors.brand) else emptyList(),
                     onClick = { onDateSelected(day.date) },
                 )
             },
@@ -154,7 +162,7 @@ private fun DayCell(
     day: CalendarDay,
     isSelected: Boolean,
     isToday: Boolean,
-    categories: List<CategoryType>,
+    dots: List<Color>,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     isDisabled: Boolean = false,
@@ -166,13 +174,12 @@ private fun DayCell(
         targetValue = if (isSelected) FjTheme.colors.brand else Color.Transparent,
         label = "daySelectionCircle",
     )
-    // Today is tinted with no fill (accent in dark, brand in light); selected still wins.
-    val todayTint = if (FjTheme.colors.isDark) FjTheme.colors.accent else FjTheme.colors.brand
+    // Today is a brand number with no fill, in both themes; selected still wins.
     val numberColor by animateColorAsState(
         targetValue = when {
             isSelected -> FjTheme.colors.onBrand
             isDisabled -> FjTheme.colors.textTertiary
-            isToday && isMonthDate -> todayTint
+            isToday && isMonthDate -> FjTheme.colors.brand
             isMonthDate -> FjTheme.colors.textPrimary
             else -> FjTheme.colors.textTertiary
         },
@@ -216,17 +223,17 @@ private fun DayCell(
         }
 
         // Unselected in-month days only — the selection circle would cover the dots.
-        if (isMonthDate && categories.isNotEmpty() && !isSelected) {
+        if (isMonthDate && dots.isNotEmpty() && !isSelected) {
             Row(
                 modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = SpaceTokens.s4.dp),
                 horizontalArrangement = Arrangement.spacedBy(SpaceTokens.s2.dp),
             ) {
-                categories.take(4).forEach { category ->
+                dots.take(4).forEach { color ->
                     Box(
                         modifier = Modifier
                             .size(5.dp)
                             .clip(CircleShape)
-                            .background(category.composeColor()),
+                            .background(color),
                     )
                 }
             }

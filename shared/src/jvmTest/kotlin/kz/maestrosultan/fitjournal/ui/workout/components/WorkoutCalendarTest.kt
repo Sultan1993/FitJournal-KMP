@@ -5,7 +5,10 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
+import kotlin.time.Clock
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -74,5 +77,26 @@ class WorkoutCalendarTest {
         onNodeWithText("20").performClick()
 
         assertEquals(listOf(maxDate), selected)
+    }
+
+    @Test
+    fun noSelection_opensOnTodaysMonth() = runComposeUiTest {
+        val months = mutableListOf<Pair<Int, Int>>()
+        val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+
+        setContent {
+            FitJournalTheme(darkTheme = false) {
+                WorkoutCalendar(
+                    selectedDate = null,
+                    workoutDays = emptyMap(),
+                    onDateSelected = {},
+                    onMonthChanged = { year, month -> months += year to month },
+                    monthRange = 6,
+                )
+            }
+        }
+        waitForIdle()
+
+        assertEquals(listOf(today.year to today.month.ordinal + 1), months)
     }
 }
