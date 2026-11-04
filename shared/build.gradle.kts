@@ -85,7 +85,7 @@ kotlin {
             implementation(libs.compose.material3)
             implementation(libs.compose.ui.core)
             implementation(libs.compose.components.resources)
-            implementation(libs.androidx.lifecycle.viewmodel.compose)
+            implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
             implementation(libs.calendar.compose)
             implementation(libs.reorderable)
