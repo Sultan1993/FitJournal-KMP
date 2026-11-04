@@ -15,7 +15,6 @@
     <string name="workout_set_label">Set</string>
     <string name="workout_exercise_note_label">Note</string>
     <string name="workout_add_exercise">Add exercise</string>
-    <string name="workout_last_prefix">Last: %1$s</string>
     <string name="workout_superset">Superset</string>
 
     <!-- Exercise menu -->
@@ -43,15 +42,7 @@
     <string name="postworkout_confirm_keep_training">Keep training</string>
 
     <!-- Post-workout: success screen -->
-    <string name="postworkout_saved_to_journal">Saved to journal</string>
-    <string name="postworkout_total_volume_caption">Total volume · %1$s across %2$s</string>
-    <string name="postworkout_tile_duration">DURATION</string>
-    <string name="postworkout_tile_sets">SETS</string>
-    <string name="postworkout_tile_this_week">THIS WEEK</string>
     <string name="postworkout_new_best">NEW BEST</string>
-    <string name="postworkout_section_muscles">MUSCLES</string>
-    <string name="postworkout_section_what_you_did">WHAT YOU DID</string>
-    <string name="postworkout_open_record">Open record</string>
     <string name="postworkout_share_workout">Share workout</string>
     <string name="postworkout_title_fallback">Workout</string>
     <plurals name="postworkout_sets">
@@ -70,7 +61,6 @@
     <string name="postworkout_close">Close</string>
     <string name="postworkout_save">Save to photos</string>
     <string name="postworkout_reps_format">%1$d reps</string>
-    <string name="postworkout_stat_pair_format">%1$s · %2$s</string>
 
     <!-- Post-workout: share composer -->
     <string name="postworkout_composer_title">Share workout</string>
@@ -141,14 +131,12 @@
     <string name="category_code_other">OTHER</string>
 
     <!-- Add-exercise chooser (+ button) -->
-    <string name="workout_add_title">Add exercises</string>
     <string name="workout_add_from_list">From exercise list</string>
     <string name="workout_add_from_workout">Copy from a workout</string>
 
     <!-- Copy-from-workout picker -->
     <string name="import_workout_add">Add to workout</string>
     <string name="import_workout_empty">No workouts on this day</string>
-    <string name="import_workout_placeholder">Select workout date from which you want to add exercises</string>
     <string name="workout_first_workout_hint">Press + to add exercises and start logging your sets</string>
     <string name="common_today">Today</string>
     <string name="common_yesterday">Yesterday</string>
@@ -190,7 +178,6 @@
     <string name="workout_details_edit">Edit workout</string>
     <string name="workout_details_repeat">Repeat workout</string>
     <string name="workout_details_delete">Delete workout</string>
-    <string name="workout_details_share">Share workout</string>
     <string name="workout_details_delete_confirm_title">Delete workout?</string>
     <string name="workout_details_delete_confirm_message">This will permanently delete the workout on %1$s. This can't be undone.</string>
     <string name="workout_details_note_title">Workout note</string>

@@ -35,11 +35,6 @@ SELECT *
 FROM categories
 WHERE uuid = ?;
 
-getCategoryByRemoteId:
-SELECT *
-FROM categories
-WHERE remoteId = ?;
-
 createCategory:
 INSERT INTO categories(uuid, remoteId, nameEn, nameRu, nameUk, type, details)
 VALUES (?, ?, ?, ?, ?, ?, ?);

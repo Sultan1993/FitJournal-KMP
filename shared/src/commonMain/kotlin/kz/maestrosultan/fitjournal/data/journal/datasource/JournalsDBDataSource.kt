@@ -94,37 +94,6 @@ class JournalsDBDataSource(
         )
     }
 
-    suspend fun createJournalIfMissing(
-        uuid: String,
-        userId: String,
-        name: String,
-        comments: String?,
-        isPersonal: Boolean,
-        workoutGoal: Int? = null,
-        remoteId: String? = null,
-        pendingUpload: Boolean = true,
-        createdDate: Instant = Clock.System.now(),
-        updatedDate: Instant = createdDate,
-    ): Boolean = withContext(Dispatchers.IO) {
-        // Atomic check-and-insert to prevent TOCTOU races during migration.
-        dao.transactionWithResult {
-            if (dao.getJournalById(uuid).executeAsOneOrNull() != null) return@transactionWithResult false
-            dao.createJournal(
-                uuid = uuid,
-                remoteId = remoteId,
-                userId = userId,
-                name = name,
-                comments = comments,
-                isPersonal = isPersonal,
-                workoutGoal = workoutGoal?.toLong(),
-                pendingUpload = pendingUpload,
-                createdDate = createdDate.toStoredString(),
-                updatedDate = updatedDate.toStoredString(),
-            )
-            true
-        }
-    }
-
     /**
      * Atomic select-or-insert for the user's personal journal. Two concurrent
      * callers (e.g. a double first-boot `ensureDefaultJournal`) can't each

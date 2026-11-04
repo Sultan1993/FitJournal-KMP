@@ -22,12 +22,6 @@ CREATE TABLE workoutSets (
 -- `WHERE workoutExerciseUuid = ? ORDER BY position ASC` is index-driven.
 CREATE INDEX idx_workoutSets_exercise ON workoutSets(workoutExerciseUuid, position);
 
-getWorkoutSetsByExercise:
-SELECT *
-FROM workoutSets
-WHERE workoutExerciseUuid = ?
-ORDER BY position ASC;
-
 -- Bulk: every set under [workoutRecordUuid] in one SQL call. Replaces
 -- the per-exercise N+1 loop in `WorkoutsDBDataSource.childrenOf`. Plan:
 -- `idx_workoutExercises_record` resolves the record's exercises → PK

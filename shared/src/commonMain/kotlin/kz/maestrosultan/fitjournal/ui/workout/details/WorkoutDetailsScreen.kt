@@ -8,7 +8,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -19,7 +18,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
@@ -32,9 +30,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlin.coroutines.cancellation.CancellationException
@@ -52,7 +48,6 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_ac
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_delete
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_delete_confirm_message
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_delete_confirm_title
-import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_share
 import kz.maestrosultan.fitjournal.ui.common.ConfirmActionSheet
 import kz.maestrosultan.fitjournal.ui.common.FjPrimaryButton
 import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
@@ -349,22 +344,6 @@ private fun BottomFadeScrim(modifier: Modifier = Modifier) {
             .height(40.dp)
             .background(Brush.verticalGradient(listOf(background.copy(alpha = 0f), background))),
     )
-}
-
-@Composable
-private fun ShareGlyph() {
-    val color = FjTheme.colors.onBrand
-    Canvas(Modifier.size(16.dp)) {
-        val w = size.width
-        val h = size.height
-        val stroke = w * 0.14f
-        drawLine(color, Offset(w * 0.5f, h * 0.12f), Offset(w * 0.5f, h * 0.64f), stroke, cap = StrokeCap.Round)
-        drawLine(color, Offset(w * 0.28f, h * 0.34f), Offset(w * 0.5f, h * 0.12f), stroke, cap = StrokeCap.Round)
-        drawLine(color, Offset(w * 0.72f, h * 0.34f), Offset(w * 0.5f, h * 0.12f), stroke, cap = StrokeCap.Round)
-        drawLine(color, Offset(w * 0.18f, h * 0.62f), Offset(w * 0.18f, h * 0.88f), stroke, cap = StrokeCap.Round)
-        drawLine(color, Offset(w * 0.82f, h * 0.62f), Offset(w * 0.82f, h * 0.88f), stroke, cap = StrokeCap.Round)
-        drawLine(color, Offset(w * 0.18f, h * 0.88f), Offset(w * 0.82f, h * 0.88f), stroke, cap = StrokeCap.Round)
-    }
 }
 
 // Unlike WorkoutListScreen, WorkoutDetailsScreen is content-only — the native host owns

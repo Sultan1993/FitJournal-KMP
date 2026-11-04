@@ -73,46 +73,6 @@ class BodyMeasurementsDBDataSource(private val dao: BodyMeasurementsQueries) {
         )
     }
 
-    /**
-     * Insert if uuid not already present (true=inserted, false=skipped), so a
-     * migrator re-run after a partial crash doesn't duplicate. New rows ship
-     * `pendingUpload=true` so SyncOrchestrator pushes them next tick.
-     */
-    suspend fun createBodyMeasurementIfMissing(
-        uuid: String,
-        userId: String,
-        journalId: String,
-        type: String,
-        value: Double,
-        comment: String?,
-        measurementDate: Instant,
-        createdDate: Instant = Clock.System.now(),
-        updatedDate: Instant = createdDate,
-        remoteId: String? = null,
-        pendingUpload: Boolean = true,
-    ): Boolean = withContext(Dispatchers.IO) {
-        dao.transactionWithResult {
-            // IncludingDeleted: don't re-insert a row already soft-deleted on this device.
-            if (dao.getBodyMeasurementByIdIncludingDeleted(uuid).executeAsOneOrNull() != null) {
-                return@transactionWithResult false
-            }
-            dao.createBodyMeasurement(
-                uuid = uuid,
-                remoteId = remoteId,
-                userId = userId,
-                journalId = journalId,
-                type = type,
-                value_ = value,
-                comment = comment,
-                measurementDate = measurementDate.toStoredString(),
-                createdDate = createdDate.toStoredString(),
-                updatedDate = updatedDate.toStoredString(),
-                pendingUpload = pendingUpload,
-            )
-            true
-        }
-    }
-
     suspend fun updateBodyMeasurement(
         uuid: String,
         value: Double,

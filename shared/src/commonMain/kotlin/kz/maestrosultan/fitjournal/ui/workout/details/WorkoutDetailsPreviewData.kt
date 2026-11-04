@@ -40,9 +40,6 @@ internal object WorkoutDetailsPreviewData {
         cardio = WorkoutDetailsContract.HeroStat(value = "30", unit = "min", label = "Cardio · 5 km"),
     )
 
-    /** No cardio: the second stat and its divider are dropped. */
-    val volumeOnlyHero = WorkoutDetailsContract.Hero(volume = hero.volume, cardio = null)
-
     /** Cardio-only day: nothing was lifted, so the cardio stat stands alone. */
     val cardioOnlyHero = WorkoutDetailsContract.Hero(
         volume = null,

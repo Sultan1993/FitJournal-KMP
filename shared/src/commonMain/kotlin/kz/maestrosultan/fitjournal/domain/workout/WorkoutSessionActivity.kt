@@ -47,10 +47,6 @@ object WorkoutSessionActivity {
     fun activitySince(session: WorkoutSession, lastActivityAt: Instant?): Instant =
         maxOf(lastActivityAt ?: session.startedAt, session.startedAt)
 
-    /** True when nothing has happened in [session] for longer than [INACTIVITY_LIMIT]. */
-    fun isForgotten(session: WorkoutSession, lastActivityAt: Instant?, now: Instant): Boolean =
-        now - activitySince(session, lastActivityAt) > INACTIVITY_LIMIT
-
     /**
      * The moment a forgotten workout should be recorded as having ended: its last
      * activity, NOT "now" and NOT "last activity + the limit".

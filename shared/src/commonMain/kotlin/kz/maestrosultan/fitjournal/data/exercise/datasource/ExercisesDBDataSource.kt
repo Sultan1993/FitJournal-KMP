@@ -221,60 +221,6 @@ class ExercisesDBDataSource(
     }
 
     /**
-     * Insert if uuid not already present (true=inserted, false=skipped). Lets
-     * a migrator re-run after a partial crash without duplicating rows or
-     * overwriting an already-edited custom (`pendingUpload=1`).
-     *
-     * Defaults `pendingUpload=false`: globals are already in AWS via the
-     * manual seed, imported customs haven't been edited yet. The repo write
-     * path bumps it on actual edits.
-     */
-    suspend fun createExerciseIfMissing(
-        uuid: String,
-        remoteId: String,
-        nameEn: String,
-        nameRu: String,
-        nameUk: String,
-        details: String?,
-        image1: String?,
-        image2: String?,
-        categoryUuid: String,
-        secondaryCategoryUuids: List<String>?,
-        resultType: Int,
-        isGlobal: Boolean,
-        userId: String? = null,
-        pendingUpload: Boolean = false,
-    ): Boolean = withContext(Dispatchers.IO) {
-        dao.transactionWithResult {
-            // Sees tombstones so a deliberately-deleted row isn't re-imported on re-run.
-            if (dao.getExerciseByUuidIncludingDeleted(
-                    uuid = uuid,
-                    mapper = { u, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ -> u }
-                ).executeAsOneOrNull() != null
-            ) {
-                return@transactionWithResult false
-            }
-            dao.createExercise(
-                uuid = uuid,
-                remoteId = remoteId,
-                nameEn = nameEn,
-                nameRu = nameRu,
-                nameUk = nameUk,
-                details = details,
-                image1 = image1,
-                image2 = image2,
-                primaryCategoryUuid = categoryUuid,
-                secondaryCategoryUuids = secondaryCategoryUuids?.joinToString(";"),
-                resultType = resultType.toLong(),
-                global = isGlobal,
-                userId = userId,
-                pendingUpload = pendingUpload,
-            )
-            true
-        }
-    }
-
-    /**
      * Name-only update for the UI rename flow. Bumps pendingUpload so the
      * SyncWorker will push it to AWS. All three locale columns are written
      * because custom exercises don't have per-locale source data — the
@@ -419,25 +365,6 @@ class ExercisesDBDataSource(
                 isGlobal = global,
             )
         }
-
-    /**
-     * Lean `remoteId → uuid` lookup (Parse objectId → local uuid) for every
-     * live exercise, for the workouts migrator.
-     *
-     * Skips [ExerciseDBMapper] — its per-row category SELECTs collapse to
-     * seconds of blocking on real iOS hardware for a 200-exercise catalog,
-     * and the migrator only needs `uuid`. One SQL query, no category traversal.
-     */
-    suspend fun getRemoteIdToUuidMap(): Map<String, String> = withContext(Dispatchers.IO) {
-        dao
-            .getAllExercises(
-                mapper = { uuid, remoteId, _, _, _, _, _, _, _, _, _, _, _, _, _, _ ->
-                    uuid to remoteId
-                }
-            )
-            .executeAsList()
-            .associate { (uuid, remoteId) -> remoteId to uuid }
-    }
 
     /**
      * Pending-upload drain for the SyncWorker. Returns every row with

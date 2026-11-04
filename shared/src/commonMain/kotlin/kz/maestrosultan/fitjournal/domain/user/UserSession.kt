@@ -11,10 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
  *
  * Populated by the native layer at its existing identity choke points (iOS
  * `UserStorage` setters, Android `DefaultUserManager`) plus a bootstrap read on
- * cold launch, and [clear]ed on logout. Reading identity while logged out is a
- * programming error here — exactly how the platform stores already treat it
- * (Android throws "Fetching user info while logged out is forbidden") — so
- * [require] throws rather than inventing a logged-out sentinel.
+ * cold launch, and [clear]ed on logout.
  *
  * It is a [StateFlow] on purpose: Swift reads [current]/[state].value
  * synchronously (no conforming Swift to a *suspend* KMP interface — the reason
@@ -39,11 +36,6 @@ object UserSession {
 
     fun clear() {
         _state.value = null
-    }
-
-    /** For call sites reachable only when logged in (every CMP screen). */
-    fun require(): UserSessionState = checkNotNull(_state.value) {
-        "UserSession read before sign-in / bootstrap"
     }
 }
 

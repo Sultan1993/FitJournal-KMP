@@ -64,32 +64,6 @@ class CategoriesDBDataSource(private val dao: CategoryQueries) {
         }
     }
 
-    suspend fun createCategoryIfMissing(
-        uuid: String,
-        remoteId: String,
-        nameEn: String,
-        nameRu: String,
-        nameUk: String,
-        type: Int,
-        details: String?,
-    ): Boolean = withContext(Dispatchers.IO) {
-        dao.transactionWithResult {
-            if (dao.getCategoryByUuid(uuid).executeAsOneOrNull() != null) {
-                return@transactionWithResult false
-            }
-            dao.createCategory(
-                uuid = uuid,
-                remoteId = remoteId,
-                nameEn = nameEn,
-                nameRu = nameRu,
-                nameUk = nameUk,
-                type = type.toLong(),
-                details = details,
-            )
-            true
-        }
-    }
-
     /**
      * Sync-pull upsert for the global catalog. Idempotent — safe to call every tick.
      * Caller must not set pendingUpload (categories are read-only from the app side).

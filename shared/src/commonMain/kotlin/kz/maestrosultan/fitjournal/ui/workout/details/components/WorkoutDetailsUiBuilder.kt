@@ -88,8 +88,6 @@ internal suspend fun buildWorkoutDetailsUi(
         .mapValues { (_, group) -> group.sortedBy { it.position } }
     val workoutNumbers = recordsByWorkout.keys.sorted()
     val sessionsByWorkout: Map<Int, WorkoutSession> = sessions.associateBy { it.workoutNumber }
-    // Defensive: orphan sessions (no matching record group) drop silently.
-    val matchedSessions = workoutNumbers.mapNotNull { sessionsByWorkout[it] }
 
     val workouts = workoutNumbers.map { number ->
         buildWorkoutUi(
