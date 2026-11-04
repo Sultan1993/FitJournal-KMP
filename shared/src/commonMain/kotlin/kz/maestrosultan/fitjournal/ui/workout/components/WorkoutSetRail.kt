@@ -112,7 +112,7 @@ private fun WorkoutSetItem(position: Int, set: SetDisplay, onClick: (() -> Unit)
         Dot(color = setEffortDotColor(set.effort))
         Text(
             text = "${stringResource(Res.string.workout_set_label).uppercase()} $position",
-            style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t12.sp, fontWeight = FontWeight.Bold),
+            style = FjTheme.typography.eyebrow,
             color = FjTheme.colors.textTertiary,
             maxLines = 1,
         )

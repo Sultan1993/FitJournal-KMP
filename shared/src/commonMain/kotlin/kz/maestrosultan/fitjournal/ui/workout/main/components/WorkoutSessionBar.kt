@@ -137,10 +137,7 @@ private fun RunningBar(runningSince: Instant?, onEnd: () -> Unit, modifier: Modi
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = stringResource(Res.string.workout_session_label).uppercase(),
-                style = FjTheme.typography.caption.copy(
-                    fontSize = TypeTokens.t10.sp,
-                    fontWeight = FontWeight.Bold,
-                ),
+                style = FjTheme.typography.eyebrow,
                 color = FjTheme.colors.brand,
                 maxLines = 1,
             )

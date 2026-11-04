@@ -6,7 +6,9 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.TrackingTokens
 import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.rubik_bold
@@ -62,7 +64,7 @@ fun fjTypography(): FjTypography {
         label = style(TypeTokens.t12, FontWeight.Medium),
         button = style(TypeTokens.t16, FontWeight.SemiBold),
         numberLarge = style(TypeTokens.t16, FontWeight.SemiBold),
-        eyebrow = style(TypeTokens.t10, FontWeight.Bold),
+        eyebrow = style(TypeTokens.t10, FontWeight.Bold).copy(letterSpacing = TrackingTokens.eyebrow.em),
     )
 }
 

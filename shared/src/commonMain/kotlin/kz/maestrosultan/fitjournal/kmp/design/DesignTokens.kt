@@ -56,3 +56,12 @@ object TypeTokens {
     const val display36 = 36
     const val display48 = 48
 }
+
+/**
+ * Letter-spacing in em (multiply by the font size for points). [eyebrow] is the ONE tracking for
+ * every uppercase eyebrow label (SETS, TARGET, SET N, REST TIMER, NOTE, EST 1RM, …) on every
+ * platform, always paired with the eyebrow style: [TypeTokens.t10], bold, uppercase.
+ */
+object TrackingTokens {
+    const val eyebrow = 0.1
+}

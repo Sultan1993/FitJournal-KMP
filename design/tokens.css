@@ -49,6 +49,7 @@
   --t34:34px;
   --display36:36px;
   --display48:48px;
+  --tracking-eyebrow:0.1em;
 }
 .fj[data-theme="dark"]{
   --brandSubtle:#2B2650;

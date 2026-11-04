@@ -65,7 +65,7 @@ fun JournalPickerRow(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(RadiusTokens.control.dp))
+            .clip(RoundedCornerShape(RadiusTokens.card.dp))
             .background(FjTheme.colors.surface)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },

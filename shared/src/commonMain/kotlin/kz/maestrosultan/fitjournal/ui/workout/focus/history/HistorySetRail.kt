@@ -108,7 +108,7 @@ private fun HistorySetRow(position: Int, set: SetDisplay) {
         }
         Text(
             text = "${stringResource(Res.string.workout_set_label).uppercase()} $position",
-            style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp),
+            style = FjTheme.typography.eyebrow,
             color = FjTheme.colors.textTertiary,
             maxLines = 1,
         )

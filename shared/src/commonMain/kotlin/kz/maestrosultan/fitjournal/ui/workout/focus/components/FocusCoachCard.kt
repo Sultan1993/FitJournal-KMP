@@ -56,7 +56,7 @@ fun FocusCoachCard(segments: List<FocusCoachSegmentUi>, modifier: Modifier = Mod
             Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(FjTheme.colors.brand))
             Text(
                 text = stringResource(Res.string.focus_ai_coach).uppercase(),
-                style = FjTheme.typography.eyebrow.copy(fontSize = TypeTokens.t10.sp, fontWeight = FontWeight.Bold),
+                style = FjTheme.typography.eyebrow,
                 color = FjTheme.colors.brand,
             )
         }

@@ -236,7 +236,7 @@ private fun LapsedBody(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(RadiusTokens.chip.dp))
+                .clip(RoundedCornerShape(RadiusTokens.control.dp))
                 .clickable(role = Role.Button) { onRestoreClick() }
                 .padding(horizontal = SpaceTokens.s16.dp, vertical = SpaceTokens.s16.dp),
         ) {
@@ -265,9 +265,9 @@ private fun cardStyle(size: Double, weight: FontWeight) =
         fontWeight = weight
     )
 
-/** 10px / 700 — the same eyebrow in all three states. */
+/** The app's one eyebrow style, the same in all three states. */
 @Composable
-private fun eyebrowStyle() = cardStyle(10.0, FontWeight.Bold)
+private fun eyebrowStyle() = FjTheme.typography.eyebrow
 
 
 /**
@@ -358,7 +358,7 @@ private fun QuotaButton(text: String, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(RadiusTokens.chip.dp))
+            .clip(RoundedCornerShape(RadiusTokens.control.dp))
             .background(FjTheme.colors.brand)
             .clickable(role = Role.Button) { onClick() }
             .padding(horizontal = SpaceTokens.s16.dp, vertical = SpaceTokens.s16.dp),

@@ -44,3 +44,7 @@ Generated from `Multiplatform/shared/.../kmp/design/` by `Multiplatform/scripts/
 ## Type size (CSS `--<name>`, classes `.t<N>`)
 
 `TypeTokens.t10` = 10, `TypeTokens.t12` = 12, `TypeTokens.t14` = 14, `TypeTokens.t16` = 16, `TypeTokens.t20` = 20, `TypeTokens.t24` = 24, `TypeTokens.t34` = 34, `TypeTokens.display36` = 36, `TypeTokens.display48` = 48
+
+## Letter-spacing in em (CSS `--tracking-<name>`)
+
+`TrackingTokens.eyebrow` = 0.1

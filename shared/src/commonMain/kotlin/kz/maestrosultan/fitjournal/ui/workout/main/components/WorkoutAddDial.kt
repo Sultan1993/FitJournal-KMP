@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -33,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kz.maestrosultan.fitjournal.kmp.design.ColorTokens
 import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
 import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
 import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
@@ -95,6 +97,9 @@ fun WorkoutAddDial(
  * The 12dp bottom padding lives INSIDE the animated content so the gap collapses
  * with it; a Column `spacedBy` would hold the + off the bottom while closed.
  */
+private val LabelShape = RoundedCornerShape(RadiusTokens.chip.dp)
+private val LabelShadow = Color(ColorTokens.shadow.light).copy(alpha = 0.35f)
+
 @Composable
 private fun DialOption(
     expanded: Boolean,
@@ -121,9 +126,11 @@ private fun DialOption(
                 text = label,
                 style = FjTheme.typography.bodyStrong.copy(fontSize = TypeTokens.t14.sp, fontWeight = FontWeight.Medium),
                 color = FjTheme.colors.textPrimary,
+                // Elevated chip, not `card`: card equals surface in light, so the label
+                // vanished over the cards it floats above.
                 modifier = Modifier
-                    .clip(RoundedCornerShape(RadiusTokens.chip.dp))
-                    .background(FjTheme.colors.card)
+                    .shadow(4.dp, LabelShape, ambientColor = LabelShadow, spotColor = LabelShadow)
+                    .background(FjTheme.colors.surfaceElevated, LabelShape)
                     .padding(horizontal = SpaceTokens.s12.dp, vertical = SpaceTokens.s8.dp),
             )
             Spacer(Modifier.width(SpaceTokens.s12.dp))

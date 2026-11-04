@@ -115,8 +115,8 @@ private const val MinEditorFontSize = 24f
 /** Non-snapshot latch — see [FocusAccordionRow]. */
 private class EditorLatch(var value: FocusEditorUi)
 
-private val CollapsedRadius = RadiusTokens.control.dp
-private val ExpandedRadius = RadiusTokens.card.dp
+/** Set rows are cards whether collapsed or expanded (radius by role, not by state). */
+private val RowRadius = RadiusTokens.card.dp
 private val CommitRevealWidth = 80.dp
 
 // Non-translatable glyphs (multiplication sign, plus) — kept as named
@@ -207,15 +207,7 @@ private fun FocusSetStackHeader(setDots: List<FocusSetDotUi>) {
     ) {
         Text(
             text = stringResource(Res.string.focus_sets).uppercase(),
-            // The two natives disagree on tracking here: Android dropped every
-            // letter-spacing override in cb6d76dc, iOS kept its kerning. This screen
-            // follows iOS, its stated visual reference — and follows it everywhere,
-            // so the eyebrows on one page can't track differently from each other.
-            style = FjTheme.typography.caption.copy(
-                fontSize = TypeTokens.t12.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.1.sp,
-            ),
+            style = FjTheme.typography.eyebrow,
             color = FjTheme.colors.textTertiary,
         )
         Spacer(modifier = Modifier.weight(1f))
@@ -385,16 +377,16 @@ private fun FocusAccordionRow(
                         Modifier
                     },
                 )
-                .clip(RoundedCornerShape(if (expanded) ExpandedRadius else CollapsedRadius))
+                .clip(RoundedCornerShape(RowRadius))
                 // OPAQUE base under the state tint — the swipe red must not
                 // bleed through a translucent (active) or clear (target) row.
                 .background(FjTheme.colors.background)
                 .background(rowBackground(slot, expanded))
                 .let { base ->
                     if (expanded) {
-                        base.border(2.dp, FjTheme.colors.brand, RoundedCornerShape(ExpandedRadius))
+                        base.border(2.dp, FjTheme.colors.brand, RoundedCornerShape(RowRadius))
                     } else if (slot.kind == FocusSetSlotUi.Kind.Target || slot.isAddAnother) {
-                        base.dashedRoundedBorder(FjTheme.colors.border, CollapsedRadius)
+                        base.dashedRoundedBorder(FjTheme.colors.border, RowRadius)
                     } else {
                         base
                     }
@@ -585,11 +577,7 @@ private fun FocusSetHeaderRow(
         FocusSetStatusIndicator(kind = slot.kind, size = if (expanded) 30.dp else 36.dp)
         Text(
             text = "${stringResource(Res.string.workout_set_label).uppercase()} ${slot.number}",
-            style = FjTheme.typography.caption.copy(
-                fontSize = TypeTokens.t12.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.8.sp,
-            ),
+            style = FjTheme.typography.eyebrow,
             color = if (expanded || slot.kind == FocusSetSlotUi.Kind.Active) {
                 FjTheme.colors.brand
             } else {
@@ -614,11 +602,7 @@ private fun FocusSetHeaderRow(
             if (slot.kind == FocusSetSlotUi.Kind.Target) {
                 Text(
                     text = stringResource(Res.string.focus_target).uppercase(),
-                    style = FjTheme.typography.caption.copy(
-                        fontSize = TypeTokens.t12.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp,
-                    ),
+                    style = FjTheme.typography.eyebrow,
                     color = FjTheme.colors.textTertiary,
                 )
             }

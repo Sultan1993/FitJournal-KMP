@@ -48,7 +48,7 @@ fun FocusSupersetMembers(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(RadiusTokens.sheet.dp))
+            .clip(RoundedCornerShape(RadiusTokens.card.dp))
             .background(FjTheme.colors.surface)
             .padding(SpaceTokens.s8.dp),
         verticalArrangement = Arrangement.spacedBy(SpaceTokens.s4.dp),
@@ -64,7 +64,8 @@ private fun FocusSupersetMemberRow(item: FocusMemberItemUi, onClick: () -> Unit)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(RadiusTokens.card.dp))
+            // Row inside the card's s8 inset: chip, so its corners nest the card's.
+            .clip(RoundedCornerShape(RadiusTokens.chip.dp))
             .background(if (item.isActive) FjTheme.colors.surfaceElevated else Color.Transparent)
             // No ripple — iOS uses .buttonStyle(.plain), Android noRippleClickable.
             .clickable(
@@ -79,7 +80,7 @@ private fun FocusSupersetMemberRow(item: FocusMemberItemUi, onClick: () -> Unit)
     ) {
         FocusMemberLetterBadge(letter = item.letter, isActive = item.isActive)
         Box(
-            modifier = Modifier.size(44.dp).clip(RoundedCornerShape(RadiusTokens.chip.dp)).background(FjTheme.colors.surface),
+            modifier = Modifier.size(44.dp).clip(RoundedCornerShape(RadiusTokens.chip.dp)).background(FjTheme.colors.brandSubtle),
         ) {
             FocusExerciseThumb(imageName = item.imageName, modifier = Modifier.padding(SpaceTokens.s8.dp))
         }

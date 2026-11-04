@@ -34,7 +34,6 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
 import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
@@ -79,9 +78,7 @@ fun FocusRestTimerCard(
         Column(verticalArrangement = Arrangement.spacedBy(SpaceTokens.s4.dp)) {
             Text(
                 text = stringResource(Res.string.focus_rest_timer).uppercase(),
-                // The natives diverge on this eyebrow's tracking (iOS still kerns 1.1,
-                // Android dropped it); CMP follows iOS, the visual reference.
-                style = FjTheme.typography.caption.copy(fontSize = TypeTokens.t12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.1.em),
+                style = FjTheme.typography.eyebrow,
                 color = FjTheme.colors.textTertiary,
                 maxLines = 1,
             )

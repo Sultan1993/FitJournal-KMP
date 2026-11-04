@@ -50,6 +50,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.import_workout_add
 import kz.maestrosultan.fitjournal.shared.generated.resources.import_workout_empty
 import kz.maestrosultan.fitjournal.ui.common.PageDots
+import kz.maestrosultan.fitjournal.ui.common.fjPrimaryButtonFill
 import kz.maestrosultan.fitjournal.ui.common.TopFadeScrim
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
@@ -235,13 +236,14 @@ internal fun ImportButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Mid-import keeps the full brand fill behind the spinner; only "nothing selected" is disabled.
     val brandFill = importInProgress || canImport
     Box(
         modifier = modifier
             .height(54.dp)
             .testTag("import_button")
             .clip(RoundedCornerShape(RadiusTokens.control.dp))
-            .background(if (brandFill) FjTheme.colors.brand else FjTheme.colors.surfaceElevated)
+            .background(fjPrimaryButtonFill(enabled = brandFill))
             .clickable(enabled = canImport && !importInProgress, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
@@ -255,7 +257,7 @@ internal fun ImportButton(
             Text(
                 text = stringResource(Res.string.import_workout_add),
                 style = FjTheme.typography.button.copy(fontWeight = FontWeight.Medium),
-                color = if (canImport) FjTheme.colors.onBrand else FjTheme.colors.textTertiary,
+                color = FjTheme.colors.onBrand,
                 modifier = Modifier.testTag("import_button_label"),
             )
         }

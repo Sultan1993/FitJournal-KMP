@@ -373,6 +373,9 @@ private fun FocusPickerRow(item: FocusStripItemUi, onClick: () -> Unit, modifier
     }
 }
 
+/** Exercise art tile, single and superset alike: a chip-radius square. */
+private val ThumbShape = RoundedCornerShape(RadiusTokens.chip.dp)
+
 @Composable
 private fun FocusPickerThumbnail(item: FocusStripItemUi) {
     if (item.isSuperset) {
@@ -384,9 +387,9 @@ private fun FocusPickerThumbnail(item: FocusStripItemUi) {
                 Box(
                     modifier = Modifier
                         .size(30.dp)
-                        .clip(CircleShape)
-                        .background(FjTheme.colors.background)
-                        .border(2.dp, if (item.isActive) FjTheme.colors.brandSubtle else FjTheme.colors.surfaceElevated, CircleShape),
+                        .clip(ThumbShape)
+                        .background(FjTheme.colors.brandSubtle)
+                        .border(2.dp, if (item.isActive) FjTheme.colors.brandSubtle else FjTheme.colors.surfaceElevated, ThumbShape),
                 ) {
                     FocusExerciseThumb(imageName = name, modifier = Modifier.padding(SpaceTokens.s4.dp))
                 }
@@ -396,8 +399,8 @@ private fun FocusPickerThumbnail(item: FocusStripItemUi) {
         Box(
             modifier = Modifier
                 .size(30.dp)
-                .clip(RoundedCornerShape(RadiusTokens.chip.dp))
-                .background(if (item.isActive) FjTheme.colors.background else FjTheme.colors.surface),
+                .clip(ThumbShape)
+                .background(FjTheme.colors.brandSubtle),
         ) {
             FocusExerciseThumb(imageName = item.imageNames.firstOrNull(), modifier = Modifier.padding(SpaceTokens.s4.dp))
         }

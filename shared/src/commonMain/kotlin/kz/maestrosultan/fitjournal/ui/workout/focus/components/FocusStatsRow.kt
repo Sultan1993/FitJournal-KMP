@@ -116,7 +116,7 @@ private fun FocusStatCell(
                 color = FjTheme.colors.textTertiary,
                 maxLines = 1,
                 // ru/de labels plus the inline "i" outgrow an SE-width half-cell.
-                // iOS scales to 0.7 of 10.5sp rather than losing a word ending.
+                // Scales to 0.7 of the eyebrow size rather than losing a word ending.
                 autoSize = TextAutoSize.StepBased(
                     minFontSize = LabelMinFontSize,
                     maxFontSize = LabelMaxFontSize,

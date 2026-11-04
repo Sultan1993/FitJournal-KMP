@@ -98,7 +98,7 @@ private fun FocusStatsInfoBlock(
             // Brand ink, unlike the row's own tertiary label: here the metric
             // name is the block heading, not a caption on a number.
             text = title.uppercase(),
-            style = FjTheme.typography.eyebrow.copy(fontSize = TypeTokens.t12.sp),
+            style = FjTheme.typography.eyebrow,
             color = FjTheme.colors.brand,
         )
         Text(

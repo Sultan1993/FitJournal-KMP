@@ -20,9 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
 import kz.maestrosultan.fitjournal.domain.workout.WorkoutExercise
@@ -30,7 +28,6 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutRecord
 import kz.maestrosultan.fitjournal.domain.workout.isSuperset
 import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
 import kz.maestrosultan.fitjournal.kmp.design.SpaceTokens
-import kz.maestrosultan.fitjournal.kmp.design.TypeTokens
 import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.ic_workout_superset
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_superset
@@ -80,10 +77,7 @@ fun WorkoutRecordCard(
                 )
                 Text(
                     text = stringResource(Res.string.workout_superset).uppercase(),
-                    style = FjTheme.typography.caption.copy(
-                        fontSize = TypeTokens.t12.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
+                    style = FjTheme.typography.eyebrow,
                     color = FjTheme.colors.brand,
                 )
             }

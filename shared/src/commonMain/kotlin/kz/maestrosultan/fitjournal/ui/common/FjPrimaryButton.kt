@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kz.maestrosultan.fitjournal.kmp.design.RadiusTokens
@@ -40,7 +41,7 @@ fun FjPrimaryButton(
         modifier = modifier
             .height(54.dp)
             .clip(RoundedCornerShape(RadiusTokens.control.dp))
-            .background(if (enabled) FjTheme.colors.brand else FjTheme.colors.brand.copy(alpha = 0.4f))
+            .background(fjPrimaryButtonFill(enabled))
             .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
@@ -57,3 +58,12 @@ fun FjPrimaryButton(
         }
     }
 }
+
+/**
+ * The primary CTA's fill: brand, or brand at 40% when disabled. The label stays
+ * onBrand either way. Every filled primary CTA that can't use [FjPrimaryButton]
+ * directly (e.g. one with a spinner state) reads its fill from here.
+ */
+@Composable
+internal fun fjPrimaryButtonFill(enabled: Boolean): Color =
+    if (enabled) FjTheme.colors.brand else FjTheme.colors.brand.copy(alpha = 0.4f)

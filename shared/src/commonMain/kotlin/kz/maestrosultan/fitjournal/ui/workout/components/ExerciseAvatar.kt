@@ -31,7 +31,7 @@ import org.jetbrains.compose.resources.painterResource
 
 /**
  * Exercise avatar, 1:1 with the native `WorkoutExerciseImage`: a rounded box with
- * a 1dp category-colour border on a [textTertiary][FjTheme] fill, showing the
+ * a 1dp category-colour border on the lavender [brandSubtle][FjTheme] art tile, showing the
  * exercise's bundled image when it has one, else the category icon.
  */
 @Composable
@@ -48,7 +48,7 @@ fun ExerciseAvatar(
             .size(size)
             .border(width = 1.dp, shape = RoundedCornerShape(RadiusTokens.chip.dp), color = category.composeColor())
             .clip(RoundedCornerShape(RadiusTokens.chip.dp))
-            .background(FjTheme.colors.textTertiary),
+            .background(FjTheme.colors.brandSubtle),
         contentAlignment = Alignment.Center,
     ) {
         when {

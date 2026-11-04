@@ -100,10 +100,7 @@ fun WorkoutExerciseItem(
                 Text(
                     text = pluralStringResource(Res.plurals.postworkout_sets, exercise.sets.size, exercise.sets.size)
                         .uppercase(),
-                    style = FjTheme.typography.caption.copy(
-                        fontSize = TypeTokens.t12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                    ),
+                    style = FjTheme.typography.eyebrow,
                     color = FjTheme.colors.textTertiary,
                     maxLines = 1,
                 )
@@ -140,10 +137,7 @@ fun WorkoutExerciseItem(
             ) {
                 Text(
                     text = stringResource(Res.string.workout_exercise_note_label).uppercase(),
-                    style = FjTheme.typography.caption.copy(
-                        fontSize = TypeTokens.t12.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
+                    style = FjTheme.typography.eyebrow,
                     color = FjTheme.colors.textTertiary,
                 )
                 Text(

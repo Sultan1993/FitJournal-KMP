@@ -23,8 +23,8 @@ Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workou
 # Alpha masks: under BlendMode.DstIn only the alpha channel is read, so the colour is not a design value.
 Multiplatform/shared/src/commonMain/kotlin/kz/maestrosultan/fitjournal/ui/workout/details/components/ExerciseRowList.kt:colors = listOf\(Color\.Black, Color\.Transparent\)  # DstIn edge-fade mask (alpha only)
 
-# iOS: the Live Activity extension links neither FitJournalKMP nor the app's colour catalog, and its Dynamic Island / lock-screen layout is fitted to Apple's system font.
-iOS/FitJournalWidgets/RestActivityWidget.swift:.  # Live Activity extension: no token access
+# iOS: the Live Activity reads tokens from the generated FitJournalWidgets/DesignTokens.generated.swift; only its stop glyph's corner is geometry.
+iOS/FitJournalWidgets/RestActivityWidget.swift:RoundedRectangle\(cornerRadius: 2\)$  # corner of the 12pt stop-square glyph
 # iOS: Sign in with Apple / Google colours are fixed by Apple's and Google's button guidelines.
 iOS/FitJournal/Core/UI/*SignIn/FJ*SignInButton.*:(= \.(white|black)$|<color key="\w+" white="(0\.0|1)" alpha="1")  # sign-in brand guidelines
 iOS/FitJournal/Core/Extensions/UIFontExtensions.swift:case \.bold, \.black:  # UIFont.Weight.black, not a colour

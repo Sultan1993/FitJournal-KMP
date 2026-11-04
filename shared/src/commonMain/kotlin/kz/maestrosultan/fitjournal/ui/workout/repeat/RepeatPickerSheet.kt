@@ -313,7 +313,7 @@ private fun DestinationRow(
 
     val base = modifier
         .fillMaxWidth()
-        .clip(RoundedCornerShape(RadiusTokens.control.dp))
+        .clip(RoundedCornerShape(RadiusTokens.chip.dp))
         .then(
             if (isSelected) {
                 Modifier.background(FjTheme.colors.brandSubtle)
