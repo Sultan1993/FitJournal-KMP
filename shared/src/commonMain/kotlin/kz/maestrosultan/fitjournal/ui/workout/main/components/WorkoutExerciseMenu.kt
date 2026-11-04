@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,6 +33,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.workout_menu_repla
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_menu_stats
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_menu_superset_add
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_menu_superset_remove
+import kz.maestrosultan.fitjournal.ui.common.FjModalBottomSheet
 import kz.maestrosultan.fitjournal.ui.common.MenuDivider
 import kz.maestrosultan.fitjournal.ui.common.MenuRow
 import kz.maestrosultan.fitjournal.ui.common.rememberSheetCloser
@@ -91,10 +91,9 @@ fun WorkoutExerciseMenu(
     // Rows run their action after the sheet has slid out, not the instant it's tapped.
     val close = rememberSheetCloser(sheetState)
 
-    ModalBottomSheet(
+    FjModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = FjTheme.colors.sheet,
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(bottom = SpaceTokens.s8.dp)) {
             if (exerciseName != null) {

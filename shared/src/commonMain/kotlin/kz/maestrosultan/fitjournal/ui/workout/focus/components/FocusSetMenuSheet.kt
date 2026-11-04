@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -19,6 +18,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_check
 import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_delete
 import kz.maestrosultan.fitjournal.shared.generated.resources.ic_common_reset
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_set_label
+import kz.maestrosultan.fitjournal.ui.common.FjModalBottomSheet
 import kz.maestrosultan.fitjournal.ui.common.MenuDivider
 import kz.maestrosultan.fitjournal.ui.common.MenuRow
 import kz.maestrosultan.fitjournal.ui.common.rememberSheetCloser
@@ -60,10 +60,9 @@ internal fun FocusSetMenuSheet(
     // Rows run their action after the sheet has slid out, not the instant it's tapped.
     val close = rememberSheetCloser(sheetState)
 
-    ModalBottomSheet(
+    FjModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = FjTheme.colors.sheet,
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(bottom = SpaceTokens.s8.dp)) {
             // Says WHICH set you opened. The sheet covers the stack, so without

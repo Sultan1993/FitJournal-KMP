@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,10 +44,10 @@ import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * Content of the workout-finish sheet (design frame W4). Hosted by the native
- * sheet containers on both platforms — this composable draws no sheet chrome
- * beyond the grabber and paints no background (the host's sheet surface shows
- * through).
+ * Content of the workout-finish sheet (design frame W4). Hosted in
+ * [kz.maestrosultan.fitjournal.ui.common.FjModalBottomSheet] on both platforms —
+ * this composable draws no sheet chrome (the handle is the sheet's) and paints no
+ * background (the sheet surface shows through).
  *
  * W4 is the session summary and nothing else: volume, duration, sets,
  * exercises. There is no per-exercise checklist and no separate failure shell —
@@ -86,11 +85,8 @@ fun WorkoutFinishSheet(
     }
 
     Column(
-        modifier = modifier.padding(start = SpaceTokens.s16.dp, top = SpaceTokens.s12.dp, end = SpaceTokens.s16.dp, bottom = SpaceTokens.s24.dp),
+        modifier = modifier.padding(start = SpaceTokens.s16.dp, end = SpaceTokens.s16.dp, bottom = SpaceTokens.s24.dp),
     ) {
-        Grabber(Modifier.align(Alignment.CenterHorizontally))
-        Spacer(Modifier.height(SpaceTokens.s16.dp))
-
         Text(
             text = stringResource(Res.string.postworkout_confirm_title),
             style = FjTheme.typography.screenTitle.copy(
@@ -127,17 +123,6 @@ fun WorkoutFinishSheet(
             )
         }
     }
-}
-
-/** CMP-drawn sheet grabber: 38x4.5, radius 3, border-colored. */
-@Composable
-private fun Grabber(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .size(width = 38.dp, height = 4.5.dp)
-            .clip(RoundedCornerShape(RadiusTokens.bar.dp))
-            .background(FjTheme.colors.border),
-    )
 }
 
 /** brandSubtle summary card: eyebrow, tonnage + unit, duration/sets/exercises stats. */

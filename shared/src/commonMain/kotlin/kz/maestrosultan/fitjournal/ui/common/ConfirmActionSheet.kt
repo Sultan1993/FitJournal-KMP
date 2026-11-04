@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -48,10 +47,9 @@ fun ConfirmActionSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     // Both buttons act after the sheet has slid out, not the instant they're tapped.
     val close = rememberSheetCloser(sheetState)
-    ModalBottomSheet(
+    FjModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = FjTheme.colors.sheet,
     ) {
         Column(
             modifier = modifier

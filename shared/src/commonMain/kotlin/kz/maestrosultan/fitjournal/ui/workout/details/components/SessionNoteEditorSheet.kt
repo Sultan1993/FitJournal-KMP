@@ -16,7 +16,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -45,6 +44,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.Res
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_note_placeholder
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_note_save
 import kz.maestrosultan.fitjournal.shared.generated.resources.workout_details_note_title
+import kz.maestrosultan.fitjournal.ui.common.FjModalBottomSheet
 import kz.maestrosultan.fitjournal.ui.common.rememberSheetCloser
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
@@ -81,17 +81,14 @@ fun SessionNoteEditorSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     // Save acts after the sheet has slid out, not the instant it's tapped.
     val close = rememberSheetCloser(sheetState)
-    ModalBottomSheet(
+    FjModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         modifier = modifier,
-        // `sheet`, not `surfaceElevated`: identical in light (#FFFFFF) but
-        // #18181F vs #2E2E38 in dark, where surfaceElevated reads far too bright
-        // for a full-width sheet. Scrim is left at the M3 default, like every
-        // other sheet in the app.
-        containerColor = FjTheme.colors.sheet,
     ) {
-        NoteEditorBody(
+        NoteEditorContent(
+            title = stringResource(Res.string.workout_details_note_title),
+            placeholder = stringResource(Res.string.workout_details_note_placeholder),
             initialText = editor.initialText,
             // The editor identity: a different workout's note is a different
             // editing session, so both the draft and the focus request restart.
@@ -102,11 +99,16 @@ fun SessionNoteEditorSheet(
 }
 
 /**
- * Sheet content, split out so it can be previewed — a `ModalBottomSheet` renders
- * as a popup and shows up empty in `@Preview`.
+ * The note editor body — title row with the inline Save, then the text on the
+ * sheet surface. Public so Android's exercise-note sheet (a nav sheet that already
+ * has the house chrome) renders the same editor; iOS matches it natively because
+ * its note field keeps a UIKit keyboard Done bar. Also split out for `@Preview`
+ * (a `ModalBottomSheet` renders as a popup and shows up empty there).
  */
 @Composable
-private fun NoteEditorBody(
+fun NoteEditorContent(
+    title: String,
+    placeholder: String,
     initialText: String,
     editorKey: Any,
     onSave: (String) -> Unit,
@@ -136,7 +138,7 @@ private fun NoteEditorBody(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = stringResource(Res.string.workout_details_note_title),
+                text = title,
                 style = FjTheme.typography.screenTitle.copy(
                     fontSize = TypeTokens.t20.sp,
                     fontWeight = FontWeight.Bold,
@@ -173,7 +175,7 @@ private fun NoteEditorBody(
             decorationBox = { innerTextField ->
                 if (value.text.isEmpty()) {
                     Text(
-                        text = stringResource(Res.string.workout_details_note_placeholder),
+                        text = placeholder,
                         style = FjTheme.typography.body.copy(fontSize = TypeTokens.t16.sp),
                         color = FjTheme.colors.textTertiary,
                     )
@@ -188,7 +190,7 @@ private fun NoteEditorBody(
 @Composable
 private fun SessionNoteEditorEmptyPreviewLight() {
     NoteEditorSheetPreviewSurface(darkTheme = false) {
-        NoteEditorBody(initialText = "", editorKey = 1, onSave = {})
+        NoteEditorContent(title = stringResource(Res.string.workout_details_note_title), placeholder = stringResource(Res.string.workout_details_note_placeholder), initialText = "", editorKey = 1, onSave = {})
     }
 }
 
@@ -196,7 +198,7 @@ private fun SessionNoteEditorEmptyPreviewLight() {
 @Composable
 private fun SessionNoteEditorTypedPreviewLight() {
     NoteEditorSheetPreviewSurface(darkTheme = false) {
-        NoteEditorBody(initialText = PreviewNote, editorKey = 1, onSave = {})
+        NoteEditorContent(title = stringResource(Res.string.workout_details_note_title), placeholder = stringResource(Res.string.workout_details_note_placeholder), initialText = PreviewNote, editorKey = 1, onSave = {})
     }
 }
 
@@ -204,7 +206,7 @@ private fun SessionNoteEditorTypedPreviewLight() {
 @Composable
 private fun SessionNoteEditorTypedPreviewDark() {
     NoteEditorSheetPreviewSurface(darkTheme = true) {
-        NoteEditorBody(initialText = PreviewNote, editorKey = 1, onSave = {})
+        NoteEditorContent(title = stringResource(Res.string.workout_details_note_title), placeholder = stringResource(Res.string.workout_details_note_placeholder), initialText = PreviewNote, editorKey = 1, onSave = {})
     }
 }
 

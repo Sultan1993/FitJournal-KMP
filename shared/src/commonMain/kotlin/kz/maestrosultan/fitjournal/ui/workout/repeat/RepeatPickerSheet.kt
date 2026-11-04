@@ -24,7 +24,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -71,6 +70,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.repeat_picker_new_
 import kz.maestrosultan.fitjournal.shared.generated.resources.repeat_picker_new_workout_subtitle
 import kz.maestrosultan.fitjournal.shared.generated.resources.repeat_picker_retry
 import kz.maestrosultan.fitjournal.shared.generated.resources.repeat_picker_title
+import kz.maestrosultan.fitjournal.ui.common.FjModalBottomSheet
 import kz.maestrosultan.fitjournal.ui.common.FjPrimaryButton
 import kz.maestrosultan.fitjournal.ui.format.LocaleFormatters
 import kz.maestrosultan.fitjournal.ui.format.relativeDayLabel
@@ -107,10 +107,9 @@ fun RepeatPickerSheet(
 ) {
     val state by viewModel.viewState.collectAsState()
 
-    ModalBottomSheet(
+    FjModalBottomSheet(
         sheetState = sheetState,
         onDismissRequest = onDismiss,
-        containerColor = FjTheme.colors.sheet,
     ) {
         AnimatedContent(
             targetState = state.pane,

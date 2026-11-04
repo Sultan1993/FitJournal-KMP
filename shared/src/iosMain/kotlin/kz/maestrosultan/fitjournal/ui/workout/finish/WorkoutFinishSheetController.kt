@@ -1,13 +1,11 @@
 package kz.maestrosultan.fitjournal.ui.workout.finish
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeUIViewController
 import kz.maestrosultan.fitjournal.domain.sync.SyncTrigger
 import kz.maestrosultan.fitjournal.domain.user.MeasurementSystem
@@ -16,8 +14,9 @@ import kz.maestrosultan.fitjournal.domain.workout.WorkoutSessionRepository
 import kz.maestrosultan.fitjournal.domain.workout.summary.BuildSessionSummaryUseCase
 import kz.maestrosultan.fitjournal.domain.workout.summary.DetectSessionBestUseCase
 import kz.maestrosultan.fitjournal.domain.workout.usecase.EndWorkoutUseCase
+import kz.maestrosultan.fitjournal.ui.common.FjModalBottomSheet
+import kz.maestrosultan.fitjournal.ui.common.rememberSheetCloser
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
-import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import kz.maestrosultan.fitjournal.ui.workout.FinishResult
 import kz.maestrosultan.fitjournal.ui.workout.WorkoutUserContext
 import platform.UIKit.UIViewController
@@ -26,22 +25,26 @@ import platform.UIKit.UIViewController
  * Workout-finish sheet (design frame W4), presented over whatever raised it
  * (the Focus screen, or the workout screen's session bar).
  *
- * Content-only on purpose — its surface is the native
- * `UISheetPresentationController` — so the theme + background + safe-area
- * insets are applied here rather than inside the shared composable.
+ * The sheet itself is the shared [FjModalBottomSheet] — the same chrome as every
+ * other sheet — so this controller is transparent and must be presented
+ * `.overFullScreen` WITHOUT animation: the sheet slides itself in and draws its
+ * own scrim. (It used to be a native page sheet, which on iOS 26 floats inset,
+ * shrinks its content and drew a second, different grabber.)
  *
  * [onFinished] fires exactly once with the typed [FinishResult] the shared VM
  * emits after it has ended the session; the host retains that result for the
- * rest of the flow. [onKeepTraining] only dismisses — no session state changes
- * on that path.
+ * rest of the flow. [onClosed] fires once the sheet has slid away by a swipe, a
+ * scrim tap or "Keep training" — the host only has to remove this controller
+ * (unanimated). No session state changes on that path.
  *
- * Swift call site: `WorkoutFinishSheetController(viewModel:onFinished:onKeepTraining:)`.
+ * Swift call site: `WorkoutFinishSheetController(viewModel:onFinished:onClosed:)`.
  */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 fun WorkoutFinishSheetController(
     viewModel: WorkoutFinishViewModel,
     onFinished: (FinishResult) -> Unit,
-    onKeepTraining: () -> Unit,
-): UIViewController = ComposeUIViewController {
+    onClosed: () -> Unit,
+): UIViewController = ComposeUIViewController(configure = { opaque = false }) {
     FitJournalTheme {
         val state by viewModel.viewState.collectAsState()
         // The VM's finish event is a buffered Channel — one consumer, delivered
@@ -53,15 +56,14 @@ fun WorkoutFinishSheetController(
                 }
             }
         }
-        // The sheet content paints no background of its own (it expects the
-        // host's sheet surface); on iOS that surface is this compose view.
-        Box(Modifier.fillMaxSize().background(FjTheme.colors.sheet)) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        val close = rememberSheetCloser(sheetState)
+        FjModalBottomSheet(onDismissRequest = onClosed, sheetState = sheetState) {
             WorkoutFinishSheet(
                 state = state,
                 onConfirmFinish = { viewModel.dispatch(WorkoutFinishContract.ViewAction.ConfirmFinish) },
-                onKeepTraining = onKeepTraining,
+                onKeepTraining = { close(onClosed) },
                 onVisibilityChanged = { viewModel.dispatch(WorkoutFinishContract.ViewAction.VisibilityChanged(it)) },
-                modifier = Modifier.safeDrawingPadding(),
             )
         }
     }

@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -27,6 +26,7 @@ import kz.maestrosultan.fitjournal.shared.generated.resources.focus_stats_info_e
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_stats_info_max_set
 import kz.maestrosultan.fitjournal.shared.generated.resources.focus_stats_info_title
 import kz.maestrosultan.fitjournal.ui.theme.FitJournalTheme
+import kz.maestrosultan.fitjournal.ui.common.FjModalBottomSheet
 import kz.maestrosultan.fitjournal.ui.theme.FjTheme
 import org.jetbrains.compose.resources.stringResource
 
@@ -49,11 +49,10 @@ fun FocusStatsInfoSheet(
     modifier: Modifier = Modifier,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ModalBottomSheet(
+    FjModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         modifier = modifier,
-        containerColor = FjTheme.colors.sheet,
     ) {
         FocusStatsInfoContent()
     }
@@ -68,7 +67,8 @@ private fun FocusStatsInfoContent(modifier: Modifier = Modifier) {
             // The de/ru copy runs 15–26% longer than en; scroll inside the
             // fixed height rather than silently clipping the tail.
             .verticalScroll(rememberScrollState())
-            .padding(SpaceTokens.s24.dp),
+            // Title right under the handle, 16 sides — the house sheet layout.
+            .padding(start = SpaceTokens.s16.dp, end = SpaceTokens.s16.dp, bottom = SpaceTokens.s24.dp),
         verticalArrangement = Arrangement.spacedBy(SpaceTokens.s24.dp),
     ) {
         Text(
